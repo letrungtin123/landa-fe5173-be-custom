@@ -38,7 +38,7 @@ export function ExplorePage() {
       <div
         className={cn(
           "mb-8 rounded-2xl p-8 text-white md:p-12",
-          colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent"
+          colorStyle === "gradient" ? "bg-gradient-to-r from-primary to-primary/80" : "bg-primary"
         )}
       >
         <div className="flex items-center gap-2 mb-4">
@@ -66,9 +66,8 @@ export function ExplorePage() {
         </div>
       </div>
 
-      {/* Trending courses */}
       <div className="mb-6 flex items-center gap-2">
-        <TrendingUp className="h-5 w-5 text-accent" />
+        <TrendingUp className="h-5 w-5 text-primary" />
         <h2 className="text-xl font-bold text-foreground">Nổi bật</h2>
       </div>
 
@@ -82,7 +81,7 @@ export function ExplorePage() {
                   className={cn(
                     "mb-3 w-fit text-xs",
                     course.tag === "Phổ biến" &&
-                      "border-accent/30 bg-accent/10 text-accent",
+                      "border-primary/30 bg-primary/10 text-primary",
                     course.tag === "Mới" &&
                       "border-success/30 bg-success/10 text-success",
                     course.tag === "Sắp ra mắt" &&
@@ -91,7 +90,7 @@ export function ExplorePage() {
                 >
                   {course.tag}
                 </Badge>
-                <h3 className="mb-2 text-lg font-bold text-foreground group-hover:text-accent transition-colors">
+                <h3 className="mb-2 text-lg font-bold text-foreground group-hover:text-primary transition-colors">
                   {course.title}
                 </h3>
                 <p className="mb-4 flex-1 text-sm text-muted-foreground">
