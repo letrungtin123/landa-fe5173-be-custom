@@ -1,0 +1,327 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   L&A Onboarding LMS — Theme System
+   Supports: light/dark mode + solid/gradient color style
+   ============================================================ */
+
+@layer base {
+  /* ── Google Font Import ── */
+  @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+  /* ============================
+     DEFAULT: Light Mode
+     ============================ */
+  :root {
+    --background: 0 0% 99%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    --primary: 213 55% 23%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 215 25% 27%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.625rem;
+
+    /* Sidebar */
+    --sidebar-bg: 0 0% 100%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-active: 217 91% 60%;
+
+    /* Gradient tokens */
+    --gradient-from: 217 91% 60%;
+    --gradient-to: 213 55% 23%;
+    --gradient-angle: 135deg;
+  }
+
+  /* ============================
+     DARK MODE
+     ============================ */
+  [data-theme="dark"] {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 92%;
+
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 92%;
+
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 92%;
+
+    --primary: 213 55% 65%;
+    --primary-foreground: 222 47% 6%;
+
+    --secondary: 217 33% 15%;
+    --secondary-foreground: 210 40% 80%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 60%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 217 33% 18%;
+    --input: 217 33% 18%;
+    --ring: 217 91% 60%;
+
+    --sidebar-bg: 222 47% 7%;
+    --sidebar-border: 217 33% 18%;
+    --sidebar-active: 217 91% 60%;
+
+    --gradient-from: 217 91% 60%;
+    --gradient-to: 213 55% 40%;
+  }
+
+  /* ============================
+     COLOR PRESETS — applied via [data-preset="xxx"]
+     Override only brand-specific vars
+     ============================ */
+
+  /* L&A Blue — Default, no override needed */
+
+  /* Ocean */
+  [data-preset="ocean"] {
+    --primary: 200 65% 26%;
+    --accent: 203 68% 45%;
+    --ring: 203 68% 45%;
+    --sidebar-active: 203 68% 45%;
+    --gradient-from: 203 68% 45%;
+    --gradient-to: 200 65% 26%;
+  }
+  [data-preset="ocean"][data-theme="dark"] {
+    --primary: 200 65% 55%;
+    --accent: 203 68% 55%;
+    --gradient-from: 203 68% 55%;
+    --gradient-to: 200 65% 40%;
+  }
+
+  /* Emerald */
+  [data-preset="emerald"] {
+    --primary: 160 84% 18%;
+    --accent: 160 84% 39%;
+    --ring: 160 84% 39%;
+    --sidebar-active: 160 84% 39%;
+    --gradient-from: 160 84% 39%;
+    --gradient-to: 160 84% 18%;
+  }
+  [data-preset="emerald"][data-theme="dark"] {
+    --primary: 160 60% 50%;
+    --accent: 160 84% 45%;
+    --gradient-from: 160 84% 45%;
+    --gradient-to: 160 60% 30%;
+  }
+
+  /* Royal */
+  [data-preset="royal"] {
+    --primary: 243 75% 27%;
+    --accent: 239 84% 67%;
+    --ring: 239 84% 67%;
+    --sidebar-active: 239 84% 67%;
+    --gradient-from: 239 84% 67%;
+    --gradient-to: 243 75% 27%;
+  }
+  [data-preset="royal"][data-theme="dark"] {
+    --primary: 243 60% 60%;
+    --accent: 239 84% 67%;
+    --gradient-from: 239 84% 67%;
+    --gradient-to: 243 60% 40%;
+  }
+
+  /* Sunset */
+  [data-preset="sunset"] {
+    --primary: 15 80% 30%;
+    --accent: 25 95% 53%;
+    --ring: 25 95% 53%;
+    --sidebar-active: 25 95% 53%;
+    --gradient-from: 25 95% 53%;
+    --gradient-to: 350 80% 50%;
+  }
+  [data-preset="sunset"][data-theme="dark"] {
+    --primary: 15 70% 55%;
+    --accent: 25 95% 58%;
+    --gradient-from: 25 95% 58%;
+    --gradient-to: 350 70% 50%;
+  }
+
+  /* Rose */
+  [data-preset="rose"] {
+    --primary: 340 65% 30%;
+    --accent: 340 82% 52%;
+    --ring: 340 82% 52%;
+    --sidebar-active: 340 82% 52%;
+    --gradient-from: 340 82% 52%;
+    --gradient-to: 320 65% 35%;
+  }
+  [data-preset="rose"][data-theme="dark"] {
+    --primary: 340 60% 55%;
+    --accent: 340 82% 58%;
+    --gradient-from: 340 82% 58%;
+    --gradient-to: 320 60% 40%;
+  }
+
+  /* Teal */
+  [data-preset="teal"] {
+    --primary: 175 60% 22%;
+    --accent: 175 77% 40%;
+    --ring: 175 77% 40%;
+    --sidebar-active: 175 77% 40%;
+    --gradient-from: 175 77% 40%;
+    --gradient-to: 190 60% 25%;
+  }
+  [data-preset="teal"][data-theme="dark"] {
+    --primary: 175 55% 50%;
+    --accent: 175 77% 48%;
+    --gradient-from: 175 77% 48%;
+    --gradient-to: 190 55% 35%;
+  }
+
+  /* Amber */
+  [data-preset="amber"] {
+    --primary: 32 70% 28%;
+    --accent: 38 92% 50%;
+    --ring: 38 92% 50%;
+    --sidebar-active: 38 92% 50%;
+    --gradient-from: 38 92% 50%;
+    --gradient-to: 25 70% 30%;
+  }
+  [data-preset="amber"][data-theme="dark"] {
+    --primary: 32 65% 55%;
+    --accent: 38 92% 55%;
+    --gradient-from: 38 92% 55%;
+    --gradient-to: 25 65% 38%;
+  }
+
+  /* ============================
+     BASE STYLES
+     ============================ */
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  /* Smooth theme transition */
+  *,
+  *::before,
+  *::after {
+    transition-property: background-color, border-color, color, fill, stroke,
+      box-shadow;
+    transition-duration: 200ms;
+    transition-timing-function: ease;
+  }
+
+  /* Override transition for elements that should NOT transition */
+  input,
+  textarea,
+  select,
+  button,
+  a {
+    transition-property: background-color, border-color, color, fill, stroke,
+      box-shadow, transform, opacity;
+    transition-duration: 150ms;
+  }
+}
+
+/* ============================================================
+   Custom Scrollbar
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/20 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/40;
+}
+
+/* ============================================================
+   Gradient Utility Classes
+   ============================================================ */
+@layer utilities {
+  .accent-surface-solid {
+    background-color: hsl(var(--accent));
+  }
+
+  .accent-surface-gradient {
+    background: linear-gradient(
+      var(--gradient-angle),
+      hsl(var(--gradient-from)),
+      hsl(var(--gradient-to))
+    );
+  }
+
+  .text-gradient {
+    background: linear-gradient(
+      var(--gradient-angle),
+      hsl(var(--gradient-from)),
+      hsl(var(--gradient-to))
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .border-gradient {
+    border-image: linear-gradient(
+        var(--gradient-angle),
+        hsl(var(--gradient-from)),
+        hsl(var(--gradient-to))
+      )
+      1;
+  }
+}
