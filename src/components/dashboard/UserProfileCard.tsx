@@ -9,11 +9,11 @@ const PROFILE_LINKS = [
 
 export function UserProfileCard() {
   return (
-    <div className="overflow-hidden rounded-3xl bg-[#F9FAFB] border border-transparent">
+    <div className="overflow-hidden rounded-3xl bg-[#F9FAFB] dark:bg-card border border-transparent dark:border-border/50">
       <div className="flex flex-col items-center p-8 text-center">
         {/* Avatar Placeholder mapped to image */}
-        <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-[#f26522] text-white overflow-hidden border-4 border-white shadow-sm relative">
-           <div className="absolute inset-x-0 bottom-0 h-1/2 bg-[#cc5519] rounded-t-[50%]" />
+        <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-primary text-primary-foreground overflow-hidden border-4 border-white shadow-sm relative">
+           <div className="absolute inset-x-0 bottom-0 h-1/2 bg-primary/80 rounded-t-[50%]" />
            <User className="h-12 w-12 relative z-10" />
         </div>
 
@@ -30,7 +30,7 @@ export function UserProfileCard() {
             <a
               key={link.label}
               href={link.href}
-              className="block w-full text-[13px] font-medium text-foreground transition-colors hover:text-[#1877F2]"
+              className="block w-full text-[13px] font-medium text-foreground transition-colors hover:text-primary"
             >
               {link.label}
             </a>

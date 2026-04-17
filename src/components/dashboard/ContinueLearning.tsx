@@ -41,19 +41,19 @@ export function ContinueLearning() {
 
                 {/* Content */}
                 <div className="flex flex-col p-5 w-[65%]">
-                  <div className="mb-2 w-full flex items-center gap-1.5 text-[11px] font-bold text-[#1877F2]">
+                  <div className="mb-2 w-full flex items-center gap-1.5 text-[11px] font-bold text-primary">
                     <span>{course.moduleLabel}</span>
                     <span className="text-muted-foreground/40">•</span>
                     <span className="truncate">{course.lessonLabel}</span>
                   </div>
                   
-                  <h3 className="text-[17px] font-bold text-foreground leading-snug group-hover:text-[#1877F2] transition-colors line-clamp-2">
+                  <h3 className="text-[17px] font-bold text-foreground leading-snug group-hover:text-primary transition-colors line-clamp-2">
                     {course.title}
                   </h3>
                   
                   <div className="mt-auto">
-                    <div className="h-1 w-8 bg-[#1877F2] rounded-full mb-3" />
-                    <span className="flex items-center gap-1 text-[13px] font-bold text-[#1877F2]">
+                    <div className="h-1 w-8 bg-primary rounded-full mb-3" />
+                    <span className="flex items-center gap-1 text-[13px] font-bold text-primary">
                       Tiếp tục học
                       <ArrowRight className="h-3.5 w-3.5" />
                     </span>

@@ -16,7 +16,7 @@ export function WelcomeBanner() {
       {/* Welcome Badge */}
       <Badge
         variant="outline"
-        className="mb-3 border-transparent bg-[#10b981]/20 text-[#10b981] font-bold text-xs uppercase tracking-widest px-3 py-1.5 rounded-full"
+        className="mb-3 border-transparent bg-success/20 text-success font-bold text-xs uppercase tracking-widest px-3 py-1.5 rounded-full"
       >
         Welcome back, {mockUser.name.split(" ")[0]}
       </Badge>
@@ -31,8 +31,8 @@ export function WelcomeBanner() {
         className={cn(
           "relative overflow-hidden rounded-2xl p-6 md:p-8 text-white min-h-[220px]",
           colorStyle === "gradient"
-            ? "bg-gradient-to-r from-blue-600 to-blue-500"
-            : "bg-[#1877F2]"
+            ? "bg-gradient-to-r from-primary to-primary/80"
+            : "bg-primary"
         )}
       >
         <div className="relative z-10 max-w-[60%]">
@@ -56,7 +56,7 @@ export function WelcomeBanner() {
                 transition={{ duration: 0.6, delay: i * 0.05, ease: "easeOut" }}
                 className={cn(
                   "flex-1 rounded-t-full w-full",
-                  i === 5 ? "bg-[#34d399]" : "bg-white/20"
+                  i === 5 ? "bg-success/80" : "bg-white/20"
                 )}
               />
             ))}

@@ -33,7 +33,7 @@ export function CourseSidebar() {
           <h2 className="mb-4 text-[19px] font-bold text-foreground">
             {mockCourse.title}
           </h2>
-          <p className="text-[13px] font-bold text-[#1877F2]">
+          <p className="text-[13px] font-bold text-primary">
             Nội dung khoá học
           </p>
         </div>
@@ -48,16 +48,16 @@ export function CourseSidebar() {
                 {/* Module Header */}
                 <div className={cn(
                   "px-5 py-3 mb-2 flex items-center justify-between",
-                  isActiveModule && "bg-[#F5F9FF] border-l-4 border-[#1877F2]"
+                  isActiveModule && "bg-primary/5 dark:bg-primary/10 border-l-4 border-primary"
                 )}>
                   <p className={cn(
                     "text-[14px] font-bold",
-                    isActiveModule ? "text-[#1877F2]" : "text-[#A3A3A3]"
+                    isActiveModule ? "text-primary" : "text-muted-foreground"
                   )}>
                     {module.title}
                   </p>
                   {module.completed && (
-                    <CheckCircle2 className="h-4 w-4 text-[#10B981]" fill="currentColor" opacity={0.2} stroke="white" strokeWidth={2} />
+                    <CheckCircle2 className="h-4 w-4 text-success" fill="currentColor" opacity={0.2} stroke="white" strokeWidth={2} />
                   )}
                 </div>
 
@@ -72,8 +72,8 @@ export function CourseSidebar() {
                         className={cn(
                           "flex w-full text-left transition-colors py-2.5 pl-[38px] pr-5",
                           isActive
-                            ? "text-[#1877F2] font-semibold"
-                            : "text-[#A3A3A3] font-medium hover:text-foreground"
+                            ? "text-primary font-semibold"
+                            : "text-muted-foreground font-medium hover:text-foreground"
                         )}
                       >
                         <span className="text-[14px] leading-snug">

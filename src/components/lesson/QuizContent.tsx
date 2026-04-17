@@ -15,7 +15,7 @@ export function QuizContent() {
       {/* Header Area */}
       <div className="mb-2 flex items-end justify-between">
         <div className="flex items-center gap-3">
-          <Badge className="bg-[#10B981] text-white hover:bg-[#10B981] font-bold text-xs uppercase tracking-wider px-3 py-1">
+          <Badge className="bg-success text-success-foreground hover:bg-success/90 font-bold text-xs uppercase tracking-wider px-3 py-1">
             {lesson.moduleTag}
           </Badge>
           <span className="text-sm font-medium text-muted-foreground">
@@ -23,7 +23,7 @@ export function QuizContent() {
           </span>
         </div>
         <div className="text-right">
-          <div className="text-4xl font-bold text-[#1877F2] leading-none mb-1">
+          <div className="text-4xl font-bold text-primary leading-none mb-1">
             1/5
           </div>
           <div className="text-[11px] font-bold text-foreground">
@@ -38,7 +38,7 @@ export function QuizContent() {
 
       {/* Progress Bar */}
       <div className="mb-10 flex h-2 w-full overflow-hidden rounded-full bg-muted">
-        <div className="h-full w-[20%] rounded-full bg-[#1877F2]" />
+        <div className="h-full w-[20%] rounded-full bg-primary" />
       </div>
 
       {/* Quiz Card */}
@@ -54,16 +54,16 @@ export function QuizContent() {
               className={cn(
                 "flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all",
                 opt.selected
-                  ? "border-[#1877F2] bg-[#F5F9FF]"
-                  : "border-transparent bg-[#F9FAFB] hover:border-border hover:bg-muted"
+                  ? "border-primary bg-primary/5 dark:bg-primary/10"
+                  : "border-transparent bg-[#F9FAFB] dark:bg-muted/40 hover:border-border hover:bg-muted"
               )}
             >
               <div
                 className={cn(
                   "flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] font-bold text-[17px]",
                   opt.selected
-                    ? "bg-[#1877F2] text-white"
-                    : "bg-white text-foreground shadow-sm border border-border/40"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-white dark:bg-card text-foreground shadow-sm border border-border/40"
                 )}
               >
                 {opt.letter}
@@ -72,7 +72,7 @@ export function QuizContent() {
                 {opt.text}
               </p>
               {opt.selected && (
-                <div className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#1877F2] text-white">
+                <div className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                   <Check className="h-3.5 w-3.5" strokeWidth={3} />
                 </div>
               )}

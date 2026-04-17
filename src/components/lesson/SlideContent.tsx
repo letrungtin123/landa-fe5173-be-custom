@@ -12,7 +12,7 @@ export function SlideContent() {
       {/* Header Area */}
       <div className="mb-6 flex items-end justify-between">
         <div className="flex items-center gap-3">
-          <Badge className="bg-[#46F0C0] text-[#0A6C66] hover:bg-[#46F0C0] font-bold text-xs uppercase tracking-wider px-3 py-1">
+          <Badge className="bg-success/20 text-success hover:bg-success/30 font-bold text-xs uppercase tracking-wider px-3 py-1">
             {lesson.moduleTag}
           </Badge>
           <span className="text-sm font-medium text-muted-foreground">
@@ -20,7 +20,7 @@ export function SlideContent() {
           </span>
         </div>
         <div className="text-right">
-          <div className="text-4xl font-bold text-[#1877F2] leading-none mb-1">
+          <div className="text-4xl font-bold text-primary leading-none mb-1">
             1/8
           </div>
           <div className="text-[11px] font-bold text-foreground uppercase tracking-wide">
@@ -37,11 +37,11 @@ export function SlideContent() {
       </div>
 
       {/* Document / Slide Area */}
-      <div className="w-full rounded-[24px] border border-border bg-white p-8 md:p-12 shadow-sm min-h-[600px] flex items-start justify-center">
+      <div className="w-full rounded-[24px] border border-border bg-white dark:bg-card p-8 md:p-12 shadow-sm min-h-[600px] flex items-start justify-center">
         {/* Mock Graphic or Text for the slide */}
         {lesson.slideData ? (
           <div className="w-full">
-            <h2 className="text-2xl font-bold text-[#8C1B1B] uppercase mb-10">{lesson.slideData.title}</h2>
+            <h2 className="text-2xl font-bold text-destructive uppercase mb-10">{lesson.slideData.title}</h2>
             <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border border-border/50">
                <img src={lesson.slideData.imageUrl} alt="Document slide" className="w-full h-full object-cover" />
             </div>

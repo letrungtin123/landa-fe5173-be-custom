@@ -6,8 +6,8 @@ export function QuizRightSidebar() {
     <div className="flex flex-col h-full">
       <div className="px-6 pb-8">
         {/* Lesson Recap Block */}
-        <div className="mb-8 rounded-3xl bg-[#F6F8FB] p-6 shadow-sm border border-transparent">
-          <Badge className="bg-[#46ECE4] text-[#0A6C66] hover:bg-[#46ECE4] border-transparent font-bold text-[11px] mb-5 tracking-widest px-3 py-1 rounded-full uppercase">
+        <div className="mb-8 rounded-3xl bg-[#F6F8FB] dark:bg-card p-6 shadow-sm border border-transparent dark:border-border/50">
+          <Badge className="bg-primary/20 text-primary hover:bg-primary/30 border-transparent font-bold text-[11px] mb-5 tracking-widest px-3 py-1 rounded-full uppercase">
             Lesson Recap
           </Badge>
           <p className="mb-5 text-[13px] font-bold leading-relaxed text-foreground">
@@ -18,7 +18,7 @@ export function QuizRightSidebar() {
           </p>
           
           {/* Mock image placeholder representing the recap diagram */}
-          <div className="w-full rounded-xl bg-white border border-border/50 p-2 shadow-sm overflow-hidden flex items-center justify-center min-h-[120px]">
+          <div className="w-full rounded-xl bg-white dark:bg-muted/30 border border-border/50 p-2 shadow-sm overflow-hidden flex items-center justify-center min-h-[120px]">
              <img src={"https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&q=80"} alt="Recap diagram" className="w-full h-auto object-cover rounded-md opacity-80" />
           </div>
         </div>

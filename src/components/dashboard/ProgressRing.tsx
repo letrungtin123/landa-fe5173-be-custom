@@ -48,7 +48,7 @@ export function ProgressRing() {
                 fill="none"
                 strokeWidth="8"
                 strokeLinecap="round"
-                className="stroke-[#10b981] animate-draw-circle"
+                className="stroke-success animate-draw-circle"
                 strokeDasharray={circumference}
                 strokeDashoffset={circumference}
                 style={
@@ -74,7 +74,7 @@ export function ProgressRing() {
 
           <Link
             to="/courses/c1/lessons/l-m2-1"
-            className="flex items-center gap-1.5 text-sm font-medium text-[#1877F2] transition-colors hover:text-[#1877F2]/80 mt-auto"
+            className="flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80 mt-auto"
           >
             Tiếp tục học
             <ArrowRight className="h-4 w-4" />
