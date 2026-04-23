@@ -1,7 +1,17 @@
 import { motion } from "framer-motion";
-import { mockUser } from "@/data/mock";
+
+function getStreak(): number {
+  try {
+    const data = JSON.parse(localStorage.getItem("la-streak") || "{}");
+    return data.count || 0;
+  } catch {
+    return 0;
+  }
+}
 
 export function StreakCounter() {
+  const streak = getStreak();
+
   return (
     <motion.div
       initial={{ scale: 0.9, opacity: 0 }}
@@ -12,7 +22,7 @@ export function StreakCounter() {
         <p className="text-xs font-medium text-muted-foreground mb-1">Học liên tục</p>
         <div className="flex items-center justify-center gap-1.5">
           <span className="text-2xl font-bold text-primary">
-            {mockUser.streak} Ngày
+            {streak} Ngày
           </span>
           <span className="text-xl">🔥</span>
         </div>

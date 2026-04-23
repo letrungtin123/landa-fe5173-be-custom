@@ -19,9 +19,7 @@ export function LoginPage() {
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};
     if (!email.trim()) {
-      newErrors.email = "Vui lòng nhập địa chỉ email";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = "Địa chỉ email không hợp lệ";
+      newErrors.email = "Vui lòng nhập tên đăng nhập hoặc email";
     }
     if (!password.trim()) {
       newErrors.password = "Vui lòng nhập mật khẩu";
@@ -37,11 +35,22 @@ export function LoginPage() {
     if (!validate()) return;
 
     setIsSubmitting(true);
-    // Simulate a brief loading delay
-    await new Promise((r) => setTimeout(r, 800));
-    login(email);
-    setIsSubmitting(false);
-    navigate("/dashboard", { replace: true });
+    setErrors({});
+
+    try {
+      // FE này dành cho learner — luôn vào dashboard sau khi đăng nhập
+      await login(email, password);
+      navigate("/dashboard", { replace: true });
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { status?: number } };
+      if (axiosErr.response?.status === 401 || axiosErr.response?.status === 400) {
+        setErrors({ email: "Tên đăng nhập hoặc mật khẩu không đúng" });
+      } else {
+        setErrors({ email: "Lỗi kết nối máy chủ. Vui lòng thử lại sau." });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -127,12 +136,12 @@ export function LoginPage() {
                 htmlFor="login-email"
                 className="mb-1.5 block text-[13px] font-semibold text-[#1a1a1a]"
               >
-                Địa chỉ email<span className="text-red-500">*</span>
+                Tên đăng nhập / Email<span className="text-red-500">*</span>
               </label>
               <input
                 id="login-email"
-                type="email"
-                placeholder="nhut.tran@hcm.nesso.vn"
+                type="text"
+                placeholder="username hoặc email"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -235,14 +244,14 @@ export function LoginPage() {
 
           {/* Terms */}
           <p className="mt-6 text-center text-[12px] leading-relaxed text-[#999]">
-            Đăng việc đăng nhập, bạn đã xác nhận đồng ý với các{" "}
-            <a href="#" className="font-medium text-[#1877F2] hover:underline">
+            Bằng việc đăng nhập, bạn đã xác nhận đồng ý với các{" "}
+            <span className="font-medium text-[#1877F2] cursor-pointer hover:underline">
               Điều khoản
-            </a>{" "}
+            </span>{" "}
             và{" "}
-            <a href="#" className="font-medium text-[#1877F2] hover:underline">
+            <span className="font-medium text-[#1877F2] cursor-pointer hover:underline">
               Chính sách của công ty
-            </a>
+            </span>
             .
           </p>
         </div>

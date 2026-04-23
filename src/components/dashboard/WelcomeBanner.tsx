@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { cn } from "@/lib/utils";
-import { mockUser } from "@/data/mock";
 
 export function WelcomeBanner() {
   const { colorStyle } = useThemeStore();
+  const userName = useAuthStore((s) => s.user?.name || "Learner");
 
   return (
     <motion.div
@@ -18,7 +19,7 @@ export function WelcomeBanner() {
         variant="outline"
         className="mb-3 border-transparent bg-success/20 text-success font-bold text-xs uppercase tracking-widest px-3 py-1.5 rounded-full"
       >
-        Welcome back, {mockUser.name.split(" ")[0]}
+        Welcome back, {userName.split(" ")[0]}
       </Badge>
 
       {/* Main Heading */}
@@ -38,8 +39,7 @@ export function WelcomeBanner() {
         <div className="relative z-10 max-w-[60%]">
           <h3 className="mb-2 text-xl font-bold">Weekly Momentum</h3>
           <p className="text-sm leading-relaxed text-white/90">
-            Thật ấn tượng! Bạn đã đi được{" "}
-            <strong>{mockUser.overallProgress}%</strong> chặng đường mục tiêu
+            Thật ấn tượng! Bạn đang trên đường hoàn thành mục tiêu
             tuần này rồi. Giữ vững phong độ này nhé!
           </p>
         </div>

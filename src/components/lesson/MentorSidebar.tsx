@@ -1,80 +1,57 @@
-import { motion } from "framer-motion";
 import { User } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { mockLessons } from "@/data/mock";
-import { useAppStore } from "@/stores/useAppStore";
-import logoImg from "@/assets/leandassociate.webp";
+import type { LessonDetail } from "@/data/types";
 
-export function MentorSidebar() {
-  const currentLessonId = useAppStore((s) => s.currentLessonId);
-  const lesson = mockLessons[currentLessonId] || mockLessons["l-m2-1"];
-  return (
-    <aside className="hidden w-[300px] shrink-0 border-l border-border xl:block">
-      <div className="sticky top-20 p-6">
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-        >
-          {/* Mentor Badge */}
-          <Badge className="mb-3 bg-accent text-accent-foreground font-semibold text-xs uppercase tracking-wider px-3 py-1">
-            Mentor
-          </Badge>
+interface MentorSidebarProps {
+  lesson: LessonDetail;
+}
 
-          <h3 className="mb-5 text-xl font-bold text-foreground">
-            Người hướng dẫn
-          </h3>
-
-          {/* Mentor Cards */}
-          <div className="space-y-4">
-            {lesson.mentors.map((mentor, index) => (
-              <div key={index}>
-                <div className="flex items-start gap-3">
-                  {/* Avatar */}
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted">
-                    <User className="h-6 w-6 text-muted-foreground" />
-                  </div>
-
-                  <div>
-                    {/* Company Logo */}
-                    <img
-                      src={logoImg}
-                      alt={mentor.company}
-                      className="mb-1 h-4 w-auto object-contain opacity-70"
-                    />
-                    <p className="text-sm font-bold text-foreground">
-                      {mentor.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {mentor.role}
-                    </p>
-                  </div>
-                </div>
-                {index < lesson.mentors.length - 1 && (
-                  <Separator className="mt-4" />
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* About Company */}
-          <div className="mt-6 rounded-lg bg-muted/50 p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <img
-                src={logoImg}
-                alt="Le & Associates"
-                className="h-5 w-auto object-contain"
-              />
-            </div>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              Le & Associates (L&A), thành viên của L&A Holdings, hiện là một
-              trong những công ty hàng đầu tại Việt Nam trong dịch vụ nhân lực
-              và thuê ngoài.
-            </p>
-          </div>
-        </motion.div>
+export function MentorSidebar({ lesson }: MentorSidebarProps) {
+  if (lesson.mentors.length === 0) {
+    return (
+      <div className="px-6 py-4">
+        <h3 className="mb-4 text-[15px] font-bold text-foreground">
+          Giảng viên
+        </h3>
+        <p className="text-sm text-muted-foreground italic">
+          Chưa có thông tin giảng viên cho bài học này.
+        </p>
       </div>
-    </aside>
+    );
+  }
+
+  return (
+    <div className="px-6 py-4">
+      <h3 className="mb-4 text-[15px] font-bold text-foreground">
+        Giảng viên
+      </h3>
+      <div className="space-y-4">
+        {lesson.mentors.map((mentor, i) => (
+          <div key={i} className="flex items-center gap-3">
+            {/* Mentor Avatar */}
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground overflow-hidden">
+              {mentor.avatar ? (
+                <img
+                  src={mentor.avatar}
+                  alt={mentor.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <User className="h-5 w-5" />
+              )}
+            </div>
+            {/* Mentor Info */}
+            <div className="min-w-0">
+              <p className="text-[13px] font-bold text-foreground truncate">
+                {mentor.name}
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {mentor.role}
+                {mentor.company && ` • ${mentor.company}`}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

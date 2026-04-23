@@ -1,3 +1,7 @@
+// ============================================================
+// DashboardPage — Trang chính learner (dữ liệu thật từ API)
+// ============================================================
+
 import { motion } from "framer-motion";
 import { UserProfileCard } from "@/components/dashboard/UserProfileCard";
 import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
@@ -7,11 +11,19 @@ import { NotificationList } from "@/components/dashboard/NotificationList";
 import { ContinueLearning } from "@/components/dashboard/ContinueLearning";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { usePageLoading } from "@/hooks/usePageLoading";
+import { useMyEnrollments } from "@/hooks/useCourses";
+import { useCourseCompletion } from "@/hooks/useProgress";
 
 export function DashboardPage() {
-  const { isLoading } = usePageLoading(1000);
+  const { isLoading: pageLoading } = usePageLoading(1000);
+  const { data: enrollments } = useMyEnrollments();
 
-  if (isLoading) {
+  // Lấy khóa học đầu tiên đang enrolled để hiển thị tiến độ
+  const firstCourseId = enrollments?.[0]?.course_details.course_id;
+  const firstCourseName = enrollments?.[0]?.course_details.course_name;
+  const { completionPercent } = useCourseCompletion(firstCourseId);
+
+  if (pageLoading) {
     return <DashboardSkeleton />;
   }
 
@@ -23,7 +35,7 @@ export function DashboardPage() {
       className="mx-auto max-w-[1400px] px-4 py-8 md:px-6"
     >
       <div className="flex flex-col lg:flex-row">
-        {/* Left Sidebar */}
+        {/* Thanh bên trái */}
         <div className="w-full lg:w-[280px] shrink-0 lg:border-r lg:border-border lg:pr-8">
           <div className="sticky top-24 space-y-10">
             <UserProfileCard />
@@ -31,11 +43,11 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* Main Content */}
+        {/* Nội dung chính */}
         <div className="flex-1 lg:pl-8 mt-8 lg:mt-0 space-y-10">
-          {/* Top Section */}
+          {/* Phần trên */}
           <div className="flex flex-col gap-6 lg:flex-row">
-            {/* Header Area & Momentum */}
+            {/* Banner chào mừng */}
             <div className="flex-1 space-y-6">
               <div className="flex justify-between items-start">
                 <WelcomeBanner />
@@ -45,18 +57,34 @@ export function DashboardPage() {
               </div>
             </div>
 
-            {/* Right Stats Column */}
+            {/* Cột thống kê bên phải */}
             <div className="hidden lg:flex flex-col gap-6 lg:w-[240px] shrink-0">
               <StreakCounter />
-              <ProgressRing />
+              <ProgressRing
+                progress={completionPercent}
+                courseTitle={firstCourseName || "Chưa có khóa học"}
+                courseLink={
+                  firstCourseId
+                    ? `/courses/${encodeURIComponent(firstCourseId)}/lessons/overview`
+                    : "/courses"
+                }
+              />
             </div>
           </div>
 
           <div className="lg:hidden">
-             <ProgressRing />
+            <ProgressRing
+              progress={completionPercent}
+              courseTitle={firstCourseName || "Chưa có khóa học"}
+              courseLink={
+                firstCourseId
+                  ? `/courses/${encodeURIComponent(firstCourseId)}/lessons/overview`
+                  : "/courses"
+              }
+            />
           </div>
 
-          {/* Bottom Section */}
+          {/* Phần tiếp tục học */}
           <div>
             <ContinueLearning />
           </div>

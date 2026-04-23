@@ -2,11 +2,19 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { mockUser, mockCourse } from "@/data/mock";
 
-export function ProgressRing() {
+interface ProgressRingProps {
+  progress?: number;
+  courseTitle?: string;
+  courseLink?: string;
+}
+
+export function ProgressRing({
+  progress = 0,
+  courseTitle = "L&A Onboarding 2026",
+  courseLink = "/courses",
+}: ProgressRingProps) {
   const svgRef = useRef<SVGCircleElement>(null);
-  const progress = mockUser.overallProgress;
   const circumference = 2 * Math.PI * 45; // radius = 45
   const offset = circumference - (progress / 100) * circumference;
 
@@ -69,11 +77,11 @@ export function ProgressRing() {
 
           <p className="text-sm font-bold text-foreground mb-1">Đã hoàn thành</p>
           <p className="text-sm text-foreground italic mb-6">
-            {mockCourse.title}
+            {courseTitle}
           </p>
 
           <Link
-            to="/courses/c1/lessons/l-m2-1"
+            to={courseLink}
             className="flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80 mt-auto"
           >
             Tiếp tục học

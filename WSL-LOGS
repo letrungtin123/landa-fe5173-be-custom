@@ -1,0 +1,145 @@
+acer@DESKTOP-J50G208:/mnt/c/Users/ACER$ tutor local run lms python manage.py lms create_dot_application \
+  --grant-type password \
+  --redirect-uri "http://localhost:5173/auth/callback" \
+  --client-id "la-elearning-fe" \
+  --client-secret "la-elearning-secret-2026" \
+  --skip-authorization \
+  "LA-Elearning-Frontend" superadmin
+docker compose -f /home/acer/.local/share/tutor/env/local/docker-compose.yml -f /home/acer/.local/share/tutor/env/dev/docker-compose.yml --project-name tutor_dev ls --format json
+docker compose -f /home/acer/.local/share/tutor/env/local/docker-compose.yml -f /home/acer/.local/share/tutor/env/local/docker-compose.prod.yml --project-name tutor_local run --rm lms python manage.py lms create_dot_application --grant-type password --redirect-uri http://localhost:5173/auth/callback --client-id la-elearning-fe --client-secret la-elearning-secret-2026 --skip-authorization LA-Elearning-Frontend superadmin
+[+] Creating 5/5
+ ✔ Container tutor_local-smtp-1         Running                                                                    0.0s
+ ✔ Container tutor_local-mysql-1        Running                                                                    0.0s
+ ✔ Container tutor_local-redis-1        Running                                                                    0.0s
+ ✔ Container tutor_local-mongodb-1      Running                                                                    0.0s
+ ✔ Container tutor_local-meilisearch-1  Running                                                                    0.0s
+[+] Running 1/1
+ ✔ Container tutor_local-permissions-1  Started                                                                    0.6s
+2026-04-21 19:05:35,780 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/fs/__init__.py:4: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+  __import__("pkg_resources").declare_namespace(__name__)  # type: ignore
+
+2026-04-21 19:05:35,814 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/fs/__init__.py:4: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('fs')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  __import__("pkg_resources").declare_namespace(__name__)  # type: ignore
+
+2026-04-21 19:05:35,820 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/fs/opener/__init__.py:6: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('fs.opener')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  __import__("pkg_resources").declare_namespace(__name__)  # type: ignore
+
+2026-04-21 19:05:35,822 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/pkg_resources/__init__.py:2331: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('fs')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  declare_namespace(parent)
+
+2026-04-21 19:05:37,015 WARNING 1 [common.djangoapps.util.storage] [user None] [ip None] storage.py:63 - Key BLOCK_STRUCTURES_SETTINGS 'STORAGE_CLASS' not found in storage settings {'COURSE_PUBLISH_TASK_DELAY': 30, 'TASK_DEFAULT_RETRY_DELAY': 30, 'TASK_MAX_RETRIES': 5}.Using default storage path.
+2026-04-21 19:05:37,262 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/pgpy/constants.py:5: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13
+  import imghdr
+
+2026-04-21 19:05:39,279 INFO 1 [casbin_adapter.enforcer] [user None] [ip None] enforcer.py:21 - Deferring casbin enforcer initialisation until django is ready
+2026-04-21 19:05:40,090 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/django/db/models/fields/__init__.py:1148: RemovedInDjango60Warning: The default scheme will be changed from 'http' to 'https' in Django 6.0. Pass the forms.URLField.assume_scheme argument to silence this warning, or set the FORMS_URLFIELD_ASSUME_HTTPS transitional setting to True to opt into using 'https' as the new default scheme.
+  return form_class(**defaults)
+
+2026-04-21 19:05:41,388 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/drf_yasg/views.py:100: DeprecationWarning: SwaggerJSONRenderer & SwaggerYAMLRenderer's `format` has changed to not include a `.` prefix, please silence this warning by setting `SWAGGER_USE_COMPAT_RENDERERS = False` in your Django settings and ensure your application works (check your URLCONF and swagger/redoc URLs).
+  warnings.warn(
+
+System check identified some issues:
+
+WARNINGS:
+embargo.GlobalRestrictedCountry.country: (fields.W342) Setting unique=True on a ForeignKey has the same effect as using a OneToOneField.
+        HINT: ForeignKey(unique=True) is usually better served by a OneToOneField.
+2026-04-21 19:05:42,620 INFO 1 [openedx.core.djangoapps.oauth_dispatch.management.commands.create_dot_application] [user None] [ip None] create_dot_application.py:82 - Created LA-Elearning-Frontend application with id: 4, client_id: la-elearning-fe, and client_secret: la-elearning-secret-2026
+acer@DESKTOP-J50G208:/mnt/c/Users/ACER$ # Tạo Learner (để test FE React)
+tutor local run lms python manage.py lms manage_user learner1 learner1@la.vn \
+  --initial-password "Learner@123"
+
+# Tạo Staff/Mentor (để test redirect sang Studio)
+tutor local run lms python manage.py lms manage_user mentor1 mentor1@la.vn \
+  --initial-password "Mentor@123" --staff
+docker compose -f /home/acer/.local/share/tutor/env/local/docker-compose.yml -f /home/acer/.local/share/tutor/env/dev/docker-compose.yml --project-name tutor_dev ls --format json
+docker compose -f /home/acer/.local/share/tutor/env/local/docker-compose.yml -f /home/acer/.local/share/tutor/env/local/docker-compose.prod.yml --project-name tutor_local run --rm lms python manage.py lms manage_user learner1 learner1@la.vn --initial-password Learner@123
+[+] Creating 5/5
+ ✔ Container tutor_local-mysql-1        Running                                                                    0.0s
+ ✔ Container tutor_local-smtp-1         Running                                                                    0.0s
+ ✔ Container tutor_local-meilisearch-1  Running                                                                    0.0s
+ ✔ Container tutor_local-redis-1        Running                                                                    0.0s
+ ✔ Container tutor_local-mongodb-1      Running                                                                    0.0s
+[+] Running 1/1
+ ✔ Container tutor_local-permissions-1  Started                                                                    0.4s
+2026-04-21 19:05:59,232 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/fs/__init__.py:4: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+  __import__("pkg_resources").declare_namespace(__name__)  # type: ignore
+
+2026-04-21 19:05:59,268 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/fs/__init__.py:4: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('fs')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  __import__("pkg_resources").declare_namespace(__name__)  # type: ignore
+
+2026-04-21 19:05:59,274 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/fs/opener/__init__.py:6: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('fs.opener')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  __import__("pkg_resources").declare_namespace(__name__)  # type: ignore
+
+2026-04-21 19:05:59,275 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/pkg_resources/__init__.py:2331: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('fs')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  declare_namespace(parent)
+
+2026-04-21 19:06:00,299 WARNING 1 [common.djangoapps.util.storage] [user None] [ip None] storage.py:63 - Key BLOCK_STRUCTURES_SETTINGS 'STORAGE_CLASS' not found in storage settings {'COURSE_PUBLISH_TASK_DELAY': 30, 'TASK_DEFAULT_RETRY_DELAY': 30, 'TASK_MAX_RETRIES': 5}.Using default storage path.
+2026-04-21 19:06:00,550 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/pgpy/constants.py:5: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13
+  import imghdr
+
+2026-04-21 19:06:02,438 INFO 1 [casbin_adapter.enforcer] [user None] [ip None] enforcer.py:21 - Deferring casbin enforcer initialisation until django is ready
+2026-04-21 19:06:03,207 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/django/db/models/fields/__init__.py:1148: RemovedInDjango60Warning: The default scheme will be changed from 'http' to 'https' in Django 6.0. Pass the forms.URLField.assume_scheme argument to silence this warning, or set the FORMS_URLFIELD_ASSUME_HTTPS transitional setting to True to opt into using 'https' as the new default scheme.
+  return form_class(**defaults)
+
+2026-04-21 19:06:04,499 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/drf_yasg/views.py:100: DeprecationWarning: SwaggerJSONRenderer & SwaggerYAMLRenderer's `format` has changed to not include a `.` prefix, please silence this warning by setting `SWAGGER_USE_COMPAT_RENDERERS = False` in your Django settings and ensure your application works (check your URLCONF and swagger/redoc URLs).
+  warnings.warn(
+
+System check identified some issues:
+
+WARNINGS:
+embargo.GlobalRestrictedCountry.country: (fields.W342) Setting unique=True on a ForeignKey has the same effect as using a OneToOneField.
+        HINT: ForeignKey(unique=True) is usually better served by a OneToOneField.
+CommandError: The password hash provided for user learner1 is invalid.
+
+Error: Command failed with status 1: docker compose -f /home/acer/.local/share/tutor/env/local/docker-compose.yml -f /home/acer/.local/share/tutor/env/local/docker-compose.prod.yml --project-name tutor_local run --rm lms python manage.py lms manage_user learner1 learner1@la.vn --initial-password Learner@123
+docker compose -f /home/acer/.local/share/tutor/env/local/docker-compose.yml -f /home/acer/.local/share/tutor/env/dev/docker-compose.yml --project-name tutor_dev ls --format json
+docker compose -f /home/acer/.local/share/tutor/env/local/docker-compose.yml -f /home/acer/.local/share/tutor/env/local/docker-compose.prod.yml --project-name tutor_local run --rm lms python manage.py lms manage_user mentor1 mentor1@la.vn --initial-password Mentor@123 --staff
+[+] Creating 5/5
+ ✔ Container tutor_local-mysql-1        Running                                                                    0.0s
+ ✔ Container tutor_local-smtp-1         Running                                                                    0.0s
+ ✔ Container tutor_local-redis-1        Running                                                                    0.0s
+ ✔ Container tutor_local-mongodb-1      Running                                                                    0.0s
+ ✔ Container tutor_local-meilisearch-1  Running                                                                    0.0s
+[+] Running 1/1
+ ✔ Container tutor_local-permissions-1  Started                                                                    0.5s
+2026-04-21 19:06:13,420 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/fs/__init__.py:4: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+  __import__("pkg_resources").declare_namespace(__name__)  # type: ignore
+
+2026-04-21 19:06:13,468 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/fs/__init__.py:4: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('fs')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  __import__("pkg_resources").declare_namespace(__name__)  # type: ignore
+
+2026-04-21 19:06:13,474 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/fs/opener/__init__.py:6: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('fs.opener')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  __import__("pkg_resources").declare_namespace(__name__)  # type: ignore
+
+2026-04-21 19:06:13,476 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/pkg_resources/__init__.py:2331: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('fs')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  declare_namespace(parent)
+
+2026-04-21 19:06:14,713 WARNING 1 [common.djangoapps.util.storage] [user None] [ip None] storage.py:63 - Key BLOCK_STRUCTURES_SETTINGS 'STORAGE_CLASS' not found in storage settings {'COURSE_PUBLISH_TASK_DELAY': 30, 'TASK_DEFAULT_RETRY_DELAY': 30, 'TASK_MAX_RETRIES': 5}.Using default storage path.
+2026-04-21 19:06:14,974 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/pgpy/constants.py:5: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13
+  import imghdr
+
+2026-04-21 19:06:16,989 INFO 1 [casbin_adapter.enforcer] [user None] [ip None] enforcer.py:21 - Deferring casbin enforcer initialisation until django is ready
+2026-04-21 19:06:17,844 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/django/db/models/fields/__init__.py:1148: RemovedInDjango60Warning: The default scheme will be changed from 'http' to 'https' in Django 6.0. Pass the forms.URLField.assume_scheme argument to silence this warning, or set the FORMS_URLFIELD_ASSUME_HTTPS transitional setting to True to opt into using 'https' as the new default scheme.
+  return form_class(**defaults)
+
+2026-04-21 19:06:19,544 WARNING 1 [py.warnings] [user None] [ip None] warnings.py:110 - /openedx/venv/lib/python3.11/site-packages/drf_yasg/views.py:100: DeprecationWarning: SwaggerJSONRenderer & SwaggerYAMLRenderer's `format` has changed to not include a `.` prefix, please silence this warning by setting `SWAGGER_USE_COMPAT_RENDERERS = False` in your Django settings and ensure your application works (check your URLCONF and swagger/redoc URLs).
+  warnings.warn(
+
+System check identified some issues:
+
+WARNINGS:
+embargo.GlobalRestrictedCountry.country: (fields.W342) Setting unique=True on a ForeignKey has the same effect as using a OneToOneField.
+        HINT: ForeignKey(unique=True) is usually better served by a OneToOneField.
+CommandError: The password hash provided for user mentor1 is invalid.
+
+Error: Command failed with status 1: docker compose -f /home/acer/.local/share/tutor/env/local/docker-compose.yml -f /home/acer/.local/share/tutor/env/local/docker-compose.prod.yml --project-name tutor_local run --rm lms python manage.py lms manage_user mentor1 mentor1@la.vn --initial-password Mentor@123 --staff
+acer@DESKTOP-J50G208:/mnt/c/Users/ACER$

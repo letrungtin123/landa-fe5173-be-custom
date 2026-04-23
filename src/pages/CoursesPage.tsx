@@ -1,78 +1,210 @@
-import { BookOpen, ArrowRight } from "lucide-react";
+// ============================================================
+// CoursesPage — Danh sách khóa học (API thật + Enroll + Certificate)
+// ============================================================
+
+import { BookOpen, ArrowRight, Loader2, Award, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { mockCourse } from "@/data/mock";
+import { useCourses, useMyEnrollments, useEnrollCourse } from "@/hooks/useCourses";
+import { useMyCertificates } from "@/hooks/useCertificates";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { config } from "@/config/env";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 export function CoursesPage() {
   const { colorStyle } = useThemeStore();
+  const isStaff = useAuthStore((s) => s.user?.isStaff);
+  const { data: courseList, isLoading } = useCourses();
+  const { data: enrollments } = useMyEnrollments();
+  const { data: certificates } = useMyCertificates();
+  const enrollMutation = useEnrollCourse();
+
+  // Lookup sets cho tra cứu nhanh
+  const enrolledIds = new Set(
+    (enrollments || []).map((e) => e.course_details.course_id)
+  );
+  const certMap = new Map(
+    (certificates || []).map((c) => [c.course_id, c])
+  );
+
+  const courses = courseList?.results || [];
+
+  // Xử lý đăng ký khóa học
+  const handleEnroll = (e: React.MouseEvent, courseId: string) => {
+    e.preventDefault(); // Ngăn navigate khi click Enroll
+    e.stopPropagation();
+    enrollMutation.mutate(courseId);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-[1400px] px-4 py-8 md:px-6">
+        <h1 className="mb-2 text-3xl font-bold text-foreground">Chương trình học</h1>
+        <p className="mb-8 text-sm text-muted-foreground">Đang tải dữ liệu khóa học...</p>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-primary/60" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 py-8 md:px-6">
-      <h1 className="mb-2 text-3xl font-bold text-foreground">
-        Chương trình học
-      </h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-3xl font-bold text-foreground">Chương trình học</h1>
+        {/* Staff/Admin có link truy cập Studio */}
+        {isStaff && (
+          <a
+            href={config.studioBaseUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Quản lý trên Studio
+          </a>
+        )}
+      </div>
       <p className="mb-8 text-sm text-muted-foreground">
         Khám phá các khóa học và chương trình đào tạo tại L&A
       </p>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Current Course */}
-        <Link to="/courses/c1/lessons/l-m2-1">
-          <Card className="group overflow-hidden border-border shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
-            <div
-              className={cn(
-                "flex h-48 items-center justify-center",
-                colorStyle === "gradient"
-                  ? "accent-surface-gradient"
-                  : "bg-accent"
-              )}
-            >
-              <BookOpen className="h-12 w-12 text-white/50" />
-            </div>
-            <CardContent className="p-5">
-              <Badge
-                variant="outline"
-                className="mb-2 border-success/30 bg-success/10 text-success"
-              >
-                Đang học
-              </Badge>
-              <h3 className="text-lg font-bold text-foreground group-hover:text-accent transition-colors">
-                {mockCourse.title}
-              </h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {mockCourse.modules.length} modules • 12 bài học
-              </p>
-              <div className="mt-3 flex items-center gap-1 text-sm text-accent">
-                Tiếp tục
-                <ArrowRight className="h-3.5 w-3.5" />
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
+      {/* Trạng thái trống */}
+      {courses.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="rounded-2xl border border-dashed border-border bg-card/50 p-16 text-center"
+        >
+          <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+            <BookOpen className="h-10 w-10 text-primary/40" />
+          </div>
+          <h3 className="mb-2 text-lg font-bold text-foreground">Chưa có khóa học nào</h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Hệ thống chưa có khóa học nào được tạo. Vui lòng liên hệ admin hoặc quay lại sau.
+          </p>
+        </motion.div>
+      )}
 
-        {/* Placeholder future courses */}
-        {["Kỹ năng giao tiếp chuyên nghiệp", "An toàn lao động", "Quản lý thời gian hiệu quả"].map(
-          (title, i) => (
-            <Card key={i} className="overflow-hidden border-border shadow-sm opacity-60">
-              <div className="flex h-48 items-center justify-center bg-muted">
-                <BookOpen className="h-12 w-12 text-muted-foreground/30" />
-              </div>
-              <CardContent className="p-5">
-                <Badge variant="outline" className="mb-2">
-                  Sắp ra mắt
-                </Badge>
-                <h3 className="text-lg font-bold text-foreground">{title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Coming soon
-                </p>
-              </CardContent>
-            </Card>
-          )
-        )}
-      </div>
+      {/* Danh sách khóa học */}
+      {courses.length > 0 && (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {courses.map((course, index) => {
+            const isEnrolled = enrolledIds.has(course.id);
+            const cert = certMap.get(course.id);
+            const imageUrl = course.media?.image?.large || course.media?.course_image?.uri;
+
+            return (
+              <motion.div
+                key={course.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 * index }}
+              >
+                <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`}>
+                  <Card className="group overflow-hidden border-border shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
+                    {/* Ảnh bìa */}
+                    <div
+                      className={cn(
+                        "flex h-48 items-center justify-center relative overflow-hidden",
+                        colorStyle === "gradient"
+                          ? "accent-surface-gradient"
+                          : "bg-accent"
+                      )}
+                    >
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl.startsWith("http") ? imageUrl : `${config.lmsBaseUrl}${imageUrl}`}
+                          alt={course.name}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            // Ảnh 404 → ẩn img, hiện icon fallback
+                            e.currentTarget.style.display = "none";
+                            e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                          }}
+                        />
+                      ) : null}
+                      <div className={cn("flex items-center justify-center", imageUrl ? "hidden" : "")}>
+                        <BookOpen className="h-12 w-12 text-white/50" />
+                      </div>
+
+                      {/* Badge chứng chỉ */}
+                      {cert && cert.is_passing && (
+                        <div className="absolute top-3 right-3">
+                          <Badge className="bg-warning text-warning-foreground font-bold text-[10px] gap-1">
+                            <Award className="h-3 w-3" />
+                            Đã đạt
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+
+                    <CardContent className="p-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            isEnrolled
+                              ? "border-success/30 bg-success/10 text-success"
+                              : "border-primary/30 bg-primary/10 text-primary"
+                          )}
+                        >
+                          {isEnrolled ? "Đang học" : "Khóa học"}
+                        </Badge>
+                      </div>
+                      <h3 className="text-lg font-bold text-foreground group-hover:text-accent transition-colors">
+                        {course.name}
+                      </h3>
+                      <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                        {course.short_description || `${course.org} • ${course.pacing === "self" ? "Tự học" : "Có hướng dẫn"}`}
+                      </p>
+
+                      {/* Hành động */}
+                      <div className="mt-3 flex items-center justify-between">
+                        {isEnrolled ? (
+                          <span className="flex items-center gap-1 text-sm font-semibold text-accent">
+                            Tiếp tục
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </span>
+                        ) : (
+                          <button
+                            onClick={(e) => handleEnroll(e, course.id)}
+                            disabled={enrollMutation.isPending}
+                            className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5"
+                          >
+                            {enrollMutation.isPending ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : null}
+                            Đăng ký
+                          </button>
+                        )}
+
+                        {/* Link xem chứng chỉ */}
+                        {cert && cert.download_url && (
+                          <a
+                            href={cert.download_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-1 text-xs font-medium text-warning hover:text-warning/80 transition-colors"
+                          >
+                            <Award className="h-3.5 w-3.5" />
+                            Chứng chỉ
+                          </a>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -31,9 +31,9 @@ import { cn } from "@/lib/utils";
 import logoImg from "@/assets/leandassociate.webp";
 
 const NAV_ITEMS = [
-  { label: "Khám phá", path: "/dashboard" },
+  { label: "Trang chủ", path: "/dashboard" },
+  { label: "Khám phá", path: "/explore" },
   { label: "Chương trình học", path: "/courses" },
-  { label: "Thư viện", path: "/library" },
 ];
 
 export function Header() {
@@ -77,8 +77,8 @@ export function Header() {
           {NAV_ITEMS.map((item) => {
             const isActive =
               location.pathname === item.path ||
-              (item.path === "/courses" &&
-                location.pathname.startsWith("/courses"));
+              (item.path !== "/" &&
+                location.pathname.startsWith(item.path));
             return (
               <Link
                 key={item.path}

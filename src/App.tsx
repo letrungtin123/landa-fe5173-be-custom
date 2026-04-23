@@ -1,3 +1,10 @@
+// ============================================================
+// App — Root Application Component
+// Tất cả role (learner, mentor, admin) đều vào FE học tập
+// Staff/Admin có thể truy cập Studio/Admin qua link riêng
+// ============================================================
+
+import React, { Suspense } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -7,25 +14,60 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { DashboardPage } from "@/pages/DashboardPage";
-import { LessonDetailPage } from "@/pages/LessonDetailPage";
-import { CoursesPage } from "@/pages/CoursesPage";
-import { LibraryPage } from "@/pages/LibraryPage";
-import { ExplorePage } from "@/pages/ExplorePage";
-import { LoginPage } from "@/pages/LoginPage";
 import { CourseLayout } from "@/components/layout/CourseLayout";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
+// ── Lazy-load pages — giảm initial bundle size ──
+const DashboardPage = React.lazy(() =>
+  import("@/pages/DashboardPage").then((m) => ({ default: m.DashboardPage }))
+);
+const CoursesPage = React.lazy(() =>
+  import("@/pages/CoursesPage").then((m) => ({ default: m.CoursesPage }))
+);
+const ExplorePage = React.lazy(() =>
+  import("@/pages/ExplorePage").then((m) => ({ default: m.ExplorePage }))
+);
+const LessonDetailPage = React.lazy(() =>
+  import("@/pages/LessonDetailPage").then((m) => ({
+    default: m.LessonDetailPage,
+  }))
+);
+const LoginPage = React.lazy(() =>
+  import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage }))
+);
+
+// ── React Query config ──
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,
+      staleTime: 5 * 60 * 1000, // 5 phút
+      gcTime: 10 * 60 * 1000, // Dọn cache sau 10 phút không sử dụng
       retry: 1,
+      refetchOnWindowFocus: false, // Tránh refetch liên tục khi đổi tab
+    },
+    mutations: {
+      retry: false, // Mutation không tự retry
     },
   },
 });
 
-/** Redirects to /login when user is not authenticated */
+// ── Loading fallback cho lazy-load ──
+function PageLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
+        <p className="text-sm text-muted-foreground">Đang tải...</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Route bảo vệ — chuyển hướng đến /login nếu chưa đăng nhập.
+ * Tất cả role (learner, mentor, staff, admin) đều truy cập được FE.
+ */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   if (!isAuthenticated) return <Navigate to="/login" replace />;
@@ -34,42 +76,54 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public route */}
-            <Route path="/login" element={<LoginPage />} />
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <BrowserRouter>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                {/* Route công khai */}
+                <Route path="/login" element={<LoginPage />} />
 
-            {/* Protected routes */}
-            <Route
-              element={
-                <ProtectedRoute>
-                  <MainLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/explore" element={<ExplorePage />} />
-
-              <Route path="/courses" element={<CourseLayout />}>
-                <Route index element={<CoursesPage />} />
+                {/* Routes bảo vệ — yêu cầu đăng nhập */}
                 <Route
-                  path=":courseId/lessons/:lessonId"
-                  element={<LessonDetailPage />}
-                />
-              </Route>
+                  element={
+                    <ProtectedRoute>
+                      <MainLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route
+                    path="/"
+                    element={<Navigate to="/dashboard" replace />}
+                  />
+                  <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/explore" element={<ExplorePage />} />
 
-              <Route path="/library" element={<LibraryPage />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </ThemeProvider>
-    </QueryClientProvider>
+                  <Route path="/courses" element={<CourseLayout />}>
+                    <Route index element={<CoursesPage />} />
+                    <Route
+                      path=":courseId/lessons/:lessonId"
+                      element={<LessonDetailPage />}
+                    />
+                  </Route>
+
+                  {/* Fallback — redirect về dashboard */}
+                  <Route
+                    path="*"
+                    element={<Navigate to="/dashboard" replace />}
+                  />
+                </Route>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
 export default App;
 
+// Export queryClient để logout có thể clear cache
+export { queryClient };

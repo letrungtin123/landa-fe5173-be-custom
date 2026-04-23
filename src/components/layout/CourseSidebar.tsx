@@ -1,14 +1,15 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, X } from "lucide-react";
+import { CheckCircle2, X, Loader2, BookOpen } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
-import { mockCourse } from "@/data/mock";
+import { useCourseStructure } from "@/hooks/useCourses";
 
 export function CourseSidebar() {
   const navigate = useNavigate();
+  const { courseId } = useParams();
   const {
     currentModuleId,
     currentLessonId,
@@ -17,76 +18,99 @@ export function CourseSidebar() {
     setSidebarOpen,
   } = useAppStore();
 
-
+  // Use real course structure from API
+  const { data: course, isLoading } = useCourseStructure(courseId || "");
 
   const handleLessonClick = (moduleId: string, lessonId: string) => {
     setCurrentLesson(moduleId, lessonId);
-    navigate(`/courses/c1/lessons/${lessonId}`);
+    navigate(`/courses/${encodeURIComponent(courseId || "c1")}/lessons/${lessonId}`);
     setSidebarOpen(false);
   };
 
   const sidebarContent = (
     <ScrollArea className="h-full">
       <div className="py-5">
-        {/* Course Title */}
-        <div className="px-5 mb-6">
-          <h2 className="mb-4 text-[19px] font-bold text-foreground">
-            {mockCourse.title}
-          </h2>
-          <p className="text-[13px] font-bold text-primary">
-            Nội dung khoá học
-          </p>
-        </div>
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-primary/50" />
+          </div>
+        )}
 
-        {/* Modules */}
-        <div className="flex flex-col">
-          {mockCourse.modules.map((module) => {
-            const isActiveModule = module.id === currentModuleId;
-            
-            return (
-              <div key={module.id} className="mb-4">
-                {/* Module Header */}
-                <div className={cn(
-                  "px-5 py-3 mb-2 flex items-center justify-between",
-                  isActiveModule && "bg-primary/5 dark:bg-primary/10 border-l-4 border-primary"
-                )}>
-                  <p className={cn(
-                    "text-[14px] font-bold",
-                    isActiveModule ? "text-primary" : "text-muted-foreground"
-                  )}>
-                    {module.title}
-                  </p>
-                  {module.completed && (
-                    <CheckCircle2 className="h-4 w-4 text-success" fill="currentColor" opacity={0.2} stroke="white" strokeWidth={2} />
-                  )}
-                </div>
+        {/* Empty State */}
+        {!isLoading && !course && (
+          <div className="flex flex-col items-center px-5 py-8 text-center">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <BookOpen className="h-6 w-6 text-muted-foreground/50" />
+            </div>
+            <p className="text-sm text-muted-foreground">Không tìm thấy nội dung khóa học</p>
+          </div>
+        )}
 
-                {/* Lessons List */}
-                <div className="flex flex-col">
-                  {module.lessons.map((lesson) => {
-                    const isActive = lesson.id === currentLessonId;
-                    return (
-                      <button
-                        key={lesson.id}
-                        onClick={() => handleLessonClick(module.id, lesson.id)}
-                        className={cn(
-                          "flex w-full text-left transition-colors py-2.5 pl-[38px] pr-5",
-                          isActive
-                            ? "text-primary font-semibold"
-                            : "text-muted-foreground font-medium hover:text-foreground"
-                        )}
-                      >
-                        <span className="text-[14px] leading-snug">
-                          {lesson.title}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {/* Course Content */}
+        {course && (
+          <>
+            {/* Course Title */}
+            <div className="px-5 mb-6">
+              <h2 className="mb-4 text-[19px] font-bold text-foreground">
+                {course.title}
+              </h2>
+              <p className="text-[13px] font-bold text-primary">
+                Nội dung khoá học
+              </p>
+            </div>
+
+            {/* Modules */}
+            <div className="flex flex-col">
+              {course.modules.map((module) => {
+                const isActiveModule = module.id === currentModuleId;
+                
+                return (
+                  <div key={module.id} className="mb-4">
+                    {/* Module Header */}
+                    <div className={cn(
+                      "px-5 py-3 mb-2 flex items-center justify-between",
+                      isActiveModule && "bg-primary/5 dark:bg-primary/10 border-l-4 border-primary"
+                    )}>
+                      <p className={cn(
+                        "text-[14px] font-bold",
+                        isActiveModule ? "text-primary" : "text-muted-foreground"
+                      )}>
+                        {module.title}
+                      </p>
+                      {module.completed && (
+                        <CheckCircle2 className="h-4 w-4 text-success" fill="currentColor" opacity={0.2} stroke="white" strokeWidth={2} />
+                      )}
+                    </div>
+
+                    {/* Lessons List */}
+                    <div className="flex flex-col">
+                      {module.lessons.map((lesson) => {
+                        const isActive = lesson.id === currentLessonId;
+                        return (
+                          <button
+                            key={lesson.id}
+                            onClick={() => handleLessonClick(module.id, lesson.id)}
+                            className={cn(
+                              "flex w-full text-left transition-colors py-2.5 pl-[38px] pr-5",
+                              isActive
+                                ? "text-primary font-semibold"
+                                : "text-muted-foreground font-medium hover:text-foreground"
+                            )}
+                          >
+                            <span className="text-[14px] leading-snug">
+                              {lesson.title}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     </ScrollArea>
   );
