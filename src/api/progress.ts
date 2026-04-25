@@ -1,31 +1,66 @@
 // ============================================================
 // Progress & Completion API
+//
+// Open edX completion tracking:
+// - Completion chỉ áp dụng cho LEAF blocks (html, video, problem)
+// - Sequential/Chapter KHÔNG có completion riêng
+// - Phải mark completion cho từng leaf block riêng
+// - POST /api/completion/v1/completion-batch hỗ trợ batch update
 // ============================================================
 
 import { apiClient } from "./client";
-import type { CourseCompletionResponse, CourseGradeResponse } from "./types";
+import type { CourseGradeResponse } from "./types";
 
 /**
- * Get overall completion for a course (0.0 → 1.0).
+ * Mark một block hoàn thành.
+ * Dùng cho single block (backward compat).
  */
-export async function getCourseCompletion(
-  courseId: string
-): Promise<CourseCompletionResponse> {
-  const { data } = await apiClient.get<CourseCompletionResponse>(
-    `/api/completion/v1/course-completion/${encodeURIComponent(courseId)}/`
+export async function markBlockComplete(
+  username: string,
+  courseId: string,
+  usageKey: string
+): Promise<unknown> {
+  const { data } = await apiClient.post(
+    "/api/completion/v1/completion-batch",
+    {
+      username,
+      course_key: courseId,
+      blocks: {
+        [usageKey]: 1.0,
+      },
+    }
   );
   return data;
 }
 
 /**
- * Mark a block/subsection as completed.
+ * Mark nhiều blocks hoàn thành cùng lúc (batch).
+ *
+ * Dùng khi user click "Hoàn thành" cho lesson (sequential) chỉ có text/video:
+ * - Lấy tất cả leaf block IDs (html, video) trong lesson
+ * - Gửi 1 batch request thay vì N requests
+ *
+ * Problem blocks KHÔNG cần gọi hàm này — chúng tự mark completion
+ * khi user submit đáp án đúng qua xmodule_handler.
  */
-export async function markBlockComplete(usageKey: string): Promise<unknown> {
+export async function markBlocksComplete(
+  username: string,
+  courseId: string,
+  blockIds: string[]
+): Promise<unknown> {
+  if (blockIds.length === 0) return null;
+
+  const blocksMap: Record<string, number> = {};
+  for (const id of blockIds) {
+    blocksMap[id] = 1.0;
+  }
+
   const { data } = await apiClient.post(
-    "/api/completion/v1/subsection-completion/",
+    "/api/completion/v1/completion-batch",
     {
-      usage_key: usageKey,
-      completion: 1.0,
+      username,
+      course_key: courseId,
+      blocks: blocksMap,
     }
   );
   return data;

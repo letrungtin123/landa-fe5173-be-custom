@@ -1,17 +1,17 @@
 // ============================================================
 // useLessonDetail Hook — Giải mã nội dung bài học từ course blocks
-// Sequential → Vertical → Components (video/html/problem)
+// Sequential → Vertical(s) → Components (video/html/problem)
+// Mỗi Vertical = 1 Unit (trang) riêng biệt
 // ============================================================
 
 import { useParams } from "react-router-dom";
 import { useCourseBlocksRaw } from "@/hooks/useCourses";
-import type { LessonDetail } from "@/data/types";
+import type { LessonDetail, UnitDetail, UnitComponent } from "@/data/types";
 import type { Block, VideoBlockData } from "@/api/types";
 
 /**
  * Hook lấy chi tiết bài học từ cấu trúc blocks của course.
- * Cấu trúc Open edX: sequential → vertical(s) → component(s)
- * FE hiển thị nội dung từ components (video, html, problem).
+ * Trả về mảng `units` (Verticals) giữ nguyên thứ tự từ Studio.
  */
 export function useLessonDetail(lessonId: string) {
   const { courseId } = useParams();
@@ -24,10 +24,13 @@ export function useLessonDetail(lessonId: string) {
     const sequentialBlock = blocks[lessonId];
 
     if (sequentialBlock) {
-      // Tìm tất cả components bên trong sequential → vertical → components
-      const allComponents = getAllComponents(sequentialBlock, blocks);
+      // Lấy danh sách Units (Verticals) theo đúng thứ tự children
+      const units = buildUnits(sequentialBlock, blocks);
 
-      // Xác định loại bài học từ components
+      // Backward-compat: flatten tất cả components để lấy legacy fields
+      const allComponents = units.flatMap((u) => u.components);
+
+      // Xác định loại bài học chung (dựa trên component đầu tiên thấy)
       const type = determineLessonType(allComponents);
 
       // Tìm chapter cha để lấy module tag
@@ -37,38 +40,13 @@ export function useLessonDetail(lessonId: string) {
         blocksData.root
       );
 
-      // Trích xuất video data
-      const videoBlock = allComponents.find((b) => b.type === "video");
-      const videoData = videoBlock?.student_view_data as VideoBlockData | undefined;
-
-      // Ưu tiên: encoded_videos → student_view_url của video block
-      let videoUrl: string | null = null;
-      if (videoData?.encoded_videos) {
-        videoUrl = resolveVideoUrl(videoData.encoded_videos);
-      }
-      // Fallback: nếu không có encoded_videos, dùng student_view_url
-      if (!videoUrl && videoBlock?.student_view_url) {
-        videoUrl = videoBlock.student_view_url;
-      }
-      const videoDuration = videoData?.duration
-        ? formatDuration(videoData.duration)
-        : "";
-
-      // Trích xuất problem data
-      const problemBlock = allComponents.find((b) => b.type === "problem");
-
-      // Trích xuất html blocks
-      const htmlBlocks = allComponents.filter((b) => b.type === "html");
-      const htmlBlockIds = htmlBlocks.map((b) => b.id);
-
-      // Lấy nội dung HTML trực tiếp từ student_view_data (nếu có)
-      const htmlContent = htmlBlocks
-        .map((b) => {
-          const svd = b.student_view_data as Record<string, unknown> | undefined;
-          return (svd?.data as string) || "";
-        })
-        .filter(Boolean)
-        .join("\n");
+      // Legacy fields (cho các component chưa migrate)
+      const firstVideo = allComponents.find((c) => c.type === "video");
+      const firstProblem = allComponents.find((c) => c.type === "problem");
+      const htmlContents = allComponents
+        .filter((c) => c.type === "html")
+        .map((c) => c.htmlContent || "")
+        .filter(Boolean);
 
       lesson = {
         id: sequentialBlock.id,
@@ -77,20 +55,19 @@ export function useLessonDetail(lessonId: string) {
         lessonNumber,
         title: sequentialBlock.display_name || "Chưa có tiêu đề",
         videoThumbnail: null,
-        videoDuration,
+        videoDuration: firstVideo?.videoDuration || "",
         videoCurrentTime: "00:00",
         objectives: [],
         description: "",
         bulletPoints: [],
         mentors: [],
-        _videoUrl: videoUrl,
-        _problemUsageKey: problemBlock?.id || null,
-        _htmlBlocks: htmlBlockIds,
-        _htmlContent: htmlContent || null,
-        // Dùng student_view_url của HTML block đầu tiên (cho iframe fallback)
-        _studentViewUrl: htmlBlocks[0]?.student_view_url
-          || sequentialBlock.student_view_url
-          || null,
+        units,
+        // Legacy backward-compat
+        _videoUrl: firstVideo?.videoUrl || null,
+        _problemUsageKey: firstProblem?.problemUsageKey || null,
+        _htmlBlocks: allComponents.filter((c) => c.type === "html").map((c) => c.id),
+        _htmlContent: htmlContents.join("\n") || null,
+        _studentViewUrl: allComponents[0]?.studentViewUrl || sequentialBlock.student_view_url || null,
       };
     }
   }
@@ -101,39 +78,81 @@ export function useLessonDetail(lessonId: string) {
 // ── Helpers ──
 
 /**
- * Đi sâu từ sequential → vertical(s) → lấy tất cả components (video/html/problem).
+ * Xây dựng mảng UnitDetail từ sequential → vertical(s) → components.
+ * Giữ nguyên thứ tự children array từ Open edX.
  */
-function getAllComponents(
+function buildUnits(
   sequentialBlock: Block,
   blocks: Record<string, Block>
-): Block[] {
-  const components: Block[] = [];
-  const verticals = (sequentialBlock.children || [])
-    .map((id) => blocks[id])
-    .filter((b): b is Block => b != null && b.type === "vertical");
+): UnitDetail[] {
+  const verticalIds = sequentialBlock.children || [];
 
-  for (const vertical of verticals) {
-    const children = (vertical.children || [])
-      .map((id) => blocks[id])
-      .filter(Boolean);
-    components.push(...children);
-  }
+  return verticalIds
+    .map((vid) => blocks[vid])
+    .filter((b): b is Block => b != null && b.type === "vertical")
+    .map((vertical) => {
+      const componentIds = vertical.children || [];
+      const components: UnitComponent[] = componentIds
+        .map((cid) => blocks[cid])
+        .filter(Boolean)
+        .map((block) => buildComponent(block));
 
-  return components;
+      return {
+        id: vertical.id,
+        title: vertical.display_name || "",
+        components,
+      };
+    });
 }
 
 /**
- * Xác định loại bài học từ các components bên trong.
- * Ưu tiên: video → problem (quiz) → html (slide)
+ * Build 1 UnitComponent từ 1 Block (video/html/problem).
+ */
+function buildComponent(
+  block: Block,
+): UnitComponent {
+  const comp: UnitComponent = {
+    id: block.id,
+    type: block.type,
+    displayName: block.display_name || "",
+    studentViewUrl: block.student_view_url || null,
+  };
+
+  if (block.type === "video") {
+    const videoData = block.student_view_data as VideoBlockData | undefined;
+    let videoUrl: string | null = null;
+    if (videoData?.encoded_videos) {
+      videoUrl = resolveVideoUrl(videoData.encoded_videos);
+    }
+    if (!videoUrl && block.student_view_url) {
+      videoUrl = block.student_view_url;
+    }
+    comp.videoUrl = videoUrl;
+    comp.videoDuration = videoData?.duration ? formatDuration(videoData.duration) : "";
+  }
+
+  if (block.type === "html") {
+    const svd = block.student_view_data as Record<string, unknown> | undefined;
+    comp.htmlContent = (svd?.data as string) || (svd?.html as string) || null;
+  }
+
+  if (block.type === "problem") {
+    comp.problemUsageKey = block.id;
+  }
+
+  return comp;
+}
+
+/**
+ * Xác định loại bài học từ tất cả components.
  */
 function determineLessonType(
-  components: Block[]
+  components: UnitComponent[]
 ): "video" | "quiz" | "slide" {
   for (const c of components) {
     if (c.type === "video") return "video";
     if (c.type === "problem") return "quiz";
   }
-  // Nếu chỉ có html → hiển thị dạng slide
   if (components.some((c) => c.type === "html")) return "slide";
   return "video";
 }
@@ -149,7 +168,6 @@ function getModuleInfo(
   const rootBlock = blocks[rootId];
   if (!rootBlock?.children) return { moduleTag: "", lessonNumber: "" };
 
-  // Duyệt chapters để tìm chapter chứa sequential này
   for (let chIdx = 0; chIdx < rootBlock.children.length; chIdx++) {
     const chapter = blocks[rootBlock.children[chIdx]];
     if (!chapter?.children) continue;
@@ -176,8 +194,7 @@ function formatDuration(seconds: number): string {
 }
 
 /**
- * Chọn URL video tốt nhất theo thứ tự ưu tiên:
- * HLS → MP4 Desktop → WebM → Fallback → YouTube
+ * Chọn URL video tốt nhất.
  */
 function resolveVideoUrl(
   encoded: Record<string, { url: string; file_size?: number }>

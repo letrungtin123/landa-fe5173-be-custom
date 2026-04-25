@@ -4,7 +4,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getUserAccount } from "@/api/auth";
-import { getCourseCompletion } from "@/api/progress";
+import { useCourseCompletion } from "@/hooks/useProgress";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { transformUserAccount } from "@/transformers/userTransformer";
 import type { User } from "@/data/types";
@@ -24,12 +24,7 @@ export function useUser(courseId?: string) {
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  const completionQuery = useQuery({
-    queryKey: ["course-completion", courseId],
-    queryFn: () => getCourseCompletion(courseId!),
-    enabled: isAuthenticated && !!courseId,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  });
+  const { completionPercent } = useCourseCompletion(courseId);
 
   // Calculate streak from localStorage
   const streak = getStreak();
@@ -37,9 +32,7 @@ export function useUser(courseId?: string) {
   const user: User | undefined = accountQuery.data
     ? transformUserAccount(accountQuery.data, {
         streak,
-        overallProgress: completionQuery.data
-          ? Math.round(completionQuery.data.completion * 100)
-          : 0,
+        overallProgress: completionPercent || 0,
       })
     : undefined;
 

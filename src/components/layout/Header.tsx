@@ -31,9 +31,9 @@ import { cn } from "@/lib/utils";
 import logoImg from "@/assets/leandassociate.webp";
 
 const NAV_ITEMS = [
-  { label: "Trang chủ", path: "/dashboard" },
-  { label: "Khám phá", path: "/explore" },
-  { label: "Chương trình học", path: "/courses" },
+  { label: "Khám phá", path: "/dashboard" },
+  { label: "Chương trình học", path: "/explore" },
+  { label: "Thư viện", path: "/library" },
 ];
 
 export function Header() {

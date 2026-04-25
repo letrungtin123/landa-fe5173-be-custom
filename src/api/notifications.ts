@@ -12,11 +12,19 @@ export async function getNotifications(params?: {
   page?: number;
   page_size?: number;
 }): Promise<NotificationResponse> {
-  const { data } = await apiClient.get<NotificationResponse>(
-    "/api/notifications/v1/",
-    { params }
-  );
-  return data;
+  try {
+    const { data } = await apiClient.get<NotificationResponse>(
+      "/api/notifications/v1/",
+      { params }
+    );
+    return data;
+  } catch (error: any) {
+    // Gracefully handle missing notifications API on Open edX (e.g. 404)
+    if (error.response?.status === 404) {
+      return { count: 0, next: null, results: [] };
+    }
+    throw error;
+  }
 }
 
 /**

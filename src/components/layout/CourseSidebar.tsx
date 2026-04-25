@@ -1,11 +1,13 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, X, Loader2, BookOpen } from "lucide-react";
+import { CheckCircle2, X, BookOpen } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
 import { useCourseStructure } from "@/hooks/useCourses";
+
 
 export function CourseSidebar() {
   const navigate = useNavigate();
@@ -32,8 +34,26 @@ export function CourseSidebar() {
       <div className="py-5">
         {/* Loading */}
         {isLoading && (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-primary/50" />
+          <div className="flex flex-col gap-5 px-5 py-4">
+            <div className="space-y-3">
+              <Skeleton className="h-6 w-3/4 rounded-md" />
+              <Skeleton className="h-3 w-1/2 rounded-md" />
+            </div>
+            
+            <div className="space-y-6 mt-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="space-y-3">
+                  <div className="flex gap-3 items-center">
+                    <Skeleton className="h-4 w-4 rounded-full" />
+                    <Skeleton className="h-4 w-full rounded-md" />
+                  </div>
+                  <div className="flex flex-col gap-2 pl-7 mt-2">
+                    <Skeleton className="h-3 w-5/6 rounded-md" />
+                    <Skeleton className="h-3 w-4/5 rounded-md" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -51,9 +71,9 @@ export function CourseSidebar() {
         {course && (
           <>
             {/* Course Title */}
-            <div className="px-5 mb-6">
-              <h2 className="mb-4 text-[19px] font-bold text-foreground">
-                {course.title}
+            <div className="px-5 mb-5 mt-3">
+              <h2 className="mb-2 text-[18px] font-extrabold text-foreground tracking-tight leading-tight">
+                {course.title || "L&A Onboarding 2026"}
               </h2>
               <p className="text-[13px] font-bold text-primary">
                 Nội dung khoá học
@@ -61,30 +81,40 @@ export function CourseSidebar() {
             </div>
 
             {/* Modules */}
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-1">
               {course.modules.map((module) => {
                 const isActiveModule = module.id === currentModuleId;
+                const completedLessons = module.lessons.filter(l => l.completed).length;
+                const totalLessons = module.lessons.length;
                 
                 return (
-                  <div key={module.id} className="mb-4">
+                  <div key={module.id} className="mb-3">
                     {/* Module Header */}
                     <div className={cn(
-                      "px-5 py-3 mb-2 flex items-center justify-between",
-                      isActiveModule && "bg-primary/5 dark:bg-primary/10 border-l-4 border-primary"
+                      "py-2 mb-1 border-l-4",
+                      isActiveModule ? "border-primary bg-primary/5" : "border-transparent"
                     )}>
-                      <p className={cn(
-                        "text-[14px] font-bold",
-                        isActiveModule ? "text-primary" : "text-muted-foreground"
-                      )}>
-                        {module.title}
-                      </p>
-                      {module.completed && (
-                        <CheckCircle2 className="h-4 w-4 text-success" fill="currentColor" opacity={0.2} stroke="white" strokeWidth={2} />
-                      )}
+                      <div className="flex-1 min-w-0 pl-[16px] pr-5">
+                        <div className="flex items-start gap-1.5">
+                          <p className={cn(
+                            "text-[14px] font-bold leading-snug flex-1",
+                            isActiveModule ? "text-primary" : "text-muted-foreground"
+                          )}>
+                            {module.title}
+                          </p>
+                          {module.completed && (
+                            <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" fill="currentColor" stroke="white" strokeWidth={2} />
+                          )}
+                        </div>
+                        {/* Subtext: progress count + duration nếu có */}
+                        <p className="text-[10px] font-semibold text-muted-foreground mt-1 tracking-wider uppercase">
+                          {completedLessons}/{totalLessons}{module.duration ? ` | ${module.duration}` : ""}
+                        </p>
+                      </div>
                     </div>
 
                     {/* Lessons List */}
-                    <div className="flex flex-col">
+                    <div className="flex flex-col gap-0.5">
                       {module.lessons.map((lesson) => {
                         const isActive = lesson.id === currentLessonId;
                         return (
@@ -92,13 +122,21 @@ export function CourseSidebar() {
                             key={lesson.id}
                             onClick={() => handleLessonClick(module.id, lesson.id)}
                             className={cn(
-                              "flex w-full text-left transition-colors py-2.5 pl-[38px] pr-5",
+                              "flex w-full items-center gap-2 text-left py-1.5 pl-[20px] pr-5 transition-all",
                               isActive
-                                ? "text-primary font-semibold"
-                                : "text-muted-foreground font-medium hover:text-foreground"
+                                ? "text-primary font-bold bg-primary/5"
+                                : "text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium"
                             )}
                           >
-                            <span className="text-[14px] leading-snug">
+                            {/* Completion indicator */}
+                            <span className="ml-[12px] shrink-0">
+                              {lesson.completed ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-success" fill="currentColor" stroke="white" strokeWidth={2} />
+                              ) : (
+                                <span className="inline-block h-3.5 w-3.5 rounded-full border-2 border-muted-foreground/30" />
+                              )}
+                            </span>
+                            <span className="text-[13px] leading-snug">
                               {lesson.title}
                             </span>
                           </button>

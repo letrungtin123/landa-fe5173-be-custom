@@ -62,6 +62,8 @@ export interface CourseInfo {
   number: string;
   org: string;
   short_description: string;
+  overview: string;               // Full HTML overview from course about page
+  course_handouts: string | null;  // URL to course handouts page
   start: string | null;
   end: string | null;
   enrollment_start: string | null;

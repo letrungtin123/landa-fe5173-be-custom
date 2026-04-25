@@ -20,13 +20,31 @@ export const apiClient = axios.create({
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
-// ── Request Interceptor — gắn token vào header ──
+// ── Helper: Đọc csrftoken từ cookie ──
+// Open edX set csrftoken cookie (không HttpOnly) → JS đọc được
+function getCsrfToken(): string {
+  const match = document.cookie.match(/csrftoken=([^;]+)/);
+  return match ? match[1] : "";
+}
+
+// ── Request Interceptor — gắn Bearer token + CSRF token ──
 apiClient.interceptors.request.use(
   (req) => {
+    // Bearer auth
     const { accessToken, tokenType } = useAuthStore.getState();
     if (accessToken) {
       req.headers.Authorization = `${tokenType} ${accessToken}`;
     }
+
+    // CSRF token cho POST/PUT/PATCH/DELETE
+    // Django yêu cầu X-CSRFToken header khớp với csrftoken cookie
+    if (req.method && req.method !== "get") {
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        req.headers["X-CSRFToken"] = csrfToken;
+      }
+    }
+
     return req;
   },
   (error) => Promise.reject(error)

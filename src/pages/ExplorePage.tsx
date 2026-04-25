@@ -8,10 +8,13 @@ import { Search, Compass, Loader2, BookOpen, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { config } from "@/config/env";
 import { cn } from "@/lib/utils";
 import { useCourses, useMyEnrollments } from "@/hooks/useCourses";
+import { useCourseCompletion } from "@/hooks/useProgress";
 
 export function ExplorePage() {
   const { colorStyle } = useThemeStore();
@@ -87,8 +90,24 @@ export function ExplorePage() {
 
       {/* Đang tải */}
       {isLoading && (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary/60" />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i} className="h-full flex flex-col overflow-hidden border-border shadow-sm">
+              <Skeleton className="h-48 w-full rounded-none" />
+              <CardContent className="p-5 flex flex-col flex-1">
+                <div className="flex gap-2 mb-3">
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+                <Skeleton className="h-6 w-3/4 mb-3" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-2/3" />
+                <div className="mt-auto pt-4 flex items-center justify-between">
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 
@@ -112,74 +131,122 @@ export function ExplorePage() {
       {/* Danh sách khóa học */}
       {!isLoading && courses.length > 0 && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {courses.map((course) => {
-            const isEnrolled = enrolledIds.has(course.id);
-            const imageUrl = course.media?.image?.large || course.media?.course_image?.uri;
-
-            return (
-              <Link
-                key={course.id}
-                to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`}
-              >
-                <Card className="group h-full overflow-hidden border-border shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
-                  {/* Ảnh bìa khóa học */}
-                  <div
-                    className={cn(
-                      "flex h-48 items-center justify-center relative overflow-hidden",
-                      colorStyle === "gradient"
-                        ? "accent-surface-gradient"
-                        : "bg-accent"
-                    )}
-                  >
-                    {imageUrl ? (
-                      <img
-                        src={imageUrl.startsWith("http") ? imageUrl : `${config.lmsBaseUrl}${imageUrl}`}
-                        alt={course.name}
-                        className="h-full w-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                          e.currentTarget.nextElementSibling?.classList.remove("hidden");
-                        }}
-                      />
-                    ) : null}
-                    <div className={cn("flex items-center justify-center", imageUrl ? "hidden" : "")}>
-                      <BookOpen className="h-12 w-12 text-white/50" />
-                    </div>
-                  </div>
-
-                  <CardContent className="p-5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          isEnrolled
-                            ? "border-success/30 bg-success/10 text-success"
-                            : "border-primary/30 bg-primary/10 text-primary"
-                        )}
-                      >
-                        {isEnrolled ? "Đang học" : "Khóa học"}
-                      </Badge>
-                      <Badge variant="outline" className="text-[10px]">
-                        {course.pacing === "self" ? "Tự học" : "Có hướng dẫn"}
-                      </Badge>
-                    </div>
-                    <h3 className="mb-1 text-lg font-bold text-foreground group-hover:text-accent transition-colors">
-                      {course.name}
-                    </h3>
-                    <p className="mb-3 text-sm text-muted-foreground line-clamp-2">
-                      {course.short_description || `${course.org}`}
-                    </p>
-                    <div className="flex items-center gap-1 text-sm font-semibold text-accent">
-                      {isEnrolled ? "Tiếp tục" : "Xem chi tiết"}
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
+          {courses.map((course) => (
+            <ExploreCourseCard
+              key={course.id}
+              course={course}
+              isEnrolled={enrolledIds.has(course.id)}
+              colorStyle={colorStyle}
+            />
+          ))}
         </div>
       )}
     </div>
+  );
+}
+
+// ── Component con để có thể dùng Hook riêng cho từng card ──
+function ExploreCourseCard({
+  course,
+  isEnrolled,
+  colorStyle,
+}: {
+  course: any;
+  isEnrolled: boolean;
+  colorStyle: string;
+}) {
+  const imageUrl =
+    course.media?.image?.large || course.media?.course_image?.uri;
+
+  // Chỉ gọi API check completion nếu user ĐÃ enroll khóa này
+  const { completionPercent } = useCourseCompletion(
+    isEnrolled ? course.id : undefined
+  );
+
+  return (
+    <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`}>
+      <Card className="group h-full flex flex-col overflow-hidden border-border shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
+        {/* Ảnh bìa khóa học */}
+        <div
+          className={cn(
+            "flex h-48 items-center justify-center relative overflow-hidden shrink-0",
+            colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent"
+          )}
+        >
+          {imageUrl ? (
+            <img
+              src={
+                imageUrl.startsWith("http")
+                  ? imageUrl
+                  : `${config.lmsBaseUrl}${imageUrl}`
+              }
+              alt={course.name}
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+                e.currentTarget.nextElementSibling?.classList.remove("hidden");
+              }}
+            />
+          ) : null}
+          <div
+            className={cn(
+              "flex items-center justify-center absolute inset-0",
+              imageUrl ? "hidden" : ""
+            )}
+          >
+            <BookOpen className="h-12 w-12 text-white/50" />
+          </div>
+        </div>
+
+        <CardContent className="p-5 flex flex-col flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <Badge
+              variant="outline"
+              className={cn(
+                isEnrolled
+                  ? "border-success/30 bg-success/10 text-success"
+                  : "border-primary/30 bg-primary/10 text-primary"
+              )}
+            >
+              {isEnrolled ? "Đang học" : "Khóa học"}
+            </Badge>
+            <Badge variant="outline" className="text-[10px]">
+              {course.pacing === "self" ? "Tự học" : "Có hướng dẫn"}
+            </Badge>
+          </div>
+          <h3 className="mb-1 text-lg font-bold text-foreground group-hover:text-accent transition-colors">
+            {course.name}
+          </h3>
+          <p className="mb-3 text-sm text-muted-foreground line-clamp-2">
+            {course.short_description || `${course.org}`}
+          </p>
+
+          <div className="mt-auto pt-4">
+            {isEnrolled && typeof completionPercent === "number" && (
+              <div className="mb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    Tiến độ
+                  </span>
+                  <span className="text-[11px] font-bold text-success">
+                    {completionPercent}%
+                  </span>
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-success transition-[width] duration-500"
+                    style={{ width: `${completionPercent}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            <div className="flex items-center gap-1 text-sm font-semibold text-accent">
+              {isEnrolled ? "Tiếp tục học" : "Xem chi tiết"}
+              <ArrowRight className="h-3.5 w-3.5" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

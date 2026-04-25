@@ -43,7 +43,8 @@ export async function getCourse(courseId: string): Promise<CourseInfo> {
  * - `requested_fields`: chứa `student_view_data` để include field đó trong response
  */
 export async function getCourseBlocks(
-  courseId: string
+  courseId: string,
+  username?: string
 ): Promise<BlocksResponse> {
   const { data } = await apiClient.get<BlocksResponse>(
     "/api/courses/v1/blocks/",
@@ -52,10 +53,11 @@ export async function getCourseBlocks(
         course_id: courseId,
         depth: "all",
         all_blocks: true,
+        // username is REQUIRED for completion field to return per-user data
+        ...(username ? { username } : {}),
         requested_fields:
           "children,display_name,type,graded,completion,student_view_url,student_view_data",
-        // CHỈ video — html gây 500 (bug Open edX: missing 'user' service)
-        student_view_data: "video",
+        student_view_data: "video,html",
       },
     }
   );

@@ -4,8 +4,8 @@
 // Course → Module → Lesson structure used by the FE.
 // ============================================================
 
-import type { BlocksResponse, Block } from "@/api/types";
-import type { Course, Module, Lesson, LessonDetail } from "@/data/types";
+import type { BlocksResponse, Block, VideoBlockData } from "@/api/types";
+import type { Course, Module, Lesson } from "@/data/types";
 
 /**
  * Transform the Open edX blocks response into the FE Course structure.
@@ -24,88 +24,48 @@ export function transformBlocksToCourse(data: BlocksResponse): Course {
   return {
     id: root,
     title: rootBlock.display_name,
-    modules: chapters.map((chapter, mIdx) => {
+    modules: chapters.map((chapter) => {
       const sequentials = getChildrenOfType(chapter, blocks, "sequential");
+
+      // Tính tổng duration (giây) từ tất cả video blocks trong chapter
+      const totalDurationSec = calcModuleDuration(chapter, blocks);
+
+      const lessons = sequentials.map((seq) => {
+        const lessonType = detectLessonType(seq, blocks);
+
+        // ── Tính completion từ LEAF blocks ──
+        // Open edX chỉ trả completion cho leaf blocks (html, video, problem),
+        // sequential/chapter luôn = 0. Phải aggregate từ children.
+        const seqCompletion = calcAggregatedCompletion(seq, blocks);
+
+        const lesson: Lesson = {
+          id: seq.id,
+          title: seq.display_name,
+          completed: seqCompletion >= 1.0,
+          type: lessonType,
+        };
+        return lesson;
+      });
+
+      // Tính progress % từ completion aggregate của các sequentials
+      const completedLessons = lessons.filter((l) => l.completed).length;
+      const totalLessons = lessons.length;
+      const progressPercent =
+        totalLessons > 0
+          ? Math.round((completedLessons / totalLessons) * 100)
+          : 0;
 
       const module: Module = {
         id: chapter.id,
         title: chapter.display_name,
-        completed: chapter.completion === 1.0,
-        lessons: sequentials.map((seq) => {
-          const lesson: Lesson = {
-            id: seq.id,
-            title: seq.display_name,
-            completed: seq.completion === 1.0,
-          };
-          return lesson;
-        }),
+        completed: progressPercent === 100,
+        progress: `${progressPercent}%`,
+        duration: totalDurationSec > 0 ? formatDuration(totalDurationSec) : undefined,
+        lessons,
       };
 
       return module;
     }),
-  };
-}
-
-/**
- * Transform a specific sequential block into a LessonDetail
- * for the LessonDetailPage.
- */
-export function transformBlockToLessonDetail(
-  sequentialBlock: Block,
-  blocks: Record<string, Block>,
-  moduleIndex: number,
-  lessonIndex: number,
-  totalLessons: number
-): LessonDetail {
-  // Walk into the sequential to find the actual content blocks
-  const verticals = getChildrenOfType(sequentialBlock, blocks, "vertical");
-  const allComponents: Block[] = [];
-  for (const v of verticals) {
-    const children = (v.children || [])
-      .map((id) => blocks[id])
-      .filter(Boolean);
-    allComponents.push(...children);
-  }
-
-  // Determine lesson type from content
-  const type = determineLessonType(allComponents);
-
-  // Extract video data if present
-  const videoBlock = allComponents.find((b) => b.type === "video");
-  const videoData = videoBlock?.student_view_data as
-    | { duration?: number; encoded_videos?: Record<string, { url: string }> }
-    | undefined;
-
-  // Extract quiz data if present (from problem block)
-  const problemBlock = allComponents.find((b) => b.type === "problem");
-
-  return {
-    id: sequentialBlock.id,
-    type,
-    moduleTag: `MODULE ${String(moduleIndex + 1).padStart(2, "0")}`,
-    lessonNumber: `Bài ${lessonIndex + 1} / ${totalLessons}`,
-    title: sequentialBlock.display_name,
-    videoThumbnail: null,
-    videoDuration: videoData?.duration
-      ? formatDuration(videoData.duration)
-      : "00:00",
-    videoCurrentTime: "00:00",
-    // Dữ liệu từ API — trả về rỗng, component tự xử lý empty state
-    objectives: [],
-    description: "",
-    bulletPoints: [],
-    mentors: [],
-    // Quiz: chỉ cung cấp usage key — QuizContent sẽ tải nội dung từ XBlock API
-    quizData: undefined,
-    // Slide: không hardcode ảnh — SlideContent sẽ tải HTML từ XBlock API
-    slideData: undefined,
-    // Trường bổ sung cho tích hợp API
-    _videoUrl: getVideoUrl(videoData),
-    _problemUsageKey: problemBlock?.id || null,
-    _htmlBlocks: allComponents
-      .filter((b) => b.type === "html")
-      .map((b) => b.id),
-    _studentViewUrl: sequentialBlock.student_view_url || null,
   };
 }
 
@@ -121,43 +81,112 @@ function getChildrenOfType(
     .filter((b): b is Block => b != null && b.type === type);
 }
 
-function determineLessonType(
-  components: Block[]
+/**
+ * Tính completion aggregate từ leaf blocks.
+ * Open edX blocks API chỉ trả completion cho leaf blocks (html, video, problem).
+ * Sequential/chapter luôn trả 0. Hàm này đệ quy tìm tất cả leaf blocks
+ * và tính trung bình completion.
+ *
+ * Một sequential "hoàn thành" khi tất cả leaf blocks đều completion = 1.0
+ */
+const LEAF_TYPES = new Set(["html", "video", "problem", "discussion", "done"]);
+
+function calcAggregatedCompletion(
+  block: Block,
+  blocks: Record<string, Block>
+): number {
+  // Nếu là leaf block → trả completion trực tiếp
+  if (LEAF_TYPES.has(block.type)) {
+    return block.completion ?? 0;
+  }
+
+  // Đệ quy tìm leaf blocks
+  const children = (block.children || [])
+    .map((id) => blocks[id])
+    .filter(Boolean);
+
+  if (children.length === 0) {
+    return block.completion ?? 0;
+  }
+
+  const leafCompletions: number[] = [];
+  function collectLeaves(b: Block) {
+    if (LEAF_TYPES.has(b.type)) {
+      leafCompletions.push(b.completion ?? 0);
+    } else {
+      (b.children || []).forEach((childId) => {
+        const child = blocks[childId];
+        if (child) collectLeaves(child);
+      });
+    }
+  }
+  collectLeaves(block);
+
+  if (leafCompletions.length === 0) return 0;
+  return leafCompletions.reduce((a, b) => a + b, 0) / leafCompletions.length;
+}
+
+/**
+ * Tính tổng thời lượng video (giây) cho 1 chapter (module).
+ * Đi sâu: chapter → sequential → vertical → video blocks
+ */
+function calcModuleDuration(
+  chapter: Block,
+  blocks: Record<string, Block>
+): number {
+  let totalSeconds = 0;
+  const sequentials = getChildrenOfType(chapter, blocks, "sequential");
+
+  for (const seq of sequentials) {
+    const verticals = getChildrenOfType(seq, blocks, "vertical");
+    for (const v of verticals) {
+      const children = (v.children || [])
+        .map((id) => blocks[id])
+        .filter(Boolean);
+      for (const c of children) {
+        if (c.type === "video") {
+          const svd = c.student_view_data as VideoBlockData | undefined;
+          if (svd?.duration && svd.duration > 0) {
+            totalSeconds += svd.duration;
+          }
+        }
+      }
+    }
+  }
+
+  return totalSeconds;
+}
+
+/**
+ * Xác định loại bài học bằng cách chui vào vertical → components
+ */
+function detectLessonType(
+  sequential: Block,
+  blocks: Record<string, Block>
 ): "video" | "quiz" | "slide" {
-  for (const c of components) {
-    if (c.type === "problem") return "quiz";
-    if (c.type === "video") return "video";
+  const verticals = getChildrenOfType(sequential, blocks, "vertical");
+  for (const v of verticals) {
+    const children = (v.children || [])
+      .map((id) => blocks[id])
+      .filter(Boolean);
+    for (const c of children) {
+      if (c.type === "video") return "video";
+      if (c.type === "problem") return "quiz";
+    }
   }
   return "slide";
 }
 
+/**
+ * Format giây → HH:MM:SS hoặc MM:SS
+ */
 function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
-function getVideoUrl(
-  videoData:
-    | { encoded_videos?: Record<string, { url: string }> }
-    | undefined
-): string | null {
-  if (!videoData?.encoded_videos) return null;
-  // Prefer hls → desktop_mp4 → fallback → youtube
-  const priorities = [
-    "hls",
-    "desktop_mp4",
-    "desktop_webm",
-    "fallback",
-    "youtube",
-  ];
-  for (const key of priorities) {
-    if (videoData.encoded_videos[key]?.url) {
-      return videoData.encoded_videos[key].url;
-    }
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   }
-  // Return first available
-  const first = Object.values(videoData.encoded_videos)[0];
-  return first?.url || null;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 

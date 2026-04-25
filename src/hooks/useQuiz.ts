@@ -10,6 +10,7 @@ interface QuizResult {
   correct: boolean;
   score: number;
   message: string;
+  contents?: string;
 }
 
 /**
@@ -17,16 +18,9 @@ interface QuizResult {
  * Sau khi nộp thành công → invalidate progress queries.
  */
 export function useSubmitQuiz(usageKey: string) {
-  const qc = useQueryClient();
-
   return useMutation({
-    mutationFn: (answers: Record<string, string>) =>
+    mutationFn: (answers: Record<string, string | string[]>) =>
       submitProblemAnswer(usageKey, answers),
-    onSuccess: () => {
-      // Cập nhật lại tiến độ sau khi nộp bài
-      qc.invalidateQueries({ queryKey: ["course-completion"] });
-      qc.invalidateQueries({ queryKey: ["course-blocks"] });
-    },
   });
 }
 
@@ -36,20 +30,35 @@ export function useSubmitQuiz(usageKey: string) {
 export function parseQuizResult(
   response: Record<string, unknown>
 ): QuizResult {
-  const success = response.success !== undefined
-    ? Boolean(response.success)
-    : true;
-  const correct = Boolean(response.correct);
+  const contents = response.contents ? String(response.contents) : "";
+  const successVal = response.success;
+  
+  // Xác định chuẩn xác đúng/sai qua HTML response của edX
+  const isCorrectStatus = contents.includes('class="status correct"');
+  const isIncorrectStatus = contents.includes('class="status incorrect"');
+  
+  const scoreCorrect = typeof response.current_score === "number" && response.current_score > 0;
+  const correct = isCorrectStatus || (scoreCorrect && !isIncorrectStatus);
+  const success = successVal !== undefined && successVal !== false;
+
   const score = typeof response.current_score === "number"
     ? response.current_score
     : 0;
 
   let message = "Đã nộp bài!";
   if (correct) {
-    message = "🎉 Chính xác! Tuyệt vời!";
-  } else if (success) {
-    message = "❌ Chưa đúng. Hãy thử lại!";
+    message = `🎉 Chính xác! Tuyệt vời!`;
+  } else if (isIncorrectStatus || success) {
+    message = "Chưa đúng. Hãy thử lại!";
+  } else {
+    message = "Có lỗi xảy ra khi nộp bài.";
   }
 
-  return { success, correct, score, message };
+  return { 
+    success, 
+    correct, 
+    score, 
+    message,
+    contents: response.contents ? String(response.contents) : undefined
+  };
 }

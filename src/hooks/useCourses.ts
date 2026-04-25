@@ -65,12 +65,13 @@ export function useMyEnrollments() {
  */
 export function useCourseStructure(courseId: string) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const username = useAuthStore((s) => s.user?.username);
 
   return useQuery({
-    queryKey: ["course-blocks", courseId],
-    queryFn: () => getCourseBlocks(courseId),
+    queryKey: ["course-blocks", courseId, username],
+    queryFn: () => getCourseBlocks(courseId, username),
     enabled: isAuthenticated && !!courseId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes — shorter for fresh completion data
     select: (data) => transformBlocksToCourse(data),
   });
 }
@@ -80,12 +81,13 @@ export function useCourseStructure(courseId: string) {
  */
 export function useCourseBlocksRaw(courseId: string) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const username = useAuthStore((s) => s.user?.username);
 
   return useQuery({
-    queryKey: ["course-blocks", courseId],
-    queryFn: () => getCourseBlocks(courseId),
+    queryKey: ["course-blocks", courseId, username],
+    queryFn: () => getCourseBlocks(courseId, username),
     enabled: isAuthenticated && !!courseId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 }
 

@@ -1,46 +1,27 @@
 // ============================================================
 // SlideContent — Hiển thị nội dung HTML từ Open edX
-// Lấy HTML qua Courseware Sequence API (hoặc trực tiếp từ blocks)
+// Lấy HTML qua Studio (CMS) xblock API hoặc blocks API
 // ============================================================
 
 import { useEffect, useState } from "react";
 import DOMPurify from "dompurify";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
-import { getSequenceContent } from "@/api/blocks";
+import { Skeleton } from "@/components/ui/skeleton";
+import { apiClient } from "@/api/client";
 import type { LessonDetail } from "@/data/types";
 
 interface SlideContentProps {
   lesson: LessonDetail;
 }
 
-/**
- * Trích xuất nội dung text/html từ rendered content.
- * Courseware API trả full rendered HTML → parse lấy phần cần thiết.
- */
-function extractTextContent(html: string): string {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
 
-  // Tìm nội dung trong các wrapper phổ biến
-  const content =
-    doc.querySelector(".xblock-student_view") ||
-    doc.querySelector(".xblock") ||
-    doc.querySelector(".xmodule_display") ||
-    doc.querySelector("body");
-
-  return content?.innerHTML || html;
-}
 
 export function SlideContent({ lesson }: SlideContentProps) {
   const [htmlContent, setHtmlContent] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Ưu tiên: _htmlContent từ blocks API (nếu feature flag bật)
-  // Fallback: lấy qua Courseware Sequence API
   useEffect(() => {
-    // Nếu đã có HTML content từ blocks API → dùng luôn
+    // Ưu tiên 1: HTML từ blocks API (nếu feature flag bật)
     if (lesson._htmlContent) {
       setHtmlContent(
         DOMPurify.sanitize(lesson._htmlContent, {
@@ -51,52 +32,15 @@ export function SlideContent({ lesson }: SlideContentProps) {
       return;
     }
 
-    // Fallback: lấy qua Courseware Sequence API
-    if (!lesson.id) return;
+    // Ưu tiên 2: Lấy qua CMS API cho từng html block
+    const htmlBlockIds = lesson._htmlBlocks;
+    if (!htmlBlockIds || htmlBlockIds.length === 0) return;
 
-    setIsLoading(true);
-    setError(null);
+    // Với block HTML đã khắc phục được lỗi 500 trên server, 
+    // content gốc sẽ nằm trong lesson._htmlContent.
+    setIsLoading(false);
 
-    getSequenceContent(lesson.id)
-      .then((res) => {
-        // Gộp content từ tất cả items
-        const allHtml = res.items
-          ?.map((item) => extractTextContent(item.content || ""))
-          .join("\n") || "";
-
-        const clean = DOMPurify.sanitize(allHtml, {
-          ALLOWED_TAGS: [
-            "h1", "h2", "h3", "h4", "h5", "h6",
-            "p", "span", "div", "br", "hr",
-            "strong", "em", "b", "i", "u", "s",
-            "ul", "ol", "li",
-            "a", "img", "figure", "figcaption",
-            "table", "thead", "tbody", "tr", "th", "td",
-            "blockquote", "pre", "code",
-            "iframe",
-          ],
-          ALLOWED_ATTR: [
-            "href", "target", "rel", "src", "alt", "title",
-            "width", "height", "class", "style",
-            "colspan", "rowspan",
-            "allowfullscreen", "frameborder",
-          ],
-          FORBID_TAGS: ["script", "style", "form", "input", "textarea", "select"],
-          FORBID_ATTR: ["onerror", "onload", "onclick", "onmouseover"],
-          ADD_ATTR: ["target"],
-        });
-        setHtmlContent(clean);
-      })
-      .catch(() => {
-        setError("Không thể tải nội dung bài học.");
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, [lesson.id, lesson._htmlContent]);
-
-  // Vệ sinh nội dung cho trường hợp direct render
-  const cleanHtml = htmlContent;
+  }, [lesson.id, lesson._htmlContent, lesson._htmlBlocks]);
 
   return (
     <div className="flex min-h-full w-full flex-col">
@@ -118,23 +62,24 @@ export function SlideContent({ lesson }: SlideContentProps) {
       {/* Nội dung */}
       <div className="flex flex-1 items-start justify-center p-6 md:p-12">
         {isLoading && (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
+          <div className="w-full max-w-4xl space-y-4 py-8">
+            <Skeleton className="h-6 w-3/4 mb-8" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-4/5" />
           </div>
         )}
 
-        {error && !isLoading && (
-          <div className="w-full max-w-4xl rounded-2xl border border-destructive/20 bg-destructive/5 p-8 text-center">
-            <p className="text-sm text-destructive">{error}</p>
-          </div>
-        )}
-
-        {cleanHtml && !isLoading ? (
+        {htmlContent && !isLoading ? (
           <div
             className="prose prose-slate dark:prose-invert max-w-4xl w-full"
-            dangerouslySetInnerHTML={{ __html: cleanHtml }}
+            dangerouslySetInnerHTML={{ __html: htmlContent }}
           />
-        ) : !isLoading && !error ? (
+        ) : !isLoading ? (
           <div className="flex w-full max-w-4xl flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 aspect-[16/9] p-8 text-center">
             <div className="mb-4 text-4xl">📄</div>
             <h3 className="mb-2 text-base font-bold text-foreground">

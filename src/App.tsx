@@ -28,6 +28,9 @@ const CoursesPage = React.lazy(() =>
 const ExplorePage = React.lazy(() =>
   import("@/pages/ExplorePage").then((m) => ({ default: m.ExplorePage }))
 );
+const LibraryPage = React.lazy(() =>
+  import("@/pages/LibraryPage").then((m) => ({ default: m.LibraryPage }))
+);
 const LessonDetailPage = React.lazy(() =>
   import("@/pages/LessonDetailPage").then((m) => ({
     default: m.LessonDetailPage,
@@ -99,6 +102,7 @@ function App() {
                   />
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/explore" element={<ExplorePage />} />
+                  <Route path="/library" element={<LibraryPage />} />
 
                   <Route path="/courses" element={<CourseLayout />}>
                     <Route index element={<CoursesPage />} />

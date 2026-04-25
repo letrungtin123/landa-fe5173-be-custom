@@ -3,8 +3,9 @@
 // ============================================================
 
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Loader2 } from "lucide-react";
+import { ArrowRight, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMyEnrollments } from "@/hooks/useCourses";
 import { useCourseCompletion } from "@/hooks/useProgress";
 import type { ContinueCourse } from "@/data/types";
@@ -100,8 +101,19 @@ export function ContinueLearning() {
 
       {/* Đang tải */}
       {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-primary/60" />
+        <div className="grid gap-6 sm:grid-cols-2">
+          {[1, 2].map((i) => (
+            <div key={i} className="flex h-[180px] overflow-hidden rounded-2xl border border-border bg-card">
+              <Skeleton className="w-[35%] h-full rounded-none" />
+              <div className="flex flex-col p-5 w-[65%]">
+                <Skeleton className="h-3 w-1/2 mb-3" />
+                <Skeleton className="h-5 w-3/4 mb-1" />
+                <Skeleton className="h-5 w-1/2 mb-auto" />
+                <Skeleton className="h-3 w-full mb-1 mt-4" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

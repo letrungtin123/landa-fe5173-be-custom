@@ -7,6 +7,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { loginApi, getUserMe, getUserAccount, refreshTokenApi } from "@/api/auth";
+import { establishLmsSession, establishLmsSessionFromToken, clearLmsSession } from "@/api/lmsSession";
 import { config } from "@/config/env";
 import { updateStreak } from "@/hooks/useUser";
 import { queryClient } from "@/App";
@@ -107,7 +108,11 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (username: string, password: string) => {
         // 1) Lấy access_token + refresh_token
-        const tokenRes = await loginApi(username, password);
+        // Song song: tạo LMS session cookie (cần cho /xblock/ quiz rendering)
+        const [tokenRes] = await Promise.all([
+          loginApi(username, password),
+          establishLmsSession(username, password),
+        ]);
 
         const expiresAt = Date.now() + tokenRes.expires_in * 1000;
         set({
@@ -159,6 +164,8 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         clearRefreshTimer();
+        // Xóa LMS session cookie
+        clearLmsSession();
         // Xóa toàn bộ cache React Query — ngăn rò rỉ data giữa sessions
         try { queryClient.clear(); } catch { /* App chưa mount */ }
         set({
@@ -249,6 +256,9 @@ export const useAuthStore = create<AuthState>()(
             } else {
               // Token còn hiệu lực → lên lịch refresh
               state.scheduleTokenRefresh();
+              // Tạo LMS session từ access token (cần cho /xblock/ quiz rendering)
+              // Vite proxy capture sessionid từ response server-side
+              establishLmsSessionFromToken();
             }
           }
         };

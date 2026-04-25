@@ -11,10 +11,12 @@ import {
   Volume2,
   VolumeX,
   Maximize,
-  Loader2,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { LessonDetail } from "@/data/types";
 import { markBlockComplete } from "@/api/progress";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useParams } from "react-router-dom";
 
 interface VideoPlayerProps {
   lesson: LessonDetail;
@@ -44,7 +46,10 @@ export function VideoPlayer({ lesson }: VideoPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasMarkedComplete, setHasMarkedComplete] = useState(false);
+  const hasMarkedComplete = useRef(false);
+
+  const { courseId } = useParams();
+  const user = useAuthStore((s) => s.user);
 
   const videoUrl = lesson._videoUrl;
   const youtubeId = videoUrl ? getYouTubeId(videoUrl) : null;
@@ -52,20 +57,21 @@ export function VideoPlayer({ lesson }: VideoPlayerProps) {
   // Nếu URL là xblock render URL từ LMS → dùng iframe embed
   const isXblockEmbed = videoUrl ? videoUrl.includes("/xblock/") : false;
 
-  // Đánh dấu hoàn thành khi xem ≥90% (chỉ cho video trực tiếp)
   const checkCompletion = useCallback(() => {
     if (
-      !hasMarkedComplete &&
+      !hasMarkedComplete.current &&
       duration > 0 &&
       currentTime / duration >= 0.9 &&
-      lesson.id
+      lesson.id &&
+      courseId &&
+      user?.username
     ) {
-      setHasMarkedComplete(true);
-      markBlockComplete(lesson.id).catch(() => {
+      hasMarkedComplete.current = true;
+      markBlockComplete(user.username, courseId, lesson.id).catch(() => {
         // Bỏ qua lỗi — không ảnh hưởng trải nghiệm xem
       });
     }
-  }, [currentTime, duration, hasMarkedComplete, lesson.id]);
+  }, [currentTime, duration, lesson.id, courseId, user]);
 
   useEffect(() => {
     checkCompletion();
@@ -146,9 +152,7 @@ export function VideoPlayer({ lesson }: VideoPlayerProps) {
           onLoad={() => setIsLoading(false)}
         />
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <Loader2 className="h-10 w-10 animate-spin text-white/70" />
-          </div>
+          <Skeleton className="absolute inset-0 z-10" />
         )}
       </div>
     );
@@ -170,9 +174,7 @@ export function VideoPlayer({ lesson }: VideoPlayerProps) {
           onLoad={() => setIsLoading(false)}
         />
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <Loader2 className="h-10 w-10 animate-spin text-white/70" />
-          </div>
+          <Skeleton className="absolute inset-0 z-10" />
         )}
       </div>
     );
@@ -205,9 +207,7 @@ export function VideoPlayer({ lesson }: VideoPlayerProps) {
 
       {/* Loading spinner */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-          <Loader2 className="h-10 w-10 animate-spin text-white/70" />
-        </div>
+        <Skeleton className="absolute inset-0 z-10" />
       )}
 
       {/* Nút play giữa màn hình */}

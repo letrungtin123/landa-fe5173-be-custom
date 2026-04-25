@@ -325,3 +325,19 @@
       1;
   }
 }
+
+/* ============================================================
+   Open edX HTML Content — Override inline styles
+   ============================================================ */
+.prose div[style*="width"],
+.prose table[style*="width"] {
+  width: 100% !important;
+  float: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+}

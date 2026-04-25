@@ -24,6 +24,7 @@ export interface Module {
   id: string;
   title: string;
   progress?: string;
+  duration?: string;          // Tổng thời lượng video (MM:SS), tính từ blocks API
   completed: boolean;
   lessons: Lesson[];
 }
@@ -32,6 +33,23 @@ export interface Course {
   id: string;
   title: string;
   modules: Module[];
+}
+
+export interface UnitComponent {
+  id: string;
+  type: "video" | "html" | "problem" | string;
+  displayName: string;
+  videoUrl?: string | null;
+  videoDuration?: string;
+  htmlContent?: string | null;
+  problemUsageKey?: string | null;
+  studentViewUrl?: string | null;
+}
+
+export interface UnitDetail {
+  id: string;                        // vertical block id
+  title: string;
+  components: UnitComponent[];
 }
 
 export interface LessonDetail {
@@ -47,19 +65,13 @@ export interface LessonDetail {
   description: string;
   bulletPoints: { label: string; text: string }[];
   mentors: Mentor[];
-  quizData?: {
-    question: string;
-    options: { id: string; letter: string; text: string; selected?: boolean }[];
-  };
-  slideData?: {
-    title: string;
-    imageUrl: string;
-  };
-  // Trường bổ sung từ API (set bởi blockTransformer)
+  // Units (Verticals) bên trong Subsection này, theo thứ tự
+  units: UnitDetail[];
+  // Backward-compat legacy fields (kept for existing code)
   _videoUrl?: string | null;
   _problemUsageKey?: string | null;
   _htmlBlocks?: string[];
-  _htmlContent?: string | null;      // Nội dung HTML lấy trực tiếp từ blocks API
+  _htmlContent?: string | null;
   _studentViewUrl?: string | null;
 }
 

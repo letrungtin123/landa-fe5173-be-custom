@@ -5,6 +5,7 @@
 import { BookOpen, ArrowRight, Loader2, Award, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCourses, useMyEnrollments, useEnrollCourse } from "@/hooks/useCourses";
 import { useMyCertificates } from "@/hooks/useCertificates";
@@ -44,8 +45,23 @@ export function CoursesPage() {
       <div className="mx-auto max-w-[1400px] px-4 py-8 md:px-6">
         <h1 className="mb-2 text-3xl font-bold text-foreground">Chương trình học</h1>
         <p className="mb-8 text-sm text-muted-foreground">Đang tải dữ liệu khóa học...</p>
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary/60" />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i} className="h-full flex flex-col overflow-hidden border-border shadow-sm">
+              <Skeleton className="h-48 w-full rounded-none" />
+              <CardContent className="p-5 flex flex-col flex-1">
+                <div className="flex gap-2 mb-3">
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                </div>
+                <Skeleton className="h-6 w-3/4 mb-3" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-2/3" />
+                <div className="mt-auto pt-4 flex items-center justify-between">
+                  <Skeleton className="h-8 w-24 rounded-full" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );

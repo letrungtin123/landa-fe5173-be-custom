@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { Shield, BookOpen, Info, Bell, Loader2 } from "lucide-react";
+import { Shield, BookOpen, Info, Bell } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { Notification } from "@/data/types";
 
@@ -18,8 +19,17 @@ export function NotificationList() {
 
       {/* Loading State */}
       {isLoading && (
-        <div className="flex items-center justify-center py-6">
-          <Loader2 className="h-5 w-5 animate-spin text-primary/50" />
+        <div className="space-y-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-start gap-4">
+              <Skeleton className="h-11 w-11 rounded-full shrink-0" />
+              <div className="flex-1 space-y-2 py-1">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
