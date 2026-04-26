@@ -6,14 +6,14 @@ import { usePageLoading } from "@/hooks/usePageLoading";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useLessonDetail } from "@/hooks/useLessonDetail";
-import { useCourse, useCourseStructure } from "@/hooks/useCourses";
+import { useCourse, useCourseStructure, useCourseMentors } from "@/hooks/useCourses";
 import { BookOpen, Download, MessageCircle, User, CheckCircle2 } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useMemo, useCallback, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DOMPurify from "dompurify";
+import { cn } from "@/lib/utils";
 import { config } from "@/config/env";
-import { parseMentorsFromOverview } from "@/transformers/overviewParser";
 import { markBlocksComplete } from "@/api/progress";
 
 // ── Badge component (declared outside render to satisfy React Compiler) ──
@@ -35,6 +35,7 @@ export function LessonDetailPage() {
   const { lesson, isLoading: dataLoading } = useLessonDetail(currentLessonId);
   const { data: courseDetail } = useCourse(courseId || "");
   const { data: courseTree } = useCourseStructure(courseId || "");
+  const { data: fetchedMentors } = useCourseMentors(courseId || "");
 
   // Scroll to top khi đổi unit
   const contentRef = useRef<HTMLDivElement>(null);
@@ -76,12 +77,20 @@ export function LessonDetailPage() {
 
   // ✅ Hooks phải gọi TRƯỚC mọi early return
   const mentors = useMemo(() => {
-    if (lesson?.mentors?.length > 0) return lesson.mentors;
-    if (courseDetail?.overview) {
-      return parseMentorsFromOverview(courseDetail.overview);
+    // Chỉ sử dụng dữ liệu từ API chuẩn (Custom Endpoint) thay vì bóc tách HTML cũ
+    if (fetchedMentors && fetchedMentors.length > 0) {
+      return fetchedMentors.map((m) => ({
+        name: m.full_name,
+        role: m.role === 'instructor' ? 'Giảng viên chính' : 'Trợ giảng',
+        company: '',
+        avatar: m.profile_image_url 
+          ? (m.profile_image_url.startsWith('http') ? m.profile_image_url : `${config.lmsBaseUrl}${m.profile_image_url}`)
+          : null
+      }));
     }
+    
     return [];
-  }, [lesson, courseDetail]);
+  }, [fetchedMentors]);
 
   // Unit navigation handlers
   const totalUnits = lesson?.units.length || 0;
@@ -275,10 +284,23 @@ export function LessonDetailPage() {
                         <div key={i} className="flex items-center gap-3">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
                             {m.avatar ? (
-                              <img src={m.avatar} alt={m.name} className="h-10 w-10 rounded-full object-cover" />
-                            ) : (
-                              <User className="h-5 w-5 text-muted-foreground" />
-                            )}
+                              <img 
+                                src={m.avatar} 
+                                alt={m.name} 
+                                className="h-10 w-10 rounded-full object-cover" 
+                                onError={(e) => {
+                                  // Nếu ảnh lỗi (404, etc.), ẩn thẻ img và hiện fallback kế tiếp
+                                  e.currentTarget.style.display = 'none';
+                                  if (e.currentTarget.nextElementSibling) {
+                                    e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                  }
+                                }}
+                              />
+                            ) : null}
+                            {/* Fallback khi không có avatar hoặc avatar lỗi */}
+                            <div className={cn("flex h-full w-full items-center justify-center rounded-full bg-muted", m.avatar ? "hidden" : "")}>
+                               <User className="h-5 w-5 text-muted-foreground" />
+                            </div>
                           </div>
                           <div className="min-w-0">
                             <p className="text-[13px] font-bold text-foreground truncate">{m.name}</p>

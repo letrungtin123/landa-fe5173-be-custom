@@ -51,25 +51,22 @@ function CustomDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex w-full items-center justify-between rounded-xl border-2 px-5 py-4 text-left transition-all ${
-          disabled
+        className={`flex w-full items-center justify-between rounded-xl border-2 px-5 py-4 text-left transition-all ${disabled
             ? "cursor-not-allowed border-border bg-muted/50 opacity-70"
             : isOpen || value
-            ? "border-primary bg-primary/5 ring-1 ring-primary"
-            : "border-border bg-muted/20 hover:bg-muted/60"
-        }`}
+              ? "border-primary bg-primary/5 ring-1 ring-primary"
+              : "border-border bg-muted/20 hover:bg-muted/60"
+          }`}
       >
         <span
-          className={`text-[15px] font-medium leading-relaxed ${
-            value ? "text-primary" : "text-muted-foreground"
-          }`}
+          className={`text-[15px] font-medium leading-relaxed ${value ? "text-primary" : "text-muted-foreground"
+            }`}
         >
           {selectedOption ? selectedOption.text : "-- Kết quả chọn --"}
         </span>
         <ChevronDown
-          className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
-            isOpen ? "rotate-180 text-primary" : ""
-          } ${value && !isOpen ? "text-primary" : ""}`}
+          className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180 text-primary" : ""
+            } ${value && !isOpen ? "text-primary" : ""}`}
         />
       </button>
 
@@ -83,11 +80,10 @@ function CustomDropdown({
                 onChange(opt.id);
                 setIsOpen(false);
               }}
-              className={`flex w-full cursor-pointer items-center rounded-lg px-4 py-3 text-left transition-colors ${
-                value === opt.id
+              className={`flex w-full cursor-pointer items-center rounded-lg px-4 py-3 text-left transition-colors ${value === opt.id
                   ? "bg-primary/10 text-primary font-bold"
                   : "text-foreground hover:bg-muted/80 hover:text-foreground font-medium"
-              }`}
+                }`}
             >
               <span className="text-[14px]">{opt.text}</span>
             </button>
@@ -106,7 +102,7 @@ interface QuizContentProps {
 export function QuizContent({ problemUsageKey }: QuizContentProps) {
   const [parsedProblems, setParsedProblems] = useState<ParsedProblem[]>([]);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
-  
+
   const { courseId } = useParams();
   const user = useAuthStore((s) => s.user);
   const qc = useQueryClient();
@@ -191,8 +187,8 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
       const result = parseQuizResult(response);
       setResultMessage(result.message);
       setIsCorrect(result.correct);
-      
-      
+
+
       // Nếu server trả về HTML mới → re-parse quiz UI
       if (result.contents) {
         const updatedProblems = parseProblemHtml(result.contents);
@@ -319,11 +315,10 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
                   return (
                     <label
                       key={opt.id}
-                      className={`group flex w-full cursor-pointer items-center gap-4 rounded-2xl p-4 text-left transition-all ${
-                        isSelected
+                      className={`group flex w-full cursor-pointer items-center gap-4 rounded-2xl p-4 text-left transition-all ${isSelected
                           ? "bg-primary/5 ring-1 ring-primary"
                           : "bg-muted/40 hover:bg-muted/80"
-                      } ${isDisabled ? "cursor-not-allowed opacity-70" : ""}`}
+                        } ${isDisabled ? "cursor-not-allowed opacity-70" : ""}`}
                     >
                       <input
                         type="radio"
@@ -334,14 +329,13 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
                         disabled={isDisabled}
                         className="hidden"
                       />
-                      
+
                       {/* A, B, C, D Box */}
                       <div
-                        className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl text-[16px] font-bold transition-colors ${
-                          isSelected
+                        className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl text-[16px] font-bold transition-colors ${isSelected
                             ? "bg-primary text-primary-foreground"
                             : "bg-background text-foreground shadow-sm"
-                        }`}
+                          }`}
                       >
                         {labelLetter}
                       </div>
@@ -371,11 +365,10 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
                   return (
                     <label
                       key={opt.id}
-                      className={`group flex w-full cursor-pointer items-center gap-4 rounded-2xl p-4 text-left transition-all ${
-                        isSelected
+                      className={`group flex w-full cursor-pointer items-center gap-4 rounded-2xl p-4 text-left transition-all ${isSelected
                           ? "bg-primary/5 ring-1 ring-primary"
                           : "bg-muted/40 hover:bg-muted/80"
-                      } ${isDisabled ? "cursor-not-allowed opacity-70" : ""}`}
+                        } ${isDisabled ? "cursor-not-allowed opacity-70" : ""}`}
                     >
                       <input
                         type="checkbox"
@@ -389,13 +382,12 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
 
                       {/* A, B, C, D Box */}
                       <div
-                        className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl text-[16px] font-bold transition-colors ${
-                          isSelected
+                        className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl text-[16px] font-bold transition-colors ${isSelected
                             ? "bg-primary text-primary-foreground"
                             : "bg-background text-foreground shadow-sm"
-                        }`}
+                          }`}
                       >
-                       {labelLetter}
+                        {labelLetter}
                       </div>
 
                       <span className="flex-1 text-[15px] font-medium leading-relaxed text-foreground">
@@ -494,11 +486,10 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
         {/* Kết quả sau khi nộp */}
         {resultMessage && (
           <div
-            className={`mt-6 flex items-center gap-3 rounded-xl p-4 ${
-              isCorrect
+            className={`mt-6 flex items-center gap-3 rounded-xl p-4 ${isCorrect
                 ? "bg-success/10 border border-success/20"
                 : "bg-destructive/10 border border-destructive/20"
-            }`}
+              }`}
           >
             {isCorrect ? (
               <CheckCircle2 className="h-5 w-5 text-success shrink-0" />

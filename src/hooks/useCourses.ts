@@ -9,6 +9,7 @@ import {
   getCourseBlocks,
   getMyEnrollments,
   enrollCourse,
+  getCourseMentors,
 } from "@/api/courses";
 import { transformBlocksToCourse } from "@/transformers/blockTransformer";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -103,5 +104,19 @@ export function useEnrollCourse() {
       qc.invalidateQueries({ queryKey: ["enrollments"] });
       qc.invalidateQueries({ queryKey: ["courses"] });
     },
+  });
+}
+
+/**
+ * Get the mentors for a specific course
+ */
+export function useCourseMentors(courseId: string) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  return useQuery({
+    queryKey: ["course-mentors", courseId],
+    queryFn: () => getCourseMentors(courseId),
+    enabled: isAuthenticated && !!courseId,
+    staleTime: 60 * 60 * 1000, // 1 hour (mentors don't change often)
   });
 }

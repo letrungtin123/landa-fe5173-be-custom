@@ -83,3 +83,22 @@ export async function enrollCourse(courseId: string): Promise<unknown> {
   });
   return data;
 }
+
+/**
+ * Lấy danh sách mentors (giảng viên/staff) cho khoá học
+ */
+export async function getCourseMentors(courseId: string) {
+  const { data } = await apiClient.get<
+    {
+      mentors: {
+        id: number;
+        username: string;
+        email: string;
+        full_name: string;
+        profile_image_url: string | null;
+        role: string;
+      }[];
+    }
+  >(`/api/courses/v1/courses/${encodeURIComponent(courseId)}/mentors/`);
+  return data.mentors;
+}
