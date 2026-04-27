@@ -8,18 +8,23 @@ import type { Block } from "./types";
 /**
  * Lấy chi tiết block đơn lẻ (video, problem, html, etc.).
  */
-export async function getBlockDetail(usageKey: string): Promise<Block> {
-  const { data } = await apiClient.get<Block>(
+export async function getBlockDetail(usageKey: string, username?: string): Promise<Block> {
+  const { data } = await apiClient.get<any>(
     `/api/courses/v1/blocks/${usageKey}/`,
     {
       params: {
         requested_fields:
           "student_view_data,display_name,type,children,completion",
-        student_view_data: "video,html",
+        student_view_data: "video,html,la_crossword,la_sortable",
+        ...(username ? { username } : {}),
       },
     }
   );
-  return data;
+  // Open edX blocks API rertuns { root: "...", blocks: { "...": Block } }
+  if (data && data.blocks && data.blocks[usageKey]) {
+    return data.blocks[usageKey] as Block;
+  }
+  return data as Block;
 }
 
 /**
@@ -116,6 +121,50 @@ export async function submitProblemAnswer(
 }
 
 /**
+ * Submit đáp án Đố Vui Ô Chữ.
+ * Dùng XBlock json_handler 'submit_answers'
+ */
+export async function submitCrosswordAnswer(
+  usageKey: string,
+  answers: Record<string, string>
+): Promise<{ status: string; message: string; score?: number }> {
+  const courseKey = extractCourseKey(usageKey);
+
+  const { data } = await apiClient.post(
+    `/courses/${courseKey}/xblock/${usageKey}/handler/submit_answers`,
+    { answers },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  return data;
+}
+
+/**
+ * Submit đáp án Sắp Xếp Đúng Thứ Tự.
+ * Dùng XBlock json_handler 'submit_answers'
+ */
+export async function submitSortableAnswer(
+  usageKey: string,
+  answer: number[]
+): Promise<{ status: string; message: string; score?: number }> {
+  const courseKey = extractCourseKey(usageKey);
+
+  const { data } = await apiClient.post(
+    `/courses/${courseKey}/xblock/${usageKey}/handler/submit_answers`,
+    { answer },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  return data;
+}
+
+/**
  * Lấy hint từ Open edX (demand hint).
  * Open edX handle_ajax expects request.POST (form-encoded data), NOT JSON.
  * Response format: { success: true, hint_index: N, should_enable_next_hint: bool, msg: "<html>..." }
@@ -205,7 +254,11 @@ export async function fetchExplanation(
           const doc = parser.parseFromString(answerStr, "text/html");
           const solution = doc.querySelector(".detailed-solution");
           if (solution && solution.textContent?.trim()) {
-            explanationHtml = solution.innerHTML;
+            let html = solution.innerHTML;
+            // Làm sạch và Việt hóa chữ "Explanation" mặc định của Open edX
+            html = html.replace(/>\s*Explanation\s*</gi, ">Giải thích: <");
+            html = html.replace(/(^|>|<br\s*\/?>|\s)Explanation(?![\w])/g, "$1Giải thích:");
+            explanationHtml = html;
           }
         }
       }

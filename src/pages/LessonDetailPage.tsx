@@ -7,14 +7,16 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useLessonDetail } from "@/hooks/useLessonDetail";
 import { useCourse, useCourseStructure, useCourseMentors } from "@/hooks/useCourses";
-import { BookOpen, Download, MessageCircle, User, CheckCircle2 } from "lucide-react";
+import { BookOpen, Download, MessageCircle, User, CheckCircle2, ChevronUp } from "lucide-react";
 import { useParams } from "react-router-dom";
-import { useMemo, useCallback, useEffect, useRef } from "react";
+import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DOMPurify from "dompurify";
 import { cn } from "@/lib/utils";
 import { config } from "@/config/env";
 import { markBlocksComplete } from "@/api/progress";
+import { CrosswordContent } from "@/components/lesson/CrosswordContent";
+import { SortableContent } from "@/components/lesson/SortableContent";
 
 // ── Badge component (declared outside render to satisfy React Compiler) ──
 const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
@@ -40,8 +42,28 @@ export function LessonDetailPage() {
   // Scroll to top khi đổi unit
   const contentRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    const scrollContainer = document.getElementById("course-main-scroll");
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }, [currentUnitIndex]);
+
+  // Hook lắng nghe sự kiện scroll để hiện nút Back to Top
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  useEffect(() => {
+    const scrollContainer = document.getElementById("course-main-scroll");
+    if (!scrollContainer) return;
+
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement;
+      setShowScrollTop(target.scrollTop > 400);
+    };
+
+    scrollContainer.addEventListener("scroll", handleScroll);
+    return () => scrollContainer.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Kiểm tra bài học đã hoàn thành chưa
   const isCompleted = useMemo(() => {
@@ -83,12 +105,12 @@ export function LessonDetailPage() {
         name: m.full_name,
         role: m.role === 'instructor' ? 'Giảng viên chính' : 'Trợ giảng',
         company: '',
-        avatar: m.profile_image_url 
+        avatar: m.profile_image_url
           ? (m.profile_image_url.startsWith('http') ? m.profile_image_url : `${config.lmsBaseUrl}${m.profile_image_url}`)
           : null
       }));
     }
-    
+
     return [];
   }, [fetchedMentors]);
 
@@ -210,7 +232,7 @@ export function LessonDetailPage() {
                   if (comp.type === "video" && comp.videoUrl) {
                     return (
                       <div key={comp.id} className="mb-2">
-                        <VideoPlayer lesson={lesson} />
+                        <VideoPlayer lesson={lesson} videoUrl={comp.videoUrl} />
                       </div>
                     );
                   }
@@ -240,6 +262,24 @@ export function LessonDetailPage() {
                       <QuizContent
                         key={comp.id}
                         problemUsageKey={comp.problemUsageKey}
+                      />
+                    );
+                  }
+
+                  if (comp.type === "la_crossword" && comp.crosswordUsageKey) {
+                    return (
+                      <CrosswordContent
+                        key={comp.id}
+                        usageKey={comp.crosswordUsageKey}
+                      />
+                    );
+                  }
+
+                  if (comp.type === "la_sortable" && comp.sortableUsageKey) {
+                    return (
+                      <SortableContent
+                        key={comp.id}
+                        usageKey={comp.sortableUsageKey}
                       />
                     );
                   }
@@ -284,10 +324,10 @@ export function LessonDetailPage() {
                         <div key={i} className="flex items-center gap-3">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
                             {m.avatar ? (
-                              <img 
-                                src={m.avatar} 
-                                alt={m.name} 
-                                className="h-10 w-10 rounded-full object-cover" 
+                              <img
+                                src={m.avatar}
+                                alt={m.name}
+                                className="h-10 w-10 rounded-full object-cover"
                                 onError={(e) => {
                                   // Nếu ảnh lỗi (404, etc.), ẩn thẻ img và hiện fallback kế tiếp
                                   e.currentTarget.style.display = 'none';
@@ -299,7 +339,7 @@ export function LessonDetailPage() {
                             ) : null}
                             {/* Fallback khi không có avatar hoặc avatar lỗi */}
                             <div className={cn("flex h-full w-full items-center justify-center rounded-full bg-muted", m.avatar ? "hidden" : "")}>
-                               <User className="h-5 w-5 text-muted-foreground" />
+                              <User className="h-5 w-5 text-muted-foreground" />
                             </div>
                           </div>
                           <div className="min-w-0">
@@ -370,12 +410,31 @@ export function LessonDetailPage() {
       </div>
 
       {/* ── AI Mentor floating button ── */}
-      <button
-        className="fixed bottom-8 right-8 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl transition-transform hover:scale-110"
-        title="AI Mentor"
-      >
-        <MessageCircle className="h-6 w-6" />
-      </button>
+      <div className="fixed bottom-8 right-8 z-30 flex flex-col gap-4">
+        {/* Nút Cuộn Lên Đầu Trang */}
+        <button
+          onClick={() => {
+            const scrollContainer = document.getElementById("course-main-scroll");
+            if (scrollContainer) scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
+            else window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          className={cn(
+            "flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-lg transition-all hover:scale-110",
+            showScrollTop ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0 pointer-events-none"
+          )}
+          title="Lên đầu trang"
+        >
+          <ChevronUp className="h-6 w-6" />
+        </button>
+
+        {/* Nút AI Mentor */}
+        <button
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl transition-transform hover:scale-110"
+          title="AI Mentor"
+        >
+          <MessageCircle className="h-6 w-6" />
+        </button>
+      </div>
 
       {/* ── Footer ── */}
       <footer className="border-t border-border py-6 text-center bg-muted/30">

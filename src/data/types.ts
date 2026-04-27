@@ -43,6 +43,8 @@ export interface UnitComponent {
   videoDuration?: string;
   htmlContent?: string | null;
   problemUsageKey?: string | null;
+  crosswordUsageKey?: string | null;
+  sortableUsageKey?: string | null;
   studentViewUrl?: string | null;
 }
 

@@ -89,7 +89,7 @@ function getChildrenOfType(
  *
  * Một sequential "hoàn thành" khi tất cả leaf blocks đều completion = 1.0
  */
-const LEAF_TYPES = new Set(["html", "video", "problem", "discussion", "done"]);
+const LEAF_TYPES = new Set(["html", "video", "problem", "la_crossword", "la_sortable", "discussion", "done"]);
 
 function calcAggregatedCompletion(
   block: Block,
@@ -172,6 +172,8 @@ function detectLessonType(
     for (const c of children) {
       if (c.type === "video") return "video";
       if (c.type === "problem") return "quiz";
+      if (c.type === "la_crossword") return "quiz";
+      if (c.type === "la_sortable") return "quiz";
     }
   }
   return "slide";

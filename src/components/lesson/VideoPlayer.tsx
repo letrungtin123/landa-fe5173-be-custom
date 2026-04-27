@@ -17,9 +17,11 @@ import type { LessonDetail } from "@/data/types";
 import { markBlockComplete } from "@/api/progress";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useParams } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface VideoPlayerProps {
   lesson: LessonDetail;
+  videoUrl?: string | null;
 }
 
 /**
@@ -37,7 +39,7 @@ function getYouTubeId(url: string): string | null {
   return null;
 }
 
-export function VideoPlayer({ lesson }: VideoPlayerProps) {
+export function VideoPlayer({ lesson, videoUrl: propVideoUrl }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -51,7 +53,7 @@ export function VideoPlayer({ lesson }: VideoPlayerProps) {
   const { courseId } = useParams();
   const user = useAuthStore((s) => s.user);
 
-  const videoUrl = lesson._videoUrl;
+  const videoUrl = propVideoUrl || lesson._videoUrl;
   const youtubeId = videoUrl ? getYouTubeId(videoUrl) : null;
   const isYoutube = !!youtubeId;
   // Nếu URL là xblock render URL từ LMS → dùng iframe embed
@@ -143,17 +145,17 @@ export function VideoPlayer({ lesson }: VideoPlayerProps) {
         ref={containerRef}
         className="relative overflow-hidden rounded-2xl bg-[#0d1117] aspect-video shadow-lg"
       >
+        {isLoading && (
+          <Skeleton className="absolute inset-0 z-10" />
+        )}
         <iframe
           src={`https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1&showinfo=0`}
-          className="h-full w-full"
+          className={cn("h-full w-full", isLoading ? "invisible" : "")}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
           title={lesson.title}
           onLoad={() => setIsLoading(false)}
         />
-        {isLoading && (
-          <Skeleton className="absolute inset-0 z-10" />
-        )}
       </div>
     );
   }
@@ -165,17 +167,17 @@ export function VideoPlayer({ lesson }: VideoPlayerProps) {
         ref={containerRef}
         className="relative overflow-hidden rounded-2xl bg-[#0d1117] aspect-video shadow-lg"
       >
+        {isLoading && (
+          <Skeleton className="absolute inset-0 z-10" />
+        )}
         <iframe
           src={videoUrl}
-          className="h-full w-full"
+          className={cn("h-full w-full", isLoading ? "invisible" : "")}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
           title={lesson.title}
           onLoad={() => setIsLoading(false)}
         />
-        {isLoading && (
-          <Skeleton className="absolute inset-0 z-10" />
-        )}
       </div>
     );
   }
@@ -191,7 +193,7 @@ export function VideoPlayer({ lesson }: VideoPlayerProps) {
       <video
         ref={videoRef}
         src={videoUrl}
-        className="h-full w-full object-contain"
+        className={cn("h-full w-full object-contain", isLoading ? "invisible" : "")}
         onLoadedMetadata={(e) => {
           setDuration(e.currentTarget.duration);
           setIsLoading(false);
@@ -254,3 +256,4 @@ export function VideoPlayer({ lesson }: VideoPlayerProps) {
     </div>
   );
 }
+

@@ -140,6 +140,14 @@ function buildComponent(
     comp.problemUsageKey = block.id;
   }
 
+  if (block.type === "la_crossword") {
+    comp.crosswordUsageKey = block.id;
+  }
+
+  if (block.type === "la_sortable") {
+    comp.sortableUsageKey = block.id;
+  }
+
   return comp;
 }
 
@@ -152,6 +160,8 @@ function determineLessonType(
   for (const c of components) {
     if (c.type === "video") return "video";
     if (c.type === "problem") return "quiz";
+    if (c.type === "la_crossword") return "quiz";
+    if (c.type === "la_sortable") return "quiz";
   }
   if (components.some((c) => c.type === "html")) return "slide";
   return "video";

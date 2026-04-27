@@ -21,6 +21,7 @@ export interface ParsedProblem {
   options?: ProblemOption[]; // Chỉ dành cho select/radio/checkbox
   explanationHtml?: string; // Giải thích khi nộp bài
   hintHtml?: string; // Gợi ý
+  correctAnswerHtml?: string; // Đáp án đúng
   hasHints: boolean; // true nếu quiz có cấu hình demand hint trong Studio
 }
 
@@ -148,26 +149,53 @@ export function parseProblemHtml(html: string): ParsedProblem[] {
     ) || wrapper.querySelector("select, input[type='text']");
     
     if (inputContainer) {
-      // Tìm container cha trực tiếp bên trong wrapper
-      const closestContainer = inputContainer.closest(
+      // Tìm container cha phù hợp
+      let closestContainer = inputContainer.closest(
         ".choicegroup, .capa_inputtype, .option-input, .optioninput, .inputtype"
       ) as Element || inputContainer;
       
+      // Tìm element là child TRỰC TIẾP của wrapper chứa closestContainer
+      let topLevelContainer = closestContainer;
+      while (topLevelContainer.parentElement && topLevelContainer.parentElement !== wrapper) {
+        topLevelContainer = topLevelContainer.parentElement;
+      }
+
       const children = Array.from(wrapper.children);
-      const inputIdx = children.indexOf(closestContainer);
+      const inputIdx = children.indexOf(topLevelContainer);
       
       if (inputIdx > 0) {
-        // Lấy tất cả siblings trước input container
+        // Lấy tất cả elements trước input container làm questionHtml
         const questionChildren = children.slice(0, inputIdx);
         questionHtml = questionChildren.map(el => el.outerHTML).join("");
       } else if (inputIdx === 0) {
-        // Nếu input container là child đầu tiên, tìm text nodes trước nó
-        // Cho dropdown: text thường nằm trực tiếp trong wrapper trước .option-input
+        // Nếu input container là child đầu tiên, tìm các childNodes (TextNodes) trước nó
+        // Trường hợp này xảy ra khi question text nằm trần truồng không được bọc bằng <p> hay <div>
         const allNodes = Array.from(wrapper.childNodes);
-        const containerIdx = allNodes.indexOf(closestContainer as ChildNode);
+        const containerIdx = allNodes.indexOf(topLevelContainer as ChildNode);
         if (containerIdx > 0) {
           const questionNodes = allNodes.slice(0, containerIdx);
           questionHtml = questionNodes
+            .filter(n => n.nodeType === Node.ELEMENT_NODE || (n.nodeType === Node.TEXT_NODE && n.textContent?.trim()))
+            .map(n => n.nodeType === Node.ELEMENT_NODE ? (n as Element).outerHTML : n.textContent?.trim() || "")
+            .join("");
+        }
+      }
+      
+      // Fallback Strategy A.2: Nếu questionHtml vẫn trống và wrapper có nội dung khác ngoài topLevelContainer
+      if (!questionHtml.trim() && wrapper.children.length === 1 && topLevelContainer.children.length > 0) {
+        // Open edX dạng mới: 
+        // <div class="wrapper-problem-response">
+        //   <div class="textline">
+        //      <p>Question string</p>
+        //      <input type="text" />
+        //   </div>
+        // </div>
+        // Lúc này question nằm chung trong topLevelContainer. Tìm tất cả nội dung phía TRƯỚC input bên trong nó
+        const allInnerNodes = Array.from(topLevelContainer.childNodes);
+        const innerInputIdx = allInnerNodes.findIndex(n => n.contains && (n as Element).contains(inputContainer));
+        if (innerInputIdx > 0) {
+          const questionInnerNodes = allInnerNodes.slice(0, innerInputIdx);
+          questionHtml = questionInnerNodes
             .filter(n => n.nodeType === Node.ELEMENT_NODE || (n.nodeType === Node.TEXT_NODE && n.textContent?.trim()))
             .map(n => n.nodeType === Node.ELEMENT_NODE ? (n as Element).outerHTML : n.textContent?.trim() || "")
             .join("");
@@ -247,6 +275,69 @@ export function parseProblemHtml(html: string): ParsedProblem[] {
       }
     }
 
+    // Làm sạch và Việt hóa chữ "Explanation" mặc định của Open edX
+    if (explanationHtml) {
+      // Open edX thường bọc chữ Explanation trong thẻ b hoặc p hoặc h3
+      explanationHtml = explanationHtml.replace(/>\s*Explanation\s*</gi, ">Giải thích: <");
+      // Hoặc nếu nó là chữ trơn đứng đầu
+      explanationHtml = explanationHtml.replace(/(^|>|<br\s*\/?>|\s)Explanation(?![\w])/g, "$1Giải thích:");
+    }
+
+    // ── 3.5 Tìm Đáp Án Đúng (Correct Answer) ──
+    let correctAnswerHtml = "";
+    
+    // Strategy A: .answer cho Text input / Numerical input
+    const answerSpan = wrapper.querySelector(".answer") || searchDoc.querySelector(".answer");
+    if (answerSpan && answerSpan.textContent?.trim()) {
+      let clone = answerSpan.cloneNode(true) as HTMLElement;
+      // remove correct checkmark icon if any
+      const correctMarker = clone.querySelector(".status, .correct");
+      if (correctMarker) correctMarker.remove();
+      const txt = clone.textContent?.replace("Đáp án đúng:", "")?.trim();
+      if (txt) correctAnswerHtml = txt;
+    }
+
+    // Strategy B: .choicegroup_correct cho radio/checkbox
+    if (!correctAnswerHtml && (type === "single-select" || type === "multi-select")) {
+      const correctLabels = wrapper.querySelectorAll("label.choicegroup_correct, .indicator-container.correct");
+      if (correctLabels.length > 0) {
+        const correctTexts = Array.from(correctLabels).map(l => {
+          let clone = l.cloneNode(true) as HTMLElement;
+          if (clone.classList.contains("indicator-container")) {
+             // Sometimes in older edX versions the correct is wrapped differently
+             const parentLabel = clone.closest("label");
+             if (parentLabel) clone = parentLabel.cloneNode(true) as HTMLElement;
+          }
+          const status = clone.querySelector(".status, .indicator-container");
+          if (status) status.remove();
+          const attrInput = clone.querySelector("input");
+          if (attrInput) attrInput.remove();
+          return clone.textContent?.trim() || "";
+        }).filter(Boolean);
+        if (correctTexts.length > 0) {
+          correctAnswerHtml = correctTexts.join(" ; ");
+        }
+      }
+    }
+
+    // Fallback C: Nửa vời cho Dropdown
+    if (!correctAnswerHtml && type === "dropdown") {
+      // 1. Nếu có thẻ .answer rõ ràng (vd: khi người dùng xem được đáp án cuối cùng)
+      const answerSpan = wrapper.querySelector(".answer");
+      if (answerSpan && answerSpan.textContent?.trim()) {
+        correctAnswerHtml = answerSpan.textContent.replace("Đáp án đúng:", "").trim();
+      } else {
+        // 2. Chỉ tính thẻ option đang [selected] LÀ ĐÚNG NẾU như trạng thái của quiz đang là correct
+        const isWrapperCorrect = wrapper.querySelector(".status.correct, .indicator-container.correct, .indicator-container .correct");
+        if (isWrapperCorrect) {
+          const correctOpt = wrapper.querySelector("select option[selected]");
+          if (correctOpt) {
+            correctAnswerHtml = correctOpt.textContent?.trim() || "";
+          }
+        }
+      }
+    }
+
     // ── 4. Tìm Hint (Gợi ý) ──
     // Open edX hint data KHÔNG có sẵn trong student_view HTML.
     // .problem-hint chứa buttons (Next Hint, Review) nhưng KHÔNG chứa hint text.
@@ -294,9 +385,10 @@ export function parseProblemHtml(html: string): ParsedProblem[] {
       id: inputName,
       type,
       questionHtml,
-      options: type !== "text-input" ? options : undefined,
+      options: options.length > 0 ? options : undefined,
       explanationHtml: explanationHtml.trim() || undefined,
       hintHtml: hintHtml.trim() || undefined,
+      correctAnswerHtml: correctAnswerHtml.trim() || undefined,
       hasHints,
     });
   });

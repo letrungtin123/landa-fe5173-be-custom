@@ -52,10 +52,10 @@ function CustomDropdown({
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
         className={`flex w-full items-center justify-between rounded-xl border-2 px-5 py-4 text-left transition-all ${disabled
-            ? "cursor-not-allowed border-border bg-muted/50 opacity-70"
-            : isOpen || value
-              ? "border-primary bg-primary/5 ring-1 ring-primary"
-              : "border-border bg-muted/20 hover:bg-muted/60"
+          ? "cursor-not-allowed border-border bg-muted/50 opacity-70"
+          : (isOpen || value)
+            ? "border-primary bg-primary/5 ring-1 ring-primary text-foreground"
+            : "border-border bg-background hover:bg-muted/20 text-foreground"
           }`}
       >
         <span
@@ -81,8 +81,8 @@ function CustomDropdown({
                 setIsOpen(false);
               }}
               className={`flex w-full cursor-pointer items-center rounded-lg px-4 py-3 text-left transition-colors ${value === opt.id
-                  ? "bg-primary/10 text-primary font-bold"
-                  : "text-foreground hover:bg-muted/80 hover:text-foreground font-medium"
+                ? "bg-primary/10 text-primary font-bold"
+                : "text-foreground hover:bg-muted/80 hover:text-foreground font-medium"
                 }`}
             >
               <span className="text-[14px]">{opt.text}</span>
@@ -303,6 +303,17 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
               }}
             />
 
+            {/* Giải thích loại đáp án cần chọn */}
+            <div className="mb-4 flex items-center gap-2 text-[14px] font-medium text-muted-foreground bg-muted/30 w-fit px-3 py-1.5 rounded-md border border-border/50">
+              <Info className="h-4 w-4 text-muted-foreground" />
+              <span>
+                {prob.type === "single-select" && "Chỉ chọn 1 đáp án."}
+                {prob.type === "multi-select" && "Được phép chọn nhiều đáp án."}
+                {prob.type === "dropdown" && "Chọn đáp án từ danh sách xổ xuống."}
+                {prob.type === "text-input" && "Nhập đáp án vào ô trống."}
+              </span>
+            </div>
+
             {/* Lựa chọn */}
             <div className="space-y-4">
               {/* Single Select (radio) */}
@@ -316,8 +327,8 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
                     <label
                       key={opt.id}
                       className={`group flex w-full cursor-pointer items-center gap-4 rounded-2xl p-4 text-left transition-all ${isSelected
-                          ? "bg-primary/5 ring-1 ring-primary"
-                          : "bg-muted/40 hover:bg-muted/80"
+                        ? "bg-primary/5 ring-1 ring-primary"
+                        : "bg-muted/40 hover:bg-muted/80"
                         } ${isDisabled ? "cursor-not-allowed opacity-70" : ""}`}
                     >
                       <input
@@ -333,8 +344,8 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
                       {/* A, B, C, D Box */}
                       <div
                         className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl text-[16px] font-bold transition-colors ${isSelected
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-background text-foreground shadow-sm"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background text-foreground shadow-sm"
                           }`}
                       >
                         {labelLetter}
@@ -366,8 +377,8 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
                     <label
                       key={opt.id}
                       className={`group flex w-full cursor-pointer items-center gap-4 rounded-2xl p-4 text-left transition-all ${isSelected
-                          ? "bg-primary/5 ring-1 ring-primary"
-                          : "bg-muted/40 hover:bg-muted/80"
+                        ? "bg-primary/5 ring-1 ring-primary"
+                        : "bg-muted/40 hover:bg-muted/80"
                         } ${isDisabled ? "cursor-not-allowed opacity-70" : ""}`}
                     >
                       <input
@@ -383,8 +394,8 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
                       {/* A, B, C, D Box */}
                       <div
                         className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl text-[16px] font-bold transition-colors ${isSelected
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-background text-foreground shadow-sm"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background text-foreground shadow-sm"
                           }`}
                       >
                         {labelLetter}
@@ -422,24 +433,40 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
                   value={(answers[prob.id] as string) || ""}
                   onChange={(e) => handleChange(prob.id, e.target.value, prob.type)}
                   disabled={resultMessage !== null}
-                  className="w-full rounded-lg border-2 border-border p-4 text-sm focus:border-primary focus:ring-primary disabled:opacity-50 disabled:bg-muted"
+                  className="w-full rounded-lg border-2 border-border bg-background text-foreground dark:bg-slate-900 p-4 text-sm focus:border-primary focus:ring-primary disabled:opacity-50 disabled:bg-muted dark:disabled:bg-slate-800"
                 />
               )}
             </div>
 
             {/* Giải thích đáp án (hiện sau khi nộp bài) */}
             {/* Ưu tiên: fetchedExplanation (từ problem_show API) > prob.explanationHtml (từ parser) */}
-            {(fetchedExplanation || prob.explanationHtml) && resultMessage && (
+            {((fetchedExplanation || prob.explanationHtml) || prob.correctAnswerHtml || (isCorrect && prob.type === 'text-input')) && resultMessage && (
               <div className="mt-8">
                 <div className="rounded-xl bg-success/10 border border-success/20 p-5">
                   <div className="flex items-center gap-2 mb-3 text-success">
                     <Info className="h-5 w-5" />
-                    <span className="font-bold text-sm tracking-wide uppercase">Giải thích đáp án</span>
+                    {/* <span className="font-bold text-sm tracking-wide uppercase">Kết quả & Giải thích</span> */}
                   </div>
-                  <div
-                    className="prose prose-sm prose-success dark:prose-invert max-w-none text-[14px] leading-relaxed text-foreground/90"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(fetchedExplanation || prob.explanationHtml || "") }}
-                  />
+
+                  {/* Lấy đáp án từ parser, nếu trống mà user đã trả lời đúng (như text-input) thì lấy luôn text user đã nhập */}
+                  {(prob.correctAnswerHtml || (isCorrect && answers[prob.id])) && (
+                    <div className="mb-4 pb-4 border-b border-success/20">
+                      <span className="text-[14px] font-semibold text-success/90 uppercase tracking-wider block mb-1">
+                        Đáp án đúng:
+                      </span>
+                      <div
+                        className="text-[15px] font-bold text-foreground"
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((prob.correctAnswerHtml || answers[prob.id]) as string) }}
+                      />
+                    </div>
+                  )}
+
+                  {(fetchedExplanation || prob.explanationHtml) && (
+                    <div
+                      className="prose prose-sm prose-success dark:prose-invert max-w-none text-[14px] leading-relaxed text-foreground/90"
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(fetchedExplanation || prob.explanationHtml || "") }}
+                    />
+                  )}
                 </div>
               </div>
             )}
@@ -487,8 +514,8 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
         {resultMessage && (
           <div
             className={`mt-6 flex items-center gap-3 rounded-xl p-4 ${isCorrect
-                ? "bg-success/10 border border-success/20"
-                : "bg-destructive/10 border border-destructive/20"
+              ? "bg-success/10 border border-success/20"
+              : "bg-destructive/10 border border-destructive/20"
               }`}
           >
             {isCorrect ? (
