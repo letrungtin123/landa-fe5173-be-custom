@@ -7,7 +7,8 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useLessonDetail } from "@/hooks/useLessonDetail";
 import { useCourse, useCourseStructure, useCourseMentors } from "@/hooks/useCourses";
-import { BookOpen, Download, MessageCircle, User, CheckCircle2, ChevronUp } from "lucide-react";
+import { useCourseHandouts } from "@/hooks/useCourseHandouts";
+import { BookOpen, Download, FileText, FileSpreadsheet, Presentation, MessageCircle, User, CheckCircle2, ChevronUp } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -38,6 +39,7 @@ export function LessonDetailPage() {
   const { data: courseDetail } = useCourse(courseId || "");
   const { data: courseTree } = useCourseStructure(courseId || "");
   const { data: fetchedMentors } = useCourseMentors(courseId || "");
+  const { data: refDocs = [] } = useCourseHandouts(courseId || "");
 
   // Scroll to top khi đổi unit
   const contentRef = useRef<HTMLDivElement>(null);
@@ -170,9 +172,13 @@ export function LessonDetailPage() {
     );
   }
 
-  // Handouts URL
-  const handoutsUrl = courseDetail?.course_handouts;
-
+  // Icon theo loại file
+  function getDocIcon(ext: string) {
+    if (ext === "pdf" || ext === "doc" || ext === "docx") return FileText;
+    if (ext === "xls" || ext === "xlsx" || ext === "csv") return FileSpreadsheet;
+    if (ext === "ppt" || ext === "pptx") return Presentation;
+    return FileText;
+  }
 
   return (
     <div className="flex min-h-full w-full flex-col">
@@ -368,29 +374,42 @@ export function LessonDetailPage() {
                   </p>
                 </div>
 
-                {/* Tài liệu tham khảo — từ Course Detail API */}
+                {/* Tài liệu tham khảo — LMS Mobile Handouts API */}
                 <div className="rounded-xl bg-primary p-6 text-primary-foreground shadow-sm">
                   <h3 className="mb-4 text-[16px] font-bold">
                     Tài liệu tham khảo
                   </h3>
-                  <div className="flex flex-col gap-3">
-                    {handoutsUrl && (
-                      <a
-                        href={`${config.lmsBaseUrl}${handoutsUrl}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-between rounded-lg bg-white/10 px-4 py-3 text-[13px] font-semibold transition-colors hover:bg-white/20"
-                      >
-                        <span>Download Assets</span>
-                        <Download className="h-4 w-4" />
-                      </a>
-                    )}
-                    {!handoutsUrl && (
-                      <p className="text-[12px] text-primary-foreground/60 italic">
-                        Chưa có tài liệu.
-                      </p>
-                    )}
-                  </div>
+                  {refDocs.length > 0 ? (
+                    <div className="flex flex-col gap-2">
+                      {refDocs.slice(0, 5).map((doc) => {
+                        const DocIcon = getDocIcon(doc.extension);
+                        return (
+                          <a
+                            key={doc.url}
+                            href={doc.fullUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between rounded-lg bg-white/10 px-3 py-2.5 text-[12px] font-medium transition-colors hover:bg-white/20 gap-2"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <DocIcon className="h-4 w-4 shrink-0 opacity-80" />
+                              <span className="truncate">{doc.title}</span>
+                            </div>
+                            <Download className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                          </a>
+                        );
+                      })}
+                      {refDocs.length > 5 && (
+                        <p className="mt-1 text-center text-[11px] text-primary-foreground/60">
+                          +{refDocs.length - 5} tài liệu khác
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-[12px] text-primary-foreground/60 italic">
+                      Chưa có tài liệu. Admin hãy upload vào Studio → Course Info → Handouts.
+                    </p>
+                  )}
                 </div>
 
                 {/* AI Mentor hint */}
