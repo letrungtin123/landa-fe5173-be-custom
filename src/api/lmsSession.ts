@@ -13,6 +13,7 @@
 // ============================================================
 
 import { useAuthStore } from "@/stores/useAuthStore";
+import { lmsUrl } from "@/config/openedx";
 
 /**
  * Tạo LMS session bằng access token (LoginWithAccessTokenView).
@@ -35,7 +36,7 @@ export async function establishLmsSessionFromToken(): Promise<void> {
       return;
     }
 
-    const res = await fetch("/oauth2/login/", {
+    const res = await fetch(lmsUrl("/oauth2/login/"), {
       method: "POST",
       credentials: "include",
       headers: {
@@ -68,7 +69,7 @@ export async function establishLmsSession(
 ): Promise<void> {
   try {
     // Bước 1: Lấy CSRF token — endpoint này set csrftoken cookie
-    const csrfRes = await fetch("/csrf/api/v1/token", {
+    const csrfRes = await fetch(lmsUrl("/csrf/api/v1/token"), {
       credentials: "include",
     });
 
@@ -82,7 +83,7 @@ export async function establishLmsSession(
     }
 
     // Bước 2: POST /login_ajax với credentials
-    const res = await fetch("/login_ajax", {
+    const res = await fetch(lmsUrl("/login_ajax"), {
       method: "POST",
       credentials: "include",
       headers: {

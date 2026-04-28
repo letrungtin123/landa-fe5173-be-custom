@@ -5,6 +5,7 @@
 
 import axios from "axios";
 import { config } from "@/config/env";
+import { lmsUrl } from "@/config/openedx";
 import { apiClient } from "./client";
 import type { OAuthTokenResponse, UserMe, UserAccount } from "./types";
 
@@ -16,9 +17,8 @@ export async function loginApi(
   username: string,
   password: string
 ): Promise<OAuthTokenResponse> {
-  const baseUrl = import.meta.env.DEV ? "" : config.lmsBaseUrl;
   const { data } = await axios.post<OAuthTokenResponse>(
-    `${baseUrl}/oauth2/access_token`,
+    lmsUrl("/oauth2/access_token"),
     new URLSearchParams({
       grant_type: "password",
       client_id: config.clientId,
@@ -42,9 +42,8 @@ export async function loginApi(
 export async function refreshTokenApi(
   refreshToken: string
 ): Promise<OAuthTokenResponse> {
-  const baseUrl = import.meta.env.DEV ? "" : config.lmsBaseUrl;
   const { data } = await axios.post<OAuthTokenResponse>(
-    `${baseUrl}/oauth2/access_token`,
+    lmsUrl("/oauth2/access_token"),
     new URLSearchParams({
       grant_type: "refresh_token",
       refresh_token: refreshToken,
