@@ -63,30 +63,66 @@ export function useMyEnrollments() {
 /**
  * Get the course block structure, transformed to the FE Course type.
  * This powers the CourseSidebar navigation.
+ *
+ * Auto-enroll: Nếu user chưa enrolled, tự enroll trước khi fetch blocks.
+ * Giải quyết 403 cho user được tạo qua Admin mà chưa enroll thủ công.
  */
 export function useCourseStructure(courseId: string) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const username = useAuthStore((s) => s.user?.username);
+  const qc = useQueryClient();
 
   return useQuery({
     queryKey: ["course-blocks", courseId, username],
-    queryFn: () => getCourseBlocks(courseId, username),
+    queryFn: async () => {
+      try {
+        return await getCourseBlocks(courseId, username);
+      } catch (err: any) {
+        if (err?.response?.status === 403) {
+          try {
+            await enrollCourse(courseId);
+            console.log("[AutoEnroll] Enrolled in", courseId);
+            // Invalidate enrollment cache — bạn bè useBadges cần biết
+            qc.invalidateQueries({ queryKey: ["enrollments"] });
+          } catch {
+            // Enroll fail → bỏ qua, throw lỗi gốc
+          }
+          return await getCourseBlocks(courseId, username);
+        }
+        throw err;
+      }
+    },
     enabled: isAuthenticated && !!courseId,
-    staleTime: 2 * 60 * 1000, // 2 minutes — shorter for fresh completion data
+    staleTime: 2 * 60 * 1000,
     select: (data) => transformBlocksToCourse(data),
   });
 }
 
 /**
  * Get raw blocks data (not transformed) for lesson content resolution.
+ * Cùng logic auto-enroll như useCourseStructure.
  */
 export function useCourseBlocksRaw(courseId: string) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const username = useAuthStore((s) => s.user?.username);
+  const qc = useQueryClient();
 
   return useQuery({
     queryKey: ["course-blocks", courseId, username],
-    queryFn: () => getCourseBlocks(courseId, username),
+    queryFn: async () => {
+      try {
+        return await getCourseBlocks(courseId, username);
+      } catch (err: any) {
+        if (err?.response?.status === 403) {
+          try {
+            await enrollCourse(courseId);
+            qc.invalidateQueries({ queryKey: ["enrollments"] });
+          } catch { /* ignore */ }
+          return await getCourseBlocks(courseId, username);
+        }
+        throw err;
+      }
+    },
     enabled: isAuthenticated && !!courseId,
     staleTime: 2 * 60 * 1000,
   });

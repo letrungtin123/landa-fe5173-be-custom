@@ -52,7 +52,7 @@ export async function getCourseBlocks(
       params: {
         course_id: courseId,
         depth: "all",
-        all_blocks: true,
+        nav_depth: 3,
         // username is REQUIRED for completion field to return per-user data
         ...(username ? { username } : {}),
         requested_fields:

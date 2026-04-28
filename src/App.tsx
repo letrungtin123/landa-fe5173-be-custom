@@ -15,6 +15,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { CourseLayout } from "@/components/layout/CourseLayout";
+import { GlobalBadgeWatcher } from "@/components/badges/GlobalBadgeWatcher";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -35,6 +36,9 @@ const LessonDetailPage = React.lazy(() =>
   import("@/pages/LessonDetailPage").then((m) => ({
     default: m.LessonDetailPage,
   }))
+);
+const BadgesPage = React.lazy(() =>
+  import("@/pages/BadgesPage").then((m) => ({ default: m.BadgesPage }))
 );
 const LoginPage = React.lazy(() =>
   import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage }))
@@ -69,12 +73,18 @@ function PageLoader() {
 
 /**
  * Route bảo vệ — chuyển hướng đến /login nếu chưa đăng nhập.
- * Tất cả role (learner, mentor, staff, admin) đều truy cập được FE.
+ * Đồng thời mount GlobalBadgeWatcher để hiển thị badge modal từ mọi route.
  */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return <>{children}</>;
+  return (
+    <>
+      {/* Global badge watcher — hiện modal khi earn badge mới bất kể đang ở route nào */}
+      <GlobalBadgeWatcher />
+      {children}
+    </>
+  );
 }
 
 function App() {
@@ -103,6 +113,7 @@ function App() {
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/explore" element={<ExplorePage />} />
                   <Route path="/library" element={<LibraryPage />} />
+                  <Route path="/badges" element={<BadgesPage />} />
 
                   <Route path="/courses" element={<CourseLayout />}>
                     <Route index element={<CoursesPage />} />

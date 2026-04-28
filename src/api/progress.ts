@@ -9,7 +9,44 @@
 // ============================================================
 
 import { apiClient } from "./client";
+import { enrollCourse } from "./courses";
 import type { CourseGradeResponse } from "./types";
+
+/**
+ * Gọi completion-batch API.
+ * Nếu 400 (user chưa enrolled) → tự enroll rồi retry 1 lần.
+ *
+ * Cần thiết vì staff user xem blocks không cần enrolled,
+ * nhưng completion API bắt buộc phải enrolled.
+ */
+async function postCompletionWithAutoEnroll(
+  courseId: string,
+  payload: Record<string, unknown>
+): Promise<unknown> {
+  try {
+    const { data } = await apiClient.post(
+      "/api/completion/v1/completion-batch",
+      payload
+    );
+    return data;
+  } catch (err: any) {
+    if (err?.response?.status === 400) {
+      // Thử enroll rồi retry
+      try {
+        await enrollCourse(courseId);
+        console.log("[AutoEnroll] Enrolled before completion:", courseId);
+      } catch {
+        // Enroll fail → throw lỗi gốc
+      }
+      const { data } = await apiClient.post(
+        "/api/completion/v1/completion-batch",
+        payload
+      );
+      return data;
+    }
+    throw err;
+  }
+}
 
 /**
  * Mark một block hoàn thành.
@@ -20,17 +57,13 @@ export async function markBlockComplete(
   courseId: string,
   usageKey: string
 ): Promise<unknown> {
-  const { data } = await apiClient.post(
-    "/api/completion/v1/completion-batch",
-    {
-      username,
-      course_key: courseId,
-      blocks: {
-        [usageKey]: 1.0,
-      },
-    }
-  );
-  return data;
+  return postCompletionWithAutoEnroll(courseId, {
+    username,
+    course_key: courseId,
+    blocks: {
+      [usageKey]: 1.0,
+    },
+  });
 }
 
 /**
@@ -55,15 +88,11 @@ export async function markBlocksComplete(
     blocksMap[id] = 1.0;
   }
 
-  const { data } = await apiClient.post(
-    "/api/completion/v1/completion-batch",
-    {
-      username,
-      course_key: courseId,
-      blocks: blocksMap,
-    }
-  );
-  return data;
+  return postCompletionWithAutoEnroll(courseId, {
+    username,
+    course_key: courseId,
+    blocks: blocksMap,
+  });
 }
 
 /**

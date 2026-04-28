@@ -34,6 +34,7 @@ const NAV_ITEMS = [
   { label: "Khám phá", path: "/dashboard" },
   { label: "Chương trình học", path: "/explore" },
   { label: "Thư viện", path: "/library" },
+  { label: "Danh hiệu", path: "/badges" },
 ];
 
 export function Header() {

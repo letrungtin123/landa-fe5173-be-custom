@@ -10,6 +10,7 @@ import { StreakCounter } from "@/components/dashboard/StreakCounter";
 import { NotificationList } from "@/components/dashboard/NotificationList";
 import { ContinueLearning } from "@/components/dashboard/ContinueLearning";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
+import { BadgeShowcase } from "@/components/badges/BadgeShowcase";
 import { usePageLoading } from "@/hooks/usePageLoading";
 import { useMyEnrollments } from "@/hooks/useCourses";
 import { useCourseCompletion } from "@/hooks/useProgress";
@@ -28,6 +29,7 @@ export function DashboardPage() {
   }
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -39,6 +41,7 @@ export function DashboardPage() {
         <div className="w-full lg:w-[280px] shrink-0 lg:border-r lg:border-border lg:pr-8">
           <div className="sticky top-24 space-y-10">
             <UserProfileCard />
+            <BadgeShowcase />
             <NotificationList />
           </div>
         </div>
@@ -91,5 +94,6 @@ export function DashboardPage() {
         </div>
       </div>
     </motion.div>
+    </>
   );
 }
