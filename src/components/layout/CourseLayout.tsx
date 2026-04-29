@@ -6,7 +6,7 @@ export function CourseLayout() {
   const location = useLocation();
   
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)] overflow-hidden">
       {/* Sidebar with sticky/independent scroll */}
       <CourseSidebar />
 

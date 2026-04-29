@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { Header } from "./Header";
+import { BottomNav } from "./BottomNav";
 import { PageTransition } from "./PageTransition";
 
 export function MainLayout() {
@@ -8,11 +9,12 @@ export function MainLayout() {
   const routeKey = isCourseRoute ? "courses" : location.pathname;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background overflow-hidden">
+    <div className="flex min-h-screen flex-col bg-background overflow-x-hidden pb-16 md:pb-0">
       <Header />
       <PageTransition animationKey={routeKey}>
         <Outlet />
       </PageTransition>
+      <BottomNav />
     </div>
   );
 }

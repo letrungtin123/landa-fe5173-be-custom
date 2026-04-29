@@ -143,21 +143,24 @@ export function CoursesPage() {
                             : "bg-accent"
                         )}
                       >
-                        {imageUrl ? (
+                        {imageUrl && (
                           <img
                             src={imageUrl.startsWith("http") ? imageUrl : `${config.lmsBaseUrl}${imageUrl}`}
                             alt={course.name}
-                            className="h-full w-full object-cover"
+                            className="absolute inset-0 z-10 h-full w-full object-cover"
                             onError={(e) => {
                               // Ảnh 404 → ẩn img, hiện icon fallback
                               e.currentTarget.style.display = "none";
                               e.currentTarget.nextElementSibling?.classList.remove("hidden");
                             }}
                           />
-                        ) : null}
-                        <div className={cn("flex items-center justify-center", imageUrl ? "hidden" : "")}>
-                          <BookOpen className="h-12 w-12 text-white/50" />
-                        </div>
+                        )}
+                        <BookOpen 
+                          className={cn(
+                            "h-12 w-12 text-white/50",
+                            imageUrl ? "hidden" : ""
+                          )} 
+                        />
 
                         {/* Badge chứng chỉ */}
                         {cert && cert.is_passing && (

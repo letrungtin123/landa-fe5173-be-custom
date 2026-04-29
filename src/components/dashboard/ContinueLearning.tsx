@@ -6,13 +6,17 @@ import { motion } from "framer-motion";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMyEnrollments } from "@/hooks/useCourses";
+import { useMyEnrollments, useCourses } from "@/hooks/useCourses";
 import { useCourseCompletion } from "@/hooks/useProgress";
+import { config } from "@/config/env";
+import { useThemeStore } from "@/stores/useThemeStore";
+import { cn } from "@/lib/utils";
 import type { ContinueCourse } from "@/data/types";
 
 /** Card hiển thị 1 khóa học đang học kèm progress bar */
 function CourseCard({ course, index }: { course: ContinueCourse; index: number }) {
   const { completionPercent } = useCourseCompletion(course.id);
+  const { colorStyle } = useThemeStore();
 
   return (
     <motion.div
@@ -23,9 +27,29 @@ function CourseCard({ course, index }: { course: ContinueCourse; index: number }
       <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`}>
         <div className="group flex h-[180px] overflow-hidden rounded-2xl border border-border shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-card transition-all duration-200 hover:shadow-md hover:scale-[1.02]">
           {/* Thumbnail */}
-          <div className="w-[35%] shrink-0 bg-muted relative flex items-center justify-center">
-            <BookOpen className="h-10 w-10 text-primary/30" />
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-primary/15" />
+          <div
+            className={cn(
+              "w-[35%] shrink-0 relative flex items-center justify-center overflow-hidden",
+              colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent"
+            )}
+          >
+            {course.thumbnail && (
+              <img
+                src={course.thumbnail}
+                alt={course.title}
+                className="absolute inset-0 z-10 h-full w-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                  e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                }}
+              />
+            )}
+            <BookOpen 
+              className={cn(
+                "h-10 w-10 text-white/50",
+                course.thumbnail ? "hidden" : ""
+              )} 
+            />
           </div>
 
           {/* Nội dung */}
@@ -71,18 +95,34 @@ function CourseCard({ course, index }: { course: ContinueCourse; index: number }
 }
 
 export function ContinueLearning() {
-  const { data: enrollments, isLoading, error } = useMyEnrollments();
+  const { data: enrollments, isLoading: enrollLoading, error } = useMyEnrollments();
+  const { data: courseList, isLoading: coursesLoading } = useCourses();
+
+  const isLoading = enrollLoading || coursesLoading;
+  
+  const coursesData = courseList?.results || [];
+  const courseMap = new Map(coursesData.map(c => [c.id, c]));
 
   // Chuyển enrollments → ContinueCourse format
   const courses: ContinueCourse[] =
     enrollments && enrollments.length > 0
-      ? enrollments.map((e) => ({
-          id: e.course_details.course_id,
-          moduleLabel: "Course",
-          lessonLabel: e.course_details.course_name,
-          title: e.course_details.course_name,
-          thumbnail: null,
-        }))
+      ? enrollments.map((e) => {
+          const courseId = e.course_details.course_id;
+          const fullCourse = courseMap.get(courseId);
+          
+          let imageUrl = fullCourse?.media?.image?.large || fullCourse?.media?.course_image?.uri || null;
+          if (imageUrl && !imageUrl.startsWith("http")) {
+            imageUrl = `${config.lmsBaseUrl}${imageUrl}`;
+          }
+          
+          return {
+            id: courseId,
+            moduleLabel: "Course",
+            lessonLabel: e.course_details.course_name,
+            title: e.course_details.course_name,
+            thumbnail: imageUrl,
+          };
+        })
       : [];
 
   return (

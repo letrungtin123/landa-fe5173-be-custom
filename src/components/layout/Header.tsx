@@ -6,8 +6,6 @@ import {
   User,
   Menu,
   Palette,
-  Droplets,
-  PaintBucket,
   LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +21,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   useThemeStore,
   THEME_PRESETS,
-  type ColorStyle,
 } from "@/stores/useThemeStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -39,11 +36,13 @@ const NAV_ITEMS = [
 
 export function Header() {
   const location = useLocation();
-  const { colorMode, colorStyle, preset, toggleColorMode, setColorStyle, setPreset } =
+  const { colorMode, preset, toggleColorMode, setPreset } =
     useThemeStore();
-  const { toggleSidebar } = useAppStore();
+  const { toggleSidebar, sidebarOpen, setSidebarOpen } = useAppStore();
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+
+  const isLessonRoute = location.pathname.includes("/lessons/");
 
   const handleLogout = () => {
     logout();
@@ -53,16 +52,18 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-4 px-4 md:px-6">
-        {/* Mobile menu toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="shrink-0 md:hidden"
-          onClick={toggleSidebar}
-          aria-label="Toggle sidebar"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
+        {/* Mobile menu toggle - ONLY SHOW IN LESSON ROUTE */}
+        {isLessonRoute && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0 md:hidden"
+            onClick={toggleSidebar}
+            aria-label="Toggle sidebar"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
 
         {/* Logo */}
         <Link to="/dashboard" className="flex shrink-0 items-center gap-2">
@@ -102,40 +103,7 @@ export function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-1">
-          {/* Color Style Toggle */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Color style">
-                {colorStyle === "gradient" ? (
-                  <Droplets className="h-4 w-4" />
-                ) : (
-                  <PaintBucket className="h-4 w-4" />
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuLabel className="text-xs text-muted-foreground">
-                Kiểu màu
-              </DropdownMenuLabel>
-              {(["solid", "gradient"] as ColorStyle[]).map((style) => (
-                <DropdownMenuItem
-                  key={style}
-                  onClick={() => setColorStyle(style)}
-                  className={cn(
-                    "capitalize",
-                    colorStyle === style && "bg-accent/10 text-accent"
-                  )}
-                >
-                  {style === "solid" ? (
-                    <PaintBucket className="mr-2 h-4 w-4" />
-                  ) : (
-                    <Droplets className="mr-2 h-4 w-4" />
-                  )}
-                  {style === "solid" ? "Solid" : "Gradient"}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+
 
           {/* Theme Preset Picker */}
           <DropdownMenu>

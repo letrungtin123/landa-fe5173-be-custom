@@ -175,7 +175,7 @@ function ExploreCourseCard({
             colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent"
           )}
         >
-          {imageUrl ? (
+          {imageUrl && (
             <img
               src={
                 imageUrl.startsWith("http")
@@ -183,21 +183,19 @@ function ExploreCourseCard({
                   : `${config.lmsBaseUrl}${imageUrl}`
               }
               alt={course.name}
-              className="h-full w-full object-cover"
+              className="absolute inset-0 z-10 h-full w-full object-cover"
               onError={(e) => {
                 e.currentTarget.style.display = "none";
                 e.currentTarget.nextElementSibling?.classList.remove("hidden");
               }}
             />
-          ) : null}
-          <div
+          )}
+          <BookOpen 
             className={cn(
-              "flex items-center justify-center absolute inset-0",
+              "h-12 w-12 text-white/50",
               imageUrl ? "hidden" : ""
-            )}
-          >
-            <BookOpen className="h-12 w-12 text-white/50" />
-          </div>
+            )} 
+          />
         </div>
 
         <CardContent className="p-5 flex flex-col flex-1">
@@ -230,13 +228,13 @@ function ExploreCourseCard({
                   <span className="text-[11px] font-medium text-muted-foreground">
                     Tiến độ
                   </span>
-                  <span className="text-[11px] font-bold text-success">
+                  <span className="text-[11px] font-bold text-primary">
                     {completionPercent}%
                   </span>
                 </div>
                 <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-success transition-[width] duration-500"
+                    className="h-full rounded-full bg-primary transition-[width] duration-500"
                     style={{ width: `${completionPercent}%` }}
                   />
                 </div>

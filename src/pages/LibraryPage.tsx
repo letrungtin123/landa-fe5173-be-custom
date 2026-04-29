@@ -47,9 +47,9 @@ export function LibraryPage() {
       transition={{ duration: 0.3 }}
       className="w-full px-4 py-8 md:px-8"
     >
-      <div className="flex flex-col lg:flex-row w-full">
+      <div className="flex flex-col-reverse lg:flex-row w-full">
         {/* Left Sidebar */}
-        <div className="w-full lg:w-1/4 shrink-0 lg:border-r lg:border-border lg:pr-8 mb-8 lg:mb-0">
+        <div className="w-full lg:w-1/4 shrink-0 lg:border-r lg:border-border lg:pr-8 mt-8 lg:mt-0">
           <div className="sticky top-24 space-y-10">
             <UserProfileCard />
             <NotificationList />
@@ -108,13 +108,13 @@ export function LibraryPage() {
             </div>
 
             {catLoading ? (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[1, 2, 3, 4].map(k => (
                   <div key={k} className="h-32 rounded-xl bg-accent/10 animate-pulse" />
                 ))}
               </div>
             ) : categories.length > 0 ? (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {categories.map((cat) => {
                   const Icon = getDocumentIcon(cat.type);
                   const bgColorClass = getCategoryColor(cat.type);
@@ -169,8 +169,8 @@ export function LibraryPage() {
                 ))}
               </div>
             ) : documents.length > 0 ? (
-              <div className="border border-border/50 rounded-2xl overflow-hidden bg-card">
-                <table className="w-full">
+              <div className="border border-border/50 rounded-2xl overflow-x-auto w-full bg-card">
+                <table className="w-full min-w-[600px]">
                   <thead className="bg-[#f8fafc]/80 dark:bg-accent/5 backdrop-blur-sm border-b border-border/50">
                     <tr className="text-left text-xs font-semibold text-muted-foreground">
                       <th className="px-6 py-4 font-medium uppercase tracking-wider">Tên tài liệu</th>
