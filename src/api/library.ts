@@ -12,9 +12,9 @@
 // User thường (enrolled) gọi được API này, không cần course_author_access.
 // ============================================================
 
-import { getCourseHandoutsHtml, parseHandoutsToDocuments } from "./courseAssets";
+import { apiClient } from "@/api/client";
 import { config } from "@/config/env";
-import type { ParsedDocument } from "./courseAssets";
+import type { CourseFile } from "@/hooks/useCourseFiles";
 
 // ID của course ảo dùng làm kho tài liệu
 const LIBRARY_COURSE_ID =
@@ -67,21 +67,21 @@ const EXT_CATEGORY: Record<string, { name: string; type: string }> = {
 
 // ── Converters ──
 
-function mapToLibraryDocument(doc: ParsedDocument): LibraryDocument {
+function mapToLibraryDocument(doc: CourseFile): LibraryDocument {
   return {
-    id: doc.title + doc.url,
-    title: doc.title,
+    id: doc.id,
+    title: doc.display_name,
     code: doc.extension.toUpperCase(),
     uploader_name: "L&A Academy",
     uploader_email: "academy@leassociates.vn",
     uploader_avatar: "",
     type: doc.extension,
-    url: doc.fullUrl,
-    created_at: "",
+    url: doc.url.startsWith("http") ? doc.url : `${config.lmsBaseUrl}${doc.url}`,
+    created_at: doc.date_added,
   };
 }
 
-function buildCategories(docs: ParsedDocument[]): DocumentCategory[] {
+function buildCategories(docs: CourseFile[]): DocumentCategory[] {
   const countMap: Record<string, { name: string; type: string; count: number }> = {};
 
   for (const doc of docs) {
@@ -95,13 +95,26 @@ function buildCategories(docs: ParsedDocument[]): DocumentCategory[] {
   return Object.entries(countMap).map(([id, val]) => ({ id, ...val }));
 }
 
+// Helper fetch từ API LANDA mới
+async function fetchLibraryFiles(): Promise<CourseFile[]> {
+  const encodedId = encodeURIComponent(LIBRARY_COURSE_ID);
+  try {
+    const { data } = await apiClient.get<{ files: CourseFile[]; total: number }>(
+      `/api/landa/v0/course_files/${encodedId}/`
+    );
+    return data.files || [];
+  } catch (error) {
+    console.error("Lỗi fetch library files:", error);
+    return [];
+  }
+}
+
 // ── Public API functions ──
 
 export async function getLibraryDocuments(
   params?: { search?: string; type?: string }
 ): Promise<LibraryDocumentsResponse> {
-  const { handouts_html } = await getCourseHandoutsHtml(LIBRARY_COURSE_ID);
-  let docs = parseHandoutsToDocuments(handouts_html || "", config.lmsBaseUrl);
+  let docs = await fetchLibraryFiles();
 
   if (params?.type) {
     const targetType = params.type.toLowerCase();
@@ -113,7 +126,7 @@ export async function getLibraryDocuments(
 
   if (params?.search) {
     const q = params.search.toLowerCase();
-    docs = docs.filter((d) => d.title.toLowerCase().includes(q));
+    docs = docs.filter((d) => d.display_name.toLowerCase().includes(q));
   }
 
   return {
@@ -123,7 +136,6 @@ export async function getLibraryDocuments(
 }
 
 export async function getLibraryCategories(): Promise<LibraryCategoriesResponse> {
-  const { handouts_html } = await getCourseHandoutsHtml(LIBRARY_COURSE_ID);
-  const docs = parseHandoutsToDocuments(handouts_html || "", config.lmsBaseUrl);
+  const docs = await fetchLibraryFiles();
   return { categories: buildCategories(docs) };
 }
