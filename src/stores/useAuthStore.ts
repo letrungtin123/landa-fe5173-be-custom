@@ -76,14 +76,17 @@ interface AuthState {
    */
   login: (username: string, password: string) => Promise<"learner" | "staff">;
 
-  /** Xóa toàn bộ auth state. */
-  logout: () => void;
+  /** Xóa toàn bộ auth state + hủy session LMS. */
+  logout: () => Promise<void>;
 
   /** Thực hiện refresh token — trả về true nếu thành công. */
   performTokenRefresh: () => Promise<boolean>;
 
   /** Lên lịch auto-refresh trước khi token hết hạn. */
   scheduleTokenRefresh: () => void;
+
+  /** Cập nhật thông tin user trong store (dùng khi edit profile). */
+  updateUser: (updates: Partial<AuthUser>) => void;
 }
 
 // ── Timer ID cho auto-refresh ──
@@ -149,7 +152,7 @@ export const useAuthStore = create<AuthState>()(
             email: me.email,
             name: account.name || me.username,
             avatar: account.profile_image?.has_image
-              ? account.profile_image.image_url_medium
+              ? account.profile_image.image_url_full
               : null,
             dateJoined: account.date_joined,
             isStaff: me.is_staff,
@@ -162,10 +165,10 @@ export const useAuthStore = create<AuthState>()(
         return me.is_staff ? "staff" : "learner";
       },
 
-      logout: () => {
+      logout: async () => {
         clearRefreshTimer();
-        // Xóa LMS session cookie
-        clearLmsSession();
+        // Xóa LMS session cookie + gọi server logout
+        await clearLmsSession();
         // Xóa toàn bộ cache React Query — ngăn rò rỉ data giữa sessions
         try { queryClient.clear(); } catch { /* App chưa mount */ }
         set({
@@ -229,6 +232,15 @@ export const useAuthStore = create<AuthState>()(
             if (!success) get().logout();
           });
         }, delay);
+      },
+
+      updateUser: (updates) => {
+        const currentUser = get().user;
+        if (currentUser) {
+          set({
+            user: { ...currentUser, ...updates },
+          });
+        }
       },
     }),
     {

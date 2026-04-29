@@ -131,7 +131,7 @@ export function ContinueLearning() {
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-bold text-foreground">Tiếp tục học</h2>
         <Link
-          to="/courses"
+          to="/explore"
           className="flex items-center gap-1 text-sm font-medium text-accent transition-colors hover:text-accent/80"
         >
           Xem tất cả

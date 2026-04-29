@@ -113,3 +113,22 @@ export async function getUserAccount(
   );
   return data;
 }
+
+/**
+ * Cập nhật thông tin chi tiết tài khoản người dùng.
+ */
+export async function updateUserAccount(
+  username: string,
+  updateData: Partial<UserAccount>
+): Promise<UserAccount> {
+  const { data } = await apiClient.patch(
+    `/api/user/v1/accounts/${username}`,
+    updateData,
+    {
+      headers: {
+        "Content-Type": "application/merge-patch+json",
+      },
+    }
+  );
+  return data;
+}

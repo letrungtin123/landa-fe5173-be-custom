@@ -44,6 +44,14 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
     tier: "gold",
     requirement: "Hoàn thành 100% bất kỳ khóa học nào",
   },
+  {
+    id: "almost_there",
+    name: "Sắp Về Đích",
+    description: "Chỉ một chút nữa thôi!",
+    category: "completion",
+    tier: "silver",
+    requirement: "Hoàn thành 90% khóa học",
+  },
 
   // ── Grade Performance ──
   {
@@ -70,6 +78,14 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
     tier: "diamond",
     requirement: "Đạt điểm ≥ 98% ở bất kỳ khóa nào",
   },
+  {
+    id: "first_blood",
+    name: "Điểm Số Đầu Tiên",
+    description: "Mọi thứ đều bắt đầu từ bước nhỏ nhất!",
+    category: "grade",
+    tier: "bronze",
+    requirement: "Nhận điểm số đầu tiên (>0%)",
+  },
 
   // ── Certificate ──
   {
@@ -79,6 +95,14 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
     category: "certificate",
     tier: "gold",
     requirement: "Nhận ít nhất 1 chứng chỉ",
+  },
+  {
+    id: "multi_certified",
+    name: "Chuyên Gia",
+    description: "Bằng cấp chứng minh năng lực!",
+    category: "certificate",
+    tier: "diamond",
+    requirement: "Nhận ít nhất 3 chứng chỉ",
   },
 
   // ── Enrollment / Multi-course ──
@@ -97,6 +121,30 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
     category: "enrollment",
     tier: "gold",
     requirement: "Hoàn thành ≥ 2 khóa học",
+  },
+  {
+    id: "knowledge_seeker",
+    name: "Người Tìm Kiến Thức",
+    description: "Khởi đầu hành trình mới!",
+    category: "enrollment",
+    tier: "bronze",
+    requirement: "Đăng ký ít nhất 1 khóa học",
+  },
+  {
+    id: "bookworm",
+    name: "Mọt Sách",
+    description: "Niềm đam mê học tập bất tận!",
+    category: "enrollment",
+    tier: "gold",
+    requirement: "Đăng ký ≥ 5 khóa học",
+  },
+  {
+    id: "veteran",
+    name: "Cựu Binh",
+    description: "Người dày dặn kinh nghiệm thực chiến!",
+    category: "enrollment",
+    tier: "diamond",
+    requirement: "Hoàn thành ≥ 5 khóa học",
   },
 ];
 

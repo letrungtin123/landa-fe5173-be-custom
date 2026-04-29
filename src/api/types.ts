@@ -30,7 +30,10 @@ export interface UserAccount {
   country: string | null;
   level_of_education: string | null;
   language: string | null;
+  language_proficiencies: Array<{ code: string }>;
   gender: string | null;
+  year_of_birth: number | null;
+  phone_number: string | null;
   profile_image: {
     image_url_full: string;
     image_url_large: string;

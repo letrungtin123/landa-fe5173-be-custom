@@ -114,10 +114,27 @@ export async function establishLmsSession(
  */
 export async function clearLmsSession(): Promise<void> {
   try {
-    document.cookie = "sessionid=; Max-Age=0; path=/";
-    document.cookie = "csrftoken=; Max-Age=0; path=/";
+    // 1) Gọi LMS logout endpoint để hủy session phía server
+    await fetch(lmsUrl("/logout"), {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "X-CSRFToken": getCookie("csrftoken") || "",
+      },
+    });
   } catch {
-    // Best-effort cleanup
+    // Best-effort — server có thể không phản hồi
+  }
+
+  // 2) Xóa sạch tất cả cookies phía client
+  const cookiesToClear = [
+    "sessionid",
+    "csrftoken",
+    "openedx-language-preference",
+  ];
+  for (const name of cookiesToClear) {
+    document.cookie = `${name}=; Max-Age=0; path=/`;
+    document.cookie = `${name}=; Max-Age=0; path=/; domain=${window.location.hostname}`;
   }
 }
 

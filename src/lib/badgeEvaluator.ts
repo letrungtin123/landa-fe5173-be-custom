@@ -139,6 +139,16 @@ function checkBadge(
       return null;
     }
 
+    case "almost_there": {
+      for (const [courseId, pct] of completions) {
+        if (pct >= 90) {
+          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
+          return { courseId, courseName: name };
+        }
+      }
+      return null;
+    }
+
     // ── Grade ──
     case "passing_grade": {
       for (const [courseId, grade] of grades) {
@@ -170,6 +180,16 @@ function checkBadge(
       return null;
     }
 
+    case "first_blood": {
+      for (const [courseId, grade] of grades) {
+        if (grade.percent > 0) {
+          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
+          return { courseId, courseName: name };
+        }
+      }
+      return null;
+    }
+
     // ── Certificate ──
     case "certified": {
       const cert = certificates.find(c => c.status === "downloadable");
@@ -177,6 +197,12 @@ function checkBadge(
         const name = enrollments.find(e => e.course_details.course_id === cert.course_id)?.course_details.course_name;
         return { courseId: cert.course_id, courseName: name };
       }
+      return null;
+    }
+
+    case "multi_certified": {
+      const certs = certificates.filter(c => c.status === "downloadable");
+      if (certs.length >= 3) return {};
       return null;
     }
 
@@ -196,6 +222,28 @@ function checkBadge(
         if (grade.passed) completedCourseIds.add(courseId);
       }
       if (completedCourseIds.size >= 2) return {};
+      return null;
+    }
+
+    case "knowledge_seeker": {
+      if (enrollments.length >= 1) return {};
+      return null;
+    }
+
+    case "bookworm": {
+      if (enrollments.length >= 5) return {};
+      return null;
+    }
+
+    case "veteran": {
+      const completedCourseIds = new Set<string>();
+      for (const [courseId, pct] of completions) {
+        if (pct >= 100) completedCourseIds.add(courseId);
+      }
+      for (const [courseId, grade] of grades) {
+        if (grade.passed) completedCourseIds.add(courseId);
+      }
+      if (completedCourseIds.size >= 5) return {};
       return null;
     }
 

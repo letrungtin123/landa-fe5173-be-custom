@@ -17,9 +17,10 @@ interface BadgeCardProps {
   badge: BadgeDefinition;
   earned?: EarnedBadge;
   compact?: boolean;
+  onClick?: () => void;
 }
 
-export function BadgeCard({ badge, earned, compact = false }: BadgeCardProps) {
+export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCardProps) {
   const isEarned = !!earned;
   const tierStyle = TIER_CONFIG[badge.tier];
 
@@ -29,9 +30,9 @@ export function BadgeCard({ badge, earned, compact = false }: BadgeCardProps) {
     return (
       <motion.div
         className={cn(
-          "group relative flex items-center gap-3 rounded-2xl border p-3 transition-all",
+          "group relative flex items-center gap-3 rounded-2xl border p-3",
           isEarned
-            ? `${tierStyle.bgColor} ${tierStyle.borderColor} hover:shadow-md`
+            ? `${tierStyle.bgColor} ${tierStyle.borderColor}`
             : "bg-muted/30 border-border/30"
         )}
         whileHover={isEarned ? { scale: 1.02, y: -1 } : undefined}
@@ -63,10 +64,11 @@ export function BadgeCard({ badge, earned, compact = false }: BadgeCardProps) {
 
   return (
     <motion.div
+      onClick={onClick}
       className={cn(
-        "group relative flex flex-col items-center rounded-3xl border-2 p-6 text-center transition-all",
+        "h-full group relative flex flex-col items-center rounded-3xl border-2 p-6 text-center",
         isEarned
-          ? `${tierStyle.bgColor} ${tierStyle.borderColor} hover:shadow-xl ${tierStyle.glow}`
+          ? `${tierStyle.bgColor} ${tierStyle.borderColor} ${tierStyle.glow} cursor-pointer`
           : "bg-muted/20 border-border/20 hover:border-border/40"
       )}
       whileHover={isEarned ? { scale: 1.04, y: -4 } : { scale: 1.01 }}
@@ -108,7 +110,7 @@ export function BadgeCard({ badge, earned, compact = false }: BadgeCardProps) {
 
       {/* Description or requirement */}
       <p className={cn(
-        "text-xs leading-relaxed mb-2",
+        "text-xs leading-relaxed mb-2 flex-1",
         isEarned ? "text-muted-foreground" : "text-muted-foreground/40"
       )}>
         {isEarned ? badge.description : badge.requirement}

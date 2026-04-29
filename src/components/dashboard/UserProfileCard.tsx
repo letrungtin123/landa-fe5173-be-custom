@@ -1,7 +1,7 @@
 import { User } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { config } from "@/config/env";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export function UserProfileCard() {
   const user = useAuthStore((s) => s.user);
@@ -42,14 +42,12 @@ export function UserProfileCard() {
 
         {/* Liên kết nhanh */}
         <div className="w-full space-y-4 mt-8">
-          <a
-            href={`${config.lmsBaseUrl}/account/settings`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to="/profile"
             className="block w-full text-[13px] font-medium text-foreground transition-colors hover:text-primary"
           >
             Hồ sơ cá nhân
-          </a>
+          </Link>
           <a
             href={`${config.lmsBaseUrl}/account/settings`}
             target="_blank"

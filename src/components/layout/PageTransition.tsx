@@ -16,9 +16,8 @@ const pageVariants: Variants = {
   },
   exit: {
     opacity: 0,
-    y: -4,
     transition: {
-      duration: 0.15,
+      duration: 0.12,
       ease: "easeIn" as const,
     },
   },
@@ -29,14 +28,14 @@ export function PageTransition({ children, animationKey }: { children: React.Rea
   const key = animationKey || location.pathname;
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={key}
         variants={pageVariants}
         initial="initial"
         animate="animate"
         exit="exit"
-        className="flex flex-col flex-1 w-full min-h-full h-full"
+        className="flex flex-col flex-1 w-full"
       >
         {children}
       </motion.div>

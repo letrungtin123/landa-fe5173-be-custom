@@ -40,6 +40,9 @@ const LessonDetailPage = React.lazy(() =>
 const BadgesPage = React.lazy(() =>
   import("@/pages/BadgesPage").then((m) => ({ default: m.BadgesPage }))
 );
+const ProfilePage = React.lazy(() =>
+  import("@/pages/ProfilePage").then((m) => ({ default: m.ProfilePage }))
+);
 const LoginPage = React.lazy(() =>
   import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage }))
 );
@@ -114,11 +117,12 @@ function App() {
                   <Route path="/explore" element={<ExplorePage />} />
                   <Route path="/library" element={<LibraryPage />} />
                   <Route path="/badges" element={<BadgesPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/courses" element={<CoursesPage />} />
 
-                  <Route path="/courses" element={<CourseLayout />}>
-                    <Route index element={<CoursesPage />} />
+                  <Route path="/courses/:courseId" element={<CourseLayout />}>
                     <Route
-                      path=":courseId/lessons/:lessonId"
+                      path="lessons/:lessonId"
                       element={<LessonDetailPage />}
                     />
                   </Route>

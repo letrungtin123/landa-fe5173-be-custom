@@ -40,6 +40,7 @@ export function Header() {
     useThemeStore();
   const { toggleSidebar, sidebarOpen, setSidebarOpen } = useAppStore();
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
 
   const isLessonRoute = location.pathname.includes("/lessons/");
@@ -50,7 +51,10 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <>
+      {/* Spacer for fixed header */}
+      <div className="h-16 w-full shrink-0" />
+      <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 !mr-0">
       <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-4 px-4 md:px-6">
         {/* Mobile menu toggle - ONLY SHOW IN LESSON ROUTE */}
         {isLessonRoute && (
@@ -106,7 +110,7 @@ export function Header() {
 
 
           {/* Theme Preset Picker */}
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Theme preset">
                 <Palette className="h-4 w-4" />
@@ -161,24 +165,27 @@ export function Header() {
           </Button>
 
           {/* User Avatar */}
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full"
+                className="h-9 w-9"
                 aria-label="User menu"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent">
-                  <User className="h-4 w-4" />
-                </div>
+                <User className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuLabel className="text-xs text-muted-foreground">
-                Tài khoản
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel className="text-xs text-muted-foreground truncate">
+                {user?.name || user?.username || "Tài khoản"}
               </DropdownMenuLabel>
-              <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+              <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
+                Hồ sơ cá nhân
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
                 Đăng xuất
               </DropdownMenuItem>
@@ -187,5 +194,6 @@ export function Header() {
         </div>
       </div>
     </header>
+    </>
   );
 }
