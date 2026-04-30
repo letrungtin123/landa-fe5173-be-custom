@@ -62,6 +62,13 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: false,
         },
+        // ── Media proxy — file download từ MEDIA_ROOT ──
+        // Library documents lưu tại /media/library_documents/...
+        '/media': {
+          target: lmsUrl,
+          changeOrigin: true,
+          secure: false,
+        },
         // ── OAuth2 proxy ──
         // Capture sessionid từ /oauth2/login/ response (exchange access_token → session)
         '/oauth2': {
