@@ -49,6 +49,14 @@ export default defineConfig(({ mode }) => {
       // Proxy API requests → Open edX LMS (chỉ trong development)
       // Giúp tránh CORS khi phát triển local
       proxy: {
+        // ── Asset proxy — ảnh/file từ course content ──
+        // Open edX lưu static assets tại /asset-v1:Org+Course+Run+type@asset+block@filename
+        // student_view_data trả raw HTML với /static/xxx → FE rewrite thành /asset-v1:...
+        '/asset-v1': {
+          target: lmsUrl,
+          changeOrigin: true,
+          secure: false,
+        },
         '/api': {
           target: lmsUrl,
           changeOrigin: true,

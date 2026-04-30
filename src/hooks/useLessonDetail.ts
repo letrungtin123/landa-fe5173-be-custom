@@ -8,6 +8,7 @@ import { useParams } from "react-router-dom";
 import { useCourseBlocksRaw } from "@/hooks/useCourses";
 import type { LessonDetail, UnitDetail, UnitComponent } from "@/data/types";
 import type { Block, VideoBlockData } from "@/api/types";
+import { rewriteStaticUrls } from "@/transformers/staticUrlRewriter";
 
 /**
  * Hook lấy chi tiết bài học từ cấu trúc blocks của course.
@@ -25,7 +26,7 @@ export function useLessonDetail(lessonId: string) {
 
     if (sequentialBlock) {
       // Lấy danh sách Units (Verticals) theo đúng thứ tự children
-      const units = buildUnits(sequentialBlock, blocks);
+      const units = buildUnits(sequentialBlock, blocks, courseId || "");
 
       // Backward-compat: flatten tất cả components để lấy legacy fields
       const allComponents = units.flatMap((u) => u.components);
@@ -83,7 +84,8 @@ export function useLessonDetail(lessonId: string) {
  */
 function buildUnits(
   sequentialBlock: Block,
-  blocks: Record<string, Block>
+  blocks: Record<string, Block>,
+  courseId: string
 ): UnitDetail[] {
   const verticalIds = sequentialBlock.children || [];
 
@@ -95,7 +97,7 @@ function buildUnits(
       const components: UnitComponent[] = componentIds
         .map((cid) => blocks[cid])
         .filter(Boolean)
-        .map((block) => buildComponent(block));
+        .map((block) => buildComponent(block, courseId));
 
       return {
         id: vertical.id,
@@ -110,6 +112,7 @@ function buildUnits(
  */
 function buildComponent(
   block: Block,
+  courseId: string
 ): UnitComponent {
   const comp: UnitComponent = {
     id: block.id,
@@ -133,7 +136,9 @@ function buildComponent(
 
   if (block.type === "html") {
     const svd = block.student_view_data as Record<string, unknown> | undefined;
-    comp.htmlContent = (svd?.data as string) || (svd?.html as string) || null;
+    const rawHtml = (svd?.data as string) || (svd?.html as string) || null;
+    // Rewrite /static/xxx URLs → LMS asset URLs (student_view_data trả raw HTML chưa rewrite)
+    comp.htmlContent = rawHtml ? rewriteStaticUrls(rawHtml, courseId) : null;
   }
 
   if (block.type === "problem") {
