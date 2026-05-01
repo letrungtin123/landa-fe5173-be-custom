@@ -11,10 +11,20 @@ import type { Notification } from "@/data/types";
 export function transformNotification(
   n: OpenEdXNotification
 ): Notification {
+  const courseName = n.content_context?.course_name;
+  let title = courseName || n.app_name || "Thông báo";
+  
+  // Format app_name đẹp hơn nếu fallback
+  if (!courseName) {
+    if (n.app_name === "updates") title = "Cập nhật khóa học";
+    else if (n.app_name === "discussion") title = "Thảo luận";
+    else if (n.app_name === "grading") title = "Chấm điểm";
+  }
+
   return {
     id: String(n.id),
     icon: mapNotificationType(n.notification_type),
-    title: n.app_name || "Thông báo",
+    title: title,
     message: n.content,
     time: formatRelativeTime(n.created),
     read: n.last_read !== null,

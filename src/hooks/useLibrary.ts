@@ -5,7 +5,7 @@
 // Hỗ trợ phân trang, filter category, search.
 // ============================================================
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import {
   getLibraryCategories,
   getLibraryDocuments,
@@ -44,6 +44,6 @@ export function useLibraryDocuments(params?: LibraryDocumentsParams) {
     queryFn: () => getLibraryDocuments(params),
     enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000,
-    placeholderData: { count: 0, next: null, previous: null, results: [] },
+    placeholderData: keepPreviousData,
   });
 }

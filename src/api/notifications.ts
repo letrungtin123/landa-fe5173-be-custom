@@ -14,7 +14,7 @@ export async function getNotifications(params?: {
 }): Promise<NotificationResponse> {
   try {
     const { data } = await apiClient.get<NotificationResponse>(
-      "/api/notifications/v1/",
+      "/api/notifications/",
       { params }
     );
     return data;
@@ -34,8 +34,8 @@ export async function markNotificationRead(
   notificationId: number
 ): Promise<unknown> {
   const { data } = await apiClient.patch(
-    `/api/notifications/v1/${notificationId}/`,
-    { read: true }
+    `/api/notifications/read/`,
+    { notification_id: notificationId }
   );
   return data;
 }
@@ -44,10 +44,14 @@ export async function markNotificationRead(
  * Mark all notifications as read.
  */
 export async function markAllNotificationsRead(): Promise<unknown> {
-  const { data } = await apiClient.patch(
-    "/api/notifications/v1/mark-all-read/"
+  // Open edX requires app_name to mark all as read. We patch the core apps.
+  const apps = ['discussion', 'updates', 'grading'];
+  await Promise.all(
+    apps.map(app_name => 
+      apiClient.patch("/api/notifications/read/", { app_name })
+    )
   );
-  return data;
+  return { success: true };
 }
 
 /**
@@ -55,7 +59,7 @@ export async function markAllNotificationsRead(): Promise<unknown> {
  */
 export async function getUnreadCount(): Promise<{ count: number }> {
   const { data } = await apiClient.get<{ count: number }>(
-    "/api/notifications/v1/count/"
+    "/api/notifications/count/"
   );
   return data;
 }

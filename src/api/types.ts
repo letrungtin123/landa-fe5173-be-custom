@@ -165,6 +165,10 @@ export interface OpenEdXNotification {
   app_name: string;
   notification_type: string;
   content: string;
+  content_context?: {
+    course_name?: string;
+    [key: string]: any;
+  };
   content_url: string | null;
   created: string;
   last_read: string | null;

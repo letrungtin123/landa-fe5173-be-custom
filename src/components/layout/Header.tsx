@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Sun,
@@ -7,6 +8,9 @@ import {
   Menu,
   Palette,
   LogOut,
+  Shield,
+  BookOpen,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,8 +28,17 @@ import {
 } from "@/stores/useThemeStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useNotifications, useUnreadNotificationCount, useMarkAllRead } from "@/hooks/useNotifications";
+import type { Notification } from "@/data/types";
 import { cn } from "@/lib/utils";
 import logoImg from "@/assets/leandassociate.webp";
+import { NotificationModal } from "@/components/dashboard/NotificationModal";
+
+const ICON_MAP: Record<Notification["icon"], React.ElementType> = {
+  badge: Shield,
+  course: BookOpen,
+  system: Info,
+};
 
 const NAV_ITEMS = [
   { label: "Khám phá", path: "/dashboard" },
@@ -42,6 +55,10 @@ export function Header() {
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
+  const { count: unreadCount } = useUnreadNotificationCount();
+  const { notifications, isLoading } = useNotifications();
+  const markAllRead = useMarkAllRead();
+  const [notifModalOpen, setNotifModalOpen] = useState(false);
 
   const isLessonRoute = location.pathname.includes("/lessons/");
 
@@ -156,13 +173,81 @@ export function Header() {
 
           <DropdownMenuSeparator className="mx-1 h-6 w-px bg-border" />
 
-          {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative h-9 w-9" aria-label="Notifications">
-            <Bell className="h-4 w-4" />
-            <Badge className="absolute -right-0.5 -top-0.5 h-4 w-4 rounded-full p-0 text-[10px] flex items-center justify-center bg-destructive text-destructive-foreground border-2 border-background">
-              2
-            </Badge>
-          </Button>
+          {/* Notifications Dropdown */}
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative h-9 w-9" aria-label="Notifications">
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <Badge className="absolute -right-0.5 -top-0.5 h-4 w-4 rounded-full p-0 text-[10px] flex items-center justify-center bg-destructive text-destructive-foreground border-2 border-background">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </Badge>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 p-0 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/20">
+                <h4 className="text-sm font-semibold">Thông báo</h4>
+                {unreadCount > 0 && (
+                  <span className="text-[11px] text-primary font-medium">{unreadCount} mới</span>
+                )}
+              </div>
+              
+              <div className="max-h-[280px] overflow-y-auto custom-scrollbar">
+                {isLoading ? (
+                  <div className="p-3 space-y-3">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <div className="h-8 w-8 rounded-full bg-muted animate-pulse shrink-0" />
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-3.5 w-2/5 bg-muted animate-pulse rounded" />
+                          <div className="h-3 w-full bg-muted animate-pulse rounded" />
+                          <div className="h-2.5 w-1/4 bg-muted animate-pulse rounded" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Bell className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                    <p className="text-xs text-muted-foreground">Chưa có thông báo mới</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col">
+                    {notifications.slice(0, 2).map((notification) => {
+                      const Icon = ICON_MAP[notification.icon] || Info;
+                      return (
+                        <div key={notification.id} className={cn("flex gap-3 p-3 border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors", !notification.read && "bg-primary/5")}>
+                          <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full mt-0.5", !notification.read ? "bg-primary/10" : "bg-muted")}>
+                            <Icon className={cn("h-4 w-4", !notification.read ? "text-primary" : "text-muted-foreground")} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={cn("text-[13px] leading-tight mb-1", !notification.read ? "font-semibold text-foreground" : "font-medium text-muted-foreground")}>
+                              {notification.title}
+                            </p>
+                            <div 
+                              className="text-[12px] text-muted-foreground leading-snug line-clamp-2 [&>p]:inline [&>table]:hidden"
+                              dangerouslySetInnerHTML={{ __html: notification.message }}
+                            />
+                            <p className="mt-1 text-[10px] text-muted-foreground/80">{notification.time}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-2 border-t border-border bg-muted/10">
+                <Button variant="ghost" className="w-full text-xs h-8" onClick={() => setNotifModalOpen(true)}>
+                  Xem tất cả thông báo
+                </Button>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Notification Modal */}
+          <NotificationModal open={notifModalOpen} onOpenChange={setNotifModalOpen} />
 
           {/* User Avatar */}
           <DropdownMenu modal={false}>

@@ -71,3 +71,45 @@ export async function getLibraryCategories(): Promise<LibraryCategoriesResponse>
   );
   return data;
 }
+
+export async function downloadLibraryFileBlob(url: string): Promise<Blob> {
+  // Convert absolute URL to relative path to use Vite proxy in DEV mode and avoid CORS
+  let requestUrl = url;
+  try {
+    if (url.startsWith('http')) {
+      const urlObj = new URL(url);
+      requestUrl = urlObj.pathname + urlObj.search;
+    }
+  } catch (e) {
+    // Fallback
+  }
+
+  console.log('[downloadLibraryFileBlob] Requesting:', requestUrl);
+
+  const { data } = await apiClient.get<Blob>(requestUrl, {
+    responseType: 'blob',
+    // Bỏ Content-Type mặc định (application/json) — không phù hợp cho binary download
+    headers: { 'Content-Type': undefined as any },
+    // Timeout riêng cho download file lớn (5 phút)
+    timeout: 300_000,
+  });
+  return data;
+}
+
+export async function handleSecureDownload(url: string, filename: string) {
+  try {
+    const blob = await downloadLibraryFileBlob(url);
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(blobUrl);
+    document.body.removeChild(a);
+  } catch (error: any) {
+    console.error("Lỗi khi tải file:", error);
+    // Bắn lỗi ra để UI xử lý toast nếu cần, hoặc alert tạm
+    alert(`Không thể tải file: ${error.message || 'Lỗi hệ thống'}`);
+  }
+}
