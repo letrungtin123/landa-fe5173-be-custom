@@ -127,11 +127,11 @@ export function LibraryPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="w-full px-4 py-8 md:px-8"
+      className="w-full px-4 py-6 md:px-8 md:py-8"
     >
       <div className="flex flex-col-reverse lg:flex-row w-full">
         {/* Left Sidebar */}
-        <div className="w-full lg:w-1/4 shrink-0 lg:border-r lg:border-border lg:pr-8 mt-8 lg:mt-0">
+        <div className="hidden lg:block w-full lg:w-1/4 shrink-0 lg:border-r lg:border-border lg:pr-8 mt-8 lg:mt-0">
           <div className="sticky top-24 space-y-10">
             <UserProfileCard />
             <NotificationList />
@@ -146,12 +146,12 @@ export function LibraryPage() {
               <span className="inline-block bg-[#00f2fe] text-[#0066cc] font-bold text-xs px-3 py-1 rounded-full mb-3 uppercase tracking-wider">
                 Library
               </span>
-              <h1 className="text-3xl font-bold text-foreground mb-6">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-4 md:mb-6">
                 Kiến tạo tri thức, vững bước tương lai
               </h1>
             </div>
 
-            <div className="w-full h-[240px] md:h-[320px] rounded-2xl overflow-hidden relative border border-border shadow-sm">
+            <div className="w-full h-[160px] sm:h-[240px] md:h-[320px] rounded-2xl overflow-hidden relative border border-border shadow-sm">
               <img
                 src="/images/library_banner.png"
                 alt="Library Banner"
@@ -162,8 +162,8 @@ export function LibraryPage() {
 
           {/* Search + Extension Filter */}
           <div className="space-y-3">
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1 max-w-md">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <input
                   type="text"
@@ -173,7 +173,7 @@ export function LibraryPage() {
                   className="w-full pl-12 pr-4 py-3 bg-card border border-border rounded-full outline-none focus:border-primary transition-colors text-sm"
                 />
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground shrink-0">
                 {totalDocuments} tài liệu
               </div>
             </div>
@@ -310,7 +310,8 @@ export function LibraryPage() {
             </div>
 
             <>
-              <div className="border border-border/50 rounded-2xl overflow-x-auto w-full bg-card">
+              {/* Desktop table */}
+              <div className="hidden md:block border border-border/50 rounded-2xl overflow-x-auto w-full bg-card">
                 <table className="w-full min-w-[600px]">
                   <thead className="bg-[#f8fafc]/80 dark:bg-accent/5 backdrop-blur-sm border-b border-border/50">
                       <tr className="text-left text-xs font-semibold text-muted-foreground">
@@ -432,8 +433,83 @@ export function LibraryPage() {
                   </table>
                 </div>
 
+              {/* Mobile card list */}
+              <div className={`md:hidden space-y-3 transition-opacity duration-300 ${docFetching ? 'opacity-50 pointer-events-none' : ''}`}>
+                {docLoading ? (
+                  Array.from({ length: pageSize }).map((_, i) => (
+                    <div key={`m-skeleton-${i}`} className="animate-pulse rounded-xl border border-border/50 bg-card p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 shrink-0 rounded-lg bg-accent/30" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 w-3/4 bg-accent/30 rounded" />
+                          <div className="h-3 w-1/2 bg-accent/30 rounded" />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : documents.length > 0 ? (
+                  documents.map((doc: LibraryDocument) => {
+                    const Icon = getDocumentIcon(doc.extension);
+                    const extColor = EXTENSION_COLORS[doc.extension] || "#666";
+                    return (
+                      <div
+                        key={doc.id}
+                        onClick={() => setPreviewDoc(doc)}
+                        className="group rounded-xl border border-border/50 bg-card p-4 active:bg-accent/5 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className="h-10 w-10 shrink-0 rounded-lg bg-background shadow-xs flex items-center justify-center border border-border/50"
+                          >
+                            <Icon className="h-5 w-5" style={{ color: extColor }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm text-foreground line-clamp-2 mb-1.5">
+                              {doc.title}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                              <span
+                                className="inline-block text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase"
+                                style={{ backgroundColor: extColor }}
+                              >
+                                {doc.extension}
+                              </span>
+                              <span>{formatFileSize(doc.file_size)}</span>
+                              <span className="hidden sm:inline">•</span>
+                              <span className="hidden sm:inline">{doc.uploaded_by_name}</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const ext = doc.extension.toLowerCase();
+                              const filename = doc.title.toLowerCase().endsWith(`.${ext}`) ? doc.title : `${doc.title}.${ext}`;
+                              handleSecureDownload(doc.download_url, filename);
+                            }}
+                            className="shrink-0 h-9 w-9 flex items-center justify-center rounded-lg border border-border/50 text-muted-foreground hover:text-foreground transition-all"
+                          >
+                            <Download className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="p-12 text-center text-muted-foreground border border-dashed rounded-xl bg-card/50">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <FileText className="h-8 w-8 opacity-20" />
+                      <p className="text-sm">
+                        {searchTerm
+                          ? `Không tìm thấy tài liệu "${searchTerm}"`
+                          : "Chưa có tài liệu nào."}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
                 {/* Pagination */}
-                <div className={`flex flex-col sm:flex-row sm:items-center justify-between pt-4 gap-4 sm:gap-0 transition-opacity duration-300 ${docLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+                <div className={`flex flex-col sm:flex-row sm:items-center justify-between pt-4 gap-3 sm:gap-0 transition-opacity duration-300 ${docLoading ? 'opacity-50 pointer-events-none' : ''}`}>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                     <div className="text-sm text-muted-foreground">
                       Trang {currentPage} / {totalPages} ({totalCount} tài liệu)

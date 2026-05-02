@@ -33,6 +33,7 @@ export function LessonDetailPage() {
   const currentUnitIndex = useAppStore((s) => s.currentUnitIndex);
   const nextUnit = useAppStore((s) => s.nextUnit);
   const prevUnit = useAppStore((s) => s.prevUnit);
+  const setCurrentLesson = useAppStore((s) => s.setCurrentLesson);
   const user = useAuthStore((s) => s.user);
   const qc = useQueryClient();
   const { isLoading: pageLoading } = usePageLoading(800, currentLessonId);
@@ -41,6 +42,29 @@ export function LessonDetailPage() {
   const { data: courseTree } = useCourseStructure(courseId || "");
   const { data: fetchedMentors } = useCourseMentors(courseId || "");
   const { data: refDocs = [] } = useCourseFiles(courseId || "");
+
+  // Auto-select first lesson if none is selected or not in current course
+  useEffect(() => {
+    if (courseTree && courseTree.modules && courseTree.modules.length > 0) {
+      let lessonExists = false;
+      if (currentLessonId) {
+        for (const mod of courseTree.modules) {
+          if (mod.lessons.some((l) => l.id === currentLessonId)) {
+            lessonExists = true;
+            break;
+          }
+        }
+      }
+
+      if (!lessonExists) {
+        const firstMod = courseTree.modules[0];
+        if (firstMod && firstMod.lessons && firstMod.lessons.length > 0) {
+          const firstLesson = firstMod.lessons[0];
+          setCurrentLesson(firstMod.id, firstLesson.id);
+        }
+      }
+    }
+  }, [courseTree, currentLessonId, setCurrentLesson]);
 
   // Scroll to top khi đổi unit
   const contentRef = useRef<HTMLDivElement>(null);

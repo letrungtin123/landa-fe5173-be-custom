@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import logoImg from "@/assets/leandassociate.webp";
 
@@ -165,12 +165,14 @@ export function LoginPage() {
                 >
                   Mật khẩu<span className="text-red-500">*</span>
                 </label>
+                {/* TODO: Quên mật khẩu — tạm ẩn, bật lại khi có SMTP
                 <button
                   type="button"
                   className="text-[13px] font-medium text-[#1877F2] hover:underline"
                 >
                   Quên mật khẩu?
                 </button>
+                */}
               </div>
               <div className="relative">
                 <input
@@ -256,6 +258,7 @@ export function LoginPage() {
           </p>
         </div>
       </div>
+      {/* TODO: Forgot Password Modal — tạm ẩn, bật lại khi có SMTP */}
     </div>
   );
 }

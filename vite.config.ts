@@ -63,6 +63,52 @@ export default defineConfig(({ mode }) => {
           secure: false,
           autoRewrite: true,
         },
+        // ── Account proxy — password change cho user đã login ──
+        '/account': {
+          target: lmsUrl,
+          changeOrigin: true,
+          secure: false,
+          cookieDomainRewrite: '',
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq) => {
+              proxyReq.setHeader('origin', lmsUrl)
+              proxyReq.setHeader('referer', `${lmsUrl}/`)
+              // Inject session cookie server-side
+              if (lmsSessionId) {
+                const existingCookies = proxyReq.getHeader('cookie') as string || ''
+                const sessionPart = `sessionid=${lmsSessionId}`
+                const csrfPart = lmsCsrfToken ? `; csrftoken=${lmsCsrfToken}` : ''
+                const merged = existingCookies
+                  ? `${existingCookies}; ${sessionPart}${csrfPart}`
+                  : `${sessionPart}${csrfPart}`
+                proxyReq.setHeader('cookie', merged)
+              }
+            })
+          },
+        },
+        // ── Password reset proxy — cho user chưa login ──
+        '/password_reset': {
+          target: lmsUrl,
+          changeOrigin: true,
+          secure: false,
+          cookieDomainRewrite: '',
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq) => {
+              proxyReq.setHeader('origin', lmsUrl)
+              proxyReq.setHeader('referer', `${lmsUrl}/`)
+              // Inject csrftoken cookie server-side (browser có thể không lưu do Secure flag)
+              if (lmsCsrfToken) {
+                const existingCookies = proxyReq.getHeader('cookie') as string || ''
+                const csrfPart = `csrftoken=${lmsCsrfToken}`
+                const sessionPart = lmsSessionId ? `; sessionid=${lmsSessionId}` : ''
+                const merged = existingCookies
+                  ? `${existingCookies}; ${csrfPart}${sessionPart}`
+                  : `${csrfPart}${sessionPart}`
+                proxyReq.setHeader('cookie', merged)
+              }
+            })
+          },
+        },
         // ── Media proxy — file download từ MEDIA_ROOT ──
         // Library documents lưu tại /media/library_documents/...
         '/media': {
