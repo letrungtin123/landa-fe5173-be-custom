@@ -57,6 +57,14 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: false,
         },
+        // ── Auth proxy — cho social auth (Google SSO) ──
+        // Exchange token: /auth/complete/google-oauth2/
+        '/auth': {
+          target: lmsUrl,
+          changeOrigin: true,
+          secure: false,
+          cookieDomainRewrite: '',
+        },
         '/api': {
           target: lmsUrl,
           changeOrigin: true,

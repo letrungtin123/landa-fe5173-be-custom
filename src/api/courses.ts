@@ -3,6 +3,7 @@
 // ============================================================
 
 import { apiClient } from "./client";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type {
   CourseListResponse,
   CourseInfo,
@@ -12,6 +13,7 @@ import type {
 
 /**
  * Get paginated list of all available courses.
+ * Truyền username để BE xác định quyền user (staff thấy courses private).
  */
 export async function getCourses(params?: {
   search_term?: string;
@@ -19,9 +21,10 @@ export async function getCourses(params?: {
   page_size?: number;
   org?: string;
 }): Promise<CourseListResponse> {
+  const username = useAuthStore.getState().user?.username;
   const { data } = await apiClient.get<CourseListResponse>(
     "/api/courses/v1/courses/",
-    { params }
+    { params: { ...params, username } }
   );
   return data;
 }

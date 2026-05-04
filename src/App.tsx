@@ -18,6 +18,8 @@ import { CourseLayout } from "@/components/layout/CourseLayout";
 import { GlobalBadgeWatcher } from "@/components/badges/GlobalBadgeWatcher";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import { config } from "@/config/env";
 
 // ── Lazy-load pages — giảm initial bundle size ──
 const DashboardPage = React.lazy(() =>
@@ -46,6 +48,7 @@ const ProfilePage = React.lazy(() =>
 const LoginPage = React.lazy(() =>
   import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage }))
 );
+
 
 // ── React Query config ──
 const queryClient = new QueryClient({
@@ -94,12 +97,14 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <BrowserRouter>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
+        <GoogleOAuthProvider clientId={config.googleClientId}>
+          <ThemeProvider>
+            <BrowserRouter>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
                 {/* Route công khai */}
                 <Route path="/login" element={<LoginPage />} />
+
 
                 {/* Routes bảo vệ — yêu cầu đăng nhập */}
                 <Route
@@ -137,8 +142,9 @@ function App() {
             </Suspense>
           </BrowserRouter>
         </ThemeProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+      </GoogleOAuthProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
   );
 }
 

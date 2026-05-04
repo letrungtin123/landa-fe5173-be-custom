@@ -12,16 +12,23 @@ import { ContinueLearning } from "@/components/dashboard/ContinueLearning";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { BadgeShowcase } from "@/components/badges/BadgeShowcase";
 import { usePageLoading } from "@/hooks/usePageLoading";
-import { useMyEnrollments } from "@/hooks/useCourses";
+import { useMyEnrollments, useCourses } from "@/hooks/useCourses";
 import { useCourseCompletion } from "@/hooks/useProgress";
 
 export function DashboardPage() {
   const { isLoading: pageLoading } = usePageLoading(1000);
   const { data: enrollments } = useMyEnrollments();
+  const { data: courseList } = useCourses();
+
+  // Chỉ lấy enrollment có course trong danh sách public (đã filter bởi BE)
+  const publicCourseIds = new Set((courseList?.results || []).map((c) => c.id));
+  const visibleEnrollments = (enrollments || []).filter(
+    (e) => publicCourseIds.has(e.course_details.course_id)
+  );
 
   // Lấy khóa học đầu tiên đang enrolled để hiển thị tiến độ
-  const firstCourseId = enrollments?.[0]?.course_details.course_id;
-  const firstCourseName = enrollments?.[0]?.course_details.course_name;
+  const firstCourseId = visibleEnrollments[0]?.course_details.course_id;
+  const firstCourseName = visibleEnrollments[0]?.course_details.course_name;
   const { completionPercent } = useCourseCompletion(firstCourseId);
 
   if (pageLoading) {

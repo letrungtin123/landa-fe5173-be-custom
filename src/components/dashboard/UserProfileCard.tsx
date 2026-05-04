@@ -150,11 +150,11 @@ export function UserProfileCard() {
 
       {/* ── Password Change Modal ── */}
       {showPwModal && createPortal(
-        <div 
+        <div
           className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto"
           onClick={closePwModal}
         >
-          <div 
+          <div
             className="relative w-full max-w-md rounded-2xl bg-white dark:bg-card p-5 sm:p-8 shadow-2xl my-auto"
             onClick={(e) => e.stopPropagation()}
           >
@@ -175,6 +175,9 @@ export function UserProfileCard() {
               <p className="mt-1 text-[13px] text-muted-foreground">
                 Nhập mật khẩu hiện tại và mật khẩu mới
               </p>
+              {/* <p className="mt-2 text-[12px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2 text-left leading-relaxed">
+                💡 Nếu bạn đăng nhập bằng Google, mật khẩu đã được gửi về email đăng ký của bạn.
+              </p> */}
             </div>
 
             {/* Form */}
@@ -239,11 +242,10 @@ export function UserProfileCard() {
                     placeholder="Nhập lại mật khẩu mới"
                     value={confirmPw}
                     onChange={(e) => { setConfirmPw(e.target.value); setPwMessage(null); }}
-                    className={`w-full rounded-lg border bg-background px-4 py-3 pr-10 text-[14px] outline-none transition-colors focus:ring-2 focus:ring-primary/20 ${
-                      confirmPw && confirmPw !== newPw
+                    className={`w-full rounded-lg border bg-background px-4 py-3 pr-10 text-[14px] outline-none transition-colors focus:ring-2 focus:ring-primary/20 ${confirmPw && confirmPw !== newPw
                         ? "border-red-400 focus:border-red-400"
                         : "border-border focus:border-primary"
-                    }`}
+                      }`}
                   />
                   <button
                     type="button"
@@ -262,11 +264,10 @@ export function UserProfileCard() {
 
               {/* Message */}
               {pwMessage && (
-                <div className={`flex items-start gap-2 rounded-lg p-3 text-[13px] leading-relaxed ${
-                  pwMessage.type === "success"
+                <div className={`flex items-start gap-2 rounded-lg p-3 text-[13px] leading-relaxed ${pwMessage.type === "success"
                     ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
                     : "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400"
-                }`}>
+                  }`}>
                   {pwMessage.type === "success" && <CheckCircle className="h-4 w-4 mt-0.5 shrink-0" />}
                   <span>{pwMessage.text}</span>
                 </div>

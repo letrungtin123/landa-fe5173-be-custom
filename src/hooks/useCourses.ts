@@ -16,6 +16,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 
 /**
  * Get paginated list of all available courses.
+ * BE đã filter visible_to_staff_only cho non-staff users.
  */
 export function useCourses(searchTerm?: string) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);

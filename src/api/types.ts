@@ -82,6 +82,7 @@ export interface CourseInfo {
   }>;
   effort: string | null;
   pacing: "self" | "instructor";
+  visible_to_staff_only?: boolean;
 }
 
 // ── Blocks ──

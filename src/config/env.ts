@@ -68,6 +68,9 @@ export const config = {
   /** Timeout (ms) cho API calls */
   apiTimeoutMs: requireEnvNumber("VITE_API_TIMEOUT_MS", 30_000),
 
+  /** Google OAuth2 Client ID — tùy chọn, không crash nếu thiếu */
+  googleClientId: (import.meta.env.VITE_GOOGLE_CLIENT_ID || "").trim(),
+
   /** Base URL cho API — trong dev dùng proxy (rỗng), production dùng LMS URL */
   get apiBaseUrl(): string {
     return import.meta.env.DEV ? "" : this.lmsBaseUrl;

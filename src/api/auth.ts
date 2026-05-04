@@ -60,8 +60,8 @@ export async function refreshTokenApi(
 
 /**
  * Lấy thông tin cơ bản user hiện tại.
- * /api/user/v1/me chỉ trả về { username } nên phải kết hợp thêm
- * accounts endpoint + staff check.
+ * /api/user/v1/me trả về { username, is_staff }.
+ * Email lấy thêm từ accounts endpoint.
  */
 export async function getUserMe(): Promise<UserMe> {
   const { data } = await apiClient.get("/api/user/v1/me");
@@ -75,31 +75,11 @@ export async function getUserMe(): Promise<UserMe> {
     // Bỏ qua lỗi — email không bắt buộc cho flow chính
   }
 
-  // Kiểm tra quyền staff qua LMS endpoint
-  const isStaff = await checkStaffAccess();
-
   return {
     username: data.username,
     email,
-    is_staff: isStaff,
+    is_staff: data.is_staff === true,
   };
-}
-
-/**
- * Kiểm tra user có quyền staff không.
- * Dùng LMS accounts list endpoint — chỉ staff mới truy cập được (200).
- * User thường bị 403 Forbidden.
- */
-async function checkStaffAccess(): Promise<boolean> {
-  try {
-    const res = await apiClient.get("/api/user/v1/accounts", {
-      params: { page_size: 1 },
-      timeout: 5000,
-    });
-    return res.status === 200;
-  } catch {
-    return false;
-  }
 }
 
 /**

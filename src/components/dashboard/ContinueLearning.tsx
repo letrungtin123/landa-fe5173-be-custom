@@ -104,25 +104,28 @@ export function ContinueLearning() {
   const courseMap = new Map(coursesData.map(c => [c.id, c]));
 
   // Chuyển enrollments → ContinueCourse format
+  // Chỉ hiển thị enrollment nếu course tồn tại trong courseMap (đã được BE filter theo quyền)
   const courses: ContinueCourse[] =
     enrollments && enrollments.length > 0
-      ? enrollments.map((e) => {
-          const courseId = e.course_details.course_id;
-          const fullCourse = courseMap.get(courseId);
+      ? enrollments
+          .filter((e) => courseMap.has(e.course_details.course_id))
+          .map((e) => {
+            const courseId = e.course_details.course_id;
+            const fullCourse = courseMap.get(courseId);
           
-          let imageUrl = fullCourse?.media?.image?.large || fullCourse?.media?.course_image?.uri || null;
-          if (imageUrl && !imageUrl.startsWith("http")) {
-            imageUrl = `${config.lmsBaseUrl}${imageUrl}`;
-          }
+            let imageUrl = fullCourse?.media?.image?.large || fullCourse?.media?.course_image?.uri || null;
+            if (imageUrl && !imageUrl.startsWith("http")) {
+              imageUrl = `${config.lmsBaseUrl}${imageUrl}`;
+            }
           
-          return {
-            id: courseId,
-            moduleLabel: "Course",
-            lessonLabel: e.course_details.course_name,
-            title: e.course_details.course_name,
-            thumbnail: imageUrl,
-          };
-        })
+            return {
+              id: courseId,
+              moduleLabel: "Course",
+              lessonLabel: e.course_details.course_name,
+              title: e.course_details.course_name,
+              thumbnail: imageUrl,
+            };
+          })
       : [];
 
   return (
