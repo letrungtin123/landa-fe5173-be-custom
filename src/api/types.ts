@@ -24,6 +24,7 @@ export interface UserMe {
 export interface UserAccount {
   username: string;
   name: string;
+  is_active: boolean;
   email: string;
   date_joined: string;
   bio: string | null;

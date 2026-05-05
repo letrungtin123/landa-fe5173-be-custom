@@ -78,10 +78,18 @@ export interface LessonDetail {
 }
 
 export interface Mentor {
+  id?: number;
+  username?: string;
   name: string;
+  full_name?: string;
   role: string;
   company: string;
   avatar: string | null;
+  email?: string;
+  phone_number?: string;
+  bio?: string;
+  profile_image_url?: string | null;
+  profile_image_url_full?: string | null;
 }
 
 export interface Notification {

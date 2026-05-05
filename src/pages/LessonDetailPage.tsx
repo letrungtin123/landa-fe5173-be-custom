@@ -9,7 +9,8 @@ import { useLessonDetail } from "@/hooks/useLessonDetail";
 import { useCourse, useCourseStructure, useCourseMentors } from "@/hooks/useCourses";
 import { useCourseFiles } from "@/hooks/useCourseFiles";
 import type { CourseFile } from "@/hooks/useCourseFiles";
-import { BookOpen, Download, FileText, FileSpreadsheet, Presentation, MessageCircle, User, CheckCircle2, ChevronUp } from "lucide-react";
+import { BookOpen, Download, FileText, FileSpreadsheet, Presentation, MessageCircle, CheckCircle2, ChevronUp } from "lucide-react";
+import { MentorSidebar } from "@/components/lesson/MentorSidebar";
 import { useParams } from "react-router-dom";
 import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -120,25 +121,33 @@ export function LessonDetailPage() {
       markBlocksComplete(user?.username || "", courseId || "", leafBlockIds),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["course-blocks"] });
-      qc.invalidateQueries({ queryKey: ["course-completion"] });
+      qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
     },
   });
 
   // ✅ Hooks phải gọi TRƯỚC mọi early return
   const mentors = useMemo(() => {
-    // Chỉ sử dụng dữ liệu từ API chuẩn (Custom Endpoint) thay vì bóc tách HTML cũ
-    if (fetchedMentors && fetchedMentors.length > 0) {
-      return fetchedMentors.map((m) => ({
-        name: m.full_name,
-        role: m.role === 'instructor' ? 'Giảng viên chính' : 'Trợ giảng',
-        company: '',
-        avatar: m.profile_image_url
-          ? (m.profile_image_url.startsWith('http') ? m.profile_image_url : `${config.lmsBaseUrl}${m.profile_image_url}`)
-          : null
-      }));
-    }
-
-    return [];
+    if (!fetchedMentors || fetchedMentors.length === 0) return [];
+    return fetchedMentors.map((m) => ({
+      id: m.id,
+      username: m.username,
+      name: m.name || m.full_name,
+      full_name: m.full_name,
+      role: m.role,
+      company: '',
+      email: m.email,
+      phone_number: m.phone_number,
+      bio: m.bio,
+      avatar: m.profile_image_url
+        ? (m.profile_image_url.startsWith('http') ? m.profile_image_url : `${config.lmsBaseUrl}${m.profile_image_url}`)
+        : null,
+      profile_image_url: m.profile_image_url
+        ? (m.profile_image_url.startsWith('http') ? m.profile_image_url : `${config.lmsBaseUrl}${m.profile_image_url}`)
+        : null,
+      profile_image_url_full: m.profile_image_url_full
+        ? (m.profile_image_url_full.startsWith('http') ? m.profile_image_url_full : `${config.lmsBaseUrl}${m.profile_image_url_full}`)
+        : null,
+    }));
   }, [fetchedMentors]);
 
   // Unit navigation handlers
@@ -158,7 +167,7 @@ export function LessonDetailPage() {
           .catch((e) => console.error("Failed to auto-mark block on next:", e))
           .finally(() => {
             qc.invalidateQueries({ queryKey: ["course-blocks"] });
-            qc.invalidateQueries({ queryKey: ["course-completion"] });
+            qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
           });
       }
     }
@@ -213,7 +222,7 @@ export function LessonDetailPage() {
         <div className="flex-1 min-w-0" ref={contentRef}>
           <div className="px-6 py-6 md:px-10 md:py-8">
             {/* Header: Module + Tiêu đề + Progress */}
-            <div className="mb-8 flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+            <div className="mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <div className="flex-1">
                 {/* Module tag + Lesson counter */}
                 <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -226,19 +235,9 @@ export function LessonDetailPage() {
                 </div>
 
                 {/* Lesson Title */}
-                <h1 className="mb-4 text-[32px] md:text-[36px] font-black leading-tight text-foreground">
+                <h1 className="text-[32px] md:text-[36px] font-black leading-tight text-foreground">
                   {lesson.title}
                 </h1>
-
-                {/* ── Unit Progress Bar under title ── */}
-                {totalUnits > 1 && (
-                  <div className="h-1.5 w-full max-w-[400px] rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
-                      style={{ width: `${((currentUnitIndex + 1) / totalUnits) * 100}%` }}
-                    />
-                  </div>
-                )}
               </div>
 
               {/* Progress Text (Right side) */}
@@ -254,15 +253,25 @@ export function LessonDetailPage() {
               )}
             </div>
 
+            {/* ── Unit Progress Bar full width ── */}
+            {totalUnits > 1 && (
+              <div className="mb-8 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
+                  style={{ width: `${((currentUnitIndex + 1) / totalUnits) * 100}%` }}
+                />
+              </div>
+            )}
+
             {/* ── Row: Content + Right sidebar ── */}
             <div className="flex flex-col xl:flex-row gap-6">
               {/* ── Left Column ── */}
-              <div className="flex-1 min-w-0 flex flex-col gap-6">
+              <div className="flex-1 min-w-0 flex flex-col gap-5">
                 {/* Render current Unit components */}
                 {currentUnit?.components.map((comp) => {
                   if (comp.type === "video" && comp.videoUrl) {
                     return (
-                      <div key={comp.id} className="mb-2">
+                      <div key={comp.id}>
                         <VideoPlayer lesson={lesson} videoUrl={comp.videoUrl} />
                       </div>
                     );
@@ -274,14 +283,14 @@ export function LessonDetailPage() {
                       FORBID_ATTR: ["onerror", "onload", "onclick"],
                     });
                     return (
-                      <div key={comp.id} className="rounded-xl border border-border p-6 shadow-sm bg-card mb-6">
+                      <div key={comp.id} className="rounded-3xl border border-border px-8 py-7 shadow-sm bg-card">
                         {comp.displayName && (
                           <div className="mb-4 inline-block">
                             <BadgeCyan><span className="uppercase">{comp.displayName}</span></BadgeCyan>
                           </div>
                         )}
                         <div
-                          className="prose prose-sm max-w-none text-[14px] leading-relaxed text-foreground/80 dark:prose-invert dark:text-foreground"
+                          className="prose max-w-none text-[16px] leading-relaxed text-foreground/80 dark:prose-invert dark:text-foreground [&_p]:!text-[16px] [&_span]:!text-[16px] [&_li]:!text-[16px] [&_div]:!text-[16px]"
                           dangerouslySetInnerHTML={{ __html: cleanHtml }}
                         />
                       </div>
@@ -320,7 +329,7 @@ export function LessonDetailPage() {
 
                 {/* Fallback: Unit has no renderable component */}
                 {currentUnit && currentUnit.components.length === 0 && (
-                  <div className="rounded-xl border border-dashed border-border p-6 text-center text-[13px] text-muted-foreground">
+                  <div className="rounded-3xl border border-dashed border-border px-8 py-7 text-center text-[13px] text-muted-foreground">
                     Phần này chưa có nội dung.
                   </div>
                 )}
@@ -343,50 +352,19 @@ export function LessonDetailPage() {
               {/* ── Right sidebar content (xl+) ── */}
               <div className="hidden xl:flex w-[300px] shrink-0 flex-col gap-6">
 
-                {/* MENTOR — chỉ hiện khi có data thật */}
-                <div className="rounded-xl border border-border p-6 shadow-sm bg-card">
-                  <BadgeCyan>Mentor</BadgeCyan>
-                  <h3 className="mb-5 text-[16px] font-bold text-foreground">
-                    Người hướng dẫn
-                  </h3>
-                  {mentors.length > 0 ? (
-                    <div className="flex flex-col gap-4">
-                      {mentors.map((m, i) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
-                            {m.avatar ? (
-                              <img
-                                src={m.avatar}
-                                alt={m.name}
-                                className="h-10 w-10 rounded-full object-cover"
-                                onError={(e) => {
-                                  // Nếu ảnh lỗi (404, etc.), ẩn thẻ img và hiện fallback kế tiếp
-                                  e.currentTarget.style.display = 'none';
-                                  if (e.currentTarget.nextElementSibling) {
-                                    e.currentTarget.nextElementSibling.classList.remove('hidden');
-                                  }
-                                }}
-                              />
-                            ) : null}
-                            {/* Fallback khi không có avatar hoặc avatar lỗi */}
-                            <div className={cn("flex h-full w-full items-center justify-center rounded-full bg-muted", m.avatar ? "hidden" : "")}>
-                              <User className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[13px] font-bold text-foreground truncate">{m.name}</p>
-                            <p className="text-[11px] text-muted-foreground truncate">{m.role}{m.company ? ` · ${m.company}` : ""}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[12px] text-muted-foreground italic">Chưa có thông tin Mentor.</p>
-                  )}
+                {/* MENTOR — click để xem chi tiết */}
+                <div className="rounded-3xl border border-border shadow-sm bg-card">
+                  <div className="px-8 pt-7 pb-2">
+                    <BadgeCyan>Mentor</BadgeCyan>
+                    <h3 className="mb-1 text-[16px] font-bold text-foreground">
+                      Người hướng dẫn
+                    </h3>
+                  </div>
+                  <MentorSidebar mentors={mentors} />
                 </div>
 
                 {/* LeAssociates info block */}
-                <div className="rounded-xl border border-border p-6 shadow-sm bg-card">
+                <div className="rounded-3xl border border-border px-8 py-7 shadow-sm bg-card">
                   <div className="mb-2">
                     <span className="text-[16px] font-black text-primary">Le</span>
                     <span className="text-[16px] font-black text-accent-foreground">&</span>
@@ -400,7 +378,7 @@ export function LessonDetailPage() {
                 </div>
 
                 {/* Tài liệu tham khảo — LANDA API: file unlocked trên Studio */}
-                <div className="rounded-xl bg-primary p-6 text-primary-foreground shadow-sm">
+                <div className="rounded-3xl bg-primary p-8 text-primary-foreground shadow-sm">
                   <h3 className="mb-4 text-[16px] font-bold">
                     Tài liệu tham khảo
                   </h3>
@@ -438,7 +416,7 @@ export function LessonDetailPage() {
                 </div>
 
                 {/* AI Mentor hint */}
-                <div className="mt-2 rounded-xl border border-border bg-card p-5 text-center shadow-sm">
+                <div className="mt-2 rounded-2xl border border-border bg-card p-3 text-center shadow-sm">
                   <p className="mb-2 text-[11px] font-bold text-primary tracking-widest uppercase">
                     AI MENTOR
                   </p>

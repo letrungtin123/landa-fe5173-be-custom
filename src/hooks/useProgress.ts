@@ -4,30 +4,25 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { markBlockComplete, markBlocksComplete, getCourseGrade } from "@/api/progress";
+import { markBlockComplete, markBlocksComplete, getCourseGrade, getMyCourseProgress } from "@/api/progress";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useCourseStructure } from "./useCourses";
 
 /**
  * Lấy phần trăm hoàn thành tổng thể cho một khóa học.
  * Trả về số từ 0 → 100.
  */
 export function useCourseCompletion(courseId?: string) {
-  const { data: course, isLoading, error } = useCourseStructure(courseId || "");
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  const completionPercent = useMemo(() => {
-    if (!course || !course.modules || course.modules.length === 0) {
-      return 0;
-    }
-    const sum = course.modules.reduce((acc, m) => {
-      const p = parseInt(m.progress || "0", 10);
-      return acc + (isNaN(p) ? 0 : p);
-    }, 0);
-    return Math.round(sum / course.modules.length);
-  }, [course]);
+  const { data: completionPercent, isLoading, error } = useQuery({
+    queryKey: ["course-completion-fast", courseId],
+    queryFn: () => getMyCourseProgress(courseId!),
+    enabled: isAuthenticated && !!courseId,
+    staleTime: 5 * 60 * 1000,
+  });
 
   return {
-    completionPercent,
+    completionPercent: completionPercent || 0,
     isLoading,
     error,
   };
@@ -44,7 +39,7 @@ export function useMarkComplete() {
     mutationFn: ({ courseId, usageKey }: { courseId: string; usageKey: string }) => 
       markBlockComplete(user?.username || "", courseId, usageKey),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["course-completion"] });
+      qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
       qc.invalidateQueries({ queryKey: ["course-blocks"] });
       qc.invalidateQueries({ queryKey: ["enrollments"] });
     },
@@ -65,7 +60,7 @@ export function useMarkBlocksComplete() {
     mutationFn: ({ courseId, blockIds }: { courseId: string; blockIds: string[] }) =>
       markBlocksComplete(user?.username || "", courseId, blockIds),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["course-completion"] });
+      qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
       qc.invalidateQueries({ queryKey: ["course-blocks"] });
       qc.invalidateQueries({ queryKey: ["enrollments"] });
     },

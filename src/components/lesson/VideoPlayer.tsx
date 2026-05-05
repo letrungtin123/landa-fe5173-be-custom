@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { LessonDetail } from "@/data/types";
-import { markBlockComplete } from "@/api/progress";
+import { useMarkComplete } from "@/hooks/useProgress";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -52,6 +52,7 @@ export function VideoPlayer({ lesson, videoUrl: propVideoUrl }: VideoPlayerProps
 
   const { courseId } = useParams();
   const user = useAuthStore((s) => s.user);
+  const { mutate: markComplete } = useMarkComplete();
 
   const videoUrl = propVideoUrl || lesson._videoUrl;
   const youtubeId = videoUrl ? getYouTubeId(videoUrl) : null;
@@ -69,8 +70,10 @@ export function VideoPlayer({ lesson, videoUrl: propVideoUrl }: VideoPlayerProps
       user?.username
     ) {
       hasMarkedComplete.current = true;
-      markBlockComplete(user.username, courseId, lesson.id).catch(() => {
-        // Bỏ qua lỗi — không ảnh hưởng trải nghiệm xem
+      markComplete({ courseId, usageKey: lesson.id }, {
+        onError: () => {
+          // Bỏ qua lỗi — không ảnh hưởng trải nghiệm xem
+        }
       });
     }
   }, [currentTime, duration, lesson.id, courseId, user]);

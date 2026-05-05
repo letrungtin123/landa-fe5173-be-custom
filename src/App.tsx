@@ -142,9 +142,9 @@ function App() {
             </Suspense>
           </BrowserRouter>
         </ThemeProvider>
-      </GoogleOAuthProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
+        </GoogleOAuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -71,6 +71,15 @@ export const config = {
   /** Google OAuth2 Client ID — tùy chọn, không crash nếu thiếu */
   googleClientId: (import.meta.env.VITE_GOOGLE_CLIENT_ID || "").trim(),
 
+  /** Microsoft Azure AD Client ID — tùy chọn, không crash nếu thiếu */
+  microsoftClientId: (import.meta.env.VITE_MICROSOFT_CLIENT_ID || "").trim(),
+
+  /** Microsoft Azure AD Authority URL — mặc định multi-tenant */
+  microsoftAuthority: (
+    import.meta.env.VITE_MICROSOFT_AUTHORITY ||
+    "https://login.microsoftonline.com/common"
+  ).trim(),
+
   /** Base URL cho API — trong dev dùng proxy (rỗng), production dùng LMS URL */
   get apiBaseUrl(): string {
     return import.meta.env.DEV ? "" : this.lmsBaseUrl;

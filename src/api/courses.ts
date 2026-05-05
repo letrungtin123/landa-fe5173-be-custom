@@ -97,8 +97,12 @@ export async function getCourseMentors(courseId: string) {
         id: number;
         username: string;
         email: string;
+        name: string;
         full_name: string;
+        phone_number: string;
+        bio: string;
         profile_image_url: string | null;
+        profile_image_url_full: string | null;
         role: string;
       }[];
     }

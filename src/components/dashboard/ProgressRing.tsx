@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -14,18 +14,8 @@ export function ProgressRing({
   courseTitle = "L&A Onboarding 2026",
   courseLink = "/courses",
 }: ProgressRingProps) {
-  const svgRef = useRef<SVGCircleElement>(null);
-  const circumference = 2 * Math.PI * 45; // radius = 45
+  const circumference = 2 * Math.PI * 42; // radius = 42
   const offset = circumference - (progress / 100) * circumference;
-
-  useEffect(() => {
-    if (svgRef.current) {
-      svgRef.current.style.setProperty(
-        "--progress-offset",
-        offset.toString()
-      );
-    }
-  }, [offset]);
 
   return (
     <motion.div
@@ -48,23 +38,18 @@ export function ProgressRing({
                 className="stroke-muted/40"
               />
               {/* Progress */}
-              <circle
-                ref={svgRef}
+              <motion.circle
                 cx="50"
                 cy="50"
                 r="42"
                 fill="none"
                 strokeWidth="8"
                 strokeLinecap="round"
-                className="stroke-success animate-draw-circle"
-                strokeDasharray={circumference}
-                strokeDashoffset={circumference}
-                style={
-                  {
-                    "--progress-offset": offset,
-                    animation: "drawCircle 1.5s ease-out forwards",
-                  } as React.CSSProperties
-                }
+                className="stroke-success"
+                strokeDasharray={`${circumference} ${circumference}`}
+                initial={{ strokeDashoffset: circumference }}
+                animate={{ strokeDashoffset: offset }}
+                transition={{ duration: 1.5, ease: "easeOut" }}
               />
             </svg>
             {/* Center text */}

@@ -60,6 +60,19 @@ apiClient.interceptors.response.use(
 
     // Chỉ xử lý 401 và chưa retry
     if (error.response?.status !== 401 || originalRequest._retried) {
+      // Nếu 401 lần 2 sau retry → cũng phải logout
+      if (error.response?.status === 401 && originalRequest._retried) {
+        useAuthStore.getState().logout();
+        window.location.href = "/login?error=account_disabled";
+      }
+      return Promise.reject(error);
+    }
+
+    // Tài khoản bị khóa bởi Admin → logout ngay, KHÔNG thử refresh
+    const responseData = error.response?.data as Record<string, unknown> | undefined;
+    if (responseData?.error === "account_disabled") {
+      useAuthStore.getState().logout();
+      window.location.href = "/login?error=account_disabled";
       return Promise.reject(error);
     }
 

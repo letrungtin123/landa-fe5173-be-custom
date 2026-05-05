@@ -4,13 +4,14 @@
 
 import { Badge } from "@/components/ui/badge";
 import { MentorSidebar } from "./MentorSidebar";
-import type { LessonDetail } from "@/data/types";
+import type { LessonDetail, Mentor } from "@/data/types";
 
 interface QuizRightSidebarProps {
   lesson: LessonDetail;
+  mentors?: Mentor[];
 }
 
-export function QuizRightSidebar({ lesson }: QuizRightSidebarProps) {
+export function QuizRightSidebar({ lesson, mentors = [] }: QuizRightSidebarProps) {
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 pb-8">
@@ -28,7 +29,7 @@ export function QuizRightSidebar({ lesson }: QuizRightSidebarProps) {
         </div>
 
         {/* Mentor Section */}
-        <MentorSidebar lesson={lesson} />
+        <MentorSidebar mentors={mentors.length > 0 ? mentors : lesson.mentors} />
       </div>
     </div>
   );

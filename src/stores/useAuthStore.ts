@@ -82,6 +82,12 @@ interface AuthState {
    */
   loginWithGoogle: (edxTokens: import("@/api/types").OAuthTokenResponse) => Promise<"learner" | "staff">;
 
+  /**
+   * Đăng nhập bằng Microsoft 365 (Azure AD OAuth2).
+   * Nhận edX tokens đã exchange sẵn → lưu + fetch user info.
+   */
+  loginWithMicrosoft: (edxTokens: import("@/api/types").OAuthTokenResponse) => Promise<"learner" | "staff">;
+
   /** Xóa toàn bộ auth state + hủy session LMS. */
   logout: () => Promise<void>;
 
@@ -142,15 +148,22 @@ export const useAuthStore = create<AuthState>()(
           // User mới có thể chưa có đầy đủ profile
           account = {
             name: me.username,
+            is_active: true, // Giả sử true nếu chưa fetch được profile
             profile_image: { has_image: false, image_url_medium: "" },
             date_joined: new Date().toISOString(),
           };
         }
 
-        // 4) Cập nhật streak đăng nhập
+        // 4) Kiểm tra cờ is_active
+        if (account.is_active === false) {
+          get().logout();
+          throw new Error("Tài khoản của bạn đã bị khóa.");
+        }
+
+        // 5) Cập nhật streak đăng nhập
         updateStreak();
 
-        // 5) Lưu thông tin user
+        // 6) Lưu thông tin user
         set({
           isAuthenticated: true,
           user: {
@@ -198,6 +211,11 @@ export const useAuthStore = create<AuthState>()(
           };
         }
 
+        if (account.is_active === false) {
+          get().logout();
+          throw new Error("Tài khoản của bạn đã bị khóa.");
+        }
+
         // 4) Cập nhật streak đăng nhập
         updateStreak();
 
@@ -217,6 +235,57 @@ export const useAuthStore = create<AuthState>()(
         });
 
         // 6) Lên lịch tự động refresh
+        get().scheduleTokenRefresh();
+
+        return me.is_staff ? "staff" : "learner";
+      },
+
+      loginWithMicrosoft: async (edxTokens) => {
+        // Logic giống hệt loginWithGoogle — cùng flow exchange tokens
+        const expiresAt = Date.now() + edxTokens.expires_in * 1000;
+        set({
+          accessToken: edxTokens.access_token,
+          refreshToken: edxTokens.refresh_token,
+          tokenType: edxTokens.token_type || "Bearer",
+          tokenExpiresAt: expiresAt,
+        });
+
+        await establishLmsSessionFromToken();
+
+        const me = await getUserMe();
+
+        let account;
+        try {
+          account = await getUserAccount(me.username);
+        } catch {
+          account = {
+            name: me.username,
+            profile_image: { has_image: false, image_url_medium: "" },
+            date_joined: new Date().toISOString(),
+          };
+        }
+
+        if (account.is_active === false) {
+          get().logout();
+          throw new Error("Tài khoản của bạn đã bị khóa.");
+        }
+
+        updateStreak();
+
+        set({
+          isAuthenticated: true,
+          user: {
+            username: me.username,
+            email: me.email,
+            name: account.name || me.username,
+            avatar: account.profile_image?.has_image
+              ? account.profile_image.image_url_full
+              : null,
+            dateJoined: account.date_joined,
+            isStaff: me.is_staff,
+          },
+        });
+
         get().scheduleTokenRefresh();
 
         return me.is_staff ? "staff" : "learner";

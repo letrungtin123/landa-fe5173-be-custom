@@ -108,3 +108,19 @@ export async function getCourseGrade(
   );
   return data;
 }
+
+/**
+ * Get accurate lightweight progress percentage from the custom LAndA backend.
+ */
+export async function getMyCourseProgress(courseId: string): Promise<number> {
+  try {
+    const { data } = await apiClient.get(
+      `/api/landa/v1/my-progress/`,
+      { params: { course_id: courseId } }
+    );
+    return data?.progress || 0;
+  } catch (error) {
+    console.warn("Failed to get my course progress", error);
+    return 0;
+  }
+}

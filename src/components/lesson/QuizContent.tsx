@@ -220,7 +220,7 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
         // Đợi một chút để LMS xử lý điểm số và cập nhật tiến độ vào database (qua Celery task)
         // Sau đó mới fetch lại course-completion và course-blocks
         setTimeout(() => {
-          qc.invalidateQueries({ queryKey: ["course-completion"] });
+          qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
           qc.invalidateQueries({ queryKey: ["course-blocks"] });
         }, 1000);
       }

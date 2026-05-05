@@ -18,9 +18,14 @@ interface QuizResult {
  * Sau khi nộp thành công → invalidate progress queries.
  */
 export function useSubmitQuiz(usageKey: string) {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (answers: Record<string, string | string[]>) =>
       submitProblemAnswer(usageKey, answers),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
+      qc.invalidateQueries({ queryKey: ["course-blocks"] });
+    },
   });
 }
 

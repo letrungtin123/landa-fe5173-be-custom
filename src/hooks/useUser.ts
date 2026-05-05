@@ -3,6 +3,7 @@
 // ============================================================
 
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { getUserAccount } from "@/api/auth";
 import { useCourseCompletion } from "@/hooks/useProgress";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -23,6 +24,33 @@ export function useUser(courseId?: string) {
     enabled: isAuthenticated && !!username,
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
+
+  // ── Redis Blacklist check — API siêu nhẹ (< 1ms, 0 DB query) ──
+  // Polling mỗi 30s + check lại khi chuyển tab/focus
+  const statusQuery = useQuery({
+    queryKey: ["account-status"],
+    queryFn: async () => {
+      const { apiClient } = await import("@/api/client");
+      const { data } = await apiClient.get("/api/landa/v1/account/status/");
+      return data as { is_active: boolean };
+    },
+    enabled: isAuthenticated,
+    staleTime: 0, // Luôn coi là stale để refetchOnWindowFocus luôn gọi
+    refetchOnWindowFocus: "always",
+    refetchInterval: 30 * 1000, // Polling mỗi 30 giây
+    retry: false, // Nếu 401 → không retry (middleware đã chặn)
+  });
+
+  // Tự động logout nếu bị blacklist
+  useEffect(() => {
+    // Case 1: API status trả về is_active = false
+    if (statusQuery.data && statusQuery.data.is_active === false) {
+      useAuthStore.getState().logout();
+      window.location.href = "/login?error=account_disabled";
+      return;
+    }
+    // Case 2: API status trả lỗi 401 (middleware chặn) → interceptor đã xử lý logout
+  }, [statusQuery.data]);
 
   const { completionPercent } = useCourseCompletion(courseId);
 
