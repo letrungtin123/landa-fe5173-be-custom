@@ -293,18 +293,26 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         clearRefreshTimer();
-        // Xóa LMS session cookie + gọi server logout
-        await clearLmsSession();
-        // Xóa toàn bộ cache React Query — ngăn rò rỉ data giữa sessions
-        try { queryClient.clear(); } catch { /* App chưa mount */ }
+        
+        // 1. Xóa state local TRƯỚC để đảm bảo FE luôn đăng xuất
+        // Dù API logout có bị lỗi 401 (do bị blacklist) thì app vẫn thoát
         set({
+          user: null,
           isAuthenticated: false,
           accessToken: null,
           refreshToken: null,
-          tokenType: "Bearer",
           tokenExpiresAt: null,
-          user: null,
         });
+
+        // 2. Xóa toàn bộ cache React Query
+        try { queryClient.clear(); } catch { /* App chưa mount */ }
+
+        // 3. Xóa LMS session cookie + gọi server logout
+        try {
+          await clearLmsSession();
+        } catch (e) {
+          console.warn("Lỗi khi clear LMS session (có thể do token hết hạn hoặc bị khoá):", e);
+        }
       },
 
       performTokenRefresh: async (): Promise<boolean> => {
