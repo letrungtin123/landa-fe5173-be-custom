@@ -45,6 +45,7 @@ export interface UnitComponent {
   problemUsageKey?: string | null;
   crosswordUsageKey?: string | null;
   sortableUsageKey?: string | null;
+  diagramData?: any;
   studentViewUrl?: string | null;
 }
 

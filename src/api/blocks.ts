@@ -15,7 +15,7 @@ export async function getBlockDetail(usageKey: string, username?: string): Promi
       params: {
         requested_fields:
           "student_view_data,display_name,type,children,completion",
-        student_view_data: "video,html,la_crossword,la_sortable",
+        student_view_data: "video,html,la_crossword,la_sortable,la_diagram",
         ...(username ? { username } : {}),
       },
     }

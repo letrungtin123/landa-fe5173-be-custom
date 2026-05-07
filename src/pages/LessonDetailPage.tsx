@@ -20,6 +20,7 @@ import { config } from "@/config/env";
 import { markBlocksComplete } from "@/api/progress";
 import { CrosswordContent } from "@/components/lesson/CrosswordContent";
 import { SortableContent } from "@/components/lesson/SortableContent";
+import DiagramContent from "@/components/lesson/DiagramContent";
 
 // ── Badge component (declared outside render to satisfy React Compiler) ──
 const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
@@ -321,6 +322,14 @@ export function LessonDetailPage() {
                         key={comp.id}
                         usageKey={comp.sortableUsageKey}
                       />
+                    );
+                  }
+
+                  if (comp.type === "la_diagram" && comp.diagramData) {
+                    return (
+                      <div key={comp.id} className="rounded-3xl border border-border p-4 shadow-sm bg-card">
+                        <DiagramContent data={comp.diagramData} />
+                      </div>
                     );
                   }
 

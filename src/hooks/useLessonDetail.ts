@@ -153,6 +153,50 @@ function buildComponent(
     comp.sortableUsageKey = block.id;
   }
 
+  if (block.type === "la_diagram") {
+    try {
+      const svd = block.student_view_data as any;
+      if (svd) {
+        // XBlock spreads diagram_data into root of student_view_data
+        // So svd may contain: { display_name, completed, diagrams, start_diagram_id }
+        // Or legacy: { display_name, completed, nodes, edges }
+        // Or wrapped: { display_name, completed, diagram_data: {...} }
+        let parsed: any = null;
+
+        if (svd.diagram_data) {
+          // Wrapped format
+          parsed = typeof svd.diagram_data === 'string'
+            ? JSON.parse(svd.diagram_data)
+            : svd.diagram_data;
+        } else if (svd.diagrams) {
+          // New spread format: diagrams array at root
+          parsed = {
+            diagrams: svd.diagrams,
+            start_diagram_id: svd.start_diagram_id,
+          };
+        } else if (Array.isArray(svd.nodes)) {
+          // Legacy spread format: nodes/edges at root
+          parsed = {
+            diagrams: [{
+              id: 'default',
+              name: block.display_name || 'Sơ đồ',
+              nodes: svd.nodes,
+              edges: svd.edges || []
+            }],
+            start_diagram_id: 'default'
+          };
+        }
+
+        if (parsed) {
+          parsed.display_name = block.display_name;
+          comp.diagramData = parsed;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to parse diagram_data", e);
+    }
+  }
+
   return comp;
 }
 
@@ -167,6 +211,7 @@ function determineLessonType(
     if (c.type === "problem") return "quiz";
     if (c.type === "la_crossword") return "quiz";
     if (c.type === "la_sortable") return "quiz";
+    if (c.type === "la_diagram") return "quiz";
   }
   if (components.some((c) => c.type === "html")) return "slide";
   return "video";
