@@ -12,6 +12,7 @@ interface UnitNavButtonsProps {
   onNext: () => void;
   onComplete: () => void;
   isCompleting?: boolean;
+  isCompleted?: boolean;
   isLastUnit: boolean;
   hideCompleteButton?: boolean;
 }
@@ -23,6 +24,7 @@ export function UnitNavButtons({
   onNext,
   onComplete,
   isCompleting = false,
+  isCompleted = false,
   isLastUnit,
   hideCompleteButton = false,
 }: UnitNavButtonsProps) {
@@ -50,20 +52,24 @@ export function UnitNavButtons({
       </span>
 
       {/* Tiếp tục / Hoàn thành */}
-      <div className="flex w-[140px] justify-end">
+      <div className="flex justify-end">
         {isLastUnit ? (
           hideCompleteButton ? null : (
             <button
               onClick={onComplete}
-              disabled={isCompleting}
-              className="flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-[14px] font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97] disabled:opacity-50"
+              disabled={isCompleting || isCompleted}
+              className={`flex items-center gap-2 rounded-full px-6 py-2.5 text-[14px] font-bold shadow-sm transition-all whitespace-nowrap ${
+                isCompleted
+                  ? "bg-green-600 text-white cursor-default opacity-90"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] disabled:opacity-50"
+              }`}
             >
               {isCompleting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <CheckCircle2 className="h-4 w-4" />
               )}
-              Hoàn thành
+              {isCompleted ? "Đã hoàn thành" : "Hoàn thành"}
             </button>
           )
         ) : (

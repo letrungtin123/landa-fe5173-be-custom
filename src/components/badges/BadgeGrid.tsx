@@ -1,20 +1,14 @@
-// ============================================================
-// BadgeGrid — Grid layout hiển thị tất cả badges
-//
-// - Earned badges nổi bật trước
-// - Locked badges mờ phía dưới
-// - Stagger animation khi load
-// - Filter theo category
-// ============================================================
-
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Calendar, BookOpen } from "lucide-react";
+import { X } from "lucide-react";
 import { BadgeCard } from "./BadgeCard";
 import { BadgeIcon } from "./BadgeIcon";
 import { BADGE_DEFINITIONS, CATEGORY_LABELS, type BadgeCategory, type BadgeDefinition } from "@/data/badgeConfig";
 import type { EarnedBadge } from "@/lib/badgeEvaluator";
 import { cn } from "@/lib/utils";
+import LeAndAssociatesLogo from "@/assets/leandassociate.webp";
+import BacThayToanNangBg from "@/assets/badges/BacThayToanNang.png";
+import HuyChuongIcon from "@/assets/badges/HuyChuong.png";
 
 interface BadgeGridProps {
   earnedBadges: EarnedBadge[];
@@ -27,10 +21,9 @@ const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: "all", label: "Tất cả" },
   { value: "earned", label: "Đã đạt" },
   { value: "locked", label: "Chưa đạt" },
-  { value: "completion", label: "Hoàn thành" },
-  { value: "grade", label: "Thành tích" },
-  { value: "certificate", label: "Chứng chỉ" },
-  { value: "enrollment", label: "Tham gia" },
+  { value: "introduction", label: CATEGORY_LABELS.introduction },
+  { value: "expertise", label: CATEGORY_LABELS.expertise },
+  { value: "innovation", label: CATEGORY_LABELS.innovation },
 ];
 
 export function BadgeGrid({ earnedBadges, className }: BadgeGridProps) {
@@ -91,7 +84,7 @@ export function BadgeGrid({ earnedBadges, className }: BadgeGridProps) {
       {/* Badge grid */}
       <AnimatePresence mode="popLayout">
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
           layout
         >
           {filteredBadges.map((badge, i) => (
@@ -137,76 +130,104 @@ export function BadgeGrid({ earnedBadges, className }: BadgeGridProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm"
+              className="fixed inset-0 z-50 bg-transparent"
               onClick={() => setSelectedBadge(null)}
             />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 p-4 outline-none"
-            >
-              <div className="relative flex flex-col items-center overflow-hidden rounded-3xl border border-border/50 bg-card p-8 text-center shadow-2xl">
-                <button
-                  onClick={() => setSelectedBadge(null)}
-                  className="absolute right-4 top-4 rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-                
-                <div className="mb-6 mt-4">
-                  <BadgeIcon
-                    badgeId={selectedBadge.badge.id}
-                    tier={selectedBadge.badge.tier}
-                    earned={true}
-                    size={120}
-                  />
-                </div>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="w-full max-w-[360px] outline-none pointer-events-auto relative"
+              >
+                {selectedBadge.badge.id === "omnipotent_master" ? (
+                  <div 
+                    className="relative flex flex-col overflow-hidden rounded-[2rem] shadow-2xl text-left border border-white/10 aspect-[4/6.5]"
+                    style={{ backgroundImage: `url(${BacThayToanNangBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                  >
+                    <button
+                      onClick={() => setSelectedBadge(null)}
+                      className="absolute right-4 top-4 z-20 rounded-full p-2 text-white/50 transition-colors hover:bg-black/20 hover:text-white"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                    
+                    <div className="relative z-10 flex w-full h-full flex-col p-8 pb-8 text-white bg-black/10">
+                      <div className="inline-flex items-center justify-center bg-white/20 backdrop-blur-md border border-white/30 text-white text-[11px] px-3.5 py-1 rounded-full w-fit mb-auto shadow-sm">
+                        Nhóm chuyên gia
+                      </div>
 
-                <h2 className="mb-2 text-2xl font-black text-foreground">
-                  {selectedBadge.badge.name}
-                </h2>
-                
-                <p className="mb-6 text-sm text-muted-foreground">
-                  {selectedBadge.badge.description}
-                </p>
+                      <h2 className="text-[32px] font-black uppercase tracking-tight leading-[1.1] text-white mb-3 mt-auto drop-shadow-md">
+                        BẬC THẦY<br/>TOÀN NĂNG
+                      </h2>
 
-                <div className="flex w-full flex-col gap-3 rounded-2xl bg-muted/50 p-4 text-left">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-4 w-4 text-accent" />
-                    <div className="flex-1">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        Ngày mở khóa
+                      <p className="text-[14px] text-white/90 italic mb-5 leading-relaxed pr-6 drop-shadow-sm">
+                        “{selectedBadge.badge.description}”
                       </p>
-                      <p className="text-sm font-medium text-foreground">
-                        {new Date(selectedBadge.earned.earnedAt).toLocaleDateString('vi-VN', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {selectedBadge.earned.courseName && (
-                    <div className="flex items-center gap-3 border-t border-border/50 pt-3">
-                      <BookOpen className="h-4 w-4 text-accent" />
-                      <div className="flex-1">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                          Khóa học liên quan
-                        </p>
-                        <p className="text-sm font-medium text-foreground">
-                          {selectedBadge.earned.courseName}
-                        </p>
+
+                      <div className="flex items-center gap-2.5 mt-auto w-full pt-2">
+                        <img src={HuyChuongIcon} alt="Huy chương" className="h-[40px] w-[40px] object-contain drop-shadow-md shrink-0" />
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="text-[11px] font-medium text-white/90 leading-none tracking-wide">Được công nhận bởi</span>
+                          <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[16px] object-contain opacity-100" />
+                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
+                  </div>
+                ) : (
+                  <div className="relative flex flex-col items-center overflow-hidden rounded-[2rem] bg-card shadow-2xl">
+                    {/* Top Background Gradient */}
+                    <div className={cn(
+                      "absolute top-0 left-0 w-full h-[180px] overflow-hidden",
+                      selectedBadge.badge.bgGradient || "bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30"
+                    )} />
+
+                    {/* Curved divider */}
+                    <svg
+                      className="absolute top-[130px] left-0 w-full text-card fill-current drop-shadow-[0_-4px_4px_rgba(0,0,0,0.02)]"
+                      viewBox="0 0 100 20"
+                      preserveAspectRatio="none"
+                      style={{ height: "55px" }}
+                    >
+                      <path d="M0 20 Q50 -10 100 20 L100 20 L0 20 Z" />
+                    </svg>
+
+                    <button
+                      onClick={() => setSelectedBadge(null)}
+                      className="absolute right-4 top-4 z-20 rounded-full p-2 text-foreground/50 transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                    
+                    <div className="relative z-10 flex flex-col items-center pt-10 px-8 pb-8 text-center mt-6 w-full">
+                      <div className="mb-5">
+                        <BadgeIcon
+                          badgeId={selectedBadge.badge.id}
+                          tier={selectedBadge.badge.tier}
+                          earned={true}
+                          size={150}
+                        />
+                      </div>
+
+                      <h2 className="mb-2 text-[22px] font-extrabold uppercase tracking-wide text-foreground">
+                        {selectedBadge.badge.name}
+                      </h2>
+                      
+                      <p className="mb-6 text-[15px] italic text-muted-foreground px-2">
+                        “{selectedBadge.badge.description}”
+                      </p>
+
+                      {/* Footer Logo */}
+                      <div className="flex items-center justify-center gap-2.5 text-[12px] font-medium text-muted-foreground/80 w-full mt-auto">
+                        <span>Được công nhận bởi</span>
+                        <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[18px] object-contain opacity-80" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>

@@ -25,7 +25,7 @@ function CourseCard({ course, index }: { course: ContinueCourse; index: number }
       transition={{ duration: 0.4, delay: 0.15 * index }}
     >
       <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`}>
-        <div className="group flex h-[180px] overflow-hidden rounded-2xl border border-border shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-card transition-all duration-200 hover:shadow-md hover:scale-[1.02]">
+        <div className="group flex h-[180px] overflow-hidden rounded-3xl border border-primary shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-card transition-all duration-200 hover:shadow-md hover:scale-[1.02]">
           {/* Thumbnail */}
           <div
             className={cn(

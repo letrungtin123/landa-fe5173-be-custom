@@ -6,11 +6,12 @@
 // ============================================================
 
 import { useMemo, useEffect, useRef, useState } from "react";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useMyEnrollments } from "./useCourses";
 import { useMyCertificates } from "./useCertificates";
 import { getCourseBlocks } from "@/api/courses";
 import { getCourseGrade } from "@/api/progress";
+import { getUserAccount } from "@/api/auth";
 import { transformBlocksToCourse } from "@/transformers/blockTransformer";
 import { evaluateBadges, getShownBadgeIds, markBadgeShown, type EarnedBadge } from "@/lib/badgeEvaluator";
 import { BADGE_DEFINITIONS, type BadgeDefinition } from "@/data/badgeConfig";
@@ -39,6 +40,13 @@ export function useBadges(): UseBadgesResult {
 
   const { data: enrollments, isLoading: enrollLoading } = useMyEnrollments();
   const { data: certificates, isLoading: certLoading } = useMyCertificates();
+
+  const { data: profile } = useQuery({
+    queryKey: ["userProfile", username],
+    queryFn: () => getUserAccount(username!),
+    enabled: isAuthenticated && !!username,
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Lấy tất cả course IDs từ enrollments
   const courseIds = useMemo(() => {
@@ -94,10 +102,9 @@ export function useBadges(): UseBadgesResult {
     });
 
     return map;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseIds, blockQueries.map((q) => q.data)]);
 
-  // Build grades map
   const courseGrades = useMemo(() => {
     const map = new Map<string, CourseGradeResponse>();
 
@@ -107,8 +114,16 @@ export function useBadges(): UseBadgesResult {
     });
 
     return map;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseIds, gradeQueries.map((q) => q.data)]);
+
+  // Lắng nghe event khi user update profile
+  const [profileUpdateTrigger, setProfileUpdateTrigger] = useState(0);
+  useEffect(() => {
+    const handleUpdate = () => setProfileUpdateTrigger(prev => prev + 1);
+    window.addEventListener("la_profile_updated", handleUpdate);
+    return () => window.removeEventListener("la_profile_updated", handleUpdate);
+  }, []);
 
   // Evaluate badges
   const earnedBadges = useMemo(() => {
@@ -118,40 +133,72 @@ export function useBadges(): UseBadgesResult {
       certificates: certificates || [],
       courseCompletions,
       courseGrades,
-    });
-  }, [enrollments, certificates, courseCompletions, courseGrades]);
+      profile,
+    }, username);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enrollments, certificates, courseCompletions, courseGrades, profile, profileUpdateTrigger, username]);
 
   const unearnedBadges = useMemo(() => {
     const earnedIds = new Set(earnedBadges.map((b) => b.badge.id));
     return BADGE_DEFINITIONS.filter((b) => !earnedIds.has(b.id));
   }, [earnedBadges]);
 
-  // Track newly earned badge cho unlock modal
-  const [newlyEarned, setNewlyEarned] = useState<EarnedBadge | null>(null);
+  // Track newly earned badges qua hàng đợi (queue) để hiển thị lần lượt
+  const [newBadgeQueue, setNewBadgeQueue] = useState<EarnedBadge[]>([]);
+  const [currentBadge, setCurrentBadge] = useState<EarnedBadge | null>(null);
   const prevEarnedRef = useRef<Set<string>>(new Set());
+  // Track badges đã bị dismiss nhưng animation chưa xong để tránh re-queue
+  const dismissedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (earnedBadges.length === 0) return;
 
-    const shownIds = getShownBadgeIds();
+    const shownIds = getShownBadgeIds(username);
     const currentIds = new Set(earnedBadges.map((b) => b.badge.id));
 
-    // Tìm badge mới chưa từng hiển thị modal
-    for (const earned of earnedBadges) {
-      if (!shownIds.has(earned.badge.id) && !prevEarnedRef.current.has(earned.badge.id)) {
-        setNewlyEarned(earned);
-        break;
-      }
+    // Lọc ra các badge mới hoàn toàn (chưa show + chưa trong dismissed buffer)
+    const newBadges = earnedBadges.filter(
+      (earned) =>
+        !shownIds.has(earned.badge.id) &&
+        !prevEarnedRef.current.has(earned.badge.id) &&
+        !dismissedRef.current.has(earned.badge.id)
+    );
+
+    if (newBadges.length > 0) {
+      setNewBadgeQueue((prev) => {
+        const existingIds = new Set(prev.map((b) => b.badge.id));
+        const toAdd = newBadges.filter((b) => !existingIds.has(b.badge.id));
+        return [...prev, ...toAdd];
+      });
     }
 
     prevEarnedRef.current = currentIds;
-  }, [earnedBadges]);
+  }, [earnedBadges, username]);
+
+  // Lấy badge từ queue ra hiển thị
+  useEffect(() => {
+    if (!currentBadge && newBadgeQueue.length > 0) {
+      setCurrentBadge(newBadgeQueue[0]);
+    }
+  }, [currentBadge, newBadgeQueue]);
 
   const dismissNewBadge = () => {
-    if (newlyEarned) {
-      markBadgeShown(newlyEarned.badge.id);
-      setNewlyEarned(null);
-    }
+    if (!currentBadge) return;
+
+    const badgeId = currentBadge.badge.id;
+    markBadgeShown(badgeId, username);
+    // Đánh dấu vào dismissed buffer ngay lập tức
+    dismissedRef.current.add(badgeId);
+
+    // Gỡ badge hiện tại để trigger exit animation của modal
+    setCurrentBadge(null);
+
+    // Chờ modal đóng hoàn toàn (500ms) trước khi pop queue
+    setTimeout(() => {
+      setNewBadgeQueue((prev) => prev.slice(1));
+      // Sau khi queue pop xong thì mới xóa khỏi dismissed buffer
+      dismissedRef.current.delete(badgeId);
+    }, 500);
   };
 
   return {
@@ -160,7 +207,7 @@ export function useBadges(): UseBadgesResult {
     totalBadges: BADGE_DEFINITIONS.length,
     earnedCount: earnedBadges.length,
     isLoading,
-    newlyEarned,
+    newlyEarned: currentBadge,
     dismissNewBadge,
   };
 }

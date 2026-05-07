@@ -71,6 +71,7 @@ export default {
         "draw-circle": "drawCircle 1.5s ease-out forwards",
         "bounce-in": "bounceIn 0.5s ease-out",
         "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        marquee: "marquee 25s linear infinite",
       },
       keyframes: {
         fadeIn: {
@@ -93,6 +94,10 @@ export default {
           "0%": { transform: "scale(0.9)", opacity: "0" },
           "50%": { transform: "scale(1.05)" },
           "100%": { transform: "scale(1)", opacity: "1" },
+        },
+        marquee: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
         },
       },
     },

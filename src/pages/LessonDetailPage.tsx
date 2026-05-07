@@ -112,7 +112,7 @@ export function LessonDetailPage() {
     if (!lesson) return [];
     return lesson.units.flatMap((unit) =>
       unit.components
-        .filter((c) => c.type === "html" || c.type === "video")
+        .filter((c) => c.type === "html" || c.type === "video" || c.type === "la_diagram")
         .map((c) => c.id)
     );
   }, [lesson]);
@@ -160,7 +160,7 @@ export function LessonDetailPage() {
     // Tự động mark hoàn thành cho các block text/video ở Unit HIỆN TẠI
     if (currentUnit && user?.username && courseId) {
       const leafIdsToMark = currentUnit.components
-        .filter((c) => c.type === "html" || c.type === "video")
+        .filter((c) => c.type === "html" || c.type === "video" || c.type === "la_diagram")
         .map((c) => c.id);
 
       if (leafIdsToMark.length > 0) {
@@ -353,6 +353,7 @@ export function LessonDetailPage() {
                   onNext={handleNext}
                   onComplete={handleComplete}
                   isCompleting={completeMutation.isPending}
+                  isCompleted={isCompleted}
                   isLastUnit={isLastUnit}
                   hideCompleteButton={currentUnit?.components.some((c) => c.type === "problem") || false}
                 />
@@ -375,8 +376,8 @@ export function LessonDetailPage() {
                 {/* LeAssociates info block */}
                 <div className="rounded-3xl border border-border px-8 py-7 shadow-sm bg-card">
                   <div className="mb-2">
-                    <span className="text-[16px] font-black text-primary">Le</span>
-                    <span className="text-[16px] font-black text-accent-foreground">&</span>
+                    <span className="text-[16px] font-black text-primary">Le & </span>
+                    {/* <span className="text-[16px] font-black text-accent-foreground">&</span> */}
                     <span className="text-[16px] font-black text-primary">Associates</span>
                   </div>
                   <p className="text-[12px] leading-relaxed text-muted-foreground">

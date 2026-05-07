@@ -36,6 +36,10 @@ export function useUpdateProfile() {
       if (updateStore && updatedProfile.name) {
          updateStore({ name: updatedProfile.name });
       }
+
+      // Đánh dấu profile đã update để unlock badge
+      localStorage.setItem(`la_profile_updated_${username}`, "true");
+      window.dispatchEvent(new Event("la_profile_updated"));
     },
   });
 }

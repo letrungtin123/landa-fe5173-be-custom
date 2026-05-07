@@ -6,7 +6,7 @@
 // Logic evaluate nằm ở lib/badgeEvaluator.ts
 // ============================================================
 
-export type BadgeCategory = "completion" | "grade" | "certificate" | "enrollment";
+export type BadgeCategory = "introduction" | "expertise" | "innovation";
 export type BadgeTier = "bronze" | "silver" | "gold" | "diamond";
 
 export interface BadgeDefinition {
@@ -16,135 +16,130 @@ export interface BadgeDefinition {
   category: BadgeCategory;
   tier: BadgeTier;
   requirement: string;
+  bgGradient?: string;
 }
 
 export const BADGE_DEFINITIONS: BadgeDefinition[] = [
-  // ── Completion Milestones ──
+  // ── Nhóm nhập môn ──
+  {
+    id: "perfect_profile",
+    name: "Mảnh Ghép Hoàn Hảo",
+    description: "Hoàn thiện hồ sơ cá nhân và giới thiệu bản thân trên hệ thống",
+    category: "introduction",
+    tier: "diamond",
+    requirement: "Cập nhật hồ sơ thành công",
+  },
+  {
+    id: "onboarding_warrior",
+    name: "Chiến Binh Onboarding",
+    description: "Nhân viên hoàn thành khóa Onboarding đầu tiên",
+    category: "introduction",
+    tier: "diamond",
+    requirement: "Hoàn thành 100% khóa Onboarding",
+    bgGradient: "bg-gradient-to-b from-blue-400 to-[#0b5cff]",
+  },
+  {
+    id: "value_holder",
+    name: "Người Nắm Giữ Giá Trị",
+    description: "Hoàn thành 2 khóa học Onboarding bất kỳ.",
+    category: "introduction",
+    tier: "diamond",
+    requirement: "Hoàn thành 100% 2 khóa học Onboarding bất kỳ",
+    bgGradient: "bg-gradient-to-b from-[#67e8f9] to-[#06b6d4]",
+  },
+  {
+    id: "la_ambassador",
+    name: "Đại Sứ L&A",
+    description: "Hoàn thành khóa Onboarding và 1 khóa học kỹ năng khác",
+    category: "introduction",
+    tier: "diamond",
+    requirement: "Hoàn thành khóa Onboarding và 1 khóa học khác",
+    bgGradient: "bg-gradient-to-b from-[#e0f2fe] to-[#38bdf8]",
+  },
+  {
+    id: "la_breakthrough",
+    name: "Người Bức Phá L&A",
+    description: "Hoàn thành 3 khóa học khác nhau trên hệ thống",
+    category: "introduction",
+    tier: "diamond",
+    requirement: "Hoàn thành 100% 3 khóa học bất kỳ",
+    bgGradient: "bg-gradient-to-b from-yellow-300 to-amber-500",
+  },
+  {
+    id: "la_expert",
+    name: "Chuyên Gia L&A",
+    description: "Hoàn thành 5 khóa học khác nhau trên hệ thống",
+    category: "introduction",
+    tier: "diamond",
+    requirement: "Hoàn thành 100% 5 khóa học bất kỳ",
+    bgGradient: "bg-gradient-to-b from-pink-400 to-pink-500",
+  },
+
+  // ── Nhóm Chuyên môn & hiệu suất ──
+  {
+    id: "recruitment_master",
+    name: "Bậc Thầy Tuyển Dụng",
+    description: "Hoàn thành 1 khóa học chuyên sâu về Tuyển Dụng",
+    category: "expertise",
+    tier: "diamond",
+    requirement: "Hoàn thành 100% 1 khóa học Tuyển dụng",
+    bgGradient: "bg-gradient-to-b from-orange-300 to-orange-100",
+  },
+  {
+    id: "otif_expert",
+    name: "Chuyên Gia OTIF",
+    description: "Hoàn thành 2 khóa học chuyên sâu về Tuyển Dụng",
+    category: "expertise",
+    tier: "diamond",
+    requirement: "Hoàn thành 100% 2 khóa học Tuyển dụng",
+    bgGradient: "bg-gradient-to-b from-yellow-200 to-yellow-50",
+  },
+  {
+    id: "trusted_ambassador",
+    name: "Đại Sứ Tin Cậy",
+    description: "Hoàn thành 3 khóa học chuyên sâu về Tuyển Dụng",
+    category: "expertise",
+    tier: "diamond",
+    requirement: "Hoàn thành 3 khóa học chuyên sâu về Tuyển Dụng",
+    bgGradient: "bg-gradient-to-b from-indigo-300 to-indigo-500",
+  },
+  {
+    id: "omnipotent_master",
+    name: "Bậc Thầy Toàn Năng",
+    description: "Hoàn thành 20 khóa học bất kỳ trên hệ thống của L&A",
+    category: "expertise",
+    tier: "diamond",
+    requirement: "Hoàn thành 100% 20 khóa học bất kỳ",
+    bgGradient: "",
+  },
+
+  // ── Nhóm sáng tạo & công nghệ ──
   {
     id: "first_step",
-    name: "Bước Đầu Tiên",
-    description: "Bạn đã khởi đầu hành trình học tập!",
-    category: "completion",
-    tier: "bronze",
+    name: "Người Dẫn Đầu Công Nghệ",
+    description: "Học viên đầu tiên trải nghiệm hệ thống E-learning mới",
+    category: "innovation",
+    tier: "diamond",
     requirement: "Hoàn thành ít nhất 1 bài học",
+    bgGradient: "bg-gradient-to-b from-[#bbf7d0] to-[#22c55e]",
   },
   {
-    id: "halfway_hero",
-    name: "Chinh Phục Nửa Đường",
-    description: "Bạn đã đi được nửa chặng đường — hãy tiếp tục!",
-    category: "completion",
-    tier: "silver",
-    requirement: "Hoàn thành 50% bất kỳ khóa học nào",
-  },
-  {
-    id: "course_conqueror",
-    name: "Chinh Phục Khóa Học",
-    description: "Bạn đã hoàn thành toàn bộ khóa học — thật tuyệt vời!",
-    category: "completion",
-    tier: "gold",
-    requirement: "Hoàn thành 100% bất kỳ khóa học nào",
-  },
-  {
-    id: "almost_there",
-    name: "Sắp Về Đích",
-    description: "Chỉ một chút nữa thôi!",
-    category: "completion",
-    tier: "silver",
-    requirement: "Hoàn thành 90% khóa học",
-  },
-
-  // ── Grade Performance ──
-  {
-    id: "passing_grade",
-    name: "Đạt Chuẩn",
-    description: "Bạn đã vượt qua — kiến thức được công nhận!",
-    category: "grade",
-    tier: "bronze",
-    requirement: "Đạt điểm Pass ở bất kỳ khóa nào",
-  },
-  {
-    id: "high_achiever",
-    name: "Thành Tích Cao",
-    description: "Kết quả xuất sắc — bạn thuộc top 10%!",
-    category: "grade",
-    tier: "gold",
-    requirement: "Đạt điểm ≥ 90% ở bất kỳ khóa nào",
-  },
-  {
-    id: "perfect_score",
-    name: "Điểm Tuyệt Đối",
-    description: "Hoàn hảo đến từng chi tiết!",
-    category: "grade",
+    id: "speed_scholar",
+    name: "Học Giả Tốc Độ",
+    description: "Hoàn thành bài giảng với thời gian nhanh kỷ lục trên hệ thống",
+    category: "innovation",
     tier: "diamond",
-    requirement: "Đạt điểm ≥ 98% ở bất kỳ khóa nào",
+    requirement: "Hoàn thành 1 khóa học bất kỳ dưới 10 phút",
+    bgGradient: "bg-gradient-to-b from-rose-400 to-[#e12a36]",
   },
   {
-    id: "first_blood",
-    name: "Điểm Số Đầu Tiên",
-    description: "Mọi thứ đều bắt đầu từ bước nhỏ nhất!",
-    category: "grade",
-    tier: "bronze",
-    requirement: "Nhận điểm số đầu tiên (>0%)",
-  },
-
-  // ── Certificate ──
-  {
-    id: "certified",
-    name: "Được Chứng Nhận",
-    description: "Bạn đã nhận chứng chỉ chính thức!",
-    category: "certificate",
-    tier: "gold",
-    requirement: "Nhận ít nhất 1 chứng chỉ",
-  },
-  {
-    id: "multi_certified",
-    name: "Chuyên Gia",
-    description: "Bằng cấp chứng minh năng lực!",
-    category: "certificate",
+    id: "system_explorer",
+    name: "Nhà Thám Hiểm Hệ Thống",
+    description: "Hoàn thành 10 khóa học bất kỳ trên hệ thống",
+    category: "innovation",
     tier: "diamond",
-    requirement: "Nhận ít nhất 3 chứng chỉ",
-  },
-
-  // ── Enrollment / Multi-course ──
-  {
-    id: "explorer",
-    name: "Nhà Khám Phá",
-    description: "Tò mò không giới hạn — bạn đã tham gia nhiều khóa!",
-    category: "enrollment",
-    tier: "silver",
-    requirement: "Đăng ký ≥ 3 khóa học",
-  },
-  {
-    id: "dedicated_learner",
-    name: "Học Viên Tận Tâm",
-    description: "Cam kết dài hạn — bạn là tấm gương học tập!",
-    category: "enrollment",
-    tier: "gold",
-    requirement: "Hoàn thành ≥ 2 khóa học",
-  },
-  {
-    id: "knowledge_seeker",
-    name: "Người Tìm Kiến Thức",
-    description: "Khởi đầu hành trình mới!",
-    category: "enrollment",
-    tier: "bronze",
-    requirement: "Đăng ký ít nhất 1 khóa học",
-  },
-  {
-    id: "bookworm",
-    name: "Mọt Sách",
-    description: "Niềm đam mê học tập bất tận!",
-    category: "enrollment",
-    tier: "gold",
-    requirement: "Đăng ký ≥ 5 khóa học",
-  },
-  {
-    id: "veteran",
-    name: "Cựu Binh",
-    description: "Người dày dặn kinh nghiệm thực chiến!",
-    category: "enrollment",
-    tier: "diamond",
-    requirement: "Hoàn thành ≥ 5 khóa học",
+    requirement: "Hoàn thành 100% 10 khóa học bất kỳ",
+    bgGradient: "bg-gradient-to-b from-pink-300 to-pink-100",
   },
 ];
 
@@ -182,8 +177,7 @@ export const TIER_CONFIG: Record<BadgeTier, {
 };
 
 export const CATEGORY_LABELS: Record<BadgeCategory, string> = {
-  completion: "Hoàn thành",
-  grade: "Thành tích",
-  certificate: "Chứng chỉ",
-  enrollment: "Tham gia",
+  introduction: "Nhóm nhập môn",
+  expertise: "Chuyên môn & hiệu suất",
+  innovation: "Sáng tạo & công nghệ",
 };

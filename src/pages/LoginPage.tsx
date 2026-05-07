@@ -8,6 +8,16 @@ import { microsoftLoginOrRegister, MicrosoftAuthError } from "@/api/microsoftAut
 import { microsoftPopupLogin } from "@/config/msalConfig";
 import { config } from "@/config/env";
 import logoImg from "@/assets/leandassociate.webp";
+import leftPanelBg from "@/assets/LoginPage/LeftPanelLogin.jpg";
+import person1 from "@/assets/LoginPage/Person1.jpg";
+import person2 from "@/assets/LoginPage/Person2.jpg";
+import person3 from "@/assets/LoginPage/Person3.jpg";
+import carousel1 from "@/assets/LoginPage/Carousel1.png";
+import carousel2 from "@/assets/LoginPage/Carousel2.png";
+import carousel3 from "@/assets/LoginPage/Carousel3.png";
+import carousel4 from "@/assets/LoginPage/Carousel4.png";
+import carousel5 from "@/assets/LoginPage/Carousel5.png";
+import carousel6 from "@/assets/LoginPage/Carousel6.png";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -133,65 +143,84 @@ export function LoginPage() {
   const isSsoLoading = isGoogleLoading || isMicrosoftLoading;
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden bg-white">
       {/* ─── Left Panel ─── */}
-      <div className="relative hidden w-[48%] overflow-hidden lg:flex flex-col justify-between p-10 select-none">
-        {/* Background layers */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628] via-[#0f2a5e] to-[#0a1628]" />
-        {/* Decorative light sweep */}
-        <div
-          className="absolute inset-0 opacity-40"
-          style={{
-            background:
-              "radial-gradient(ellipse 60% 50% at 50% 70%, rgba(56,140,255,0.35) 0%, transparent 70%), radial-gradient(ellipse 40% 30% at 30% 80%, rgba(100,180,255,0.2) 0%, transparent 60%)",
-          }}
-        />
-
-        {/* Logo */}
-        <div className="relative z-10">
-          <img
-            src={logoImg}
-            alt="Le & Associates"
-            className="h-10 w-auto brightness-0 invert"
+      <div className="hidden w-[48%] lg:flex p-3 pr-0">
+        <div className="relative flex w-full flex-col justify-between overflow-hidden rounded-[32px] p-10 select-none">
+          {/* Background image */}
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${leftPanelBg})` }}
           />
-          <p className="mt-1 text-[11px] font-semibold tracking-[0.15em] text-white/60 uppercase">
-            In people we value
-          </p>
-        </div>
 
-        {/* Bottom content */}
-        <div className="relative z-10">
-          {/* Trust badge */}
-          <div className="mb-6 flex items-center gap-3">
-            <div className="flex -space-x-2">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white/20 bg-gradient-to-br from-blue-400 to-blue-600 text-[11px] font-bold text-white"
-                >
-                  {["NT", "TH", "LM"][i]}
-                </div>
-              ))}
-            </div>
-            <span className="rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-[12px] font-medium text-white/80">
-              Trusted by 100+ companies
-            </span>
+          {/* Logo */}
+          <div className="relative z-10 pt-2 pl-2">
+            <img
+              src={logoImg}
+              alt="Le & Associates"
+              className="h-9 w-auto brightness-0 invert"
+            />
+            <p className="mt-1 text-[10px] font-semibold tracking-[0.15em] text-white/70 uppercase">
+              In people we value
+            </p>
           </div>
 
-          <h1 className="text-5xl font-extrabold leading-[1.1] tracking-tight text-white md:text-6xl">
-            READY TO
-            <br />
-            GROW?
-          </h1>
-          <p className="mt-4 max-w-xs text-[15px] leading-relaxed text-white/60">
-            Log in to start your skill-building journey today
-          </p>
-        </div>
+          {/* Bottom content */}
+          <div className="relative z-10 flex flex-col justify-end mt-auto pl-2 mb-6">
+            {/* Trust badge */}
+            <div className="mb-6 flex items-center gap-3">
+              <div className="flex -space-x-2">
+                <img src={person1} alt="User 1" className="h-9 w-9 rounded-full border-2 border-white/20 object-cover" />
+                <img src={person2} alt="User 2" className="h-9 w-9 rounded-full border-2 border-white/20 object-cover" />
+                <img src={person3} alt="User 3" className="h-9 w-9 rounded-full border-2 border-white/20 object-cover" />
+              </div>
+              <span className="rounded-full border border-white/20 bg-white/10 backdrop-blur-md px-3.5 py-1.5 text-[12px] font-medium text-white">
+                Trusted by 100+ companies
+              </span>
+            </div>
+
+            <h1 className="text-[52px] font-extrabold leading-[1.05] tracking-tight text-white md:text-[64px]">
+              READY TO
+              <br />
+              GROW?
+            </h1>
+            <p className="mt-4 max-w-[320px] text-[15px] leading-relaxed text-white/90 font-medium">
+              Log in to start your skill-building journey today
+            </p>
+          </div>
+
+          {/* Logo Carousel */}
+          <div
+            className="relative z-10 pt-4 pb-2 overflow-hidden w-full"
+            style={{ WebkitMaskImage: "linear-gradient(to right, transparent, black 5%, black 95%, transparent)" }}
+          >
+            <div className="flex w-[200%] animate-marquee gap-8 items-center">
+              {/* Original set */}
+              <div className="flex min-w-[50%] justify-around items-center gap-8 px-4">
+                <img src={carousel1} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 1" />
+                <img src={carousel2} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 2" />
+                <img src={carousel3} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 3" />
+                <img src={carousel4} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 4" />
+                <img src={carousel5} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 5" />
+                <img src={carousel6} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 6" />
+              </div>
+              {/* Duplicated set for seamless loop */}
+              <div className="flex min-w-[50%] justify-around items-center gap-8 px-4">
+                <img src={carousel1} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 1" />
+                <img src={carousel2} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 2" />
+                <img src={carousel3} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 3" />
+                <img src={carousel4} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 4" />
+                <img src={carousel5} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 5" />
+                <img src={carousel6} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 6" />
+              </div>
+            </div>
+          </div>
+        </div> {/* Close inner relative flex container */}
       </div>
 
       {/* ─── Right Panel (Form) ─── */}
-      <div className="flex flex-1 items-center justify-center bg-white px-6 py-12">
-        <div className="w-full max-w-[420px]">
+      <div className="flex flex-1 flex-col overflow-y-auto items-center justify-center bg-white px-6 py-12">
+        <div className="w-full max-w-[420px] my-auto">
           {/* Logo mark */}
           <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-[#0f2a5e] shadow-lg p-2">
             <img
@@ -226,9 +255,8 @@ export function LoginPage() {
                   setEmail(e.target.value);
                   if (errors.email) setErrors((p) => ({ ...p, email: undefined }));
                 }}
-                className={`w-full rounded-lg border bg-white px-4 py-3 text-[14px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#bbb] focus:border-[#1877F2] focus:ring-2 focus:ring-[#1877F2]/20 ${
-                  errors.email ? "border-red-400" : "border-[#ddd]"
-                }`}
+                className={`w-full rounded-lg border bg-white px-4 py-3 text-[14px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#bbb] focus:border-[#1877F2] focus:ring-2 focus:ring-[#1877F2]/20 ${errors.email ? "border-red-400" : "border-[#ddd]"
+                  }`}
               />
               {errors.email && (
                 <p className="mt-1 text-[12px] text-red-500">{errors.email}</p>
@@ -264,9 +292,8 @@ export function LoginPage() {
                     if (errors.password)
                       setErrors((p) => ({ ...p, password: undefined }));
                   }}
-                  className={`w-full rounded-lg border bg-white px-4 py-3 pr-11 text-[14px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#bbb] focus:border-[#1877F2] focus:ring-2 focus:ring-[#1877F2]/20 ${
-                    errors.password ? "border-red-400" : "border-[#ddd]"
-                  }`}
+                  className={`w-full rounded-lg border bg-white px-4 py-3 pr-11 text-[14px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#bbb] focus:border-[#1877F2] focus:ring-2 focus:ring-[#1877F2]/20 ${errors.password ? "border-red-400" : "border-[#ddd]"
+                    }`}
                 />
                 <button
                   type="button"
@@ -318,7 +345,7 @@ export function LoginPage() {
                   Đang đăng nhập…
                 </span>
               ) : (
-                "Log in"
+                "Đăng nhập"
               )}
             </button>
           </form>
@@ -422,11 +449,44 @@ export function LoginPage() {
                       />
                     </svg>
                   ) : (
-                    <svg viewBox="0 0 21 21" width="20" height="20" className="shrink-0">
-                      <rect x="1" y="1" width="9" height="9" fill="#F25022" />
-                      <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
-                      <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
-                      <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48" fill="none" className="shrink-0">
+                      <path d="M34.1423 7.32501C33.5634 5.35387 31.7547 4 29.7003 4L28.3488 4C26.1142 4 24.1985 5.59611 23.7952 7.79398L21.4805 20.4072L22.0549 18.4419C22.6319 16.4679 24.4419 15.1111 26.4986 15.1111H34.3524L37.6462 16.3942L40.8213 15.1111H39.8946C37.8401 15.1111 36.0315 13.7572 35.4525 11.7861L34.1423 7.32501Z" fill="url(#paint0_radial_56201_15503)"></path>
+                      <path d="M14.3307 40.656C14.9032 42.6366 16.7165 44 18.7783 44H21.6486C24.1592 44 26.2122 41.999 26.2767 39.4893L26.5893 27.3271L25.9354 29.5602C25.3577 31.5332 23.5481 32.8889 21.4923 32.8889L13.5732 32.8889L10.7499 31.3573L7.69336 32.8889H8.60461C10.6663 32.8889 12.4796 34.2522 13.0521 36.2329L14.3307 40.656Z" fill="url(#paint1_radial_56201_15503)"></path>
+                      <path d="M29.4993 4H13.46C8.87732 4 6.12772 10.0566 4.29466 16.1132C2.12296 23.2886 -0.718769 32.8852 7.50252 32.8852H14.4282C16.4978 32.8852 18.3147 31.5168 18.8835 29.5269C20.0876 25.3143 22.1978 17.9655 23.8554 12.3712C24.6977 9.52831 25.3993 7.08673 26.4762 5.56628C27.0799 4.71385 28.086 4 29.4993 4Z" fill="url(#paint2_linear_56201_15503)"></path>
+                      <path d="M29.4993 4H13.46C8.87732 4 6.12772 10.0566 4.29466 16.1132C2.12296 23.2886 -0.718769 32.8852 7.50252 32.8852H14.4282C16.4978 32.8852 18.3147 31.5168 18.8835 29.5269C20.0876 25.3143 22.1978 17.9655 23.8554 12.3712C24.6977 9.52831 25.3993 7.08673 26.4762 5.56628C27.0799 4.71385 28.086 4 29.4993 4Z" fill="url(#paint3_linear_56201_15503)"></path>
+                      <path d="M18.498 44H34.5374C39.12 44 41.8696 37.9424 43.7027 31.8848C45.8744 24.7081 48.7161 15.1098 40.4948 15.1098H33.5693C31.4996 15.1098 29.6827 16.4784 29.114 18.4684C27.9098 22.6817 25.7996 30.032 24.142 35.6273C23.2996 38.4708 22.598 40.9127 21.5212 42.4335C20.9175 43.286 19.9113 44 18.498 44Z" fill="url(#paint4_radial_56201_15503)"></path>
+                      <path d="M18.498 44H34.5374C39.12 44 41.8696 37.9424 43.7027 31.8848C45.8744 24.7081 48.7161 15.1098 40.4948 15.1098H33.5693C31.4996 15.1098 29.6827 16.4784 29.114 18.4684C27.9098 22.6817 25.7996 30.032 24.142 35.6273C23.2996 38.4708 22.598 40.9127 21.5212 42.4335C20.9175 43.286 19.9113 44 18.498 44Z" fill="url(#paint5_linear_56201_15503)"></path>
+                      <defs>
+                        <radialGradient id="paint0_radial_56201_15503" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(38.005 20.5144) rotate(-129.304) scale(17.3033 16.2706)">
+                          <stop offset="0.0955758" stopColor="#00AEFF"></stop>
+                          <stop offset="0.773185" stopColor="#2253CE"></stop>
+                          <stop offset="1" stopColor="#0736C4"></stop>
+                        </radialGradient>
+                        <radialGradient id="paint1_radial_56201_15503" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(11.1215 32.8171) rotate(51.84) scale(15.9912 15.5119)">
+                          <stop offset="0" stopColor="#FFB657"></stop>
+                          <stop offset="0.633728" stopColor="#FF5F3D"></stop>
+                          <stop offset="0.923392" stopColor="#C02B3C"></stop>
+                        </radialGradient>
+                        <linearGradient id="paint2_linear_56201_15503" x1="12.5" y1="7.5" x2="14.7884" y2="33.9751" gradientUnits="userSpaceOnUse">
+                          <stop offset="0.156162" stopColor="#0D91E1"></stop>
+                          <stop offset="0.487484" stopColor="#52B471"></stop>
+                          <stop offset="0.652394" stopColor="#98BD42"></stop>
+                          <stop offset="0.937361" stopColor="#FFC800"></stop>
+                        </linearGradient>
+                        <linearGradient id="paint3_linear_56201_15503" x1="14.5" y1="4" x2="15.7496" y2="32.8852" gradientUnits="userSpaceOnUse">
+                          <stop offset="0" stopColor="#3DCBFF"></stop>
+                          <stop offset="0.246674" stopColor="#0588F7" stopOpacity="0"></stop>
+                        </linearGradient>
+                        <radialGradient id="paint4_radial_56201_15503" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(41.3187 12.2813) rotate(109.274) scale(38.3873 45.9867)">
+                          <stop offset="0.0661714" stopColor="#8C48FF"></stop>
+                          <stop offset="0.5" stopColor="#F2598A"></stop>
+                          <stop offset="0.895833" stopColor="#FFB152"></stop>
+                        </radialGradient>
+                        <linearGradient id="paint5_linear_56201_15503" x1="42.5859" y1="13.346" x2="42.5695" y2="21.2147" gradientUnits="userSpaceOnUse">
+                          <stop offset="0.0581535" stopColor="#F8ADFA"></stop>
+                          <stop offset="0.708063" stopColor="#A86EDD" stopOpacity="0"></stop>
+                        </linearGradient>
+                      </defs>
                     </svg>
                   )}
                   <span>{isMicrosoftLoading ? "Đang đăng nhập…" : "Đăng nhập bằng Microsoft 365"}</span>

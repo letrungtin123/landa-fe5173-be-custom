@@ -21,18 +21,20 @@ export interface EvaluationData {
   certificates: Certificate[];
   courseCompletions: Map<string, number>;  // courseId → percent (0-100)
   courseGrades: Map<string, CourseGradeResponse>;
+  profile?: any;
 }
 
 const STORAGE_KEY = "la_badge_timestamps";
 
 /** Lưu timestamp earn badge vào localStorage */
-function persistTimestamp(badgeId: string): string {
+function persistTimestamp(badgeId: string, username?: string): string {
+  const key = username ? `${STORAGE_KEY}_${username}` : STORAGE_KEY;
   const now = new Date().toISOString();
   try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    const stored = JSON.parse(localStorage.getItem(key) || "{}");
     if (!stored[badgeId]) {
       stored[badgeId] = now;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+      localStorage.setItem(key, JSON.stringify(stored));
     }
     return stored[badgeId];
   } catch {
@@ -41,9 +43,10 @@ function persistTimestamp(badgeId: string): string {
 }
 
 /** Lấy timestamp đã lưu  */
-function getTimestamp(badgeId: string): string | null {
+function getTimestamp(badgeId: string, username?: string): string | null {
+  const key = username ? `${STORAGE_KEY}_${username}` : STORAGE_KEY;
   try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    const stored = JSON.parse(localStorage.getItem(key) || "{}");
     return stored[badgeId] || null;
   } catch {
     return null;
@@ -51,9 +54,10 @@ function getTimestamp(badgeId: string): string | null {
 }
 
 /** Lấy tất cả badge IDs đã hiển thị unlock modal */
-export function getShownBadgeIds(): Set<string> {
+export function getShownBadgeIds(username?: string): Set<string> {
+  const key = username ? `la_badge_shown_${username}` : "la_badge_shown";
   try {
-    const shown = JSON.parse(localStorage.getItem("la_badge_shown") || "[]");
+    const shown = JSON.parse(localStorage.getItem(key) || "[]");
     return new Set(shown);
   } catch {
     return new Set();
@@ -61,11 +65,12 @@ export function getShownBadgeIds(): Set<string> {
 }
 
 /** Đánh dấu badge đã hiển thị unlock modal */
-export function markBadgeShown(badgeId: string): void {
+export function markBadgeShown(badgeId: string, username?: string): void {
+  const key = username ? `la_badge_shown_${username}` : "la_badge_shown";
   try {
-    const shown = getShownBadgeIds();
+    const shown = getShownBadgeIds(username);
     shown.add(badgeId);
-    localStorage.setItem("la_badge_shown", JSON.stringify([...shown]));
+    localStorage.setItem(key, JSON.stringify([...shown]));
   } catch {
     // silent fail
   }
@@ -75,19 +80,64 @@ export function markBadgeShown(badgeId: string): void {
  * Core evaluation function — kiểm tra từng badge definition
  * dựa trên dữ liệu real-time từ API.
  */
-export function evaluateBadges(data: EvaluationData): EarnedBadge[] {
+export function evaluateBadges(data: EvaluationData, username?: string): EarnedBadge[] {
   const earned: EarnedBadge[] = [];
-  const { enrollments, certificates, courseCompletions, courseGrades } = data;
 
   for (const badge of BADGE_DEFINITIONS) {
-    const result = checkBadge(badge, enrollments, certificates, courseCompletions, courseGrades);
+    if (badge.id === "perfect_profile") continue;
+
+    const result = checkBadge(badge, data, username);
     if (result) {
-      const timestamp = getTimestamp(badge.id) || persistTimestamp(badge.id);
+      // Clear legacy global key if present to prevent false positives
+      if (localStorage.getItem("la_profile_updated")) {
+        localStorage.removeItem("la_profile_updated");
+      }
+      
+      const timestamp = getTimestamp(badge.id, username) || persistTimestamp(badge.id, username);
       earned.push({
         badge,
         earnedAt: timestamp,
         courseId: result.courseId,
         courseName: result.courseName,
+      });
+    }
+  }
+
+  // Kiểm tra "Mảnh ghép hoàn hảo"
+  const profileUpdatedKey = username ? `la_profile_updated_${username}` : "la_profile_updated";
+  const hasProfileUpdateInStorage = localStorage.getItem(profileUpdatedKey) === "true";
+  
+  // Kiểm tra trên object profile thực tế từ API (phòng khi mất localStorage)
+  let hasProfileData = false;
+  if (data.profile) {
+    const p = data.profile;
+    // Profile được coi là đã update nếu có bất kỳ trường thông tin nào ngoài mặc định
+    if (
+      p.year_of_birth || 
+      p.gender || 
+      p.level_of_education || 
+      p.country || 
+      p.goals || 
+      p.bio || 
+      (p.language_proficiencies && p.language_proficiencies.length > 0) ||
+      (p.profile_image && p.profile_image.has_image)
+    ) {
+      hasProfileData = true;
+    }
+  }
+
+  if (hasProfileUpdateInStorage || hasProfileData) {
+    const badge = BADGE_DEFINITIONS.find((b) => b.id === "perfect_profile");
+    if (badge) {
+      // Khôi phục lại cờ trong localStorage nếu API xác nhận đã update nhưng localStorage trống
+      if (hasProfileData && !hasProfileUpdateInStorage) {
+        localStorage.setItem(profileUpdatedKey, "true");
+      }
+      
+      const timestamp = getTimestamp(badge.id, username) || persistTimestamp(badge.id, username);
+      earned.push({
+        badge,
+        earnedAt: timestamp,
       });
     }
   }
@@ -102,11 +152,11 @@ interface CheckResult {
 
 function checkBadge(
   badge: BadgeDefinition,
-  enrollments: EnrollmentItem[],
-  certificates: Certificate[],
-  completions: Map<string, number>,
-  grades: Map<string, CourseGradeResponse>,
+  data: EvaluationData,
+  username?: string
 ): CheckResult | null {
+  const { enrollments, certificates, courseCompletions: completions, courseGrades: grades } = data;
+
   switch (badge.id) {
     // ── Completion ──
     case "first_step": {
@@ -119,134 +169,164 @@ function checkBadge(
       return null;
     }
 
-    case "halfway_hero": {
-      for (const [courseId, pct] of completions) {
-        if (pct >= 50) {
-          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
-          return { courseId, courseName: name };
-        }
-      }
-      return null;
-    }
-
-    case "course_conqueror": {
+    case "onboarding_warrior": {
       for (const [courseId, pct] of completions) {
         if (pct >= 100) {
           const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
-          return { courseId, courseName: name };
+          if (name && name.toLowerCase().includes("onboarding")) {
+            return { courseId, courseName: name };
+          }
         }
       }
       return null;
     }
 
-    case "almost_there": {
+    case "speed_scholar": {
+      if (username && getTimestamp("speed_scholar", username)) {
+         return {}; // Đã đạt được thì giữ nguyên vĩnh viễn
+      }
       for (const [courseId, pct] of completions) {
-        if (pct >= 90) {
-          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
-          return { courseId, courseName: name };
+        if (pct >= 100) {
+          const enrollment = enrollments.find(e => e.course_details.course_id === courseId);
+          if (enrollment && enrollment.created) {
+            const enrolledAt = new Date(enrollment.created).getTime();
+            const now = Date.now();
+            const diffMinutes = (now - enrolledAt) / (1000 * 60);
+            if (diffMinutes <= 10) {
+              return { courseId, courseName: enrollment.course_details.course_name };
+            }
+          }
         }
       }
       return null;
     }
 
-    // ── Grade ──
-    case "passing_grade": {
-      for (const [courseId, grade] of grades) {
-        if (grade.passed) {
-          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
-          return { courseId, courseName: name };
-        }
-      }
-      return null;
-    }
-
-    case "high_achiever": {
-      for (const [courseId, grade] of grades) {
-        if (grade.percent >= 0.9) {
-          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
-          return { courseId, courseName: name };
-        }
-      }
-      return null;
-    }
-
-    case "perfect_score": {
-      for (const [courseId, grade] of grades) {
-        if (grade.percent >= 0.98) {
-          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
-          return { courseId, courseName: name };
-        }
-      }
-      return null;
-    }
-
-    case "first_blood": {
-      for (const [courseId, grade] of grades) {
-        if (grade.percent > 0) {
-          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
-          return { courseId, courseName: name };
-        }
-      }
-      return null;
-    }
-
-    // ── Certificate ──
-    case "certified": {
-      const cert = certificates.find(c => c.status === "downloadable");
-      if (cert) {
-        const name = enrollments.find(e => e.course_details.course_id === cert.course_id)?.course_details.course_name;
-        return { courseId: cert.course_id, courseName: name };
-      }
-      return null;
-    }
-
-    case "multi_certified": {
-      const certs = certificates.filter(c => c.status === "downloadable");
-      if (certs.length >= 3) return {};
-      return null;
-    }
-
-    // ── Enrollment ──
-    case "explorer": {
-      if (enrollments.length >= 3) return {};
-      return null;
-    }
-
-    case "dedicated_learner": {
-      // 1 course tính là "hoàn thành" nếu completion 100% HOẶC grade.passed
-      const completedCourseIds = new Set<string>();
+    case "value_holder": {
+      let onboardingCount = 0;
       for (const [courseId, pct] of completions) {
-        if (pct >= 100) completedCourseIds.add(courseId);
+        if (pct >= 100) {
+          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
+          if (name && name.toLowerCase().includes("onboarding")) {
+            onboardingCount++;
+          }
+        }
       }
-      for (const [courseId, grade] of grades) {
-        if (grade.passed) completedCourseIds.add(courseId);
+      if (onboardingCount >= 2) {
+        return { courseName: "Nhiều khóa Onboarding" };
       }
-      if (completedCourseIds.size >= 2) return {};
       return null;
     }
 
-    case "knowledge_seeker": {
-      if (enrollments.length >= 1) return {};
+    case "la_breakthrough": {
+      let count = 0;
+      for (const pct of completions.values()) {
+        if (pct >= 100) count++;
+      }
+      if (count >= 3) {
+        return { courseName: "3 khóa học bất kỳ" };
+      }
       return null;
     }
 
-    case "bookworm": {
-      if (enrollments.length >= 5) return {};
+    case "la_expert": {
+      let count = 0;
+      for (const pct of completions.values()) {
+        if (pct >= 100) count++;
+      }
+      if (count >= 5) {
+        return { courseName: "5 khóa học bất kỳ" };
+      }
       return null;
     }
 
-    case "veteran": {
-      const completedCourseIds = new Set<string>();
+    case "la_ambassador": {
+      let hasOnboarding = false;
+      let hasOther = false;
       for (const [courseId, pct] of completions) {
-        if (pct >= 100) completedCourseIds.add(courseId);
+        if (pct >= 100) {
+          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
+          if (name && name.toLowerCase().includes("onboarding")) {
+            hasOnboarding = true;
+          } else if (name) {
+            hasOther = true;
+          }
+        }
       }
-      for (const [courseId, grade] of grades) {
-        if (grade.passed) completedCourseIds.add(courseId);
+      if (hasOnboarding && hasOther) {
+        return { courseName: "Nhiều khóa học" };
       }
-      if (completedCourseIds.size >= 5) return {};
       return null;
     }
 
+    case "system_explorer": {
+      let count = 0;
+      for (const pct of completions.values()) {
+        if (pct >= 100) count++;
+      }
+      if (count >= 10) {
+        return { courseName: "10 khóa học bất kỳ" };
+      }
+      return null;
+    }
+
+    case "recruitment_master": {
+      for (const [courseId, pct] of completions) {
+        if (pct >= 100) {
+          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
+          if (name && name.toLowerCase().includes("tuyển dụng")) {
+            return { courseId, courseName: name };
+          }
+        }
+      }
+      return null;
+    }
+
+    case "otif_expert": {
+      let count = 0;
+      for (const [courseId, pct] of completions) {
+        if (pct >= 100) {
+          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
+          if (name && name.toLowerCase().includes("tuyển dụng")) {
+            count++;
+          }
+        }
+      }
+      if (count >= 2) {
+        return { courseName: "Nhiều khóa học Tuyển dụng" };
+      }
+      return null;
+    }
+
+    case "trusted_ambassador": {
+      let count = 0;
+      for (const [courseId, pct] of completions) {
+        if (pct >= 100) {
+          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
+          if (name && name.toLowerCase().includes("tuyển dụng")) {
+            count++;
+          }
+        }
+      }
+      if (count >= 3) {
+        return { courseName: "Nhiều khóa học Tuyển dụng" };
+      }
+      return null;
+    }
+
+    case "omnipotent_master": {
+      let count = 0;
+      for (const pct of completions.values()) {
+        if (pct >= 100) count++;
+      }
+      if (count >= 20) {
+        return { courseName: "20 khóa học bất kỳ" };
+      }
+      return null;
+    }
+
+    // ── Profile ──
+    // perfect_profile được xử lý riêng bên ngoài loop
+    
     default:
       return null;
   }
