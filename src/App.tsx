@@ -48,6 +48,9 @@ const ProfilePage = React.lazy(() =>
 const LoginPage = React.lazy(() =>
   import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage }))
 );
+const RegisterPage = React.lazy(() =>
+  import("@/pages/RegisterPage").then((m) => ({ default: m.RegisterPage }))
+);
 
 
 // ── React Query config ──
@@ -104,6 +107,7 @@ function App() {
                 <Routes>
                 {/* Route công khai */}
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
 
 
                 {/* Routes bảo vệ — yêu cầu đăng nhập */}

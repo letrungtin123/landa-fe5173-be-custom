@@ -14,20 +14,29 @@ import {
 import { transformBlocksToCourse } from "@/transformers/blockTransformer";
 import { useAuthStore } from "@/stores/useAuthStore";
 
+import { getMyGroupCourses } from "@/api/groupCourses";
+
 /**
  * Get paginated list of all available courses.
- * BE đã filter visible_to_staff_only cho non-staff users.
+ * - Staff/Superuser: Lấy toàn bộ courses từ /api/courses/v1/courses/
+ * - Learner: CHỈ lấy các courses được phân qua group từ /api/landa/v0/my-group-courses/
  */
 export function useCourses(searchTerm?: string) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isStaff = useAuthStore((s) => s.user?.isStaff);
 
   return useQuery({
-    queryKey: ["courses", searchTerm],
-    queryFn: () =>
-      getCourses({
-        search_term: searchTerm || undefined,
-        page_size: 20,
-      }),
+    queryKey: ["courses", searchTerm, isStaff],
+    queryFn: () => {
+      if (isStaff) {
+        return getCourses({
+          search_term: searchTerm || undefined,
+          page_size: 20,
+        });
+      } else {
+        return getMyGroupCourses(searchTerm);
+      }
+    },
     enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

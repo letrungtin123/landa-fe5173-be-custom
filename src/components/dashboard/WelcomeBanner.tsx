@@ -82,24 +82,24 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
       {/* Weekly Momentum Card */}
       <div
         className={cn(
-          "relative flex flex-col overflow-hidden rounded-3xl pt-6 md:pt-8 text-white min-h-[320px] shadow-sm",
+          "relative flex flex-col overflow-hidden rounded-3xl pt-6 md:pt-8 min-h-[320px] shadow-sm text-primary-foreground",
           colorStyle === "gradient"
             ? "bg-gradient-to-r from-primary to-primary/80"
-            : "bg-[#0b5de4]"
+            : "bg-primary"
         )}
       >
         <div className="relative z-10 w-full px-6 md:px-8 md:max-w-[85%] mb-6">
           <h3 className="mb-2 text-2xl font-bold">Weekly Momentum</h3>
-          <p className="text-sm leading-relaxed text-white/90">
-            Thật ấn tượng! Thời gian học tập của bạn <span className="text-[#34F8C5] font-bold">cao hơn {percentile}%</span> người học
+          <p className="text-sm leading-relaxed opacity-90">
+            Thật ấn tượng! Thời gian học tập của bạn <span className="font-bold text-[#34F8C5]">cao hơn {percentile}%</span> người học
             trên hệ thống tuần qua. Giữ vững phong độ này nhé!
           </p>
         </div>
 
         {/* Chart decoration */}
         <div className="relative w-full flex-1 min-h-[220px] mt-auto">
-          <div className="absolute top-0 left-6 md:left-8 text-[11px] text-white/80 z-10">(h)</div>
-          <div className="absolute bottom-[10px] right-0 md:right-2 text-[11px] text-white/80 z-10">(day)</div>
+          <div className="absolute top-0 left-6 md:left-8 text-[11px] opacity-80 z-10">(h)</div>
+          <div className="absolute bottom-[10px] right-0 md:right-2 text-[11px] opacity-80 z-10">(day)</div>
           
           <div className="absolute inset-0">
             <ResponsiveContainer width="100%" height="100%">

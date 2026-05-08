@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -219,7 +219,7 @@ export function LoginPage() {
       </div>
 
       {/* ─── Right Panel (Form) ─── */}
-      <div className="flex flex-1 flex-col overflow-y-auto items-center justify-center bg-white px-6 py-12">
+      <div className="flex flex-1 flex-col overflow-y-auto items-center justify-center bg-white px-6 py-12 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <div className="w-full max-w-[420px] my-auto">
           {/* Logo mark */}
           <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-[#0f2a5e] shadow-lg p-2">
@@ -509,6 +509,14 @@ export function LoginPage() {
               Chính sách của công ty
             </span>
             .
+          </p>
+
+          {/* Register link */}
+          <p className="mt-4 text-center text-[13px] text-[#888]">
+            Chưa có tài khoản?{" "}
+            <Link to="/register" className="font-semibold text-[#1877F2] hover:underline">
+              Đăng ký ngay
+            </Link>
           </p>
         </div>
       </div>

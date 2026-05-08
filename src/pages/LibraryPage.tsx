@@ -122,6 +122,89 @@ export function LibraryPage() {
   const totalCount = documentsData?.count || 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
+  const renderPagination = () => (
+    <div className={`flex flex-col sm:flex-row sm:items-center justify-between pt-4 gap-3 sm:gap-0 transition-opacity duration-300 ${docLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="text-sm text-muted-foreground">
+          Trang {currentPage} / {totalPages} ({totalCount} tài liệu)
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>Hiển thị:</span>
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 w-[110px] justify-between text-xs font-medium"
+              >
+                {pageSize} / trang
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[110px] min-w-0">
+              {[5, 10, 20, 50].map((size) => (
+                <DropdownMenuItem
+                  key={size}
+                  onClick={() => {
+                    setPageSize(size);
+                    setCurrentPage(1);
+                  }}
+                  className={`text-xs cursor-pointer justify-between ${pageSize === size ? 'bg-primary/10 text-primary font-medium' : ''}`}
+                >
+                  {size} / trang
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+      
+      {totalPages > 1 && (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage <= 1}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            let pageNum: number;
+            if (totalPages <= 5) {
+              pageNum = i + 1;
+            } else if (currentPage <= 3) {
+              pageNum = i + 1;
+            } else if (currentPage >= totalPages - 2) {
+              pageNum = totalPages - 4 + i;
+            } else {
+              pageNum = currentPage - 2 + i;
+            }
+            return (
+              <button
+                key={pageNum}
+                onClick={() => setCurrentPage(pageNum)}
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                  currentPage === pageNum
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "border border-border bg-card hover:bg-accent/10"
+                }`}
+              >
+                {pageNum}
+              </button>
+            );
+          })}
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage >= totalPages}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -139,7 +222,122 @@ export function LibraryPage() {
         </div>
 
         {/* Main Content */}
-        <div className="w-full lg:w-3/4 lg:pl-8 space-y-10">
+        <div className="w-full lg:w-3/4 lg:pl-8">
+          {activeCategory ? (
+            <div className="space-y-6">
+              <div>
+                <Button 
+                  onClick={() => handleCategoryClick("")} 
+                  className="rounded-full px-5 font-medium shadow-sm"
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Quay lại
+                </Button>
+              </div>
+
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground uppercase tracking-tight">
+                {categoriesData?.categories?.find(c => c.slug === activeCategory)?.name || "Danh mục"}
+              </h1>
+
+              <div className="flex flex-col sm:flex-row gap-4 sm:items-center pt-2 pb-4">
+                <div className="relative flex-1 sm:max-w-md">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Search"
+                    value={searchTerm}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="w-full pl-12 pr-4 py-2.5 bg-card border border-border rounded-full outline-none focus:border-primary transition-colors text-sm shadow-sm"
+                  />
+                </div>
+                
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="rounded-full bg-card h-10 px-6 border-border shadow-sm font-medium">
+                      <LayoutTemplate className="h-4 w-4 mr-2 text-muted-foreground" /> 
+                      {activeExtension ? activeExtension.toUpperCase() : "Filter"}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                    <DropdownMenuItem onClick={() => handleExtensionClick("")} className={!activeExtension ? "font-bold text-primary" : ""}>
+                      Tất cả định dạng
+                    </DropdownMenuItem>
+                    {Object.keys(EXTENSION_COLORS).filter(k => !['jpeg', 'jpg'].includes(k)).map(ext => (
+                      <DropdownMenuItem key={ext} onClick={() => handleExtensionClick(ext)} className={activeExtension === ext ? "font-bold text-primary" : ""}>
+                        {ext.toUpperCase()}
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuItem onClick={() => handleExtensionClick("png")} className={["png", "jpg", "jpeg"].includes(activeExtension) ? "font-bold text-primary" : ""}>
+                      Hình ảnh
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Grid of Documents */}
+              <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity duration-300 ${docFetching ? 'opacity-50 pointer-events-none' : ''}`}>
+                {docLoading ? (
+                  Array.from({ length: pageSize }).map((_, i) => (
+                    <div key={`m-skeleton-${i}`} className="h-[200px] animate-pulse rounded-2xl border border-border/50 bg-card p-5" />
+                  ))
+                ) : documents.length > 0 ? (
+                  documents.map((doc: LibraryDocument) => {
+                    const Icon = getDocumentIcon(doc.extension);
+                    const extColor = EXTENSION_COLORS[doc.extension] || "#666";
+                    return (
+                      <Card key={doc.id} className="rounded-2xl border-border bg-card hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col h-[200px] p-5 shadow-sm group">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="h-12 w-12 shrink-0 rounded-xl bg-background border flex items-center justify-center shadow-xs">
+                            <Icon className="h-6 w-6" style={{ color: extColor }} />
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const ext = doc.extension.toLowerCase();
+                              const filename = doc.title.toLowerCase().endsWith(`.${ext}`) ? doc.title : `${doc.title}.${ext}`;
+                              handleSecureDownload(doc.download_url, filename);
+                            }}
+                            className="shrink-0 h-10 w-10 flex items-center justify-center rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <Download className="h-5 w-5" />
+                          </button>
+                        </div>
+                        
+                        <h3 className="font-bold text-[15px] leading-snug text-foreground line-clamp-2 flex-1 mt-1 group-hover:text-primary transition-colors">
+                          {doc.title}
+                        </h3>
+
+                        <div className="flex justify-between items-end mt-4">
+                          <span className="text-sm text-muted-foreground font-medium">
+                            Kích thước: {formatFileSize(doc.file_size)}
+                          </span>
+                          <button 
+                            className="text-sm text-primary hover:text-primary/80 font-semibold"
+                            onClick={() => setPreviewDoc(doc)}
+                          >
+                            Xem trước
+                          </button>
+                        </div>
+                      </Card>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full p-12 text-center text-muted-foreground border border-dashed rounded-2xl bg-card/50">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <FileText className="h-8 w-8 opacity-20" />
+                      <p className="text-sm">
+                        {searchTerm
+                          ? `Không tìm thấy tài liệu "${searchTerm}"`
+                          : "Chưa có tài liệu nào."}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {renderPagination()}
+            </div>
+          ) : (
+            <div className="space-y-10">
           {/* Banner */}
           <div className="space-y-4">
             <div>
@@ -508,89 +706,12 @@ export function LibraryPage() {
                 )}
               </div>
 
-                {/* Pagination */}
-                <div className={`flex flex-col sm:flex-row sm:items-center justify-between pt-4 gap-3 sm:gap-0 transition-opacity duration-300 ${docLoading ? 'opacity-50 pointer-events-none' : ''}`}>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="text-sm text-muted-foreground">
-                      Trang {currentPage} / {totalPages} ({totalCount} tài liệu)
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>Hiển thị:</span>
-                      <DropdownMenu modal={false}>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="h-8 w-[110px] justify-between text-xs font-medium"
-                          >
-                            {pageSize} / trang
-                            <ChevronDown className="h-4 w-4 opacity-50" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[110px] min-w-0">
-                          {[5, 10, 20].map((size) => (
-                            <DropdownMenuItem
-                              key={size}
-                              onClick={() => {
-                                setPageSize(size);
-                                setCurrentPage(1);
-                              }}
-                              className={`text-xs cursor-pointer justify-between ${pageSize === size ? 'bg-primary/10 text-primary font-medium' : ''}`}
-                            >
-                              {size} / trang
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                  
-                  {totalPages > 1 && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                        disabled={currentPage <= 1}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </button>
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNum: number;
-                        if (totalPages <= 5) {
-                          pageNum = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNum = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNum = totalPages - 4 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => setCurrentPage(pageNum)}
-                            className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition-colors ${
-                              currentPage === pageNum
-                                ? "bg-primary text-primary-foreground shadow-sm"
-                                : "border border-border bg-card hover:bg-accent/10"
-                            }`}
-                          >
-                            {pageNum}
-                          </button>
-                        );
-                      })}
-                      <button
-                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={currentPage >= totalPages}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-            </>
+              </>
+            </div>
+            
+            {renderPagination()}
           </div>
+          )}
         </div>
       </div>
 

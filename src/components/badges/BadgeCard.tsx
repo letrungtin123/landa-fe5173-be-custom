@@ -26,7 +26,7 @@ export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCard
       <motion.div
         onClick={onClick}
         className={cn(
-          "w-[219px] h-[356px] mx-auto group overflow-hidden relative flex flex-col rounded-[20px] text-left shadow-sm border border-border/10",
+          "w-full max-w-[219px] h-[320px] sm:h-[356px] mx-auto group overflow-hidden relative flex flex-col rounded-[20px] text-left shadow-sm border border-border/10",
           isEarned
             ? `cursor-pointer hover:shadow-xl`
             : "opacity-95 grayscale"
@@ -40,10 +40,10 @@ export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCard
             Nhóm chuyên gia
           </div>
           
-          <h3 className="text-[22px] font-black uppercase leading-[1.15] mb-2 text-white">
+          <h3 className="text-[18px] sm:text-[22px] font-black uppercase leading-[1.15] mb-2 text-white">
             BẬC THẦY<br/>TOÀN NĂNG
           </h3>
-          <p className="text-[12px] italic text-white/90 mb-4 leading-snug">
+          <p className="text-[11px] sm:text-[12px] italic text-white/90 mb-4 leading-snug">
             “{badge.description}”
           </p>
           
@@ -108,7 +108,7 @@ export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCard
     <motion.div
       onClick={onClick}
       className={cn(
-        "w-[219px] h-[356px] mx-auto group overflow-hidden relative flex flex-col items-center rounded-[20px] bg-card text-center border shadow-sm",
+        "w-full max-w-[219px] h-[320px] sm:h-[356px] mx-auto group overflow-hidden relative flex flex-col items-center rounded-[20px] bg-card text-center border shadow-sm",
         isEarned
           ? `cursor-pointer border-primary/60 hover:border-primary hover:shadow-xl`
           : "border-border/30 hover:border-border/50 opacity-95"
@@ -135,7 +135,7 @@ export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCard
       {/* Content wrapper */}
       <div className="relative z-10 flex flex-col items-center p-4 pt-8 w-full h-full">
         {/* Badge Icon */}
-        <div className="mb-3 mt-1">
+        <div className="mb-2 sm:mb-3 mt-1 scale-90 sm:scale-100">
           <BadgeIcon
             badgeId={badge.id}
             tier={badge.tier}
@@ -160,7 +160,7 @@ export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCard
 
         {/* Badge name */}
         <h3 className={cn(
-          "text-[15px] font-black mb-3 uppercase tracking-wide px-1 leading-tight",
+          "text-[13px] sm:text-[15px] font-black mb-2 sm:mb-3 uppercase tracking-wide px-1 leading-tight",
           isEarned ? "text-foreground" : "text-muted-foreground/50"
         )}>
           {badge.name}
@@ -168,7 +168,7 @@ export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCard
 
         {/* Description or requirement */}
         <p className={cn(
-          "text-[12px] leading-relaxed mb-4 flex-1 px-1 italic line-clamp-3",
+          "text-[11px] sm:text-[12px] leading-relaxed mb-3 sm:mb-4 flex-1 px-1 italic line-clamp-3",
           isEarned ? "text-muted-foreground" : "text-muted-foreground/40"
         )}>
           {isEarned ? `“${badge.description}”` : badge.requirement}
