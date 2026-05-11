@@ -21,6 +21,9 @@ import { markBlocksComplete } from "@/api/progress";
 import { CrosswordContent } from "@/components/lesson/CrosswordContent";
 import { SortableContent } from "@/components/lesson/SortableContent";
 import DiagramContent from "@/components/lesson/DiagramContent";
+import { CompleteCourseModal } from "@/components/lesson/CompleteCourseModal";
+import { Course100PercentModal } from "@/components/lesson/Course100PercentModal";
+import { useCourseCompletion } from "@/hooks/useProgress";
 
 // ── Badge component (declared outside render to satisfy React Compiler) ──
 const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
@@ -31,6 +34,7 @@ const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
 
 export function LessonDetailPage() {
   const { courseId } = useParams();
+  const { completionPercent } = useCourseCompletion(courseId);
   const currentLessonId = useAppStore((s) => s.currentLessonId);
   const currentUnitIndex = useAppStore((s) => s.currentUnitIndex);
   const nextUnit = useAppStore((s) => s.nextUnit);
@@ -475,6 +479,9 @@ export function LessonDetailPage() {
           Copyright © 2017 Le & Associates
         </p>
       </footer>
+
+      {courseId && <CompleteCourseModal courseId={courseId} />}
+      {courseId && <Course100PercentModal courseId={courseId} completionPercent={completionPercent} />}
     </div>
   );
 }
