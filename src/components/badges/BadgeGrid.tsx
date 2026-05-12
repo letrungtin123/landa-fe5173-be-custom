@@ -158,19 +158,21 @@ export function BadgeGrid({ earnedBadges, className }: BadgeGridProps) {
                         Nhóm chuyên gia
                       </div>
 
-                      <h2 className="text-[32px] font-black uppercase tracking-tight leading-[1.1] text-white mb-3 mt-auto drop-shadow-md">
-                        BẬC THẦY<br/>TOÀN NĂNG
-                      </h2>
+                      <div className="mt-auto w-[65%] flex flex-col">
+                        <h2 className="text-[28px] font-black uppercase tracking-tight leading-[1.1] text-white mb-3 drop-shadow-md">
+                          BẬC THẦY<br/>TOÀN NĂNG
+                        </h2>
 
-                      <p className="text-[14px] text-white/90 italic mb-5 leading-relaxed pr-6 drop-shadow-sm">
-                        “{selectedBadge.badge.description}”
-                      </p>
+                        <p className="text-[13px] text-white/90 italic mb-6 leading-relaxed drop-shadow-sm">
+                          “{selectedBadge.badge.description}”
+                        </p>
 
-                      <div className="flex items-center gap-2.5 mt-auto w-full pt-2">
-                        <img src={HuyChuongIcon} alt="Huy chương" className="h-[40px] w-[40px] object-contain drop-shadow-md shrink-0" />
-                        <div className="flex flex-col items-start gap-1">
-                          <span className="text-[11px] font-medium text-white/90 leading-none tracking-wide">Được công nhận bởi</span>
-                          <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[16px] object-contain opacity-100" />
+                        <div className="flex items-center gap-2.5 pt-2 border-t border-white/10">
+                          <img src={HuyChuongIcon} alt="Huy chương" className="h-[36px] w-[36px] object-contain drop-shadow-md shrink-0" />
+                          <div className="flex flex-col items-start gap-1">
+                            <span className="text-[10px] font-medium text-white/80 leading-none tracking-wide">Được công nhận bởi</span>
+                            <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[14px] object-contain opacity-100 filter brightness-0 invert" />
+                          </div>
                         </div>
                       </div>
                     </div>

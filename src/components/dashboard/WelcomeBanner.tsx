@@ -17,6 +17,8 @@ import { useStudyTimeTracker } from "@/hooks/useStudyTimeTracker";
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
+    if (data.name === "(day)") return null;
+    
     const mins = data.rawMinutes || 0;
     
     let timeText = "";
@@ -29,11 +31,11 @@ const CustomTooltip = ({ active, payload }: any) => {
     }
 
     return (
-      <div className="relative bg-[#34F8C5] text-[#0a1628] font-bold text-xs px-4 py-2 rounded-lg shadow-lg text-center min-w-[100px] -mt-10">
-        <div>Bạn đã học</div>
-        <div className="text-sm">{timeText}</div>
+      <div className="relative bg-[#45FFCA] text-[#0a1628] px-3 py-2 rounded-[8px] shadow-lg text-center min-w-[110px] -mt-12 flex flex-col items-center justify-center">
+        <span className="text-[13px] font-normal leading-[18px]">Bạn đã học</span>
+        <span className="text-[15px] font-bold leading-[20px]">{timeText}</span>
         {/* Arrow pointer down */}
-        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#34F8C5] rotate-45"></div>
+        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#45FFCA] rotate-45 rounded-[1px]"></div>
       </div>
     );
   }
@@ -82,57 +84,56 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
       {/* Weekly Momentum Card */}
       <div
         className={cn(
-          "relative flex flex-col overflow-hidden rounded-3xl pt-6 md:pt-8 min-h-[320px] shadow-sm text-primary-foreground",
+          "relative flex flex-col overflow-hidden rounded-[32px] pt-6 shadow-sm text-primary-foreground w-full max-w-[647px] h-[300px]",
           colorStyle === "gradient"
             ? "bg-gradient-to-r from-primary to-primary/80"
             : "bg-primary"
         )}
       >
-        <div className="relative z-10 w-full px-6 md:px-8 md:max-w-[85%] mb-6">
-          <h3 className="mb-2 text-2xl font-bold">Weekly Momentum</h3>
-          <p className="text-sm leading-relaxed opacity-90">
-            Thật ấn tượng! Thời gian học tập của bạn <span className="font-bold text-[#34F8C5]">cao hơn {percentile}%</span> người học
+        <div className="relative z-10 w-full px-7 md:px-8 mb-1">
+          <h3 className="mb-2 text-[22px] font-bold tracking-tight text-white">Weekly Momentum</h3>
+          <p className="text-[14px] font-normal leading-relaxed text-white/90 max-w-[90%]">
+            Thật ấn tượng! Thời gian học tập của bạn <span className="text-[#45FFCA] font-semibold">cao hơn {percentile}%</span> người học
             trên hệ thống tuần qua. Giữ vững phong độ này nhé!
           </p>
         </div>
 
-        {/* Chart decoration */}
-        <div className="relative w-full flex-1 min-h-[220px] mt-auto">
-          <div className="absolute top-0 left-6 md:left-8 text-[11px] opacity-80 z-10">(h)</div>
-          <div className="absolute bottom-[10px] right-0 md:right-2 text-[11px] opacity-80 z-10">(day)</div>
-          
+        <div className="relative w-full flex-1 mt-auto">
+          <div className="absolute top-[0px] left-[18px] text-[12px] text-white/90 z-10">(h)</div>
           <div className="absolute inset-0">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
-              data={chartData}
-              margin={{ top: 40, right: 70, left: -20, bottom: 10 }}
+              data={[...chartData, { name: "(day)", hours: chartData[chartData.length - 1]?.hours ? chartData[chartData.length - 1].hours * 1.1 : 0 }]}
+              margin={{ top: 35, right: 30, left: -5, bottom: 20 }}
             >
               <defs>
                 <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#34F8C5" stopOpacity={0.5} />
-                  <stop offset="95%" stopColor="#34F8C5" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#45FFCA" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#45FFCA" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid 
                 strokeDasharray="4 4" 
                 vertical={true} 
                 horizontal={false} 
-                stroke="rgba(255,255,255,0.25)" 
+                stroke="rgba(255,255,255,0.2)" 
               />
               <XAxis 
                 dataKey="name" 
                 axisLine={{ stroke: 'rgba(255,255,255,0.4)', strokeWidth: 1 }}
-                tickLine={true}
-                tick={{ fill: 'rgba(255,255,255,0.9)', fontSize: 12 }}
+                tickLine={{ stroke: 'rgba(255,255,255,0.4)', strokeWidth: 1 }}
+                tick={{ fill: 'rgba(255,255,255,0.85)', fontSize: 12 }}
                 tickMargin={12}
               />
               <YAxis 
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: 'rgba(255,255,255,0.9)', fontSize: 12 }}
+                axisLine={{ stroke: 'rgba(255,255,255,0.4)', strokeWidth: 1 }}
+                tickLine={{ stroke: 'rgba(255,255,255,0.4)', strokeWidth: 1 }}
+                tick={{ fill: 'rgba(255,255,255,0.85)', fontSize: 12 }}
+                allowDecimals={false}
                 tickFormatter={(val) => val === 0 ? '' : val}
                 tickCount={5}
                 domain={[0, 'auto']}
+                width={40}
               />
               <RechartsTooltip 
                 content={<CustomTooltip />} 
@@ -142,11 +143,11 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
               <Area
                 type="monotone"
                 dataKey="hours"
-                stroke="#34F8C5"
+                stroke="#45FFCA"
                 strokeWidth={2.5}
                 fillOpacity={1}
                 fill="url(#colorHours)"
-                activeDot={{ r: 5, fill: '#34F8C5', stroke: '#fff', strokeWidth: 2 }}
+                activeDot={{ r: 5, fill: '#45FFCA', stroke: '#fff', strokeWidth: 2 }}
               />
               </AreaChart>
             </ResponsiveContainer>

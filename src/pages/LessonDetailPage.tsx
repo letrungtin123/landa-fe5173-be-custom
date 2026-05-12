@@ -227,7 +227,7 @@ export function LessonDetailPage() {
       <div className="flex flex-1">
         {/* ── Left: Main Content ── */}
         <div className="flex-1 min-w-0" ref={contentRef}>
-          <div className="px-6 py-6 md:px-10 md:py-8">
+          <div className="mx-auto w-full max-w-[1400px] px-6 py-6 md:px-10 md:py-8">
             {/* Header: Module + Tiêu đề + Progress */}
             <div className="mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <div className="flex-1">

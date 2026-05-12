@@ -22,8 +22,9 @@ export function ProgressRing({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, delay: 0.2 }}
+      className="h-[300px]"
     >
-      <div className="rounded-3xl border border-border/50 bg-card shadow-[0_2px_20px_rgb(0,0,0,0.04)] h-full">
+      <div className="rounded-[32px] border border-border/50 bg-card shadow-[0_2px_20px_rgb(0,0,0,0.04)] h-full">
         <div className="flex flex-col items-center justify-center p-8 h-full">
           {/* SVG Ring */}
           <div className="relative mb-6 h-36 w-36">

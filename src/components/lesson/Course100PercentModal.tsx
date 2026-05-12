@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import VideoCompleteFinal from "@/assets/CompleteCourseModal/VideoCompleteFinal.gif";
@@ -12,36 +12,52 @@ interface Course100PercentModalProps {
   config?: CourseModalConfigData;
 }
 
-const Confetti = () => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-    {/* Left side particles */}
-    <div className="absolute top-[15%] left-[10%] w-3 h-3 rounded-full bg-pink-500"></div>
-    <div className="absolute top-[25%] left-[5%] w-2 h-2 rounded-full bg-white opacity-80"></div>
-    <div className="absolute top-[45%] left-[12%] w-[12px] h-[24px] bg-yellow-400 rotate-45 opacity-90"></div>
-    <div className="absolute top-[65%] left-[8%] w-[10px] h-[20px] bg-pink-500 rotate-12"></div>
-    <div className="absolute top-[80%] left-[18%] w-2 h-2 rounded-full bg-white opacity-60"></div>
-    <div className="absolute top-[35%] left-[22%] w-3 h-3 bg-[#4ade80] rotate-45"></div>
-    <div className="absolute top-[50%] left-[28%] w-2 h-2 rounded-full bg-white"></div>
-    
-    {/* Right side particles */}
-    <div className="absolute top-[10%] right-[15%] w-2 h-2 rounded-full bg-pink-500"></div>
-    <div className="absolute top-[25%] right-[25%] w-2 h-2 rounded-full bg-white opacity-90"></div>
-    <div className="absolute top-[40%] right-[12%] w-[12px] h-[20px] bg-pink-400 -rotate-12"></div>
-    <div className="absolute top-[60%] right-[6%] w-[15px] h-[10px] bg-yellow-400 -rotate-45"></div>
-    <div className="absolute top-[85%] right-[20%] w-2 h-2 rounded-full bg-white opacity-70"></div>
-    <div className="absolute top-[35%] right-[32%] w-2 h-6 bg-[#34d399] rotate-12"></div>
-    <div className="absolute top-[20%] right-[5%] w-1.5 h-1.5 rounded-full bg-white"></div>
+const Confetti = () => {
+  const colors = ["#fbbf24", "#f59e0b", "#ef4444", "#ec4899", "#8b5cf6", "#3b82f6", "#10b981", "#f97316"];
+  const particles = useMemo(() => {
+    return Array.from({ length: 80 }, (_, i) => ({
+      id: i,
+      color: colors[i % colors.length],
+      x: Math.random() * 100,
+      delay: Math.random() * 2,
+      duration: 3 + Math.random() * 3,
+      size: 6 + Math.random() * 6,
+      rotateEnd: 360 + Math.random() * 360,
+      xOffset: (Math.random() - 0.5) * 100,
+    }));
+  }, []);
 
-    {/* Center/Top particles */}
-    <div className="absolute top-[12%] left-[45%] w-2 h-2 rounded-full bg-white opacity-80"></div>
-    <div className="absolute top-[18%] right-[35%] w-[10px] h-[6px] bg-pink-400 rotate-45"></div>
-    <div className="absolute top-[8%] right-[42%] w-1.5 h-1.5 rounded-full bg-yellow-400"></div>
-    
-    {/* Wavy ribbons */}
-    <svg className="absolute top-[20%] right-[18%] w-10 h-10 text-[#34d399] opacity-80 rotate-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4c-3 0-5 2-5 5s2 5 5 5 5 2 5 5-2 5-5 5"/></svg>
-    <svg className="absolute top-[45%] left-[18%] w-8 h-8 text-[#4ade80] opacity-60 -rotate-45" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4c-3 0-5 2-5 5s2 5 5 5 5 2 5 5-2 5-5 5"/></svg>
-  </div>
-);
+  return (
+    <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
+      <style>
+        {particles
+          .map(
+            (p) => `
+          @keyframes confetti-fall-${p.id} {
+            0% { transform: translate3d(0, -20px, 0) rotate(0deg); }
+            100% { transform: translate3d(${p.xOffset}px, 100vh, 0) rotate(${p.rotateEnd}deg); }
+          }
+        `
+          )
+          .join("")}
+      </style>
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="absolute rounded-sm shadow-sm"
+          style={{
+            left: `${p.x}%`,
+            top: 0,
+            width: p.size,
+            height: p.size * 0.5,
+            backgroundColor: p.color,
+            animation: `confetti-fall-${p.id} ${p.duration}s linear ${p.delay}s infinite`,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
 
 export function Course100PercentModal({ courseId, completionPercent, isLoading, config }: Course100PercentModalProps) {
   const [open, setOpen] = useState(false);

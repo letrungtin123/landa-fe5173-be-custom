@@ -8,56 +8,9 @@
    ============================================================ */
 
 @layer base {
-  /* ── SF Pro Display Font Import ── */
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF-Pro-Display/SF-Pro-Display-Light.otf') format('opentype');
-    font-weight: 300;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF-Pro-Display/SF-Pro-Display-Regular.otf') format('opentype');
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF-Pro-Display/SF-Pro-Display-Medium.otf') format('opentype');
-    font-weight: 500;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF-Pro-Display/SF-Pro-Display-Semibold.otf') format('opentype');
-    font-weight: 600;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF-Pro-Display/SF-Pro-Display-Bold.otf') format('opentype');
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF-Pro-Display/SF-Pro-Display-Heavy.otf') format('opentype');
-    font-weight: 800;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF-Pro-Display/SF-Pro-Display-Black.otf') format('opentype');
-    font-weight: 900;
-    font-style: normal;
-    font-display: swap;
-  }
+  /* ── Xóa bỏ các @font-face SF Pro cục bộ vì file .otf không hỗ trợ hinting trên Windows ── */
+  /* Thay vào đó sử dụng cấu trúc font hệ thống (macOS dùng SF Pro gốc, Windows dùng Inter) */
+
   /* ============================
      DEFAULT: Light Mode
      ============================ */
@@ -298,7 +251,8 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground subpixel-antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     margin: 0;
     min-height: 100vh;
   }

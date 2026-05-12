@@ -7,7 +7,8 @@ import { googleLoginOrRegister, GoogleAuthError } from "@/api/googleAuth";
 import { microsoftLoginOrRegister, MicrosoftAuthError } from "@/api/microsoftAuth";
 import { microsoftPopupLogin } from "@/config/msalConfig";
 import { config } from "@/config/env";
-import logoImg from "@/assets/leandassociate.webp";
+import whiteLogo from "@/assets/LoginPage/WhiteLogoLeftPanel.png";
+import squareIcon from "@/assets/LoginPage/SquareIcon.png";
 import leftPanelBg from "@/assets/LoginPage/LeftPanelLogin.jpg";
 import person1 from "@/assets/LoginPage/Person1.jpg";
 import person2 from "@/assets/LoginPage/Person2.jpg";
@@ -143,10 +144,10 @@ export function LoginPage() {
   const isSsoLoading = isGoogleLoading || isMicrosoftLoading;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white">
+    <div className="flex h-screen w-full max-w-[1440px] mx-auto overflow-hidden bg-white">
       {/* ─── Left Panel ─── */}
-      <div className="hidden w-[48%] lg:flex p-3 pr-0">
-        <div className="relative flex w-full flex-col justify-between overflow-hidden rounded-[32px] p-10 select-none">
+      <div className="hidden w-[48%] lg:flex p-8 pr-0 h-full">
+          <div className="relative flex w-full h-full flex-col justify-between overflow-hidden rounded-[24px] p-10 select-none shadow-sm">
           {/* Background image */}
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -156,35 +157,32 @@ export function LoginPage() {
           {/* Logo */}
           <div className="relative z-10 pt-2 pl-2">
             <img
-              src={logoImg}
+              src={whiteLogo}
               alt="Le & Associates"
-              className="h-9 w-auto brightness-0 invert"
+              className="h-9 w-auto object-contain"
             />
-            <p className="mt-1 text-[10px] font-semibold tracking-[0.15em] text-white/70 uppercase">
-              In people we value
-            </p>
           </div>
 
           {/* Bottom content */}
           <div className="relative z-10 flex flex-col justify-end mt-auto pl-2 mb-6">
-            {/* Trust badge */}
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex -space-x-2">
-                <img src={person1} alt="User 1" className="h-9 w-9 rounded-full border-2 border-white/20 object-cover" />
-                <img src={person2} alt="User 2" className="h-9 w-9 rounded-full border-2 border-white/20 object-cover" />
-                <img src={person3} alt="User 3" className="h-9 w-9 rounded-full border-2 border-white/20 object-cover" />
+            <div className="mb-6 inline-flex w-fit items-center gap-2 rounded-[30px] border border-white/30 bg-white/5 backdrop-blur-md p-1 pr-4 shadow-sm">
+              <div className="flex -space-x-2 pl-0.5">
+                <img src={person1} alt="User 1" className="relative z-[4] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
+                <img src={person2} alt="User 2" className="relative z-[3] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
+                <img src={person3} alt="User 3" className="relative z-[2] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
+                <img src={person1} alt="User 4" className="relative z-[1] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
               </div>
-              <span className="rounded-full border border-white/20 bg-white/10 backdrop-blur-md px-3.5 py-1.5 text-[12px] font-medium text-white">
+              <span className="text-[11px] font-normal text-white">
                 Trusted by 100+ companies
               </span>
             </div>
 
-            <h1 className="text-[52px] font-extrabold leading-[1.05] tracking-tight text-white md:text-[64px]">
+            <h1 className="text-[65px] font-bold leading-[60px] text-white uppercase font-['SF_Pro',_sans-serif]">
               READY TO
               <br />
               GROW?
             </h1>
-            <p className="mt-4 max-w-[320px] text-[15px] leading-relaxed text-white/90 font-medium">
+            <p className="mt-4 text-[15px] leading-relaxed text-white/90 font-normal whitespace-nowrap">
               Log in to start your skill-building journey today
             </p>
           </div>
@@ -219,158 +217,170 @@ export function LoginPage() {
       </div>
 
       {/* ─── Right Panel (Form) ─── */}
-      <div className="flex flex-1 flex-col overflow-y-auto items-center justify-center bg-white px-6 py-12 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        <div className="w-full max-w-[420px] my-auto">
-          {/* Logo mark */}
-          <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-[#0f2a5e] shadow-lg p-2">
-            <img
-              src={logoImg}
-              alt="L&A E-learning"
-              className="h-full w-full object-contain brightness-0 invert"
-            />
-          </div>
+      <div className="flex flex-1 h-full flex-col overflow-y-auto items-center bg-white px-6 py-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
 
-          <h2 className="mb-2 text-[28px] font-bold tracking-tight text-[#1a1a1a]">
-            Đăng nhập vào L&A E-learning
-          </h2>
-          <p className="mb-8 text-[14px] text-[#888]">
-            Vui lòng đăng nhập vào tài khoản đã được cung cấp để tiếp tục.
-          </p>
-
-          <form onSubmit={handleSubmit} noValidate className="space-y-5">
-            {/* Email */}
-            <div>
-              <label
-                htmlFor="login-email"
-                className="mb-1.5 block text-[13px] font-semibold text-[#1a1a1a]"
-              >
-                Tên đăng nhập / Email<span className="text-red-500">*</span>
-              </label>
-              <input
-                id="login-email"
-                type="text"
-                placeholder="username hoặc email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) setErrors((p) => ({ ...p, email: undefined }));
-                }}
-                className={`w-full rounded-lg border bg-white px-4 py-3 text-[14px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#bbb] focus:border-[#1877F2] focus:ring-2 focus:ring-[#1877F2]/20 ${errors.email ? "border-red-400" : "border-[#ddd]"
-                  }`}
-              />
-              {errors.email && (
-                <p className="mt-1 text-[12px] text-red-500">{errors.email}</p>
-              )}
+        {/* Nội dung form căn giữa dọc */}
+        <div className="w-full max-w-[384px] mt-auto mb-auto">
+          <div className="flex flex-col gap-7 w-full">
+          {/* Header (Logo + Title) */}
+          <div className="flex flex-col items-start gap-2.5">
+            {/* Logo mark */}
+            <div className="size-14 relative bg-sky-950 rounded-xl flex items-center justify-center mb-0">
+               <img
+                src={squareIcon}
+                alt="L&A E-learning"
+                className="w-10 h-10 object-contain"
+               />
             </div>
 
-            {/* Password */}
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
+            <div className="flex flex-col items-start gap-[3px]">
+              <h2 className="text-3xl font-normal leading-9 text-black whitespace-nowrap font-['SF_Pro',_sans-serif]">
+                Đăng nhập vào L&A E-learning
+              </h2>
+              <p className="text-[14px] font-normal leading-[20px] text-neutral-400 font-['SF_Pro',_sans-serif]">
+                Vui lòng đăng nhập vào tài khoản đã được cung cấp để tiếp tục.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
+              {/* Email */}
+              <div className="flex flex-col gap-2">
                 <label
-                  htmlFor="login-password"
-                  className="text-[13px] font-semibold text-[#1a1a1a]"
+                  htmlFor="login-email"
+                  className="text-[14px] font-normal leading-[16px] text-black"
                 >
-                  Mật khẩu<span className="text-red-500">*</span>
+                  Địa chỉ email<span className="text-red-600">*</span>
                 </label>
-                {/* TODO: Quên mật khẩu — tạm ẩn, bật lại khi có SMTP
-                <button
-                  type="button"
-                  className="text-[13px] font-medium text-[#1877F2] hover:underline"
-                >
-                  Quên mật khẩu?
-                </button>
-                */}
-              </div>
-              <div className="relative">
                 <input
-                  id="login-password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••••••"
-                  value={password}
+                  id="login-email"
+                  type="text"
+                  placeholder="nhut.tran@hcm.nesso.vn"
+                  value={email}
                   onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (errors.password)
-                      setErrors((p) => ({ ...p, password: undefined }));
+                    setEmail(e.target.value);
+                    if (errors.email) setErrors((p) => ({ ...p, email: undefined }));
                   }}
-                  className={`w-full rounded-lg border bg-white px-4 py-3 pr-11 text-[14px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#bbb] focus:border-[#1877F2] focus:ring-2 focus:ring-[#1877F2]/20 ${errors.password ? "border-red-400" : "border-[#ddd]"
+                  className={`w-full h-9 rounded-[10px] border bg-white px-[19px] text-[14px] font-normal leading-[16px] text-black font-['SF_Pro',_sans-serif] outline-none transition-colors placeholder:text-stone-300 focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8] ${errors.email ? "border-[#dc2626]" : "border-gray-200"
                     }`}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#aaa] hover:text-[#666] transition-colors"
-                  tabIndex={-1}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-[18px] w-[18px]" />
-                  ) : (
-                    <Eye className="h-[18px] w-[18px]" />
-                  )}
-                </button>
+                {errors.email && (
+                  <p className="text-[12px] text-[#dc2626]">{errors.email}</p>
+                )}
               </div>
-              {errors.password && (
-                <p className="mt-1 text-[12px] text-red-500">
-                  {errors.password}
-                </p>
-              )}
+
+              {/* Password */}
+              <div className="relative h-14 w-full">
+                <div className="flex items-center justify-between w-full absolute top-0">
+                  <label
+                    htmlFor="login-password"
+                    className="text-[14px] font-normal leading-[16px] text-black font-['SF_Pro',_sans-serif]"
+                  >
+                    Mật khẩu<span className="text-red-600">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    className="text-[14px] font-normal leading-[16px] text-[#1d4ed8] hover:underline font-['SF_Pro',_sans-serif]"
+                  >
+                    Quên mật khẩu?
+                  </button>
+                </div>
+                <div className="absolute w-full top-[22px]">
+                  <input
+                    id="login-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••••••"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (errors.password)
+                        setErrors((p) => ({ ...p, password: undefined }));
+                    }}
+                    className={`w-full h-9 rounded-[10px] border bg-white px-[19px] pr-10 text-[14px] font-normal leading-[16px] text-black font-['SF_Pro',_sans-serif] outline-none transition-colors placeholder:text-stone-300 focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8] ${errors.password ? "border-[#dc2626]" : "border-gray-200"
+                      }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#aaa] hover:text-[#666] transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-[18px] w-[18px]" />
+                    ) : (
+                      <Eye className="h-[18px] w-[18px]" />
+                    )}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="absolute top-[60px] text-[12px] text-[#dc2626] font-['SF_Pro',_sans-serif]">
+                    {errors.password}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Submit */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full rounded-full bg-[#1877F2] py-3 text-[15px] font-semibold text-white shadow-md transition-all hover:bg-[#1466d8] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg
-                    className="h-4 w-4 animate-spin"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
-                  </svg>
-                  Đang đăng nhập…
-                </span>
-              ) : (
-                "Đăng nhập"
-              )}
-            </button>
+            <div className="flex flex-col items-center gap-2.5">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full h-9 rounded-[29px] bg-[#1d4ed8] text-[14px] font-normal leading-[16px] text-white shadow-sm transition-all font-['SF_Pro',_sans-serif] hover:bg-[#1e40af] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg
+                      className="h-4 w-4 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                    Đang đăng nhập…
+                  </span>
+                ) : (
+                  "Đăng nhập"
+                )}
+              </button>
+            </div>
           </form>
+          </div>
 
           {/* ─── Divider ─── */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#e5e5e5]" />
+          <div className="w-full h-3.5 relative mt-[15px] mb-[25px]">
+            <div className="absolute inset-0 top-[7px] w-full flex items-center justify-between">
+              <div className="w-[45%] h-px bg-[#e5e5e5]" />
+              <div className="w-[45%] h-px bg-[#e5e5e5]" />
             </div>
-            <div className="relative flex justify-center">
-              <span className="bg-white px-3 text-[12px] font-medium text-[#999] uppercase tracking-wider">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="bg-white px-2 text-[14px] font-normal leading-[16px] text-neutral-400">
                 hoặc
               </span>
             </div>
           </div>
 
           {/* ─── SSO Buttons ─── */}
-          <div className="space-y-3">
+          <div className="flex flex-col gap-2 w-full">
             {/* ─── Google Login Button ─── */}
             <button
               id="google-login-btn"
               type="button"
               onClick={() => googleLogin()}
               disabled={isSsoLoading || isSubmitting}
-              className="group relative w-full flex items-center justify-center gap-3 rounded-full border border-[#dadce0] bg-white py-3 px-4 text-[15px] font-semibold text-[#3c4043] shadow-sm transition-all hover:border-[#d2e3fc] hover:bg-[#f8faff] hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2.5 bg-white rounded-3xl border border-gray-200 py-2.5 px-4 text-[14px] font-normal leading-[16px] text-black shadow-sm transition-all hover:bg-[#f9fafb] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isGoogleLoading ? (
                 <svg
@@ -412,10 +422,10 @@ export function LoginPage() {
                   />
                 </svg>
               )}
-              <span>{isGoogleLoading ? "Đang đăng nhập…" : "Đăng nhập bằng Google"}</span>
+              <span>{isGoogleLoading ? "Đang đăng nhập…" : <>Đăng nhập bằng <span>Google</span></>}</span>
             </button>
             {errors.google && (
-              <p className="mt-1 text-center text-[12px] text-red-500">{errors.google}</p>
+              <p className="text-center text-[12px] text-[#dc2626] mt-1">{errors.google}</p>
             )}
 
             {/* ─── Microsoft 365 Login Button ─── */}
@@ -426,7 +436,7 @@ export function LoginPage() {
                   type="button"
                   onClick={handleMicrosoftLogin}
                   disabled={isSsoLoading || isSubmitting}
-                  className="group relative w-full flex items-center justify-center gap-3 rounded-full border border-[#dadce0] bg-white py-3 px-4 text-[15px] font-semibold text-[#3c4043] shadow-sm transition-all hover:border-[#0078d4]/40 hover:bg-[#f5faff] hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-2.5 bg-white rounded-3xl border border-gray-200 py-2.5 px-4 text-[14px] font-normal leading-[16px] text-black shadow-sm transition-all hover:bg-[#f9fafb] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isMicrosoftLoading ? (
                     <svg
@@ -489,32 +499,30 @@ export function LoginPage() {
                       </defs>
                     </svg>
                   )}
-                  <span>{isMicrosoftLoading ? "Đang đăng nhập…" : "Đăng nhập bằng Microsoft 365"}</span>
+                  <span>{isMicrosoftLoading ? "Đang đăng nhập…" : <>Đăng nhập bằng <span>Microsoft 365</span></>}</span>
                 </button>
                 {errors.microsoft && (
-                  <p className="mt-1 text-center text-[12px] text-red-500">{errors.microsoft}</p>
+                  <p className="text-center text-[12px] text-[#dc2626] mt-1">{errors.microsoft}</p>
                 )}
               </>
             )}
           </div>
 
-          {/* Terms */}
-          <p className="mt-6 text-center text-[12px] leading-relaxed text-[#999]">
-            Bằng việc đăng nhập, bạn đã xác nhận đồng ý với các{" "}
-            <span className="font-medium text-[#1877F2] cursor-pointer hover:underline">
-              Điều khoản
-            </span>{" "}
-            và{" "}
-            <span className="font-medium text-[#1877F2] cursor-pointer hover:underline">
-              Chính sách của công ty
-            </span>
-            .
-          </p>
+          <div className="w-full flex justify-center mt-[13px]">
+            <p className="max-w-[320px] text-center text-[12px] font-normal leading-[16px] text-neutral-400 font-['SF_Pro',_sans-serif]">
+              Bằng việc đăng nhập, bạn đã xác nhận đồng ý với các{" "}
+              <span className="underline hover:text-neutral-600 transition-colors">Điều khoản</span>
+              {" "}và{" "}
+              <span className="underline hover:text-neutral-600 transition-colors">Chính sách của công ty.</span>
+            </p>
+          </div>
+        </div>
 
-          {/* Register link */}
-          <p className="mt-4 text-center text-[13px] text-[#888]">
-            Chưa có tài khoản?{" "}
-            <Link to="/register" className="font-semibold text-[#1877F2] hover:underline">
+        {/* Register link (bottom) */}
+        <div className="mt-auto pt-6">
+          <p className="text-center text-[12px] font-normal leading-[16px] text-neutral-400">
+            Bạn chưa có tài khoản?{" "}
+            <Link to="/register" className="text-blue-700 hover:underline font-normal font-['SF_Pro',_sans-serif]">
               Đăng ký ngay
             </Link>
           </p>

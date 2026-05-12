@@ -35,23 +35,25 @@ export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCard
         whileHover={isEarned ? { scale: 1.02, y: -4 } : { scale: 1.01 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
       >
-        <div className="relative z-10 p-5 flex flex-col h-full text-white">
-          <div className="inline-flex items-center justify-center bg-white/20 backdrop-blur-md border border-white/20 text-white text-[9px] px-2.5 py-1 rounded-full w-fit mb-auto">
+        <div className="relative z-10 p-5 flex flex-col h-full text-white bg-black/10">
+          <div className="inline-flex items-center justify-center bg-white/20 backdrop-blur-md border border-white/20 text-white text-[9px] px-2.5 py-1 rounded-full w-fit mb-auto shadow-sm">
             Nhóm chuyên gia
           </div>
           
-          <h3 className="text-[18px] sm:text-[22px] font-black uppercase leading-[1.15] mb-2 text-white">
-            BẬC THẦY<br/>TOÀN NĂNG
-          </h3>
-          <p className="text-[11px] sm:text-[12px] italic text-white/90 mb-4 leading-snug">
-            “{badge.description}”
-          </p>
-          
-          <div className="flex items-center gap-2.5 mt-auto w-full pt-2">
-            <img src={HuyChuongIcon} alt="Huy chương" className="h-[36px] w-[36px] object-contain drop-shadow-md shrink-0" />
-            <div className="flex flex-col items-start gap-1">
-              <span className="text-[10px] font-medium text-white/90 leading-none tracking-wide">Được công nhận bởi</span>
-              <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[14px] object-contain opacity-100" />
+          <div className="mt-auto w-[75%] flex flex-col">
+            <h3 className="text-[18px] sm:text-[22px] font-black uppercase tracking-tight leading-[1.1] mb-2 text-white drop-shadow-md">
+              BẬC THẦY<br/>TOÀN NĂNG
+            </h3>
+            <p className="text-[11px] italic text-white/90 mb-4 leading-relaxed drop-shadow-sm line-clamp-3">
+              “{badge.description}”
+            </p>
+            
+            <div className="flex items-center gap-2 pt-2 border-t border-white/10">
+              <img src={HuyChuongIcon} alt="Huy chương" className="h-[28px] w-[28px] object-contain drop-shadow-md shrink-0" />
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="text-[8px] font-medium text-white/80 leading-none tracking-wide">Được công nhận bởi</span>
+                <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[10px] object-contain opacity-100 filter brightness-0 invert" />
+              </div>
             </div>
           </div>
         </div>
