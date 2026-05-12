@@ -6,25 +6,29 @@ import GraduationHat from "@/assets/CompleteCourseModal/GraduationHat.png";
 import { ArrowRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCourseCompletion } from "@/hooks/useProgress";
+import type { CourseModalConfigData } from "@/api/modalConfig";
 
 interface CompleteCourseModalProps {
   courseId: string;
+  config?: CourseModalConfigData;
 }
 
-export function CompleteCourseModal({ courseId }: CompleteCourseModalProps) {
+export function CompleteCourseModal({ courseId, config }: CompleteCourseModalProps) {
   const [open, setOpen] = useState(false);
   const [checked, setChecked] = useState(false);
   const { completionPercent, isLoading } = useCourseCompletion(courseId);
 
+  const isEnabled = config?.confirm_enabled === true;
+
   useEffect(() => {
-    if (!courseId || isLoading) return;
+    if (!courseId || isLoading || !config) return;
     
     const isConfirmed = localStorage.getItem(`course_confirmed_${courseId}`);
-    // Chỉ hiển thị modal khi tiến độ = 0 và chưa confirm
-    if (!isConfirmed && completionPercent === 0) {
+    // Chỉ hiển thị modal khi tiến độ = 0, chưa confirm và admin bật
+    if (!isConfirmed && completionPercent === 0 && isEnabled) {
       setOpen(true);
     }
-  }, [courseId, isLoading, completionPercent]);
+  }, [courseId, isLoading, completionPercent, isEnabled, config]);
 
   const handleContinue = () => {
     if (!checked) return;
@@ -61,11 +65,12 @@ export function CompleteCourseModal({ courseId }: CompleteCourseModalProps) {
           {/* Content */}
           <div className="px-6 sm:px-12 pt-8 pb-10 flex flex-col items-center text-center w-full">
             <h2 className="text-[22px] sm:text-[30px] font-bold text-foreground mb-3 tracking-tight">
-              Hoàn thành khóa học!
+              {config?.confirm_title || 'Hoàn thành khóa học!'}
             </h2>
             <p className="text-muted-foreground text-[14px] sm:text-[15px] leading-relaxed mb-6 max-w-[580px]">
-              Cảm ơn bạn đã nỗ lực hoàn thành chương trình đào tạo để cùng xây dựng những giá trị cốt lõi tại công ty.
+              {config?.confirm_description || 'Cảm ơn bạn đã nỗ lực hoàn thành chương trình đào tạo để cùng xây dựng những giá trị cốt lõi tại công ty.'}
             </p>
+
 
             {/* Checkbox area */}
             <label className="flex items-start gap-3 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 px-5 sm:px-8 py-4 rounded-xl cursor-pointer hover:bg-red-100/80 dark:hover:bg-red-900/40 transition-colors mb-7 w-full max-w-[550px]">
@@ -81,7 +86,7 @@ export function CompleteCourseModal({ courseId }: CompleteCourseModalProps) {
                 </div>
               </div>
               <span className="text-[13px] sm:text-[15px] font-medium select-none text-left leading-snug pt-[1px]">
-                Tôi xác nhận đã hoàn thành khóa học và nắm vững các nội dung đào tạo
+                {config?.confirm_checkbox_text || 'Tôi xác nhận đã hoàn thành khóa học và nắm vững các nội dung đào tạo'}
               </span>
             </label>
 

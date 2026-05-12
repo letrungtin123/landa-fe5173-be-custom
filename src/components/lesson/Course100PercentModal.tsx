@@ -1,12 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import VideoCompleteFinal from "@/assets/CompleteCourseModal/VideoCompleteFinal.gif";
 import { useNavigate } from "react-router-dom";
+import type { CourseModalConfigData } from "@/api/modalConfig";
 
 interface Course100PercentModalProps {
   courseId: string;
   completionPercent: number;
+  isLoading?: boolean;
+  config?: CourseModalConfigData;
 }
 
 const Confetti = () => (
@@ -40,15 +43,29 @@ const Confetti = () => (
   </div>
 );
 
-export function Course100PercentModal({ courseId, completionPercent }: Course100PercentModalProps) {
+export function Course100PercentModal({ courseId, completionPercent, isLoading, config }: Course100PercentModalProps) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const initialPercentLoaded = useRef(false);
+  const isEligible = useRef(false);
+
+  // Nếu admin tắt completion modal → không render
+  const isEnabled = config?.completion_enabled === true;
 
   useEffect(() => {
-    if (!courseId) return;
+    if (!courseId || isLoading || !config) return;
     
-    // Check condition for 100% and not shown yet
-    if (completionPercent === 100) {
+    // Lưu lại progress lần đầu khi API vừa load xong
+    if (!initialPercentLoaded.current) {
+      initialPercentLoaded.current = true;
+      // Chỉ cho phép hiện modal nếu lúc đầu chưa phải 100%
+      if (completionPercent < 100) {
+        isEligible.current = true;
+      }
+    }
+
+    // Chỉ show nếu đã đủ điều kiện (từ < 100 nhảy lên 100) và admin bật
+    if (isEligible.current && completionPercent === 100 && isEnabled) {
       const hasShown = localStorage.getItem(`course_100_shown_${courseId}`);
       if (!hasShown) {
         const timer = setTimeout(() => {
@@ -58,7 +75,7 @@ export function Course100PercentModal({ courseId, completionPercent }: Course100
         return () => clearTimeout(timer);
       }
     }
-  }, [courseId, completionPercent]);
+  }, [courseId, completionPercent, isLoading, isEnabled, config]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -70,10 +87,10 @@ export function Course100PercentModal({ courseId, completionPercent }: Course100
           <Confetti />
           
           <h1 className="text-white text-[32px] sm:text-[42px] font-medium mb-3 z-10 tracking-wide mt-[-5vh]">
-            Congratulations!
+            {config?.completion_title || 'Congratulations!'}
           </h1>
           <p className="text-white/90 text-center max-w-[500px] text-[13px] sm:text-[14px] px-6 mb-8 z-10 leading-relaxed font-light">
-            Trở thành đối tác chiến lược giúp khách hàng tối ưu hiệu suất <br /> nhân lực để phát triển bền vững.
+            {config?.completion_description || 'Trở thành đối tác chiến lược giúp khách hàng tối ưu hiệu suất nhân lực để phát triển bền vững.'}
           </p>
           
           <div className="flex flex-wrap items-center justify-center gap-4 z-10">
