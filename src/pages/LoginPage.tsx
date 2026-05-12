@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, Info } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { googleLoginOrRegister, GoogleAuthError } from "@/api/googleAuth";
@@ -13,6 +13,7 @@ import leftPanelBg from "@/assets/LoginPage/LeftPanelLogin.jpg";
 import person1 from "@/assets/LoginPage/Person1.jpg";
 import person2 from "@/assets/LoginPage/Person2.jpg";
 import person3 from "@/assets/LoginPage/Person3.jpg";
+import person4 from "@/assets/LoginPage/Person4.jpg";
 import carousel1 from "@/assets/LoginPage/Carousel1.png";
 import carousel2 from "@/assets/LoginPage/Carousel2.png";
 import carousel3 from "@/assets/LoginPage/Carousel3.png";
@@ -29,6 +30,7 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; google?: string; microsoft?: string }>(
     {}
   );
@@ -170,7 +172,7 @@ export function LoginPage() {
                 <img src={person1} alt="User 1" className="relative z-[4] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
                 <img src={person2} alt="User 2" className="relative z-[3] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
                 <img src={person3} alt="User 3" className="relative z-[2] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
-                <img src={person1} alt="User 4" className="relative z-[1] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
+                <img src={person4} alt="User 4" className="relative z-[1] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
               </div>
               <span className="text-[11px] font-normal text-white">
                 Trusted by 100+ companies
@@ -220,7 +222,27 @@ export function LoginPage() {
       <div className="flex flex-1 h-full flex-col overflow-y-auto items-center bg-white px-6 py-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
 
         {/* Nội dung form căn giữa dọc */}
-        <div className="w-full max-w-[384px] mt-auto mb-auto">
+        {showForgotPassword ? (
+          <div className="w-full max-w-[384px] mt-auto mb-auto text-center flex flex-col items-center">
+            <div className="mb-6 flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-blue-50">
+              <Info className="h-8 w-8 text-[#1d4ed8]" />
+            </div>
+            <h2 className="mb-3 text-[24px] font-bold tracking-tight text-[#1a1a1a] font-['SF_Pro',_sans-serif]">
+              Quên mật khẩu?
+            </h2>
+            <p className="mb-8 text-[14px] text-[#888] leading-relaxed max-w-[340px] mx-auto font-['SF_Pro',_sans-serif]">
+              Vui lòng liên hệ quản trị viên để được hỗ trợ cấp lại mật khẩu cho tài khoản của bạn.
+            </p>
+            <button
+              onClick={() => setShowForgotPassword(false)}
+              className="flex items-center justify-center gap-2 w-full rounded-[10px] bg-[#f3f4f6] py-3 text-[14px] font-semibold text-[#4b5563] transition-all hover:bg-[#e5e7eb] active:scale-[0.98] font-['SF_Pro',_sans-serif]"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Quay lại đăng nhập
+            </button>
+          </div>
+        ) : (
+          <div className="w-full max-w-[384px] mt-auto mb-auto">
           <div className="flex flex-col gap-7 w-full">
           {/* Header (Logo + Title) */}
           <div className="flex flex-col items-start gap-2.5">
@@ -234,7 +256,7 @@ export function LoginPage() {
             </div>
 
             <div className="flex flex-col items-start gap-[3px]">
-              <h2 className="text-3xl font-normal leading-9 text-black whitespace-nowrap font-['SF_Pro',_sans-serif]">
+              <h2 className="text-3xl font-semibold leading-9 text-black whitespace-nowrap font-['SF_Pro',_sans-serif]">
                 Đăng nhập vào L&A E-learning
               </h2>
               <p className="text-[14px] font-normal leading-[20px] text-neutral-400 font-['SF_Pro',_sans-serif]">
@@ -281,6 +303,7 @@ export function LoginPage() {
                   </label>
                   <button
                     type="button"
+                    onClick={() => setShowForgotPassword(true)}
                     className="text-[14px] font-normal leading-[16px] text-[#1d4ed8] hover:underline font-['SF_Pro',_sans-serif]"
                   >
                     Quên mật khẩu?
@@ -516,7 +539,8 @@ export function LoginPage() {
               <span className="underline hover:text-neutral-600 transition-colors">Chính sách của công ty.</span>
             </p>
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Register link (bottom) */}
         <div className="mt-auto pt-6">

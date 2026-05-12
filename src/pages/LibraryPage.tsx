@@ -6,18 +6,21 @@ import {
   Search,
   Download,
   FileText,
-  FileSpreadsheet,
-  Presentation,
   LayoutTemplate,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
   FolderOpen,
-  Video,
-  ImageIcon,
 } from "lucide-react";
+import IconExcel from "@/assets/LibraryIcon/Excel.png";
+import IconJPG from "@/assets/LibraryIcon/JPG.png";
+import IconMP4 from "@/assets/LibraryIcon/MP4.png";
+import IconPDF from "@/assets/LibraryIcon/PDF.png";
+import IconPNG from "@/assets/LibraryIcon/PNG.png";
+import IconPP from "@/assets/LibraryIcon/PP.png";
+import IconWord from "@/assets/LibraryIcon/Word.png";
 import { UserProfileCard } from "@/components/dashboard/UserProfileCard";
-import { NotificationList } from "@/components/dashboard/NotificationList";
+import { BadgeShowcase } from "@/components/badges/BadgeShowcase";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,15 +36,16 @@ import { type LibraryDocument, type DocumentCategory, handleSecureDownload } fro
 
 // ── Icon helpers ──
 
-const getDocumentIcon = (ext: string) => {
+const getDocumentIconSrc = (ext: string) => {
   const t = ext?.toLowerCase() || "";
-  if (t === "pdf") return FileText;
-  if (t === "docx") return FileText;
-  if (t === "xlsx") return FileSpreadsheet;
-  if (t === "pptx") return Presentation;
-  if (t === "mp4") return Video;
-  if (t === "jpeg" || t === "jpg" || t === "png") return ImageIcon;
-  return LayoutTemplate;
+  if (t === "pdf") return IconPDF;
+  if (t.includes("doc")) return IconWord;
+  if (t.includes("xls")) return IconExcel;
+  if (t.includes("ppt")) return IconPP;
+  if (t === "mp4" || t === "mov") return IconMP4;
+  if (t === "jpeg" || t === "jpg") return IconJPG;
+  if (t === "png") return IconPNG;
+  return IconPDF;
 };
 
 const EXTENSION_COLORS: Record<string, string> = {
@@ -125,17 +129,17 @@ export function LibraryPage() {
   const renderPagination = () => (
     <div className={`flex flex-col sm:flex-row sm:items-center justify-between pt-4 gap-3 sm:gap-0 transition-opacity duration-300 ${docLoading ? 'opacity-50 pointer-events-none' : ''}`}>
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="text-sm text-muted-foreground">
+        <div className="text-[14px] font-normal leading-[18px] text-muted-foreground">
           Trang {currentPage} / {totalPages} ({totalCount} tài liệu)
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-[14px] font-normal leading-[18px] text-muted-foreground">
           <span>Hiển thị:</span>
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-8 w-[110px] justify-between text-xs font-medium"
+                className="h-8 w-[110px] justify-between text-[14px] font-semibold leading-[18px]"
               >
                 {pageSize} / trang
                 <ChevronDown className="h-4 w-4 opacity-50" />
@@ -149,7 +153,7 @@ export function LibraryPage() {
                     setPageSize(size);
                     setCurrentPage(1);
                   }}
-                  className={`text-xs cursor-pointer justify-between ${pageSize === size ? 'bg-primary/10 text-primary font-medium' : ''}`}
+                  className={`text-[14px] font-normal leading-[18px] cursor-pointer justify-between ${pageSize === size ? 'bg-primary/10 text-primary font-semibold' : ''}`}
                 >
                   {size} / trang
                 </DropdownMenuItem>
@@ -183,7 +187,7 @@ export function LibraryPage() {
               <button
                 key={pageNum}
                 onClick={() => setCurrentPage(pageNum)}
-                className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-[14px] font-semibold leading-[18px] transition-colors ${
                   currentPage === pageNum
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "border border-border bg-card hover:bg-accent/10"
@@ -210,31 +214,31 @@ export function LibraryPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="w-full px-4 py-6 md:px-8 md:py-8"
+      className="mx-auto w-full max-w-[1440px] px-4 pb-8 md:px-8 xl:px-10"
     >
-      <div className="flex flex-col-reverse lg:flex-row w-full">
+      <div className="flex flex-col lg:flex-row w-full">
         {/* Left Sidebar */}
-        <div className="hidden lg:block w-full lg:w-1/4 shrink-0 lg:border-r lg:border-border lg:pr-8 mt-8 lg:mt-0">
-          <div className="sticky top-24 space-y-10">
+        <div className="w-full lg:w-[280px] shrink-0 lg:border-r lg:border-border lg:pr-8 pt-4 lg:pt-8 mb-6 lg:mb-0">
+          <div className="sticky top-24 space-y-10 max-h-[calc(100vh-120px)] overflow-y-auto hide-scrollbar pb-8">
             <UserProfileCard />
-            <NotificationList />
+            <BadgeShowcase />
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="w-full lg:w-3/4 lg:pl-8">
+        <div className="flex-1 min-w-0 lg:pl-8 mt-8 lg:mt-0 pt-8">
           {activeCategory ? (
             <div className="space-y-6">
               <div>
                 <Button 
                   onClick={() => handleCategoryClick("")} 
-                  className="rounded-full px-5 font-medium shadow-sm"
+                  className="rounded-full px-5 text-[14px] font-semibold leading-[18px] shadow-sm"
                 >
                   <ChevronLeft className="mr-2 h-4 w-4" /> Quay lại
                 </Button>
               </div>
 
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground uppercase tracking-tight">
+              <h1 className="text-[36px] font-semibold leading-[40px] text-foreground uppercase tracking-tight">
                 {categoriesData?.categories?.find(c => c.slug === activeCategory)?.name || "Danh mục"}
               </h1>
 
@@ -246,13 +250,13 @@ export function LibraryPage() {
                     placeholder="Search"
                     value={searchTerm}
                     onChange={(e) => handleSearch(e.target.value)}
-                    className="w-full pl-12 pr-4 py-2.5 bg-card border border-border rounded-full outline-none focus:border-primary transition-colors text-sm shadow-sm"
+                    className="w-full pl-12 pr-4 py-2.5 bg-card border border-border rounded-full outline-none focus:border-primary transition-colors text-[14px] font-normal leading-[18px] shadow-sm"
                   />
                 </div>
                 
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="rounded-full bg-card h-10 px-6 border-border shadow-sm font-medium">
+                    <Button variant="outline" className="rounded-full bg-card h-10 px-6 border-border shadow-sm text-[14px] font-semibold leading-[18px]">
                       <LayoutTemplate className="h-4 w-4 mr-2 text-muted-foreground" /> 
                       {activeExtension ? activeExtension.toUpperCase() : "Filter"}
                     </Button>
@@ -281,13 +285,13 @@ export function LibraryPage() {
                   ))
                 ) : documents.length > 0 ? (
                   documents.map((doc: LibraryDocument) => {
-                    const Icon = getDocumentIcon(doc.extension);
+                    const iconSrc = getDocumentIconSrc(doc.extension);
                     const extColor = EXTENSION_COLORS[doc.extension] || "#666";
                     return (
                       <Card key={doc.id} className="rounded-2xl border-border bg-card hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col h-[200px] p-5 shadow-sm group">
                         <div className="flex justify-between items-start mb-4">
-                          <div className="h-12 w-12 shrink-0 rounded-xl bg-background border flex items-center justify-center shadow-xs">
-                            <Icon className="h-6 w-6" style={{ color: extColor }} />
+                          <div className="h-12 w-12 shrink-0 rounded-xl bg-background border flex items-center justify-center shadow-xs overflow-hidden p-2">
+                            <img src={iconSrc} alt={doc.extension} className={`h-full w-full object-contain transition-transform ${doc.extension?.toLowerCase() === 'pdf' ? 'scale-[1.3]' : ''}`} />
                           </div>
                           <button
                             onClick={(e) => {
@@ -302,16 +306,16 @@ export function LibraryPage() {
                           </button>
                         </div>
                         
-                        <h3 className="font-bold text-[15px] leading-snug text-foreground line-clamp-2 flex-1 mt-1 group-hover:text-primary transition-colors">
+                        <h3 className="font-semibold text-[14px] leading-[18px] text-foreground line-clamp-2 flex-1 mt-1 group-hover:text-primary transition-colors break-words">
                           {doc.title}
                         </h3>
 
                         <div className="flex justify-between items-end mt-4">
-                          <span className="text-sm text-muted-foreground font-medium">
+                          <span className="text-[10px] font-semibold leading-[14px] text-muted-foreground">
                             Kích thước: {formatFileSize(doc.file_size)}
                           </span>
                           <button 
-                            className="text-sm text-primary hover:text-primary/80 font-semibold"
+                            className="text-[14px] font-semibold leading-[18px] text-primary hover:text-primary/80"
                             onClick={() => setPreviewDoc(doc)}
                           >
                             Xem trước
@@ -324,7 +328,7 @@ export function LibraryPage() {
                   <div className="col-span-full p-12 text-center text-muted-foreground border border-dashed rounded-2xl bg-card/50">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <FileText className="h-8 w-8 opacity-20" />
-                      <p className="text-sm">
+                      <p className="text-[14px] font-normal leading-[18px]">
                         {searchTerm
                           ? `Không tìm thấy tài liệu "${searchTerm}"`
                           : "Chưa có tài liệu nào."}
@@ -341,10 +345,13 @@ export function LibraryPage() {
           {/* Banner */}
           <div className="space-y-4">
             <div>
-              <span className="inline-block bg-[#00f2fe] text-[#0066cc] font-bold text-xs px-3 py-1 rounded-full mb-3 uppercase tracking-wider">
+              <div 
+                className="mb-3 inline-flex w-fit whitespace-nowrap items-center justify-center h-[23px] rounded-[41px] px-3 py-1 text-[10px] font-bold uppercase tracking-widest font-['SF_Pro',_sans-serif]"
+                style={{ backgroundColor: "#43FDD7", color: "#000" }}
+              >
                 Library
-              </span>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-4 md:mb-6">
+              </div>
+              <h1 className="text-[36px] font-semibold leading-[40px] text-foreground mb-4 md:mb-6">
                 Kiến tạo tri thức, vững bước tương lai
               </h1>
             </div>
@@ -368,10 +375,10 @@ export function LibraryPage() {
                   placeholder="Tìm kiếm tài liệu..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-card border border-border rounded-full outline-none focus:border-primary transition-colors text-sm"
+                  className="w-full pl-12 pr-4 py-3 bg-card border border-border rounded-full outline-none focus:border-primary transition-colors text-[14px] font-normal leading-[18px]"
                 />
               </div>
-              <div className="text-sm text-muted-foreground shrink-0">
+              <div className="text-[14px] font-normal leading-[18px] text-muted-foreground shrink-0">
                 {totalDocuments} tài liệu
               </div>
             </div>
@@ -380,7 +387,7 @@ export function LibraryPage() {
                 <button
                   key={ext}
                   onClick={() => handleExtensionClick(ext)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold leading-[14px] transition-all ${
                     activeExtension === ext
                       ? "ring-2 ring-offset-1 ring-primary text-white shadow-sm"
                       : "text-white/90 hover:scale-105"
@@ -393,7 +400,7 @@ export function LibraryPage() {
               {activeExtension && (
                 <button
                   onClick={() => handleExtensionClick("")}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium border border-border bg-card hover:bg-accent/10 transition-colors"
+                  className="px-3 py-1.5 rounded-full text-[10px] font-semibold leading-[14px] border border-border bg-card hover:bg-accent/10 transition-colors"
                 >
                   ✕ Bỏ lọc
                 </button>
@@ -403,7 +410,7 @@ export function LibraryPage() {
 
           {/* Categories Carousel */}
           <div className="space-y-4">
-            <h2 className="text-xl font-bold text-foreground">
+            <h2 className="text-[20px] font-bold leading-[24px] text-foreground">
               Danh mục tài liệu
             </h2>
 
@@ -441,10 +448,10 @@ export function LibraryPage() {
                             </div>
                           </div>
                           <div>
-                            <h3 className="font-bold text-sm uppercase tracking-wide leading-tight mb-2">
+                            <h3 className="text-[14px] font-bold leading-[18px] uppercase tracking-wide mb-2">
                               {cat.name}
                             </h3>
-                            <div className="text-xs opacity-90 font-medium">
+                            <div className="text-[10px] font-semibold leading-[14px] opacity-90">
                               {cat.count} tài liệu
                             </div>
                           </div>
@@ -492,7 +499,7 @@ export function LibraryPage() {
           {/* Documents Table */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-foreground">
+              <h2 className="text-[20px] font-bold leading-[24px] text-foreground">
                 {activeCategory
                   ? `Tài liệu: ${categories.find((c: DocumentCategory) => c.slug === activeCategory)?.name || ""}`
                   : "Tất cả tài liệu"}
@@ -500,7 +507,7 @@ export function LibraryPage() {
               {activeCategory && (
                 <button
                   onClick={() => handleCategoryClick("")}
-                  className="text-sm text-primary hover:underline font-medium"
+                  className="text-[14px] font-semibold leading-[18px] text-primary hover:underline"
                 >
                   Xem tất cả
                 </button>
@@ -510,22 +517,22 @@ export function LibraryPage() {
             <>
               {/* Desktop table */}
               <div className="hidden md:block border border-border/50 rounded-2xl overflow-x-auto w-full bg-card">
-                <table className="w-full min-w-[600px]">
+                <table className="w-full table-fixed">
                   <thead className="bg-[#f8fafc]/80 dark:bg-accent/5 backdrop-blur-sm border-b border-border/50">
-                      <tr className="text-left text-xs font-semibold text-muted-foreground">
-                        <th className="px-6 py-4 font-medium uppercase tracking-wider">
+                      <tr className="text-left text-[10px] font-bold leading-[14px] text-muted-foreground uppercase tracking-wider">
+                        <th className="px-6 py-4 w-[40%]">
                           Tên tài liệu
                         </th>
-                        <th className="px-6 py-4 font-medium uppercase tracking-wider">
+                        <th className="px-6 py-4 w-[15%]">
                           Loại
                         </th>
-                        <th className="px-6 py-4 font-medium uppercase tracking-wider">
+                        <th className="px-6 py-4 w-[15%]">
                           Dung lượng
                         </th>
-                        <th className="px-6 py-4 font-medium uppercase tracking-wider">
+                        <th className="px-6 py-4 w-[25%]">
                           Người đăng
                         </th>
-                        <th className="px-6 py-4 font-medium uppercase tracking-wider w-16"></th>
+                        <th className="px-6 py-4 w-[5%]"></th>
                       </tr>
                     </thead>
                     <tbody className={`divide-y divide-border/30 transition-opacity duration-300 ${docFetching ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -557,7 +564,7 @@ export function LibraryPage() {
                         ))
                       ) : documents.length > 0 ? (
                         documents.map((doc: LibraryDocument) => {
-                          const Icon = getDocumentIcon(doc.extension);
+                          const iconSrc = getDocumentIconSrc(doc.extension);
                         const extColor = EXTENSION_COLORS[doc.extension] || "#666";
 
                         return (
@@ -567,32 +574,32 @@ export function LibraryPage() {
                             className="group hover:bg-accent/5 transition-colors cursor-pointer"
                           >
                             <td className="px-6 py-4">
-                              <div className="flex items-center gap-4">
-                                <div className="h-10 w-10 shrink-0 rounded-lg bg-background shadow-xs flex items-center justify-center border border-border/50 group-hover:shadow-sm transition-shadow">
-                                  <Icon className="h-5 w-5" style={{ color: extColor }} />
+                              <div className="flex items-center gap-4 min-w-0">
+                                <div className="h-10 w-10 shrink-0 rounded-lg bg-background shadow-xs flex items-center justify-center border border-border/50 group-hover:shadow-sm transition-shadow overflow-hidden p-1.5">
+                                  <img src={iconSrc} alt={doc.extension} className={`h-full w-full object-contain transition-transform ${doc.extension?.toLowerCase() === 'pdf' ? 'scale-[1.3]' : ''}`} />
                                 </div>
-                                <span className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                                <span className="font-semibold text-[14px] leading-[18px] text-foreground group-hover:text-primary transition-colors line-clamp-2 break-words flex-1 min-w-0">
                                   {doc.title}
                                 </span>
                               </div>
                             </td>
                             <td className="px-6 py-4">
                               <span
-                                className="inline-block text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase"
+                                className="inline-block text-white text-[10px] font-bold leading-[14px] px-2 py-0.5 rounded uppercase"
                                 style={{ backgroundColor: extColor }}
                               >
                                 {doc.extension}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-sm text-muted-foreground whitespace-nowrap">
+                            <td className="px-6 py-4 text-[14px] font-normal leading-[18px] text-muted-foreground whitespace-nowrap">
                               {formatFileSize(doc.file_size)}
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-xs font-bold shadow-sm">
+                                <div className="h-8 w-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-[10px] font-bold leading-[14px] shadow-sm">
                                   {doc.uploaded_by_name.charAt(0)}
                                 </div>
-                                <span className="text-sm font-medium text-muted-foreground">
+                                <span className="text-[14px] font-semibold leading-[18px] text-muted-foreground">
                                   {doc.uploaded_by_name}
                                 </span>
                               </div>
@@ -647,7 +654,7 @@ export function LibraryPage() {
                   ))
                 ) : documents.length > 0 ? (
                   documents.map((doc: LibraryDocument) => {
-                    const Icon = getDocumentIcon(doc.extension);
+                    const iconSrc = getDocumentIconSrc(doc.extension);
                     const extColor = EXTENSION_COLORS[doc.extension] || "#666";
                     return (
                       <div
@@ -657,24 +664,24 @@ export function LibraryPage() {
                       >
                         <div className="flex items-start gap-3">
                           <div
-                            className="h-10 w-10 shrink-0 rounded-lg bg-background shadow-xs flex items-center justify-center border border-border/50"
+                            className="h-10 w-10 shrink-0 rounded-lg bg-background shadow-xs flex items-center justify-center border border-border/50 overflow-hidden p-1.5"
                           >
-                            <Icon className="h-5 w-5" style={{ color: extColor }} />
+                            <img src={iconSrc} alt={doc.extension} className={`h-full w-full object-contain transition-transform ${doc.extension?.toLowerCase() === 'pdf' ? 'scale-[1.3]' : ''}`} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm text-foreground line-clamp-2 mb-1.5">
+                            <p className="font-semibold text-[14px] leading-[18px] text-foreground line-clamp-2 mb-1.5 break-words">
                               {doc.title}
                             </p>
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold leading-[14px] text-muted-foreground">
                               <span
-                                className="inline-block text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase"
+                                className="inline-block text-white text-[10px] font-bold leading-[14px] px-2 py-0.5 rounded uppercase"
                                 style={{ backgroundColor: extColor }}
                               >
                                 {doc.extension}
                               </span>
-                              <span>{formatFileSize(doc.file_size)}</span>
-                              <span className="hidden sm:inline">•</span>
-                              <span className="hidden sm:inline">{doc.uploaded_by_name}</span>
+                              <span className="text-[10px] font-semibold leading-[14px]">{formatFileSize(doc.file_size)}</span>
+                              <span className="hidden sm:inline text-[10px] font-semibold leading-[14px]">•</span>
+                              <span className="hidden sm:inline text-[14px] font-normal leading-[18px]">{doc.uploaded_by_name}</span>
                             </div>
                           </div>
                           <button
@@ -696,7 +703,7 @@ export function LibraryPage() {
                   <div className="p-12 text-center text-muted-foreground border border-dashed rounded-xl bg-card/50">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <FileText className="h-8 w-8 opacity-20" />
-                      <p className="text-sm">
+                      <p className="text-[14px] font-normal leading-[18px]">
                         {searchTerm
                           ? `Không tìm thấy tài liệu "${searchTerm}"`
                           : "Chưa có tài liệu nào."}

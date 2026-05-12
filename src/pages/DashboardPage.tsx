@@ -7,7 +7,6 @@ import { UserProfileCard } from "@/components/dashboard/UserProfileCard";
 import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
 import { ProgressRing } from "@/components/dashboard/ProgressRing";
 import { StreakCounter } from "@/components/dashboard/StreakCounter";
-import { NotificationList } from "@/components/dashboard/NotificationList";
 import { ContinueLearning } from "@/components/dashboard/ContinueLearning";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { BadgeShowcase } from "@/components/badges/BadgeShowcase";
@@ -37,40 +36,52 @@ export function DashboardPage() {
 
   return (
     <>
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="mx-auto max-w-[1400px] px-4 py-8 md:px-6"
-    >
-      <div className="flex flex-col lg:flex-row">
-        {/* Thanh bên trái */}
-        <div className="w-full lg:w-[280px] shrink-0 lg:border-r lg:border-border lg:pr-8">
-          <div className="sticky top-24 space-y-10">
-            <UserProfileCard />
-            <BadgeShowcase />
-            <NotificationList />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="mx-auto max-w-[1440px] px-4 pb-8 md:px-8 xl:px-10"
+      >
+        <div className="flex flex-col lg:flex-row">
+          {/* Thanh bên trái */}
+          <div className="w-full lg:w-[280px] shrink-0 lg:border-r lg:border-border lg:pr-12 pt-8">
+            <div className="sticky top-24 space-y-10 max-h-[calc(100vh-120px)] overflow-y-auto hide-scrollbar pb-8">
+              <UserProfileCard />
+              <BadgeShowcase />
+            </div>
           </div>
-        </div>
 
-        {/* Nội dung chính */}
-        <div className="flex-1 lg:pl-8 mt-8 lg:mt-0 space-y-10">
-          {/* Phần trên */}
-          <div className="flex flex-col gap-6 lg:flex-row">
-            {/* Banner chào mừng */}
-            <div className="flex-1 space-y-6 w-full">
-              <WelcomeBanner 
-                actionRight={
-                  <div className="lg:hidden">
-                    <StreakCounter />
-                  </div>
-                }
-              />
+          {/* Nội dung chính */}
+          <div className="flex-1 min-w-0 lg:pl-12 mt-8 lg:mt-0 pt-8 space-y-10">
+            {/* Phần trên */}
+            <div className="flex flex-col gap-6 lg:flex-row">
+              {/* Banner chào mừng */}
+              <div className="flex-1 space-y-6 w-full">
+                <WelcomeBanner
+                  actionRight={
+                    <div className="lg:hidden">
+                      <StreakCounter />
+                    </div>
+                  }
+                />
+              </div>
+
+              {/* Cột thống kê bên phải */}
+              <div className="hidden lg:flex flex-col gap-4 lg:w-[240px] shrink-0">
+                <StreakCounter />
+                <ProgressRing
+                  progress={completionPercent}
+                  courseTitle={firstCourseName || "Chưa có khóa học"}
+                  courseLink={
+                    firstCourseId
+                      ? `/courses/${encodeURIComponent(firstCourseId)}/lessons/overview`
+                      : "/courses"
+                  }
+                />
+              </div>
             </div>
 
-            {/* Cột thống kê bên phải */}
-            <div className="hidden lg:flex flex-col gap-6 lg:w-[240px] shrink-0">
-              <StreakCounter />
+            <div className="lg:hidden">
               <ProgressRing
                 progress={completionPercent}
                 courseTitle={firstCourseName || "Chưa có khóa học"}
@@ -81,27 +92,14 @@ export function DashboardPage() {
                 }
               />
             </div>
-          </div>
 
-          <div className="lg:hidden">
-            <ProgressRing
-              progress={completionPercent}
-              courseTitle={firstCourseName || "Chưa có khóa học"}
-              courseLink={
-                firstCourseId
-                  ? `/courses/${encodeURIComponent(firstCourseId)}/lessons/overview`
-                  : "/courses"
-              }
-            />
-          </div>
-
-          {/* Phần tiếp tục học */}
-          <div>
-            <ContinueLearning />
+            {/* Phần tiếp tục học */}
+            <div className="max-w-[911px]">
+              <ContinueLearning />
+            </div>
           </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
     </>
   );
 }

@@ -52,7 +52,7 @@ export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCard
               <img src={HuyChuongIcon} alt="Huy chương" className="h-[28px] w-[28px] object-contain drop-shadow-md shrink-0" />
               <div className="flex flex-col items-start gap-0.5">
                 <span className="text-[8px] font-medium text-white/80 leading-none tracking-wide">Được công nhận bởi</span>
-                <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[10px] object-contain opacity-100 filter brightness-0 invert" />
+                <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[18px] object-contain opacity-100 filter brightness-0 invert" />
               </div>
             </div>
           </div>
@@ -179,7 +179,7 @@ export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCard
         {/* Footer Logo */}
         <div className="flex items-center justify-center gap-1.5 text-[10px] font-medium text-muted-foreground/70 w-full mt-auto pt-2 pb-1">
           <span>Được công nhận bởi</span>
-          <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[12px] object-contain opacity-75" />
+          <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[20px] object-contain opacity-75" />
         </div>
       </div>
     </motion.div>

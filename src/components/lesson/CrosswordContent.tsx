@@ -188,7 +188,10 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
         </div>
 
         <div className="mb-2 flex items-center gap-2">
-          <span className="rounded-full bg-[#1BD3B2] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black">
+          <span 
+            className="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider"
+            style={{ backgroundColor: "#43FDD7", color: "#000" }}
+          >
             Game
           </span>
         </div>

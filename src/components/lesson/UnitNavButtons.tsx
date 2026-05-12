@@ -36,7 +36,7 @@ export function UnitNavButtons({
       <button
         onClick={onPrev}
         disabled={isFirst}
-        className={`flex w-[140px] items-center justify-start gap-2 rounded-full px-5 py-2.5 text-[14px] font-semibold transition-all ${
+        className={`flex w-[140px] items-center justify-start gap-2 rounded-full px-5 py-2.5 text-[14px] font-semibold leading-[18px] transition-all ${
           isFirst
             ? "text-muted-foreground/40 cursor-not-allowed"
             : "text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-[0.97]"
@@ -47,7 +47,7 @@ export function UnitNavButtons({
       </button>
 
       {/* Indicator */}
-      <span className="text-[13px] text-muted-foreground font-medium flex-1 text-center">
+      <span className="text-[14px] font-normal leading-[18px] text-muted-foreground flex-1 text-center">
         {currentIndex + 1} / {totalUnits}
       </span>
 
@@ -58,7 +58,7 @@ export function UnitNavButtons({
             <button
               onClick={onComplete}
               disabled={isCompleting || isCompleted}
-              className={`flex items-center gap-2 rounded-full px-6 py-2.5 text-[14px] font-bold shadow-sm transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 rounded-full px-6 py-2.5 text-[14px] font-semibold leading-[18px] shadow-sm transition-all whitespace-nowrap ${
                 isCompleted
                   ? "bg-green-600 text-white cursor-default opacity-90"
                   : "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] disabled:opacity-50"
@@ -75,7 +75,7 @@ export function UnitNavButtons({
         ) : (
           <button
             onClick={onNext}
-            className="flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-[14px] font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97]"
+            className="flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-[14px] font-semibold leading-[18px] text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97]"
           >
             Tiếp tục
             <ArrowRight className="h-4 w-4" />

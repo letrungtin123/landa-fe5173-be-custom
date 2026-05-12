@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMyEnrollments, useCourses } from "@/hooks/useCourses";
+import { useMyEnrollments, useCourses, useCourseStructure } from "@/hooks/useCourses";
 import { useCourseCompletion } from "@/hooks/useProgress";
 import { config } from "@/config/env";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -16,7 +16,11 @@ import type { ContinueCourse } from "@/data/types";
 /** Card hiển thị 1 khóa học đang học kèm progress bar */
 function CourseCard({ course, index }: { course: ContinueCourse; index: number }) {
   const { completionPercent } = useCourseCompletion(course.id);
+  const { data: courseData } = useCourseStructure(course.id);
   const { colorStyle } = useThemeStore();
+
+  const sectionName = courseData?.modules?.[0]?.title || course.moduleLabel;
+  const unitName = courseData?.modules?.[0]?.lessons?.[0]?.title || course.lessonLabel;
 
   return (
     <motion.div
@@ -27,40 +31,48 @@ function CourseCard({ course, index }: { course: ContinueCourse; index: number }
       <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`}>
         <div className="group flex h-[180px] overflow-hidden rounded-3xl border border-primary shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-card transition-all duration-200 hover:shadow-md hover:scale-[1.02]">
           {/* Thumbnail */}
-          <div
-            className={cn(
-              "w-[35%] shrink-0 relative flex items-center justify-center overflow-hidden",
-              colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent"
+          <div className="w-[40%] shrink-0 relative flex items-center justify-center overflow-hidden p-1.5">
+            {course.thumbnail ? (
+              <>
+                <img
+                  src={course.thumbnail}
+                  alt={course.title}
+                  className="z-10 h-full w-full object-cover rounded-[18px]"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                    e.currentTarget.nextElementSibling?.classList.replace("hidden", "flex");
+                  }}
+                />
+                <div 
+                  className={cn(
+                    "hidden h-full w-full items-center justify-center rounded-[18px]",
+                    colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent"
+                  )}
+                >
+                  <BookOpen className="h-10 w-10 text-white/50" />
+                </div>
+              </>
+            ) : (
+              <div 
+                className={cn(
+                  "flex h-full w-full items-center justify-center rounded-[18px]",
+                  colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent"
+                )}
+              >
+                <BookOpen className="h-10 w-10 text-white/50" />
+              </div>
             )}
-          >
-            {course.thumbnail && (
-              <img
-                src={course.thumbnail}
-                alt={course.title}
-                className="absolute inset-0 z-10 h-full w-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                  e.currentTarget.nextElementSibling?.classList.remove("hidden");
-                }}
-              />
-            )}
-            <BookOpen 
-              className={cn(
-                "h-10 w-10 text-white/50",
-                course.thumbnail ? "hidden" : ""
-              )} 
-            />
           </div>
 
           {/* Nội dung */}
-          <div className="flex flex-col p-5 w-[65%]">
-            <div className="mb-2 w-full flex items-center gap-1.5 text-[11px] font-bold text-primary">
-              <span>{course.moduleLabel}</span>
-              <span className="text-muted-foreground/40">•</span>
-              <span className="truncate">{course.lessonLabel}</span>
+          <div className="flex flex-col p-5 w-[60%]">
+            <div className="mb-2 w-full flex items-center gap-1.5 text-[10px] font-semibold leading-[20px] tracking-[-0.05px] text-primary">
+              <span className="truncate max-w-[45%]">{sectionName}</span>
+              <span className="shrink-0">•</span>
+              <span className="truncate">{unitName}</span>
             </div>
 
-            <h3 className="text-[17px] font-bold text-foreground leading-snug group-hover:text-primary transition-colors line-clamp-2">
+            <h3 className="text-[20px] font-semibold leading-[24px] tracking-normal text-foreground group-hover:text-primary transition-colors line-clamp-2">
               {course.title}
             </h3>
 
@@ -75,7 +87,7 @@ function CourseCard({ course, index }: { course: ContinueCourse; index: number }
                     {completionPercent}%
                   </span>
                 </div>
-                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
                   <div
                     className="h-full rounded-full bg-primary transition-[width] duration-500"
                     style={{ width: `${completionPercent}%` }}

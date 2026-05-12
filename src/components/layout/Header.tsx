@@ -87,7 +87,7 @@ export function Header() {
         )}
 
         {/* Logo */}
-        <Link to="/dashboard" className="flex shrink-0 items-center gap-2">
+        <Link to="/dashboard" className="flex shrink-0 items-center gap-2 -translate-x-[2px]">
           <img
             src={logoImg}
             alt="Le & Associates"
@@ -123,7 +123,7 @@ export function Header() {
         </nav>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 translate-x-[2px]">
 
 
           {/* Theme Preset Picker */}

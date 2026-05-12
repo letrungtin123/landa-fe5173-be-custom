@@ -204,7 +204,10 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
         </div>
 
         <div className="mb-2 flex items-center gap-2">
-          <span className="rounded-full bg-[#FF9F43] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white">
+          <span 
+            className="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider"
+            style={{ backgroundColor: "#43FDD7", color: "#000" }}
+          >
             Sắp xếp
           </span>
         </div>
@@ -274,7 +277,10 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
 
       {/* Badge */}
       <div className="mb-2 flex items-center gap-2">
-        <span className="rounded-full bg-[#FF9F43] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white">
+        <span 
+          className="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider"
+          style={{ backgroundColor: "#43FDD7", color: "#000" }}
+        >
           Sắp xếp
         </span>
       </div>

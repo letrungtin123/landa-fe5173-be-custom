@@ -8,6 +8,7 @@ import registerBg from "@/assets/LoginPage/Register.png";
 import person1 from "@/assets/LoginPage/Person1.jpg";
 import person2 from "@/assets/LoginPage/Person2.jpg";
 import person3 from "@/assets/LoginPage/Person3.jpg";
+import person4 from "@/assets/LoginPage/Person4.jpg";
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -224,7 +225,7 @@ export function RegisterPage() {
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); clearError("password"); }}
-                  className="h-full flex-1 pl-[19px] pr-10 text-sm font-normal text-[#cdcdcd] tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif]"
+                  className="h-full flex-1 pl-[19px] pr-10 text-sm font-normal text-black placeholder:text-[#cdcdcd] tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif]"
                 />
                 <button
                   type="button"
@@ -250,7 +251,7 @@ export function RegisterPage() {
                   placeholder="••••••••••••"
                   value={confirmPassword}
                   onChange={(e) => { setConfirmPassword(e.target.value); clearError("confirm"); }}
-                  className="h-full flex-1 pl-[19px] pr-10 text-sm font-normal text-[#cdcdcd] tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif]"
+                  className="h-full flex-1 pl-[19px] pr-10 text-sm font-normal text-black placeholder:text-[#cdcdcd] tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif]"
                 />
                 <button
                   type="button"
@@ -296,7 +297,7 @@ export function RegisterPage() {
                 type="checkbox"
                 checked={agreedTerms}
                 onChange={(e) => { setAgreedTerms(e.target.checked); clearError("terms"); }}
-                className="absolute inset-0 w-3.5 h-3.5 rounded-[3px] border border-solid border-[#ebeaea] bg-white checked:bg-[#0052d0] checked:border-[#0052d0] cursor-pointer appearance-none focus:outline-none"
+                className="peer absolute inset-0 w-3.5 h-3.5 rounded-[3px] border border-solid border-[#ebeaea] bg-white checked:bg-[#0052d0] checked:border-[#0052d0] cursor-pointer appearance-none focus:outline-none"
               />
               <svg className="pointer-events-none absolute left-0 top-[0px] hidden h-3.5 w-3.5 p-[2px] text-white peer-checked:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
             </div>
@@ -339,7 +340,7 @@ function LeftPanel() {
               <img src={person1} alt="User 1" className="relative z-[4] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
               <img src={person2} alt="User 2" className="relative z-[3] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
               <img src={person3} alt="User 3" className="relative z-[2] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
-              <img src={person1} alt="User 4" className="relative z-[1] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
+              <img src={person4} alt="User 4" className="relative z-[1] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
             </div>
             <span className="text-[11px] font-normal text-white">
               Trusted by 100+ companies

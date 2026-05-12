@@ -42,7 +42,7 @@ export function ExplorePage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-8 md:px-6">
+    <div className="mx-auto w-full max-w-[1600px] px-4 py-8 md:px-6">
       {/* Hero Section */}
       <div
         className={cn(
@@ -52,14 +52,14 @@ export function ExplorePage() {
       >
         <div className="flex items-center gap-2 mb-4">
           <Compass className="h-6 w-6" />
-          <span className="text-sm font-semibold uppercase tracking-wider text-white/80">
+          <span className="text-[10px] font-bold leading-[14px] uppercase tracking-wider text-white/80">
             Khám phá
           </span>
         </div>
-        <h1 className="mb-3 text-3xl font-bold md:text-4xl">
+        <h1 className="mb-3 text-[36px] font-semibold leading-[40px]">
           Khám phá hành trình học tập
         </h1>
-        <p className="max-w-xl text-sm leading-relaxed text-white/80">
+        <p className="max-w-xl text-[14px] font-normal leading-[18px] text-white/80">
           Tìm kiếm khóa học phù hợp với nhu cầu phát triển của bạn. Từ kỹ năng
           mềm đến kiến thức chuyên môn.
         </p>
@@ -72,7 +72,7 @@ export function ExplorePage() {
             value={searchTerm}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Tìm kiếm khóa học..."
-            className="flex-1 bg-transparent text-sm text-white placeholder-white/50 outline-none"
+            className="flex-1 bg-transparent text-[14px] font-normal leading-[18px] text-white placeholder-white/50 outline-none"
           />
           <div className="w-4 h-4 flex items-center justify-center shrink-0">
             {isLoading && <Loader2 className="h-4 w-4 animate-spin text-white/60" />}
@@ -82,10 +82,10 @@ export function ExplorePage() {
 
       {/* Tiêu đề danh sách */}
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-foreground">
+        <h2 className="text-[20px] font-bold leading-[24px] text-foreground">
           {debouncedSearch ? `Kết quả cho "${debouncedSearch}"` : "Tất cả khóa học"}
         </h2>
-        <span className="text-sm text-muted-foreground">
+        <span className="text-[14px] font-normal leading-[18px] text-muted-foreground">
           {courses.length} khóa học
         </span>
       </div>
@@ -94,7 +94,7 @@ export function ExplorePage() {
       {isLoading && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="h-full flex flex-col overflow-hidden border-border shadow-sm">
+            <Card key={i} className="h-full flex flex-col overflow-hidden rounded-3xl border-border shadow-sm">
               <Skeleton className="h-48 w-full rounded-none" />
               <CardContent className="p-5 flex flex-col flex-1">
                 <div className="flex gap-2 mb-3">
@@ -119,10 +119,10 @@ export function ExplorePage() {
           <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
             <BookOpen className="h-10 w-10 text-primary/40" />
           </div>
-          <h3 className="mb-2 text-lg font-bold text-foreground">
+          <h3 className="mb-2 text-[20px] font-bold leading-[24px] text-foreground">
             {debouncedSearch ? "Không tìm thấy khóa học" : "Chưa có khóa học nào"}
           </h3>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+          <p className="text-[14px] font-normal leading-[18px] text-muted-foreground max-w-md mx-auto">
             {debouncedSearch
               ? `Không có khóa học nào phù hợp với "${debouncedSearch}". Hãy thử từ khóa khác.`
               : "Hệ thống chưa có khóa học nào. Vui lòng quay lại sau."}
@@ -167,7 +167,7 @@ function ExploreCourseCard({
 
   return (
     <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`}>
-      <Card className="group h-full flex flex-col overflow-hidden border-border shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
+      <Card className="group h-full flex flex-col overflow-hidden rounded-3xl border-border shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
         {/* Ảnh bìa khóa học */}
         <div
           className={cn(
@@ -203,6 +203,7 @@ function ExploreCourseCard({
             <Badge
               variant="outline"
               className={cn(
+                "text-[10px] font-bold leading-[14px] py-0.5",
                 isEnrolled
                   ? "border-success/30 bg-success/10 text-success"
                   : "border-primary/30 bg-primary/10 text-primary"
@@ -210,25 +211,25 @@ function ExploreCourseCard({
             >
               {isEnrolled ? "Đang học" : "Khóa học"}
             </Badge>
-            <Badge variant="outline" className="text-[10px]">
+            <Badge variant="outline" className="text-[10px] font-bold leading-[14px] py-0.5">
               {course.pacing === "self" ? "Tự học" : "Có hướng dẫn"}
             </Badge>
           </div>
-          <h3 className="mb-1 text-lg font-bold text-foreground group-hover:text-accent transition-colors">
+          <h3 className="mb-1 text-[20px] font-bold leading-[24px] text-foreground group-hover:text-accent transition-colors">
             {course.name}
           </h3>
-          <p className="mb-3 text-sm text-muted-foreground line-clamp-2">
-            {course.short_description || `${course.org}`}
+          <p className="mb-3 text-[14px] font-normal leading-[18px] text-muted-foreground line-clamp-2">
+            {course.short_description}
           </p>
 
           <div className="mt-auto pt-4">
             {isEnrolled && typeof completionPercent === "number" && (
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] font-medium text-muted-foreground">
+                  <span className="text-[10px] font-semibold leading-[14px] text-muted-foreground">
                     Tiến độ
                   </span>
-                  <span className="text-[11px] font-bold text-primary">
+                  <span className="text-[10px] font-bold leading-[14px] text-primary">
                     {completionPercent}%
                   </span>
                 </div>
@@ -240,7 +241,7 @@ function ExploreCourseCard({
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-1 text-sm font-semibold text-accent">
+            <div className="flex items-center gap-1 text-[14px] font-semibold leading-[18px] text-accent">
               {isEnrolled ? "Tiếp tục học" : "Xem chi tiết"}
               <ArrowRight className="h-3.5 w-3.5" />
             </div>

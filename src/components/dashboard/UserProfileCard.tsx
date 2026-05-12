@@ -118,29 +118,29 @@ export function UserProfileCard() {
           </div>
 
           {/* User Info */}
-          <h3 className="text-[17px] font-bold text-foreground">{displayName}</h3>
-          <p className="mt-1 text-xs text-foreground font-medium">{user?.email || ""}</p>
-          <p className="text-[11px] text-foreground font-medium mt-0.5">
+          <h3 className="text-[14px] font-bold leading-[24px] text-foreground">{displayName}</h3>
+          <p className="mt-1 text-[10px] leading-[14px] font-medium text-foreground/80">{user?.email || ""}</p>
+          <p className="mt-0.5 text-[10px] leading-[14px] font-medium text-foreground/80">
             {joinDate && `Ngày tham gia: ${joinDate}`}
           </p>
 
           {/* Links */}
-          <div className="w-full space-y-4 mt-8">
+          <div className="w-full space-y-3 mt-8">
             <Link
               to="/profile"
-              className="block w-full text-center text-[13px] font-medium text-foreground transition-colors hover:text-primary"
+              className="block w-full text-center text-[14px] leading-[18px] font-medium text-foreground transition-colors hover:text-primary"
             >
               Hồ sơ cá nhân
             </Link>
             <button
               onClick={openPwModal}
-              className="block w-full text-center text-[13px] font-medium text-foreground transition-colors hover:text-primary"
+              className="block w-full text-center text-[14px] leading-[18px] font-medium text-foreground transition-colors hover:text-primary"
             >
               Đổi mật khẩu
             </button>
             <button
               onClick={handleLogout}
-              className="block w-full text-center text-[13px] font-medium text-foreground transition-colors hover:text-primary"
+              className="block w-full text-center text-[14px] leading-[18px] font-medium text-foreground transition-colors hover:text-primary"
             >
               Đăng xuất
             </button>

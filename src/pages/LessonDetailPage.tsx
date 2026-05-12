@@ -25,10 +25,14 @@ import { CompleteCourseModal } from "@/components/lesson/CompleteCourseModal";
 import { Course100PercentModal } from "@/components/lesson/Course100PercentModal";
 import { useCourseCompletion } from "@/hooks/useProgress";
 import { useCourseModalConfig } from "@/hooks/useModalConfig";
+import LogoLanda from "@/assets/leandassociate.webp";
 
 // ── Badge component (declared outside render to satisfy React Compiler) ──
 const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
-  <span className="mb-3 inline-block rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-accent-foreground">
+  <span 
+    className="mb-1 inline-block rounded-full px-3 py-1 text-[10px] font-bold leading-[14px] uppercase tracking-widest"
+    style={{ backgroundColor: "#43FDD7", color: "#000" }}
+  >
     {children}
   </span>
 );
@@ -202,10 +206,10 @@ export function LessonDetailPage() {
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
           <BookOpen className="h-8 w-8 text-muted-foreground/50" />
         </div>
-        <h2 className="mb-2 text-lg font-bold text-foreground">
+        <h2 className="mb-2 text-[20px] font-bold leading-[24px] text-foreground">
           Nội dung chưa sẵn sàng
         </h2>
-        <p className="text-sm text-muted-foreground max-w-md">
+        <p className="text-[14px] font-normal leading-[18px] text-muted-foreground max-w-md">
           Bài học này chưa có nội dung. Vui lòng chọn bài học khác hoặc liên hệ
           giảng viên.
         </p>
@@ -227,22 +231,25 @@ export function LessonDetailPage() {
       <div className="flex flex-1">
         {/* ── Left: Main Content ── */}
         <div className="flex-1 min-w-0" ref={contentRef}>
-          <div className="mx-auto w-full max-w-[1400px] px-6 py-6 md:px-10 md:py-8">
+          <div className="mx-auto w-full max-w-[1600px] px-6 py-6 md:px-10 md:py-8">
             {/* Header: Module + Tiêu đề + Progress */}
             <div className="mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <div className="flex-1">
                 {/* Module tag + Lesson counter */}
                 <div className="mb-3 flex flex-wrap items-center gap-3">
-                  <span className="inline-block rounded-full bg-accent px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-accent-foreground">
+                  <span 
+                    className="inline-block rounded-full px-4 py-1.5 text-[10px] font-bold leading-[14px] uppercase tracking-wider"
+                    style={{ backgroundColor: "#43FDD7", color: "#000" }}
+                  >
                     {lesson.moduleTag}
                   </span>
-                  <span className="text-[13px] font-medium text-muted-foreground">
+                  <span className="text-[14px] font-normal leading-[18px] text-muted-foreground">
                     Lesson {Math.min(currentUnitIndex + 1, totalUnits)} of {totalUnits}
                   </span>
                 </div>
 
                 {/* Lesson Title */}
-                <h1 className="text-[32px] md:text-[36px] font-black leading-tight text-foreground">
+                <h1 className="text-[36px] font-semibold leading-[40px] text-foreground">
                   {lesson.title}
                 </h1>
               </div>
@@ -250,10 +257,10 @@ export function LessonDetailPage() {
               {/* Progress Text (Right side) */}
               {totalUnits > 1 && (
                 <div className="flex flex-col items-start md:items-end md:text-right shrink-0">
-                  <div className="text-[40px] md:text-[48px] font-black text-primary leading-none tracking-tight">
-                    {Math.min(currentUnitIndex + 1, totalUnits)}<span className="text-[28px] md:text-[36px]">/{totalUnits}</span>
+                  <div className="text-[36px] font-semibold leading-[40px] text-primary tracking-tight">
+                    {Math.min(currentUnitIndex + 1, totalUnits)}<span className="text-[20px] font-semibold leading-[24px]">/{totalUnits}</span>
                   </div>
-                  <div className="mt-2 text-[13px] font-semibold text-foreground">
+                  <div className="mt-2 text-[14px] font-semibold leading-[18px] text-foreground">
                     Phần đã hoàn thành
                   </div>
                 </div>
@@ -292,12 +299,12 @@ export function LessonDetailPage() {
                     return (
                       <div key={comp.id} className="rounded-3xl border border-border px-8 py-7 shadow-sm bg-card">
                         {comp.displayName && (
-                          <div className="mb-4 inline-block">
+                          <div className="mb-1 inline-block">
                             <BadgeCyan><span className="uppercase">{comp.displayName}</span></BadgeCyan>
                           </div>
                         )}
                         <div
-                          className="prose max-w-none text-[16px] leading-relaxed text-foreground/80 dark:prose-invert dark:text-foreground [&_p]:!text-[16px] [&_span]:!text-[16px] [&_li]:!text-[16px] [&_div]:!text-[16px]"
+                          className="prose max-w-none text-[14px] font-normal leading-[18px] text-foreground/80 dark:prose-invert dark:text-foreground [&_p]:!text-[14px] [&_p]:!font-normal [&_p]:!leading-[18px] [&_span]:!text-[14px] [&_span]:!font-normal [&_span]:!leading-[18px] [&_li]:!text-[14px] [&_li]:!font-normal [&_li]:!leading-[18px] [&_div]:!text-[14px] [&_div]:!font-normal [&_div]:!leading-[18px] [&_h1]:!text-[36px] [&_h1]:!font-semibold [&_h1]:!leading-[40px] [&_h2]:!text-[20px] [&_h2]:!font-bold [&_h2]:!leading-[24px] [&_h3]:!text-[20px] [&_h3]:!font-bold [&_h3]:!leading-[24px]"
                           dangerouslySetInnerHTML={{ __html: cleanHtml }}
                         />
                       </div>
@@ -344,7 +351,7 @@ export function LessonDetailPage() {
 
                 {/* Fallback: Unit has no renderable component */}
                 {currentUnit && currentUnit.components.length === 0 && (
-                  <div className="rounded-3xl border border-dashed border-border px-8 py-7 text-center text-[13px] text-muted-foreground">
+                  <div className="rounded-3xl border border-dashed border-border px-8 py-7 text-center text-[14px] font-normal leading-[18px] text-muted-foreground">
                     Phần này chưa có nội dung.
                   </div>
                 )}
@@ -368,34 +375,38 @@ export function LessonDetailPage() {
               {/* ── Right sidebar content (xl+) ── */}
               <div className="hidden xl:flex w-[300px] shrink-0 flex-col gap-6">
 
-                {/* MENTOR — click để xem chi tiết */}
-                <div className="rounded-3xl border border-border shadow-sm bg-card">
+                {/* MENTOR & COMPANY INFO CARD */}
+                <div className="rounded-3xl border border-border shadow-sm bg-card flex flex-col">
+                  {/* Top: Mentor section */}
                   <div className="px-8 pt-7 pb-2">
                     <BadgeCyan>Mentor</BadgeCyan>
-                    <h3 className="mb-1 text-[16px] font-bold text-foreground">
+                    <h3 className="mb-1 text-[20px] font-bold leading-[24px] text-foreground">
                       Người hướng dẫn
                     </h3>
                   </div>
                   <MentorSidebar mentors={mentors} />
-                </div>
 
-                {/* LeAssociates info block */}
-                <div className="rounded-3xl border border-border px-8 py-7 shadow-sm bg-card">
-                  <div className="mb-2">
-                    <span className="text-[16px] font-black text-primary">Le & </span>
-                    {/* <span className="text-[16px] font-black text-accent-foreground">&</span> */}
-                    <span className="text-[16px] font-black text-primary">Associates</span>
+                  {/* Divider */}
+                  <div className="mx-8 border-t border-border/60" />
+
+                  {/* Bottom: Company section */}
+                  <div className="px-8 py-7">
+                    <img 
+                      src={LogoLanda} 
+                      alt="Le & Associates" 
+                      className="h-6 w-auto object-contain object-left mb-4" 
+                    />
+                    <p className="text-[14px] font-normal leading-[18px] text-muted-foreground">
+                      Le & Associates (L&A), thành viên của L&A Holdings, hiện là
+                      một trong những công ty hàng đầu tại Việt Nam trong dịch vụ nhân
+                      lực và thuê ngoài.
+                    </p>
                   </div>
-                  <p className="text-[12px] leading-relaxed text-muted-foreground">
-                    Le & Associates (L&A), thành viên của L&A Holdings, hiện là
-                    một trong những công ty hàng đầu Việt Nam trong dịch vụ nhân
-                    lực và thuê ngoài.
-                  </p>
                 </div>
 
                 {/* Tài liệu tham khảo — LANDA API: file unlocked trên Studio */}
                 <div className="rounded-3xl bg-primary p-8 text-primary-foreground shadow-sm">
-                  <h3 className="mb-4 text-[16px] font-bold">
+                  <h3 className="mb-4 text-[20px] font-bold leading-[24px]">
                     Tài liệu tham khảo
                   </h3>
                   {refDocs.length > 0 ? (
@@ -408,7 +419,7 @@ export function LessonDetailPage() {
                             href={doc.fullUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center justify-between rounded-lg bg-white/10 px-3 py-2.5 text-[12px] font-medium transition-colors hover:bg-white/20 gap-2"
+                            className="flex items-center justify-between rounded-lg bg-white/10 px-3 py-2.5 text-[14px] font-normal leading-[18px] transition-colors hover:bg-white/20 gap-2"
                           >
                             <div className="flex items-center gap-2 min-w-0">
                               <DocIcon className="h-4 w-4 shrink-0 opacity-80" />
@@ -419,13 +430,13 @@ export function LessonDetailPage() {
                         );
                       })}
                       {refDocs.length > 8 && (
-                        <p className="mt-1 text-center text-[11px] text-primary-foreground/60">
+                        <p className="mt-1 text-center text-[10px] font-semibold leading-[14px] text-primary-foreground/60">
                           +{refDocs.length - 8} tài liệu khác
                         </p>
                       )}
                     </div>
                   ) : (
-                    <p className="text-[12px] text-primary-foreground/60 italic">
+                    <p className="text-[14px] font-normal leading-[18px] text-primary-foreground/60 italic">
                       Chưa có tài liệu...
                     </p>
                   )}
@@ -433,10 +444,10 @@ export function LessonDetailPage() {
 
                 {/* AI Mentor hint */}
                 <div className="mt-2 rounded-2xl border border-border bg-card p-3 text-center shadow-sm">
-                  <p className="mb-2 text-[11px] font-bold text-primary tracking-widest uppercase">
+                  <p className="mb-2 text-[10px] font-bold leading-[14px] text-primary tracking-widest uppercase">
                     AI MENTOR
                   </p>
-                  <p className="text-[12px] text-muted-foreground">
+                  <p className="text-[14px] font-normal leading-[18px] text-muted-foreground">
                     Bạn cần trợ giúp trong quá trình học?
                   </p>
                 </div>
@@ -477,7 +488,7 @@ export function LessonDetailPage() {
 
       {/* ── Footer ── */}
       <footer className="border-t border-border py-6 text-center bg-muted/30">
-        <p className="text-[12px] text-muted-foreground">
+        <p className="text-[14px] font-normal leading-[18px] text-muted-foreground">
           Copyright © 2017 Le & Associates
         </p>
       </footer>

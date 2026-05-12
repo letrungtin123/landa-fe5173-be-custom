@@ -2,6 +2,7 @@ import { useState } from "react";
 import { User, Mail, Phone, FileText, Shield, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Mentor } from "@/data/types";
+import LogoLanda from "@/assets/leandassociate.webp";
 
 interface MentorSidebarProps {
   mentors: Mentor[];
@@ -17,12 +18,9 @@ export function MentorSidebar({ mentors }: MentorSidebarProps) {
 
   if (mentors.length === 0) {
     return (
-      <div className="px-6 py-4">
-        <h3 className="mb-4 text-[15px] font-bold text-foreground">
-          Giảng viên
-        </h3>
-        <p className="text-sm text-muted-foreground italic">
-          Chưa có thông tin giảng viên cho bài học này.
+      <div className="px-8 pb-6">
+        <p className="text-[14px] font-normal leading-[18px] text-muted-foreground italic">
+          Chưa có thông tin người hướng dẫn cho bài học này.
         </p>
       </div>
     );
@@ -33,35 +31,39 @@ export function MentorSidebar({ mentors }: MentorSidebarProps) {
 
   return (
     <>
-      <div className="px-6 py-4">
-        <h3 className="mb-4 text-[15px] font-bold text-foreground">
-          Giảng viên
-        </h3>
-        <div className="space-y-3">
+      <div className="px-8 pb-8">
+        <div className="space-y-4">
           {mentors.map((mentor, i) => (
             <button
               key={mentor.id || i}
               onClick={() => setSelected(mentor)}
-              className="flex w-full items-center gap-3 rounded-2xl p-2.5 -mx-2.5 text-left transition-colors hover:bg-accent/50 group cursor-pointer"
+              className="flex w-full items-start gap-4 rounded-2xl p-2 -mx-2 text-left transition-colors hover:bg-accent/30 group cursor-pointer"
             >
               {/* Avatar */}
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary overflow-hidden ring-2 ring-transparent group-hover:ring-primary/30 transition-all">
+              <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-full border border-border/80 p-1 transition-all group-hover:border-primary/40 bg-card shadow-sm">
                 {getAvatar(mentor) ? (
                   <img
                     src={getAvatar(mentor)!}
                     alt={mentor.name}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full rounded-full object-cover bg-primary/5"
                   />
                 ) : (
-                  <User className="h-5 w-5" />
+                  <div className="flex h-full w-full items-center justify-center rounded-full bg-primary/10">
+                    <User className="h-6 w-6 text-primary/60" />
+                  </div>
                 )}
               </div>
               {/* Info */}
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-bold text-foreground truncate group-hover:text-primary transition-colors">
+              <div className="min-w-0 flex-1 flex flex-col justify-center pt-0.5">
+                <img 
+                  src={LogoLanda} 
+                  alt="Le & Associates" 
+                  className="h-[22px] w-auto object-contain object-left mb-1 opacity-100 -translate-x-1" 
+                />
+                <p className="text-[16px] font-bold leading-[20px] text-foreground truncate group-hover:text-primary transition-colors">
                   {mentor.name || mentor.full_name}
                 </p>
-                <p className="text-[11px] text-muted-foreground truncate">
+                <p className="text-[14px] font-normal leading-[18px] text-muted-foreground truncate mt-0.5">
                   {ROLE_LABEL[mentor.role] || mentor.role}
                 </p>
               </div>
@@ -112,10 +114,10 @@ export function MentorSidebar({ mentors }: MentorSidebarProps) {
                       </div>
                     )}
                   </div>
-                  <h3 className="text-xl font-bold text-foreground text-center">
+                  <h3 className="text-[20px] font-bold leading-[24px] text-foreground text-center">
                     {selected.name || selected.full_name}
                   </h3>
-                  <div className="mt-1.5 flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                  <div className="mt-1.5 flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-semibold leading-[14px] text-primary">
                     <Shield className="h-3 w-3" />
                     {ROLE_LABEL[selected.role] || selected.role}
                   </div>
@@ -131,11 +133,11 @@ export function MentorSidebar({ mentors }: MentorSidebarProps) {
                   )}
                   {selected.bio && (
                     <div className="rounded-2xl bg-muted/50 border border-border/50 p-4">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground mb-2">
+                      <div className="flex items-center gap-1.5 text-[14px] font-semibold leading-[18px] text-muted-foreground mb-2">
                         <FileText className="h-3.5 w-3.5" />
                         Giới thiệu
                       </div>
-                      <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                      <p className="text-[14px] font-normal leading-[18px] text-foreground whitespace-pre-line">
                         {selected.bio}
                       </p>
                     </div>
@@ -155,8 +157,8 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
     <div className="flex items-center gap-3 rounded-xl bg-muted/40 border border-border/40 px-4 py-3">
       <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
       <div className="min-w-0 flex-1">
-        <div className="text-[11px] font-medium text-muted-foreground">{label}</div>
-        <div className="text-sm font-medium text-foreground truncate">{value}</div>
+        <div className="text-[10px] font-semibold leading-[14px] text-muted-foreground">{label}</div>
+        <div className="text-[14px] font-semibold leading-[18px] text-foreground truncate">{value}</div>
       </div>
     </div>
   );

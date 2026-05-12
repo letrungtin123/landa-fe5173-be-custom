@@ -17,14 +17,19 @@ export function StreakCounter() {
       initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.3 }}
+      className="mb-5"
     >
-      <div className="rounded-2xl bg-primary/10 dark:bg-card border border-transparent dark:border-border/50 p-4 text-center">
-        <p className="text-xs font-medium text-muted-foreground mb-1">Học liên tục</p>
-        <div className="flex items-center justify-center gap-1.5">
-          <span className="text-2xl font-bold text-primary">
+      <div className="rounded-[18px] bg-orange-500/10 border border-orange-500/20 p-3 px-5 text-right w-fit ml-auto">
+        <p className="text-xs font-semibold text-foreground/80 mb-1">Học liên tục</p>
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-[20px] font-bold text-orange-600 dark:text-orange-500 leading-none">
             {streak} Ngày
           </span>
-          <span className="text-xl">🔥</span>
+          <div className="relative flex items-center justify-center">
+            <span className="text-[22px] leading-none">
+              🔥
+            </span>
+          </div>
         </div>
       </div>
     </motion.div>

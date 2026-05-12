@@ -101,7 +101,7 @@ export function BadgeUnlockModal({ badge, onDismiss }: BadgeUnlockModalProps) {
                   <img src={HuyChuongIcon} alt="Huy chương" className="h-[44px] w-[44px] object-contain drop-shadow-md shrink-0" />
                   <div className="flex flex-col items-start gap-1">
                     <span className="text-[12px] font-medium text-white/90 leading-none tracking-wide">Được công nhận bởi</span>
-                    <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[18px] object-contain opacity-100" />
+                    <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[32px] object-contain opacity-100" />
                   </div>
                 </motion.div>
 
@@ -202,7 +202,7 @@ export function BadgeUnlockModal({ badge, onDismiss }: BadgeUnlockModalProps) {
                   transition={{ delay: 0.7 }}
                 >
                   <span>Được công nhận bởi</span>
-                  <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[18px] object-contain opacity-80" />
+                  <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[32px] object-contain opacity-80" />
                 </motion.div>
               </div>
             </motion.div>

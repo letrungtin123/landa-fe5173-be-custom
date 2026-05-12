@@ -45,7 +45,7 @@ export function CoursesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 py-8 md:px-6">
+    <div className="mx-auto max-w-[1600px] px-4 py-8 md:px-6">
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-3xl font-bold text-foreground">Chương trình học</h1>
         {/* Staff/Admin có link truy cập Studio */}

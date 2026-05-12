@@ -18,9 +18,9 @@ const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     if (data.name === "(day)") return null;
-    
+
     const mins = data.rawMinutes || 0;
-    
+
     let timeText = "";
     if (mins < 60) {
       timeText = `${mins} phút`;
@@ -61,19 +61,19 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
       <div className="flex justify-between items-start w-full">
         <div>
           {/* Welcome Badge */}
-          <Badge
-            variant="outline"
-            className="mb-3 border-transparent bg-success/20 text-success font-bold text-xs uppercase tracking-widest px-3 py-1.5 rounded-full"
+          <div
+            className="mb-3 inline-flex w-fit whitespace-nowrap items-center justify-center h-[23px] rounded-[41px] px-3 py-1 text-[10px] font-bold uppercase tracking-widest font-['SF_Pro',_sans-serif]"
+            style={{ backgroundColor: "#43FDD7", color: "#000" }}
           >
             Welcome back, {userName.split(" ")[0]}
-          </Badge>
+          </div>
 
           {/* Main Heading */}
           <h1 className="mb-6 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
             Hành trình học tập của tôi
           </h1>
         </div>
-        
+
         {actionRight && (
           <div className="shrink-0 ml-4">
             {actionRight}
@@ -90,9 +90,9 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
             : "bg-primary"
         )}
       >
-        <div className="relative z-10 w-full px-7 md:px-8 mb-1">
+        <div className="relative z-10 w-full px-8 md:px-10 mb-1">
           <h3 className="mb-2 text-[22px] font-bold tracking-tight text-white">Weekly Momentum</h3>
-          <p className="text-[14px] font-normal leading-relaxed text-white/90 max-w-[90%]">
+          <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
             Thật ấn tượng! Thời gian học tập của bạn <span className="text-[#45FFCA] font-semibold">cao hơn {percentile}%</span> người học
             trên hệ thống tuần qua. Giữ vững phong độ này nhé!
           </p>
@@ -103,52 +103,52 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
           <div className="absolute inset-0">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
-              data={[...chartData, { name: "(day)", hours: chartData[chartData.length - 1]?.hours ? chartData[chartData.length - 1].hours * 1.1 : 0 }]}
-              margin={{ top: 35, right: 30, left: -5, bottom: 20 }}
-            >
-              <defs>
-                <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#45FFCA" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#45FFCA" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid 
-                strokeDasharray="4 4" 
-                vertical={true} 
-                horizontal={false} 
-                stroke="rgba(255,255,255,0.2)" 
-              />
-              <XAxis 
-                dataKey="name" 
-                axisLine={{ stroke: 'rgba(255,255,255,0.4)', strokeWidth: 1 }}
-                tickLine={{ stroke: 'rgba(255,255,255,0.4)', strokeWidth: 1 }}
-                tick={{ fill: 'rgba(255,255,255,0.85)', fontSize: 12 }}
-                tickMargin={12}
-              />
-              <YAxis 
-                axisLine={{ stroke: 'rgba(255,255,255,0.4)', strokeWidth: 1 }}
-                tickLine={{ stroke: 'rgba(255,255,255,0.4)', strokeWidth: 1 }}
-                tick={{ fill: 'rgba(255,255,255,0.85)', fontSize: 12 }}
-                allowDecimals={false}
-                tickFormatter={(val) => val === 0 ? '' : val}
-                tickCount={5}
-                domain={[0, 'auto']}
-                width={40}
-              />
-              <RechartsTooltip 
-                content={<CustomTooltip />} 
-                cursor={{ stroke: 'rgba(255,255,255,0.3)', strokeWidth: 1, strokeDasharray: '4 4' }}
-                isAnimationActive={false}
-              />
-              <Area
-                type="monotone"
-                dataKey="hours"
-                stroke="#45FFCA"
-                strokeWidth={2.5}
-                fillOpacity={1}
-                fill="url(#colorHours)"
-                activeDot={{ r: 5, fill: '#45FFCA', stroke: '#fff', strokeWidth: 2 }}
-              />
+                data={[...chartData, { name: "(day)", hours: chartData[chartData.length - 1]?.hours ? chartData[chartData.length - 1].hours * 1.1 : 0 }]}
+                margin={{ top: 35, right: 30, left: -5, bottom: 20 }}
+              >
+                <defs>
+                  <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#45FFCA" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#45FFCA" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="4 4"
+                  vertical={true}
+                  horizontal={false}
+                  stroke="rgba(255,255,255,0.2)"
+                />
+                <XAxis
+                  dataKey="name"
+                  axisLine={{ stroke: 'rgba(255,255,255,0.4)', strokeWidth: 1 }}
+                  tickLine={{ stroke: 'rgba(255,255,255,0.4)', strokeWidth: 1 }}
+                  tick={{ fill: 'rgba(255,255,255,0.85)', fontSize: 12 }}
+                  tickMargin={12}
+                />
+                <YAxis
+                  axisLine={{ stroke: 'rgba(255,255,255,0.4)', strokeWidth: 1 }}
+                  tickLine={{ stroke: 'rgba(255,255,255,0.4)', strokeWidth: 1 }}
+                  tick={{ fill: 'rgba(255,255,255,0.85)', fontSize: 12 }}
+                  allowDecimals={false}
+                  tickFormatter={(val) => val === 0 ? '' : val}
+                  tickCount={5}
+                  domain={[0, 'auto']}
+                  width={40}
+                />
+                <RechartsTooltip
+                  content={<CustomTooltip />}
+                  cursor={{ stroke: 'rgba(255,255,255,0.3)', strokeWidth: 1, strokeDasharray: '4 4' }}
+                  isAnimationActive={false}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="hours"
+                  stroke="#45FFCA"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#colorHours)"
+                  activeDot={{ r: 5, fill: '#45FFCA', stroke: '#fff', strokeWidth: 2 }}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>

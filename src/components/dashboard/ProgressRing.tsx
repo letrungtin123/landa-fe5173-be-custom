@@ -25,9 +25,9 @@ export function ProgressRing({
       className="h-[300px]"
     >
       <div className="rounded-[32px] border border-border/50 bg-card shadow-[0_2px_20px_rgb(0,0,0,0.04)] h-full">
-        <div className="flex flex-col items-center justify-center p-8 h-full">
+        <div className="flex flex-col items-center pt-6 pb-5 px-8 h-full">
           {/* SVG Ring */}
-          <div className="relative mb-6 h-36 w-36">
+          <div className="relative -mb-1 h-36 w-36 shrink-0">
             <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
               {/* Track */}
               <circle
@@ -35,7 +35,7 @@ export function ProgressRing({
                 cy="50"
                 r="42"
                 fill="none"
-                strokeWidth="8"
+                strokeWidth="5"
                 className="stroke-muted/40"
               />
               {/* Progress */}
@@ -44,7 +44,7 @@ export function ProgressRing({
                 cy="50"
                 r="42"
                 fill="none"
-                strokeWidth="8"
+                strokeWidth="5"
                 strokeLinecap="round"
                 className="stroke-success"
                 strokeDasharray={`${circumference} ${circumference}`}
@@ -55,20 +55,20 @@ export function ProgressRing({
             </svg>
             {/* Center text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-bold text-foreground">
+              <span className="text-[24px] font-medium text-foreground">
                 {progress}%
               </span>
             </div>
           </div>
 
-          <p className="text-sm font-bold text-foreground mb-1">Đã hoàn thành</p>
-          <p className="text-sm text-foreground italic mb-6">
+          <p className="text-[17px] font-bold text-foreground mb-1">Đã hoàn thành</p>
+          <p className="text-[14px] text-foreground italic mb-6">
             {courseTitle}
           </p>
 
           <Link
             to={courseLink}
-            className="flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80 mt-auto"
+            className="flex items-center gap-1.5 text-[15px] font-medium text-primary transition-colors hover:text-primary/80 mt-auto"
           >
             Tiếp tục học
             <ArrowRight className="h-4 w-4" />
