@@ -29,7 +29,7 @@ import LogoLanda from "@/assets/leandassociate.webp";
 
 // ── Badge component (declared outside render to satisfy React Compiler) ──
 const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
-  <span 
+  <span
     className="mb-1 inline-block rounded-full px-3 py-1 text-[10px] font-bold leading-[14px] uppercase tracking-widest"
     style={{ backgroundColor: "#43FDD7", color: "#000" }}
   >
@@ -231,25 +231,25 @@ export function LessonDetailPage() {
       <div className="flex flex-1">
         {/* ── Left: Main Content ── */}
         <div className="flex-1 min-w-0" ref={contentRef}>
-          <div className="mx-auto w-full max-w-[1600px] px-6 py-6 md:px-10 md:py-8">
+          <div className="w-full px-6 py-6 md:px-10 md:py-8 2xl:px-16 2xl:py-12">
             {/* Header: Module + Tiêu đề + Progress */}
             <div className="mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <div className="flex-1">
                 {/* Module tag + Lesson counter */}
                 <div className="mb-3 flex flex-wrap items-center gap-3">
-                  <span 
-                    className="inline-block rounded-full px-4 py-1.5 text-[10px] font-bold leading-[14px] uppercase tracking-wider"
+                  <span
+                    className="inline-block rounded-full px-4 py-1.5 text-[10px] 2xl:text-[12px] font-bold leading-[14px] uppercase tracking-wider"
                     style={{ backgroundColor: "#43FDD7", color: "#000" }}
                   >
                     {lesson.moduleTag}
                   </span>
-                  <span className="text-[14px] font-normal leading-[18px] text-muted-foreground">
+                  <span className="text-[14px] 2xl:text-[16px] font-normal leading-[18px] 2xl:leading-[22px] text-muted-foreground">
                     Lesson {Math.min(currentUnitIndex + 1, totalUnits)} of {totalUnits}
                   </span>
                 </div>
 
                 {/* Lesson Title */}
-                <h1 className="text-[36px] font-semibold leading-[40px] text-foreground">
+                <h1 className="text-[36px] 2xl:text-[44px] font-semibold leading-[40px] 2xl:leading-[48px] text-foreground">
                   {lesson.title}
                 </h1>
               </div>
@@ -278,7 +278,7 @@ export function LessonDetailPage() {
             )}
 
             {/* ── Row: Content + Right sidebar ── */}
-            <div className="flex flex-col xl:flex-row gap-6">
+            <div className="flex flex-col xl:flex-row gap-8 xl:gap-10">
               {/* ── Left Column ── */}
               <div className="flex-1 min-w-0 flex flex-col gap-5">
                 {/* Render current Unit components */}
@@ -304,7 +304,7 @@ export function LessonDetailPage() {
                           </div>
                         )}
                         <div
-                          className="prose max-w-none text-[14px] font-normal leading-[18px] text-foreground/80 dark:prose-invert dark:text-foreground [&_p]:!text-[14px] [&_p]:!font-normal [&_p]:!leading-[18px] [&_span]:!text-[14px] [&_span]:!font-normal [&_span]:!leading-[18px] [&_li]:!text-[14px] [&_li]:!font-normal [&_li]:!leading-[18px] [&_div]:!text-[14px] [&_div]:!font-normal [&_div]:!leading-[18px] [&_h1]:!text-[36px] [&_h1]:!font-semibold [&_h1]:!leading-[40px] [&_h2]:!text-[20px] [&_h2]:!font-bold [&_h2]:!leading-[24px] [&_h3]:!text-[20px] [&_h3]:!font-bold [&_h3]:!leading-[24px]"
+                          className="prose max-w-none text-[14px] 2xl:text-[16px] font-normal leading-[18px] 2xl:leading-[24px] text-foreground/80 dark:prose-invert dark:text-foreground [&_p]:!text-[14px] 2xl:[&_p]:!text-[16px] [&_p]:!font-normal [&_p]:!leading-[18px] 2xl:[&_p]:!leading-[24px] [&_span]:!text-[14px] 2xl:[&_span]:!text-[16px] [&_span]:!font-normal [&_span]:!leading-[18px] 2xl:[&_span]:!leading-[24px] [&_li]:!text-[14px] 2xl:[&_li]:!text-[16px] [&_li]:!font-normal [&_li]:!leading-[18px] 2xl:[&_li]:!leading-[24px] [&_div]:!text-[14px] 2xl:[&_div]:!text-[16px] [&_div]:!font-normal [&_div]:!leading-[18px] 2xl:[&_div]:!leading-[24px] [&_h1]:!text-[36px] 2xl:[&_h1]:!text-[42px] [&_h1]:!font-semibold [&_h1]:!leading-[40px] 2xl:[&_h1]:!leading-[48px] [&_h2]:!text-[20px] 2xl:[&_h2]:!text-[24px] [&_h2]:!font-bold [&_h2]:!leading-[24px] 2xl:[&_h2]:!leading-[32px] [&_h3]:!text-[20px] 2xl:[&_h3]:!text-[24px] [&_h3]:!font-bold [&_h3]:!leading-[24px] 2xl:[&_h3]:!leading-[32px]"
                           dangerouslySetInnerHTML={{ __html: cleanHtml }}
                         />
                       </div>
@@ -391,10 +391,10 @@ export function LessonDetailPage() {
 
                   {/* Bottom: Company section */}
                   <div className="px-8 py-7">
-                    <img 
-                      src={LogoLanda} 
-                      alt="Le & Associates" 
-                      className="h-6 w-auto object-contain object-left mb-4" 
+                    <img
+                      src={LogoLanda}
+                      alt="Le & Associates"
+                      className="h-6 w-auto object-contain object-left mb-4"
                     />
                     <p className="text-[14px] font-normal leading-[18px] text-muted-foreground">
                       Le & Associates (L&A), thành viên của L&A Holdings, hiện là
