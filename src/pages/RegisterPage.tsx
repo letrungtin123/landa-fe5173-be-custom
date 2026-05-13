@@ -81,8 +81,9 @@ export function RegisterPage() {
   // ── Màn hình thành công ──
   if (isSuccess) {
     return (
-      <div className="flex h-screen w-full max-w-[1440px] mx-auto overflow-hidden bg-white">
-        {/* Left Panel */}
+      <div className="min-h-screen w-full bg-white text-black flex items-center justify-center">
+        <div className="flex h-screen w-full max-w-[1440px] overflow-hidden bg-white">
+          {/* Left Panel */}
         <LeftPanel />
 
         {/* Right Panel — Success */}
@@ -106,14 +107,16 @@ export function RegisterPage() {
             </button>
           </div>
         </div>
+        </div>
       </div>
     );
   }
 
   // ── Form đăng ký ──
   return (
-    <div className="flex h-screen w-full max-w-[1440px] mx-auto overflow-hidden bg-white">
-      {/* Left Panel */}
+    <div className="min-h-screen w-full bg-white text-black flex items-center justify-center">
+      <div className="flex h-screen w-full max-w-[1440px] overflow-hidden bg-white">
+        {/* Left Panel */}
       <LeftPanel />
 
       {/* Right Panel — Form */}
@@ -312,6 +315,7 @@ export function RegisterPage() {
         </div>
       </div>
     </div>
+  </div>
   </div>
   );
 }

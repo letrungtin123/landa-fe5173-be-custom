@@ -146,8 +146,9 @@ export function LoginPage() {
   const isSsoLoading = isGoogleLoading || isMicrosoftLoading;
 
   return (
-    <div className="flex h-screen w-full max-w-[1440px] mx-auto overflow-hidden bg-white">
-      {/* ─── Left Panel ─── */}
+    <div className="min-h-screen w-full bg-white text-black flex items-center justify-center">
+      <div className="flex h-screen w-full max-w-[1440px] overflow-hidden bg-white">
+        {/* ─── Left Panel ─── */}
       <div className="hidden w-[48%] lg:flex p-8 pr-0 h-full">
           <div className="relative flex w-full h-full flex-col justify-between overflow-hidden rounded-[24px] p-10 select-none shadow-sm">
           {/* Background image */}
@@ -553,6 +554,7 @@ export function LoginPage() {
         </div>
       </div>
       {/* TODO: Forgot Password Modal — tạm ẩn, bật lại khi có SMTP */}
+      </div>
     </div>
   );
 }
