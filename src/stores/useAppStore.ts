@@ -5,6 +5,7 @@ interface AppState {
   currentModuleId: string;
   currentLessonId: string;
   currentUnitIndex: number;
+  isCourseModalActive: boolean;
 
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
@@ -12,6 +13,7 @@ interface AppState {
   setUnitIndex: (index: number) => void;
   nextUnit: (totalUnits: number) => boolean; // returns false if already at last
   prevUnit: () => boolean; // returns false if already at first
+  setCourseModalActive: (active: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()((set, get) => ({
@@ -19,6 +21,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   currentModuleId: "m2",
   currentLessonId: "l-m2-1",
   currentUnitIndex: 0,
+  isCourseModalActive: false,
 
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
@@ -37,4 +40,5 @@ export const useAppStore = create<AppState>()((set, get) => ({
     set({ currentUnitIndex: current - 1 });
     return true;
   },
+  setCourseModalActive: (active) => set({ isCourseModalActive: active }),
 }));

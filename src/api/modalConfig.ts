@@ -5,6 +5,9 @@
 import { apiClient } from "./client";
 
 export interface CourseModalConfigData {
+  welcome_enabled: boolean;
+  welcome_title: string;
+  welcome_description: string;
   confirm_enabled: boolean;
   confirm_title: string;
   confirm_description: string;
@@ -23,6 +26,9 @@ export async function getCourseModalConfig(courseId: string): Promise<CourseModa
   } catch {
     // Fallback defaults nếu API lỗi
     return {
+      welcome_enabled: true,
+      welcome_title: "",
+      welcome_description: "",
       confirm_enabled: true,
       confirm_title: "",
       confirm_description: "",

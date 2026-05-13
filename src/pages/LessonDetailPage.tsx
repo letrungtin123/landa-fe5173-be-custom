@@ -23,6 +23,7 @@ import { SortableContent } from "@/components/lesson/SortableContent";
 import DiagramContent from "@/components/lesson/DiagramContent";
 import { CompleteCourseModal } from "@/components/lesson/CompleteCourseModal";
 import { Course100PercentModal } from "@/components/lesson/Course100PercentModal";
+import { WelcomeCourseModal } from "@/components/lesson/WelcomeCourseModal";
 import { useCourseCompletion } from "@/hooks/useProgress";
 import { useCourseModalConfig } from "@/hooks/useModalConfig";
 import LogoLanda from "@/assets/leandassociate.webp";
@@ -493,6 +494,7 @@ export function LessonDetailPage() {
         </p>
       </footer>
 
+      {courseId && <WelcomeCourseModal courseId={courseId} completionPercent={completionPercent} isLoading={isProgressLoading} config={modalConfig} />}
       {courseId && <CompleteCourseModal courseId={courseId} config={modalConfig} />}
       {courseId && <Course100PercentModal courseId={courseId} completionPercent={completionPercent} isLoading={isProgressLoading} config={modalConfig} />}
     </div>

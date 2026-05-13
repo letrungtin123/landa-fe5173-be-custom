@@ -114,15 +114,15 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
   },
 
   // ── Nhóm sáng tạo & công nghệ ──
-  {
-    id: "first_step",
-    name: "Người Dẫn Đầu Công Nghệ",
-    description: "Học viên đầu tiên trải nghiệm hệ thống E-learning mới",
-    category: "innovation",
-    tier: "diamond",
-    requirement: "Hoàn thành ít nhất 1 bài học",
-    bgGradient: "bg-gradient-to-b from-[#bbf7d0] to-[#22c55e]",
-  },
+  // {
+  //   id: "first_step",
+  //   name: "Người Dẫn Đầu Công Nghệ",
+  //   description: "Học viên đầu tiên trải nghiệm hệ thống E-learning mới",
+  //   category: "innovation",
+  //   tier: "diamond",
+  //   requirement: "Hoàn thành ít nhất 1 bài học",
+  //   bgGradient: "bg-gradient-to-b from-[#bbf7d0] to-[#22c55e]",
+  // },
   {
     id: "speed_scholar",
     name: "Học Giả Tốc Độ",

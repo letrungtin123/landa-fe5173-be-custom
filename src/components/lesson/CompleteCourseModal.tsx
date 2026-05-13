@@ -7,6 +7,7 @@ import { ArrowRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCourseCompletion } from "@/hooks/useProgress";
 import type { CourseModalConfigData } from "@/api/modalConfig";
+import { useAppStore } from "@/stores/useAppStore";
 
 interface CompleteCourseModalProps {
   courseId: string;
@@ -17,23 +18,50 @@ export function CompleteCourseModal({ courseId, config }: CompleteCourseModalPro
   const [open, setOpen] = useState(false);
   const [checked, setChecked] = useState(false);
   const { completionPercent, isLoading } = useCourseCompletion(courseId);
+  const [justConfirmed, setJustConfirmed] = useState(false);
+  const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
+
+  const [isPending, setIsPending] = useState(false);
 
   const isEnabled = config?.confirm_enabled === true;
 
   useEffect(() => {
+    setCourseModalActive(open || isPending);
+    return () => setCourseModalActive(false);
+  }, [open, isPending, setCourseModalActive]);
+
+  useEffect(() => {
     if (!courseId || isLoading || !config) return;
     
+    if (completionPercent < 100) {
+      localStorage.removeItem(`course_confirmed_${courseId}`);
+      return; // Khỏi chạy logic ở dưới
+    }
+
     const isConfirmed = localStorage.getItem(`course_confirmed_${courseId}`);
-    // Chỉ hiển thị modal khi tiến độ = 0, chưa confirm và admin bật
-    if (!isConfirmed && completionPercent === 0 && isEnabled) {
-      setOpen(true);
+    // Chỉ hiển thị modal khi tiến độ = 100%, chưa confirm và admin bật
+    if (!isConfirmed && completionPercent === 100 && isEnabled) {
+      setIsPending(true); // Khóa huy hiệu ngay lập tức
+      // Delay một chút để progress bar kịp chạy tới 100%
+      const timer = setTimeout(() => {
+        setIsPending(false);
+        setOpen(true);
+      }, 500);
+      return () => {
+        clearTimeout(timer);
+        setIsPending(false);
+      }
     }
   }, [courseId, isLoading, completionPercent, isEnabled, config]);
 
   const handleContinue = () => {
     if (!checked) return;
     localStorage.setItem(`course_confirmed_${courseId}`, "true");
+    setJustConfirmed(true);
     setOpen(false);
+    // Khi modal close, do React state render, component CompletionModal sẽ đọc được cờ từ localStorage để bật lên.
+    // Hoặc dispatch sự kiện để đảm bảo đồng bộ
+    window.dispatchEvent(new Event("course_confirmed_event"));
   };
 
   return (
@@ -101,7 +129,7 @@ export function CompleteCourseModal({ courseId, config }: CompleteCourseModalPro
                   : "bg-muted text-muted-foreground cursor-not-allowed"
               )}
             >
-              Tiếp tục <ArrowRight className="w-5 h-5 ml-1" />
+              Xác nhận & Hoàn thành <ArrowRight className="w-5 h-5 ml-1" />
             </Button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import VideoCompleteFinal from "@/assets/CompleteCourseModal/VideoCompleteFinal.gif";
 import { useNavigate } from "react-router-dom";
 import type { CourseModalConfigData } from "@/api/modalConfig";
+import { useAppStore } from "@/stores/useAppStore";
 
 interface Course100PercentModalProps {
   courseId: string;
@@ -64,9 +65,18 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
   const navigate = useNavigate();
   const initialPercentLoaded = useRef(false);
   const isEligible = useRef(false);
+  const [confirmReady, setConfirmReady] = useState(false);
+  const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
 
   // Nếu admin tắt completion modal → không render
   const isEnabled = config?.completion_enabled === true;
+  const requiresConfirm = config?.confirm_enabled === true;
+  const [isPending, setIsPending] = useState(false);
+
+  useEffect(() => {
+    setCourseModalActive(open || isPending);
+    return () => setCourseModalActive(false);
+  }, [open, isPending, setCourseModalActive]);
 
   useEffect(() => {
     if (!courseId || isLoading || !config) return;
@@ -80,18 +90,43 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
       }
     }
 
-    // Chỉ show nếu đã đủ điều kiện (từ < 100 nhảy lên 100) và admin bật
-    if (isEligible.current && completionPercent === 100 && isEnabled) {
+    if (completionPercent < 100) {
+      localStorage.removeItem(`course_100_shown_${courseId}`);
+      // Không return sớm ở đây vì có thể cần setup effect khác, nhưng vì đây là modal 100% nên không sao.
+    }
+
+    // Đăng ký lắng nghe sự kiện từ Confirm Modal
+    const handleConfirmEvent = () => setConfirmReady(true);
+    window.addEventListener("course_confirmed_event", handleConfirmEvent);
+
+    // Kiểm tra xem đã confirm chưa
+    const isConfirmed = localStorage.getItem(`course_confirmed_${courseId}`);
+    
+    // Điều kiện bung modal
+    const canShow = isEligible.current && completionPercent === 100 && isEnabled;
+    const confirmSatisfied = !requiresConfirm || isConfirmed || confirmReady;
+
+    if (canShow && confirmSatisfied) {
       const hasShown = localStorage.getItem(`course_100_shown_${courseId}`);
       if (!hasShown) {
+        setIsPending(true); // Khóa huy hiệu ngay lập tức
+        // Chỉ delay nếu không phải do event kích hoạt
+        const delay = confirmReady ? 100 : 800;
         const timer = setTimeout(() => {
+          setIsPending(false);
           setOpen(true);
           localStorage.setItem(`course_100_shown_${courseId}`, "true");
-        }, 800);
-        return () => clearTimeout(timer);
+        }, delay);
+        return () => {
+          clearTimeout(timer);
+          setIsPending(false);
+          window.removeEventListener("course_confirmed_event", handleConfirmEvent);
+        }
       }
     }
-  }, [courseId, completionPercent, isLoading, isEnabled, config]);
+
+    return () => window.removeEventListener("course_confirmed_event", handleConfirmEvent);
+  }, [courseId, completionPercent, isLoading, isEnabled, requiresConfirm, confirmReady, config]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

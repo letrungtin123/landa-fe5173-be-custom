@@ -307,6 +307,17 @@ export const useAuthStore = create<AuthState>()(
         // 2. Xóa toàn bộ cache React Query
         try { queryClient.clear(); } catch { /* App chưa mount */ }
 
+        // 2.5 Xóa các cờ modal trong localStorage để user khác đăng nhập (hoặc chính user đăng nhập lại) không bị dính cờ cũ
+        Object.keys(localStorage).forEach((key) => {
+          if (
+            key.startsWith("course_welcome_shown_") ||
+            key.startsWith("course_confirmed_") ||
+            key.startsWith("course_100_shown_")
+          ) {
+            localStorage.removeItem(key);
+          }
+        });
+
         // 3. Xóa LMS session cookie + gọi server logout
         try {
           await clearLmsSession();
