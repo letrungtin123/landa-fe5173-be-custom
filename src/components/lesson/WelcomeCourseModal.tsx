@@ -40,16 +40,37 @@ export function WelcomeCourseModal({ courseId, completionPercent, isLoading, con
     setOpen(false);
   };
 
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleResize = () => {
+      const BASE_WIDTH = 600;
+      const BASE_HEIGHT = 460;
+      const padding = 32;
+      const scaleX = (window.innerWidth - padding) / BASE_WIDTH;
+      const scaleY = (window.innerHeight - padding) / BASE_HEIGHT;
+      setScale(Math.min(scaleX, scaleY, 1));
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={() => { }}>
       <DialogContent
-        className="w-[92vw] max-w-[600px] p-0 border-none overflow-hidden rounded-3xl bg-background shadow-2xl [&>button]:hidden outline-none flex flex-col"
+        className="w-auto max-w-none p-0 border-none overflow-visible bg-transparent shadow-none [&>button]:hidden outline-none flex items-center justify-center"
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <div className="flex flex-col items-center">
+        <div 
+          style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
+          className="relative w-[600px] bg-background rounded-3xl shadow-2xl flex flex-col items-center overflow-visible"
+        >
           {/* Header Image */}
-          <div className="w-full bg-[#E5EDFF] dark:bg-[#1a2d59] pt-8 pb-0 flex justify-center items-end relative overflow-hidden h-[180px] sm:h-[240px]">
+          <div className="w-full bg-[#E5EDFF] dark:bg-[#1a2d59] rounded-t-3xl pt-6 pb-0 flex justify-center items-end relative overflow-hidden h-[240px] shrink-0">
             <img
               src={WelcomePicture}
               alt="Welcome"
@@ -58,18 +79,18 @@ export function WelcomeCourseModal({ courseId, completionPercent, isLoading, con
           </div>
 
           {/* Content */}
-          <div className="px-6 sm:px-10 pt-8 pb-10 flex flex-col items-center text-center w-full">
-            <h2 className="text-[22px] sm:text-[28px] font-bold text-foreground mb-3 tracking-tight">
+          <div className="px-10 pt-6 pb-10 flex flex-col items-center text-center w-full shrink-0">
+            <h2 className="text-[28px] font-bold text-foreground mb-3 tracking-tight">
               {config?.welcome_title || 'Chào mừng bạn đến với khóa học!'}
             </h2>
-            <p className="text-muted-foreground text-[14px] sm:text-[15px] leading-relaxed mb-8 max-w-[500px]">
+            <p className="text-muted-foreground text-[15px] leading-relaxed mb-8 max-w-[500px]">
               {config?.welcome_description || 'Chúc bạn có những trải nghiệm học tập thật bổ ích và thú vị.'}
             </p>
 
             {/* Button */}
             <Button
               onClick={handleContinue}
-              className="rounded-full px-10 py-5 sm:py-6 text-[15px] sm:text-[16px] font-semibold gap-2 transition-all duration-300 w-full sm:w-auto min-w-[220px] bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 hover:shadow-blue-600/40"
+              className="rounded-full px-10 py-6 text-[16px] font-semibold gap-2 transition-all duration-300 w-auto min-w-[220px] bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 hover:shadow-blue-600/40"
             >
               Tiếp tục học <ArrowRight className="w-5 h-5 ml-1" />
             </Button>

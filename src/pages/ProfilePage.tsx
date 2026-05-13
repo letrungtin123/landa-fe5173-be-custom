@@ -495,17 +495,22 @@ export function ProfilePage() {
             )}
           </div>
 
-          {/* Change avatar button */}
-          <button
-            onClick={() => {
-              fileInputRef.current?.click();
-              setShowAvatarModal(false);
-            }}
-            className="flex items-center gap-2.5 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:shadow-primary/50 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-          >
-            <Camera className="h-5 w-5" />
-            Đổi ảnh đại diện
-          </button>
+          {/* Change avatar action */}
+          <div className="flex flex-col items-center gap-2 mt-2">
+            <button
+              onClick={() => {
+                fileInputRef.current?.click();
+                setShowAvatarModal(false);
+              }}
+              className="flex items-center gap-2.5 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:shadow-primary/50 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+            >
+              <Camera className="h-5 w-5" />
+              Đổi ảnh đại diện
+            </button>
+            <span className="text-[12px] font-medium text-white/80 bg-black/40 px-3 py-1 rounded-full">
+              * Kích thước ảnh tối đa: 1MB
+            </span>
+          </div>
         </motion.div>
       </motion.div>
     )}

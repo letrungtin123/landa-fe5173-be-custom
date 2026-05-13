@@ -40,7 +40,7 @@ export function DashboardPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="mx-auto max-w-[1420px] px-4 pb-8 md:px-8 xl:px-10"
+        className="mx-auto w-full max-w-[1420px] px-4 pb-8 md:px-8 xl:px-10"
       >
         <div className="flex flex-col lg:flex-row">
           {/* Thanh bên trái */}

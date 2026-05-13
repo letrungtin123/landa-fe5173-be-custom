@@ -4,9 +4,7 @@ import { BadgeIcon } from "./BadgeIcon";
 import { TIER_CONFIG, type BadgeDefinition, type BadgeTier } from "@/data/badgeConfig";
 import type { EarnedBadge } from "@/lib/badgeEvaluator";
 import { cn } from "@/lib/utils";
-import LeAndAssociatesLogo from "@/assets/leandassociate.webp";
-import BacThayToanNangBg from "@/assets/badges/BacThayToanNang.png";
-import HuyChuongIcon from "@/assets/badges/HuyChuong.png";
+import { BADGE_CARD_IMAGES } from "@/data/badgeImages";
 
 interface BadgeCardProps {
   badge: BadgeDefinition;
@@ -19,57 +17,7 @@ export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCard
   const isEarned = !!earned;
   const tierStyle = TIER_CONFIG[badge.tier];
 
-  const timeAgo = earned?.earnedAt ? getTimeAgo(earned.earnedAt) : null;
-
-  if (badge.id === "omnipotent_master" && !compact) {
-    return (
-      <motion.div
-        onClick={onClick}
-        className={cn(
-          "w-full max-w-[219px] h-[320px] sm:h-[356px] mx-auto group overflow-hidden relative flex flex-col rounded-[20px] text-left shadow-sm border border-border/10",
-          isEarned
-            ? `cursor-pointer hover:shadow-xl`
-            : "opacity-95 grayscale"
-        )}
-        style={{ backgroundImage: `url(${BacThayToanNangBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-        whileHover={isEarned ? { scale: 1.02, y: -4 } : { scale: 1.01 }}
-        transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      >
-        <div className="relative z-10 p-5 flex flex-col h-full text-white bg-black/10">
-          <div className="inline-flex items-center justify-center bg-white/20 backdrop-blur-md border border-white/20 text-white text-[9px] px-2.5 py-1 rounded-full w-fit mb-auto shadow-sm">
-            Nhóm chuyên gia
-          </div>
-          
-          <div className="mt-auto w-[75%] flex flex-col">
-            <h3 className="text-[18px] sm:text-[22px] font-black uppercase tracking-tight leading-[1.1] mb-2 text-white drop-shadow-md">
-              BẬC THẦY<br/>TOÀN NĂNG
-            </h3>
-            <p className="text-[11px] italic text-white/90 mb-4 leading-relaxed drop-shadow-sm line-clamp-3">
-              “{badge.description}”
-            </p>
-            
-            <div className="flex items-center gap-2 pt-2 border-t border-white/10">
-              <img src={HuyChuongIcon} alt="Huy chương" className="h-[28px] w-[28px] object-contain drop-shadow-md shrink-0" />
-              <div className="flex flex-col items-start gap-0.5">
-                <span className="text-[8px] font-medium text-white/80 leading-none tracking-wide">Được công nhận bởi</span>
-                <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[18px] object-contain opacity-100 filter brightness-0 invert" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Lock overlay for unearned */}
-        {!isEarned && (
-          <div className="absolute inset-0 bg-black/40 z-20 flex items-center justify-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm">
-              <Lock className="h-5 w-5 text-foreground/80" />
-            </div>
-          </div>
-        )}
-      </motion.div>
-    );
-  }
-
+  // We keep the compact mode as is for smaller lists
   if (compact) {
     return (
       <motion.div
@@ -106,101 +54,46 @@ export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCard
     );
   }
 
+  const imgSrc = BADGE_CARD_IMAGES[badge.id] || BADGE_CARD_IMAGES["onboarding_warrior"];
+
   return (
     <motion.div
       onClick={onClick}
       className={cn(
-        "w-full max-w-[219px] h-[320px] sm:h-[356px] mx-auto group overflow-hidden relative flex flex-col items-center rounded-[20px] bg-card text-center border shadow-sm",
+        "w-full max-w-[219px] aspect-[4/6.5] mx-auto group relative rounded-[20px] shadow-sm border border-border/10 overflow-hidden",
         isEarned
-          ? `cursor-pointer border-primary/60 hover:border-primary hover:shadow-xl`
-          : "border-border/30 hover:border-border/50 opacity-95"
+          ? `cursor-pointer`
+          : "opacity-95 grayscale"
       )}
-      whileHover={isEarned ? { scale: 1.02, y: -4 } : { scale: 1.01 }}
+      whileHover={isEarned ? { scale: 1.02, y: -4, boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" } : { scale: 1.01 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >
-      {/* Top Background Gradient */}
-      <div className={cn(
-        "absolute top-0 left-0 w-full h-[120px] overflow-hidden",
-        isEarned ? (badge.bgGradient || "bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30") : "bg-muted/50"
-      )} />
+      <img 
+        src={imgSrc} 
+        alt={badge.name} 
+        className="w-full h-full object-cover" 
+      />
 
-      {/* Curved divider */}
-      <svg
-        className="absolute top-[90px] left-0 w-full text-card fill-current drop-shadow-[0_-4px_4px_rgba(0,0,0,0.02)]"
-        viewBox="0 0 100 20"
-        preserveAspectRatio="none"
-        style={{ height: "35px" }}
-      >
-        <path d="M0 20 Q50 -10 100 20 L100 20 L0 20 Z" />
-      </svg>
-
-      {/* Content wrapper */}
-      <div className="relative z-10 flex flex-col items-center p-4 pt-8 w-full h-full">
-        {/* Badge Icon */}
-        <div className="mb-2 sm:mb-3 mt-1 scale-90 sm:scale-100">
-          <BadgeIcon
-            badgeId={badge.id}
-            tier={badge.tier}
-            earned={isEarned}
-            size={85}
+      {/* Shine effect applying to the whole card (continuous like the icon) */}
+      {isEarned && (
+        <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden rounded-[20px]">
+          <motion.div 
+            className="absolute top-[-50%] w-[60%] h-[200%] bg-gradient-to-r from-transparent via-white/60 to-transparent skew-x-[-25deg]"
+            animate={{ left: ["-100%", "250%"] }}
+            transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 1.5, ease: "easeInOut" }}
           />
         </div>
+      )}
 
-        {/* Lock overlay for unearned */}
-        {!isEarned && (
-          <div className="absolute top-[75px] right-1/2 translate-x-[35px] z-20">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-background border border-border/50 shadow-sm">
-              <Lock className="h-3 w-3 text-muted-foreground/60" />
-            </div>
+      {/* Lock overlay for unearned */}
+      {!isEarned && (
+        <div className="absolute inset-0 bg-black/40 z-20 flex items-center justify-center rounded-[20px]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm">
+            <Lock className="h-5 w-5 text-foreground/80" />
           </div>
-        )}
-
-        {/* Subtitle */}
-        <p className="mb-1 text-[11px] font-medium text-muted-foreground">
-          {isEarned ? "Bạn đã đạt huy hiệu mới" : "Danh hiệu chưa mở khóa"}
-        </p>
-
-        {/* Badge name */}
-        <h3 className={cn(
-          "text-[13px] sm:text-[15px] font-black mb-2 sm:mb-3 uppercase tracking-wide px-1 leading-tight",
-          isEarned ? "text-foreground" : "text-muted-foreground/50"
-        )}>
-          {badge.name}
-        </h3>
-
-        {/* Description or requirement */}
-        <p className={cn(
-          "text-[11px] sm:text-[12px] leading-relaxed mb-3 sm:mb-4 flex-1 px-1 italic line-clamp-3",
-          isEarned ? "text-muted-foreground" : "text-muted-foreground/40"
-        )}>
-          {isEarned ? `“${badge.description}”` : badge.requirement}
-        </p>
-
-        {/* Footer Logo */}
-        <div className="flex items-center justify-center gap-1.5 text-[10px] font-medium text-muted-foreground/70 w-full mt-auto pt-2 pb-1">
-          <span>Được công nhận bởi</span>
-          <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[20px] object-contain opacity-75" />
         </div>
-      </div>
+      )}
     </motion.div>
-  );
-}
-
-function TierRibbon({ tier }: { tier: BadgeTier }) {
-  const labels: Record<BadgeTier, string> = {
-    bronze: "🥉",
-    silver: "🥈",
-    gold: "🥇",
-    diamond: "💎",
-  };
-  return (
-    <motion.span
-      className="text-lg drop-shadow-sm inline-block"
-      animate={{ y: [0, -3, 0] }}
-      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-    >
-      {labels[tier]}
-    </motion.span>
   );
 }
 

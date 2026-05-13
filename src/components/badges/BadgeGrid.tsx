@@ -2,13 +2,10 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { BadgeCard } from "./BadgeCard";
-import { BadgeIcon } from "./BadgeIcon";
 import { BADGE_DEFINITIONS, CATEGORY_LABELS, type BadgeCategory, type BadgeDefinition } from "@/data/badgeConfig";
 import type { EarnedBadge } from "@/lib/badgeEvaluator";
 import { cn } from "@/lib/utils";
-import LeAndAssociatesLogo from "@/assets/leandassociate.webp";
-import BacThayToanNangBg from "@/assets/badges/BacThayToanNang.png";
-import HuyChuongIcon from "@/assets/badges/HuyChuong.png";
+import { BADGE_CARD_IMAGES } from "@/data/badgeImages";
 
 interface BadgeGridProps {
   earnedBadges: EarnedBadge[];
@@ -139,95 +136,48 @@ export function BadgeGrid({ earnedBadges, className }: BadgeGridProps) {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="w-full max-w-[360px] outline-none pointer-events-auto relative"
+                className="w-full max-w-[360px] outline-none pointer-events-auto relative flex flex-col items-center"
               >
-                {selectedBadge.badge.id === "omnipotent_master" ? (
-                  <div 
-                    className="relative flex flex-col overflow-hidden rounded-[2rem] shadow-2xl text-left border border-white/10 aspect-[4/6.5]"
-                    style={{ backgroundImage: `url(${BacThayToanNangBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                <div className="w-full aspect-[4/6.5] overflow-hidden rounded-[2rem] shadow-2xl relative group">
+                  <button
+                    onClick={() => setSelectedBadge(null)}
+                    className="absolute right-3 top-3 z-30 rounded-full p-2 bg-black/40 text-white/80 transition-colors hover:bg-black/60 hover:text-white backdrop-blur-sm"
                   >
-                    <button
-                      onClick={() => setSelectedBadge(null)}
-                      className="absolute right-4 top-4 z-20 rounded-full p-2 text-white/50 transition-colors hover:bg-black/20 hover:text-white"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                    
-                    <div className="relative z-10 flex w-full h-full flex-col p-8 pb-8 text-white bg-black/10">
-                      <div className="inline-flex items-center justify-center bg-white/20 backdrop-blur-md border border-white/30 text-white text-[11px] px-3.5 py-1 rounded-full w-fit mb-auto shadow-sm">
-                        Nhóm chuyên gia
-                      </div>
+                    <X className="h-5 w-5" />
+                  </button>
 
-                      <div className="mt-auto w-[65%] flex flex-col">
-                        <h2 className="text-[28px] font-black uppercase tracking-tight leading-[1.1] text-white mb-3 drop-shadow-md">
-                          BẬC THẦY<br/>TOÀN NĂNG
-                        </h2>
+                  <img 
+                    src={BADGE_CARD_IMAGES[selectedBadge.badge.id] || BADGE_CARD_IMAGES["onboarding_warrior"]} 
+                    alt={selectedBadge.badge.name} 
+                    className="w-full h-full object-cover"
+                  />
 
-                        <p className="text-[13px] text-white/90 italic mb-6 leading-relaxed drop-shadow-sm">
-                          “{selectedBadge.badge.description}”
-                        </p>
-
-                        <div className="flex items-center gap-2.5 pt-2 border-t border-white/10">
-                          <img src={HuyChuongIcon} alt="Huy chương" className="h-[36px] w-[36px] object-contain drop-shadow-md shrink-0" />
-                          <div className="flex flex-col items-start gap-1">
-                            <span className="text-[10px] font-medium text-white/80 leading-none tracking-wide">Được công nhận bởi</span>
-                            <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[14px] object-contain opacity-100 filter brightness-0 invert" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  {/* Shine effect applying to the whole card */}
+                  <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden rounded-[20px]">
+                    <motion.div 
+                      className="absolute top-[-50%] w-[60%] h-[200%] bg-gradient-to-r from-transparent via-white/60 to-transparent skew-x-[-25deg]"
+                      animate={{ left: ["-100%", "250%"] }}
+                      transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 1.5, ease: "easeInOut" }}
+                    />
                   </div>
-                ) : (
-                  <div className="relative flex flex-col items-center overflow-hidden rounded-[2rem] bg-card shadow-2xl">
-                    {/* Top Background Gradient */}
-                    <div className={cn(
-                      "absolute top-0 left-0 w-full h-[180px] overflow-hidden",
-                      selectedBadge.badge.bgGradient || "bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30"
-                    )} />
 
-                    {/* Curved divider */}
-                    <svg
-                      className="absolute top-[130px] left-0 w-full text-card fill-current drop-shadow-[0_-4px_4px_rgba(0,0,0,0.02)]"
-                      viewBox="0 0 100 20"
-                      preserveAspectRatio="none"
-                      style={{ height: "55px" }}
-                    >
-                      <path d="M0 20 Q50 -10 100 20 L100 20 L0 20 Z" />
-                    </svg>
-
-                    <button
-                      onClick={() => setSelectedBadge(null)}
-                      className="absolute right-4 top-4 z-20 rounded-full p-2 text-foreground/50 transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                    
-                    <div className="relative z-10 flex flex-col items-center pt-10 px-8 pb-8 text-center mt-6 w-full">
-                      <div className="mb-5">
-                        <BadgeIcon
-                          badgeId={selectedBadge.badge.id}
-                          tier={selectedBadge.badge.tier}
-                          earned={true}
-                          size={150}
-                        />
-                      </div>
-
-                      <h2 className="mb-2 text-[22px] font-extrabold uppercase tracking-wide text-foreground">
-                        {selectedBadge.badge.name}
-                      </h2>
-                      
-                      <p className="mb-6 text-[15px] italic text-muted-foreground px-2">
-                        “{selectedBadge.badge.description}”
-                      </p>
-
-                      {/* Footer Logo */}
-                      <div className="flex items-center justify-center gap-2.5 text-[12px] font-medium text-muted-foreground/80 w-full mt-auto">
-                        <span>Được công nhận bởi</span>
-                        <img src={LeAndAssociatesLogo} alt="Le & Associates" className="h-[18px] object-contain opacity-80" />
-                      </div>
+                  {/* Absolute positioned button overlapping the image */}
+                  {selectedBadge.badge.id !== "omnipotent_master" && (
+                    <div className="absolute inset-x-0 bottom-[14%] z-20 flex justify-center">
+                      <motion.button
+                        onClick={() => setSelectedBadge(null)}
+                        className="w-[65%] max-w-[220px] rounded-full bg-[#0b5cff] px-6 py-3 text-[15px] font-bold text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:bg-blue-600 transition-all"
+                        whileHover={{ scale: 1.04 }}
+                        whileTap={{ scale: 0.96 }}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.6 }}
+                      >
+                        Tuyệt vời! 🎉
+                      </motion.button>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </motion.div>
             </div>
           </>

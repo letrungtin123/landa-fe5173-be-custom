@@ -64,25 +64,46 @@ export function CompleteCourseModal({ courseId, config }: CompleteCourseModalPro
     window.dispatchEvent(new Event("course_confirmed_event"));
   };
 
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleResize = () => {
+      const BASE_WIDTH = 720;
+      const BASE_HEIGHT = 580;
+      const padding = 32;
+      const scaleX = (window.innerWidth - padding) / BASE_WIDTH;
+      const scaleY = (window.innerHeight - padding) / BASE_HEIGHT;
+      setScale(Math.min(scaleX, scaleY, 1));
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent 
-        className="w-[92vw] max-w-[720px] p-0 border-none overflow-visible rounded-3xl bg-background shadow-2xl [&>button]:hidden outline-none"
+        className="w-auto max-w-none p-0 border-none overflow-visible bg-transparent shadow-none [&>button]:hidden outline-none flex items-center justify-center"
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        {/* Nón tốt nghiệp */}
-        <div className="absolute -top-[20px] left-0 sm:-top-[45px] sm:-left-[35px] z-50 pointer-events-none">
-          <img 
-            src={GraduationHat} 
-            alt="Hat" 
-            className="w-[100px] sm:w-[140px] h-auto drop-shadow-xl -rotate-12 sm:rotate-0" 
-          />
-        </div>
-        
-        <div className="flex flex-col items-center">
+        <div 
+          style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
+          className="relative w-[720px] bg-background rounded-3xl shadow-2xl flex flex-col items-center overflow-visible"
+        >
+          {/* Nón tốt nghiệp */}
+          <div className="absolute -top-[45px] -left-[35px] z-50 pointer-events-none">
+            <img 
+              src={GraduationHat} 
+              alt="Hat" 
+              className="w-[140px] h-auto drop-shadow-xl" 
+            />
+          </div>
+          
           {/* Header Image */}
-          <div className="w-full bg-[#E5EDFF] dark:bg-[#1a2d59] rounded-t-3xl pt-8 pb-0 flex justify-center items-end relative overflow-hidden h-[180px] sm:h-[260px]">
+          <div className="w-full bg-[#E5EDFF] dark:bg-[#1a2d59] rounded-t-3xl pt-8 pb-0 flex justify-center items-end relative overflow-hidden h-[260px] shrink-0">
             <img 
               src={ConfirmPicture} 
               alt="Confirm" 
@@ -91,17 +112,16 @@ export function CompleteCourseModal({ courseId, config }: CompleteCourseModalPro
           </div>
 
           {/* Content */}
-          <div className="px-6 sm:px-12 pt-8 pb-10 flex flex-col items-center text-center w-full">
-            <h2 className="text-[22px] sm:text-[30px] font-bold text-foreground mb-3 tracking-tight">
+          <div className="px-12 pt-8 pb-10 flex flex-col items-center text-center w-full shrink-0">
+            <h2 className="text-[30px] font-bold text-foreground mb-3 tracking-tight">
               {config?.confirm_title || 'Hoàn thành khóa học!'}
             </h2>
-            <p className="text-muted-foreground text-[14px] sm:text-[15px] leading-relaxed mb-6 max-w-[580px]">
+            <p className="text-muted-foreground text-[15px] leading-relaxed mb-6 max-w-[580px]">
               {config?.confirm_description || 'Cảm ơn bạn đã nỗ lực hoàn thành chương trình đào tạo để cùng xây dựng những giá trị cốt lõi tại công ty.'}
             </p>
 
-
             {/* Checkbox area */}
-            <label className="flex items-start gap-3 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 px-5 sm:px-8 py-4 rounded-xl cursor-pointer hover:bg-red-100/80 dark:hover:bg-red-900/40 transition-colors mb-7 w-full max-w-[550px]">
+            <label className="flex items-start gap-3 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 px-8 py-4 rounded-xl cursor-pointer hover:bg-red-100/80 dark:hover:bg-red-900/40 transition-colors mb-7 w-[550px]">
               <div className="relative flex items-center justify-center shrink-0 mt-[2px]">
                 <input 
                   type="checkbox" 
@@ -113,7 +133,7 @@ export function CompleteCourseModal({ courseId, config }: CompleteCourseModalPro
                   {checked && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
                 </div>
               </div>
-              <span className="text-[13px] sm:text-[15px] font-medium select-none text-left leading-snug pt-[1px]">
+              <span className="text-[15px] font-medium select-none text-left leading-snug pt-[1px]">
                 {config?.confirm_checkbox_text || 'Tôi xác nhận đã hoàn thành khóa học và nắm vững các nội dung đào tạo'}
               </span>
             </label>
@@ -123,7 +143,7 @@ export function CompleteCourseModal({ courseId, config }: CompleteCourseModalPro
               disabled={!checked}
               onClick={handleContinue}
               className={cn(
-                "rounded-full px-10 py-5 sm:py-6 text-[15px] sm:text-[16px] font-semibold gap-2 transition-all duration-300 w-full sm:w-auto min-w-[220px]",
+                "rounded-full px-10 py-6 text-[16px] font-semibold gap-2 transition-all duration-300 w-auto min-w-[220px]",
                 checked 
                   ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 hover:shadow-blue-600/40" 
                   : "bg-muted text-muted-foreground cursor-not-allowed"

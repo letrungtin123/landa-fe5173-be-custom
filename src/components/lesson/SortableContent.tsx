@@ -211,7 +211,7 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
             Sắp xếp
           </span>
         </div>
-        <h2 className="mb-8 text-3xl font-black text-foreground">
+        <h2 className="mb-8 text-4xl font-black text-foreground">
           {svd.display_name || "Sắp xếp đúng thứ tự"}
         </h2>
 
@@ -286,7 +286,7 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
       </div>
 
       {/* Title */}
-      <h2 className="mb-4 text-2xl md:text-3xl font-black text-foreground">
+      <h2 className="mb-4 text-3xl md:text-4xl font-black text-foreground">
         {svd.display_name || "Sắp xếp đúng thứ tự"}
       </h2>
 

@@ -93,7 +93,7 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
         <div className="relative z-10 w-full px-8 md:px-10 mb-1">
           <h3 className="mb-2 text-[22px] font-bold tracking-tight text-white">Weekly Momentum</h3>
           <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
-            Thật ấn tượng! Thời gian học tập của bạn <span className="text-[#45FFCA] font-semibold">cao hơn {percentile}%</span> người học
+            Thật ấn tượng! Thời gian học tập của bạn <span className="text-[#45FFCA] font-semibold">cao hơn {percentile}%</span> người học<br />
             trên hệ thống tuần qua. Giữ vững phong độ này nhé!
           </p>
         </div>

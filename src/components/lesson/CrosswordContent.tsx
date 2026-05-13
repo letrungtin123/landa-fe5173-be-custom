@@ -195,7 +195,7 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
             Game
           </span>
         </div>
-        <h2 className="mb-8 text-3xl font-black text-foreground">
+        <h2 className="mb-8 text-4xl font-black text-foreground">
           {svd.display_name || "Đố vui ô chữ"}
         </h2>
 

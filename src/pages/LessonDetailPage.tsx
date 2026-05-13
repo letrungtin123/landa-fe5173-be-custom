@@ -250,7 +250,7 @@ export function LessonDetailPage() {
                 </div>
 
                 {/* Lesson Title */}
-                <h1 className="text-[36px] 2xl:text-[44px] font-semibold leading-[40px] 2xl:leading-[48px] text-foreground">
+                <h1 className="text-[42px] 2xl:text-[52px] font-semibold leading-[48px] 2xl:leading-[58px] text-foreground">
                   {lesson.title}
                 </h1>
               </div>
@@ -381,7 +381,7 @@ export function LessonDetailPage() {
                   {/* Top: Mentor section */}
                   <div className="px-8 pt-7 pb-2">
                     <BadgeCyan>Mentor</BadgeCyan>
-                    <h3 className="mb-1 text-[20px] font-bold leading-[24px] text-foreground">
+                    <h3 className="mb-1 text-[24px] font-bold leading-[28px] text-foreground">
                       Người hướng dẫn
                     </h3>
                   </div>
