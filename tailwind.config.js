@@ -59,7 +59,7 @@ export default {
       fontFamily: {
         sans: [
           "SF Pro Text",
-          "Segoe UI",
+          "Inter",
           "-apple-system",
           "BlinkMacSystemFont",
           "Roboto",
@@ -70,7 +70,7 @@ export default {
         display: [
           "SF Pro Display",
           "SF Pro Text",
-          "Segoe UI",
+          "Inter",
           "Arial",
           "sans-serif",
         ],
