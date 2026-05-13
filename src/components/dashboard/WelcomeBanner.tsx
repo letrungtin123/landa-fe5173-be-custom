@@ -84,7 +84,7 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
       {/* Weekly Momentum Card */}
       <div
         className={cn(
-          "relative flex flex-col overflow-hidden rounded-[32px] pt-6 shadow-sm text-primary-foreground w-full max-w-[647px] h-[300px]",
+          "relative flex flex-col overflow-hidden rounded-[32px] pt-6 shadow-sm text-primary-foreground w-full max-w-[840px] h-[300px]",
           colorStyle === "gradient"
             ? "bg-gradient-to-r from-primary to-primary/80"
             : "bg-primary"

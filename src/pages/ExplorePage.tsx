@@ -42,7 +42,7 @@ export function ExplorePage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 py-8 md:px-6">
+    <div className="mx-auto w-full max-w-[1390px] px-4 py-8 md:px-6">
       {/* Hero Section */}
       <div
         className={cn(
@@ -190,11 +190,11 @@ function ExploreCourseCard({
               }}
             />
           )}
-          <BookOpen 
+          <BookOpen
             className={cn(
               "h-12 w-12 text-white/50",
               imageUrl ? "hidden" : ""
-            )} 
+            )}
           />
         </div>
 
