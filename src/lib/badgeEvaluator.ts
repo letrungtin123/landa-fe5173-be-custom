@@ -76,6 +76,40 @@ export function markBadgeShown(badgeId: string, username?: string): void {
   }
 }
 
+/** Đồng bộ data từ Backend về LocalStorage */
+export function syncBadgesToLocalStorage(beBadges: Array<{badge_id: string, is_shown: boolean, earned_at: string}>, username?: string): void {
+  const tsKey = username ? `${STORAGE_KEY}_${username}` : STORAGE_KEY;
+  const shownKey = username ? `la_badge_shown_${username}` : "la_badge_shown";
+  
+  try {
+    const timestamps = JSON.parse(localStorage.getItem(tsKey) || "{}");
+    const shownList = new Set<string>(JSON.parse(localStorage.getItem(shownKey) || "[]"));
+    
+    let updatedTs = false;
+    let updatedShown = false;
+    
+    for (const b of beBadges) {
+      if (!timestamps[b.badge_id]) {
+        timestamps[b.badge_id] = b.earned_at;
+        updatedTs = true;
+      }
+      if (b.is_shown && !shownList.has(b.badge_id)) {
+        shownList.add(b.badge_id);
+        updatedShown = true;
+      }
+    }
+    
+    if (updatedTs) {
+      localStorage.setItem(tsKey, JSON.stringify(timestamps));
+    }
+    if (updatedShown) {
+      localStorage.setItem(shownKey, JSON.stringify([...shownList]));
+    }
+  } catch {
+    // silent fail
+  }
+}
+
 /**
  * Core evaluation function — kiểm tra từng badge definition
  * dựa trên dữ liệu real-time từ API.

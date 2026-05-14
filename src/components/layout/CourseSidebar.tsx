@@ -176,9 +176,9 @@ export function CourseSidebar() {
               animate={{ x: 0 }}
               exit={{ x: -320 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed inset-y-0 left-0 z-50 w-[320px] border-r border-border bg-background shadow-xl lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 flex w-[320px] flex-col border-r border-border bg-background shadow-xl lg:hidden"
             >
-              <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
                 <span className="text-sm font-semibold">Menu</span>
                 <Button
                   variant="ghost"
@@ -189,7 +189,9 @@ export function CourseSidebar() {
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-              {sidebarContent}
+              <div className="flex-1 overflow-hidden">
+                {sidebarContent}
+              </div>
             </motion.aside>
           </>
         )}

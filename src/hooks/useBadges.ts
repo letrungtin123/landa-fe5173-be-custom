@@ -6,14 +6,15 @@
 // ============================================================
 
 import { useMemo, useEffect, useRef, useState } from "react";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery, useMutation } from "@tanstack/react-query";
 import { useMyEnrollments } from "./useCourses";
 import { useMyCertificates } from "./useCertificates";
 import { getCourseBlocks } from "@/api/courses";
 import { getCourseGrade } from "@/api/progress";
 import { getUserAccount } from "@/api/auth";
+import { getUserBadges, saveUserBadge, updateBadgeShown } from "@/api/badges";
 import { transformBlocksToCourse } from "@/transformers/blockTransformer";
-import { evaluateBadges, getShownBadgeIds, markBadgeShown, type EarnedBadge } from "@/lib/badgeEvaluator";
+import { evaluateBadges, getShownBadgeIds, markBadgeShown, syncBadgesToLocalStorage, type EarnedBadge } from "@/lib/badgeEvaluator";
 import { BADGE_DEFINITIONS, type BadgeDefinition } from "@/data/badgeConfig";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { CourseGradeResponse } from "@/api/types";
@@ -47,6 +48,21 @@ export function useBadges(): UseBadgesResult {
     enabled: isAuthenticated && !!username,
     staleTime: 5 * 60 * 1000,
   });
+
+  // Fetch badges từ BE
+  const { data: beBadges, isSuccess: isBeBadgesLoaded } = useQuery({
+    queryKey: ["user-badges", username],
+    queryFn: getUserBadges,
+    enabled: isAuthenticated && !!username,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Sync BE badges về localStorage để giữ lại flow hiển thị hiện tại
+  useEffect(() => {
+    if (isBeBadgesLoaded && beBadges) {
+      syncBadgesToLocalStorage(beBadges, username);
+    }
+  }, [isBeBadgesLoaded, beBadges, username]);
 
   // Lấy tất cả course IDs từ enrollments
   const courseIds = useMemo(() => {
@@ -127,7 +143,7 @@ export function useBadges(): UseBadgesResult {
 
   // Evaluate badges
   const earnedBadges = useMemo(() => {
-    if (!enrollments) return [];
+    if (!enrollments || !isBeBadgesLoaded) return []; // Phải đợi BE load xong để localStorage có date đúng, tránh ghi đè
     return evaluateBadges({
       enrollments,
       certificates: certificates || [],
@@ -136,12 +152,53 @@ export function useBadges(): UseBadgesResult {
       profile,
     }, username);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enrollments, certificates, courseCompletions, courseGrades, profile, profileUpdateTrigger, username]);
+  }, [enrollments, certificates, courseCompletions, courseGrades, profile, profileUpdateTrigger, username, isBeBadgesLoaded]);
 
   const unearnedBadges = useMemo(() => {
     const earnedIds = new Set(earnedBadges.map((b) => b.badge.id));
     return BADGE_DEFINITIONS.filter((b) => !earnedIds.has(b.id));
   }, [earnedBadges]);
+
+  // Mutation to save badge lên BE
+  const { mutate: saveBadge } = useMutation({
+    mutationFn: ({ badgeId, markAsShown }: { badgeId: string, markAsShown: boolean }) => saveUserBadge(badgeId, markAsShown)
+  });
+
+  // Track trạng thái load toàn bộ data để chặn popup khi đang load dở dang
+  const isFullyLoaded = 
+    !!enrollments && 
+    isBeBadgesLoaded && 
+    blockQueries.every(q => q.isSuccess || q.isError) && 
+    gradeQueries.every(q => q.isSuccess || q.isError);
+
+  const [allowPopups, setAllowPopups] = useState(false);
+
+  useEffect(() => {
+    if (isFullyLoaded) {
+      const t = setTimeout(() => setAllowPopups(true), 1500); // Đợi 1.5s cho chắc ăn mọi logic render đã xong
+      return () => clearTimeout(t);
+    }
+  }, [isFullyLoaded]);
+
+  // Dùng Set để track các badge đã post lên BE (tránh lặp vô tận)
+  const syncedRef = useRef<Set<string>>(new Set());
+
+  // Auto-sync những danh hiệu FE vừa tính toán mà BE chưa có
+  useEffect(() => {
+    if (!beBadges || earnedBadges.length === 0) return;
+    
+    const beBadgeIds = new Set(beBadges.map((b: any) => b.badge_id));
+    
+    for (const earned of earnedBadges) {
+      const id = earned.badge.id;
+      // Nếu FE chấm là đạt (do logic progress), nhưng BE chưa có thì tự động đẩy lên BE
+      if (!beBadgeIds.has(id) && !syncedRef.current.has(id)) {
+        syncedRef.current.add(id);
+        // Nếu đang trong quá trình load data ban đầu (!allowPopups), ta bảo BE đánh dấu is_shown = true
+        saveBadge({ badgeId: id, markAsShown: !allowPopups });
+      }
+    }
+  }, [earnedBadges, beBadges, saveBadge, allowPopups]);
 
   // Track newly earned badges qua hàng đợi (queue) để hiển thị lần lượt
   const [newBadgeQueue, setNewBadgeQueue] = useState<EarnedBadge[]>([]);
@@ -153,11 +210,20 @@ export function useBadges(): UseBadgesResult {
   useEffect(() => {
     if (earnedBadges.length === 0) return;
 
+    // Xử lý triệt để: Trong giai đoạn đang load data dần dần từ API,
+    // tuyệt đối không cho phép popup. Ép ghi vào LocalStorage là đã xem.
+    if (!allowPopups) {
+      earnedBadges.forEach(earned => {
+        markBadgeShown(earned.badge.id, username);
+      });
+    }
+
     const shownIds = getShownBadgeIds(username);
     const currentIds = new Set(earnedBadges.map((b) => b.badge.id));
 
     // Lọc ra các badge mới hoàn toàn (chưa show + chưa trong dismissed buffer)
-    const newBadges = earnedBadges.filter(
+    // Nếu chưa allowPopups thì tuyệt đối không đẩy vào queue
+    const newBadges = !allowPopups ? [] : earnedBadges.filter(
       (earned) =>
         !shownIds.has(earned.badge.id) &&
         !prevEarnedRef.current.has(earned.badge.id) &&
@@ -173,7 +239,7 @@ export function useBadges(): UseBadgesResult {
     }
 
     prevEarnedRef.current = currentIds;
-  }, [earnedBadges, username]);
+  }, [earnedBadges, username, allowPopups]);
 
   // Lấy badge từ queue ra hiển thị
   useEffect(() => {
@@ -182,6 +248,10 @@ export function useBadges(): UseBadgesResult {
     }
   }, [currentBadge, newBadgeQueue]);
 
+  const { mutate: updateShown } = useMutation({
+    mutationFn: (badgeId: string) => updateBadgeShown(badgeId, true)
+  });
+
   const dismissNewBadge = () => {
     if (!currentBadge) return;
 
@@ -189,6 +259,9 @@ export function useBadges(): UseBadgesResult {
     markBadgeShown(badgeId, username);
     // Đánh dấu vào dismissed buffer ngay lập tức
     dismissedRef.current.add(badgeId);
+
+    // Call API cập nhật trạng thái is_shown lên BE
+    updateShown(badgeId);
 
     // Gỡ badge hiện tại để trigger exit animation của modal
     setCurrentBadge(null);
