@@ -101,7 +101,7 @@ export function RegisterPage() {
             </p>
             <button
               onClick={() => navigate("/login")}
-              className="w-full rounded-full bg-[#1877F2] py-3 text-[15px] font-semibold text-white shadow-md transition-all hover:bg-[#1466d8] active:scale-[0.98]"
+              className="w-full rounded-full bg-[#1877F2] py-3 text-[15px] font-semibold text-white transition-all hover:bg-[#1466d8] active:scale-[0.98]"
             >
               Quay về đăng nhập
             </button>
@@ -324,7 +324,7 @@ export function RegisterPage() {
 function LeftPanel() {
   return (
     <div className="hidden w-[48%] lg:flex p-8 pr-0 h-full">
-      <div className="relative flex w-full h-full flex-col justify-between overflow-hidden rounded-[24px] p-10 select-none shadow-sm">
+      <div className="relative flex w-full h-full flex-col justify-between overflow-hidden rounded-[24px] p-10 select-none">
         {/* Background image */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"

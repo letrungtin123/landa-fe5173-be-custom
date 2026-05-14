@@ -22,10 +22,10 @@ export function ProgressRing({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, delay: 0.2 }}
-      className="h-[300px]"
+      className="h-[297px]"
     >
-      <div className="rounded-[32px] border border-border/50 bg-card shadow-[0_2px_20px_rgb(0,0,0,0.04)] h-full">
-        <div className="flex flex-col items-center pt-6 pb-5 px-8 h-full">
+      <div className="rounded-[32px] border border-border/50 bg-card h-full">
+        <div className="flex flex-col items-center pt-5 pb-5 px-8 h-full">
           {/* SVG Ring */}
           <div className="relative -mb-1 h-36 w-36 shrink-0">
             <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
@@ -62,7 +62,10 @@ export function ProgressRing({
           </div>
 
           <p className="text-[17px] font-bold text-foreground mb-1">Đã hoàn thành</p>
-          <p className="text-[14px] text-foreground italic mb-6">
+          <p
+            className="w-full text-center text-[14px] text-foreground italic mb-6 truncate"
+            title={courseTitle}
+          >
             {courseTitle}
           </p>
 

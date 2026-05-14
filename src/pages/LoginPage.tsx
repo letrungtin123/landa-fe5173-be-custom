@@ -150,7 +150,7 @@ export function LoginPage() {
       <div className="flex h-screen w-full max-w-[1440px] overflow-hidden bg-white">
         {/* ─── Left Panel ─── */}
       <div className="hidden w-[48%] lg:flex p-8 pr-0 h-full">
-          <div className="relative flex w-full h-full flex-col justify-between overflow-hidden rounded-[24px] p-10 select-none shadow-sm">
+          <div className="relative flex w-full h-full flex-col justify-between overflow-hidden rounded-[24px] p-10 select-none">
           {/* Background image */}
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -168,7 +168,7 @@ export function LoginPage() {
 
           {/* Bottom content */}
           <div className="relative z-10 flex flex-col justify-end mt-auto pl-2 mb-6">
-            <div className="mb-6 inline-flex w-fit items-center gap-2 rounded-[30px] border border-white/30 bg-white/5 backdrop-blur-md p-1 pr-4 shadow-sm">
+            <div className="mb-6 inline-flex w-fit items-center gap-2 rounded-[30px] border border-white/30 bg-white/5 backdrop-blur-md p-1 pr-4">
               <div className="flex -space-x-2 pl-0.5">
                 <img src={person1} alt="User 1" className="relative z-[4] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
                 <img src={person2} alt="User 2" className="relative z-[3] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
@@ -350,7 +350,7 @@ export function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full h-9 rounded-[29px] bg-[#1d4ed8] text-[14px] font-normal leading-[16px] text-white shadow-sm transition-all font-['SF_Pro',_sans-serif] hover:bg-[#1e40af] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full h-9 rounded-[29px] bg-[#1d4ed8] text-[14px] font-normal leading-[16px] text-white transition-all font-['SF_Pro',_sans-serif] hover:bg-[#1e40af] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
@@ -404,7 +404,7 @@ export function LoginPage() {
               type="button"
               onClick={() => googleLogin()}
               disabled={isSsoLoading || isSubmitting}
-              className="w-full flex items-center justify-center gap-2.5 bg-white rounded-3xl border border-gray-200 py-2.5 px-4 text-[14px] font-normal leading-[16px] text-black shadow-sm transition-all hover:bg-[#f9fafb] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2.5 bg-white rounded-3xl border border-gray-200 py-2.5 px-4 text-[14px] font-normal leading-[16px] text-black transition-all hover:bg-[#f9fafb] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isGoogleLoading ? (
                 <svg
@@ -460,7 +460,7 @@ export function LoginPage() {
                   type="button"
                   onClick={handleMicrosoftLogin}
                   disabled={isSsoLoading || isSubmitting}
-                  className="w-full flex items-center justify-center gap-2.5 bg-white rounded-3xl border border-gray-200 py-2.5 px-4 text-[14px] font-normal leading-[16px] text-black shadow-sm transition-all hover:bg-[#f9fafb] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-2.5 bg-white rounded-3xl border border-gray-200 py-2.5 px-4 text-[14px] font-normal leading-[16px] text-black transition-all hover:bg-[#f9fafb] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isMicrosoftLoading ? (
                     <svg

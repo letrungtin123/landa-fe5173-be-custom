@@ -15,6 +15,8 @@ export interface CourseModalConfigData {
   completion_enabled: boolean;
   completion_title: string;
   completion_description: string;
+  completion_social_type?: string;
+  completion_social_link?: string;
 }
 
 export async function getCourseModalConfig(courseId: string): Promise<CourseModalConfigData> {

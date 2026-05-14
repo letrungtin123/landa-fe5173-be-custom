@@ -5,6 +5,9 @@ import VideoCompleteFinal from "@/assets/CompleteCourseModal/VideoCompleteFinal.
 import { useNavigate } from "react-router-dom";
 import type { CourseModalConfigData } from "@/api/modalConfig";
 import { useAppStore } from "@/stores/useAppStore";
+import FacebookIcon from "@/assets/SocialIcon/facebook.png";
+import InstagramIcon from "@/assets/SocialIcon/instagram.png";
+import ZaloIcon from "@/assets/SocialIcon/zalo.png";
 
 interface Course100PercentModalProps {
   courseId: string;
@@ -77,6 +80,17 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
     setCourseModalActive(open || isPending);
     return () => setCourseModalActive(false);
   }, [open, isPending, setCourseModalActive]);
+
+  const getSocialIcon = () => {
+    switch (config?.completion_social_type) {
+      case "facebook": return FacebookIcon;
+      case "instagram": return InstagramIcon;
+      case "zaloOA": return ZaloIcon;
+      default: return null;
+    }
+  };
+
+  const socialIcon = getSocialIcon();
 
   useEffect(() => {
     if (!courseId || isLoading || !config) return;
@@ -158,6 +172,35 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
             >
               Các khoá học khác
             </Button>
+
+            {/* Social Link Button */}
+            {config?.completion_social_link && (
+              <a
+                href={config.completion_social_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex items-center justify-center gap-3 h-[48px] sm:h-[52px] pl-1.5 pr-6 rounded-full bg-white shadow-[0_8px_20px_-4px_rgba(0,0,0,0.25)] hover:shadow-[0_16px_30px_-6px_rgba(0,0,0,0.35)] hover:-translate-y-1 transition-all duration-400 ease-out"
+                aria-label="Social Link"
+              >
+                {/* Vòng tròn nhỏ bọc icon */}
+                <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-50 border border-slate-100 shadow-inner overflow-hidden">
+                  {config.completion_social_type === 'website' ? (
+                    <svg className="w-5 h-5 sm:w-5 sm:h-5 text-sky-500 group-hover:scale-110 group-hover:text-sky-600 group-hover:rotate-3 transition-all duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+                    </svg>
+                  ) : socialIcon ? (
+                    <img src={socialIcon} alt="Social Icon" className="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] object-contain group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300" />
+                  ) : null}
+                </div>
+                
+                {/* Tên Social */}
+                <span className="font-bold text-[13px] sm:text-[14px] text-slate-700 group-hover:text-blue-700 transition-colors">
+                  {config.completion_social_type === 'zaloOA' ? 'Zalo OA' :
+                   config.completion_social_type === 'facebook' ? 'Facebook' :
+                   config.completion_social_type === 'instagram' ? 'Instagram' : 'Website'}
+                </span>
+              </a>
+            )}
           </div>
 
           {/* Đường cong trắng lồi lên từ đáy */}
