@@ -71,7 +71,11 @@ export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCard
       <img 
         src={imgSrc} 
         alt={badge.name} 
-        className="w-full h-full object-cover" 
+        className={cn(
+          "w-full h-full object-cover",
+          // Bậc thầy toàn năng có viền trong ảnh gốc, cần scale lên một chút để che
+          badge.id === "omnipotent_master" && "scale-[1.06]"
+        )} 
       />
 
       {/* Shine effect applying to the whole card (continuous like the icon) */}

@@ -5,6 +5,8 @@ import WelcomePicture from "@/assets/CompleteCourseModal/WelcomePicture.png";
 import { ArrowRight } from "lucide-react";
 import type { CourseModalConfigData } from "@/api/modalConfig";
 import { useAppStore } from "@/stores/useAppStore";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getCourseModalState, updateCourseModalState } from "@/api/modalState";
 
 interface WelcomeCourseModalProps {
   courseId: string;
@@ -24,19 +26,36 @@ export function WelcomeCourseModal({ courseId, completionPercent, isLoading, con
     return () => setCourseModalActive(false);
   }, [open, setCourseModalActive]);
 
-  useEffect(() => {
-    if (!courseId || isLoading || !config) return;
+  const queryClient = useQueryClient();
 
-    const isShown = localStorage.getItem(`course_welcome_shown_${courseId}`);
+  const { data: modalState, isLoading: isModalStateLoading } = useQuery({
+    queryKey: ["courseModalState", courseId],
+    queryFn: () => getCourseModalState(courseId),
+    enabled: !!courseId && !isLoading,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { mutate: updateState } = useMutation({
+    mutationFn: (updates: { welcome_shown?: boolean; confirm_shown?: boolean; complete_shown?: boolean }) => 
+      updateCourseModalState(courseId, updates),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["courseModalState", courseId], data);
+    }
+  });
+
+  useEffect(() => {
+    if (!courseId || isLoading || !config || isModalStateLoading || !modalState) return;
+
+    const isShown = modalState.welcome_shown;
 
     // Show only when completion is 0%, enabled, and not shown before
     if (!isShown && completionPercent === 0 && isEnabled) {
       setOpen(true);
     }
-  }, [courseId, isLoading, completionPercent, isEnabled, config]);
+  }, [courseId, isLoading, completionPercent, isEnabled, config, isModalStateLoading, modalState]);
 
   const handleContinue = () => {
-    localStorage.setItem(`course_welcome_shown_${courseId}`, "true");
+    updateState({ welcome_shown: true });
     setOpen(false);
   };
 

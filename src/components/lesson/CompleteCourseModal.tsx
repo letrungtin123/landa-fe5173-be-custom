@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { useCourseCompletion } from "@/hooks/useProgress";
 import type { CourseModalConfigData } from "@/api/modalConfig";
 import { useAppStore } from "@/stores/useAppStore";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getCourseModalState, updateCourseModalState } from "@/api/modalState";
 
 interface CompleteCourseModalProps {
   courseId: string;
@@ -30,15 +32,34 @@ export function CompleteCourseModal({ courseId, config }: CompleteCourseModalPro
     return () => setCourseModalActive(false);
   }, [open, isPending, setCourseModalActive]);
 
+  const queryClient = useQueryClient();
+
+  const { data: modalState, isLoading: isModalStateLoading } = useQuery({
+    queryKey: ["courseModalState", courseId],
+    queryFn: () => getCourseModalState(courseId),
+    enabled: !!courseId && !isLoading,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { mutate: updateState } = useMutation({
+    mutationFn: (updates: { welcome_shown?: boolean; confirm_shown?: boolean; complete_shown?: boolean }) => 
+      updateCourseModalState(courseId, updates),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["courseModalState", courseId], data);
+    }
+  });
+
   useEffect(() => {
-    if (!courseId || isLoading || !config) return;
+    if (!courseId || isLoading || !config || isModalStateLoading || !modalState) return;
     
     if (completionPercent < 100) {
-      localStorage.removeItem(`course_confirmed_${courseId}`);
+      if (modalState.confirm_shown) {
+        updateState({ confirm_shown: false });
+      }
       return; // Khỏi chạy logic ở dưới
     }
 
-    const isConfirmed = localStorage.getItem(`course_confirmed_${courseId}`);
+    const isConfirmed = modalState.confirm_shown;
     // Chỉ hiển thị modal khi tiến độ = 100%, chưa confirm và admin bật
     if (!isConfirmed && completionPercent === 100 && isEnabled) {
       setIsPending(true); // Khóa huy hiệu ngay lập tức
@@ -52,11 +73,11 @@ export function CompleteCourseModal({ courseId, config }: CompleteCourseModalPro
         setIsPending(false);
       }
     }
-  }, [courseId, isLoading, completionPercent, isEnabled, config]);
+  }, [courseId, isLoading, completionPercent, isEnabled, config, isModalStateLoading, modalState]);
 
   const handleContinue = () => {
     if (!checked) return;
-    localStorage.setItem(`course_confirmed_${courseId}`, "true");
+    updateState({ confirm_shown: true });
     setJustConfirmed(true);
     setOpen(false);
     // Khi modal close, do React state render, component CompletionModal sẽ đọc được cờ từ localStorage để bật lên.

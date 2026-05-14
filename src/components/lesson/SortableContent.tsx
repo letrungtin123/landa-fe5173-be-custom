@@ -4,6 +4,7 @@ import { getBlockDetail, submitSortableAnswer } from "@/api/blocks";
 import { CheckCircle2, GripVertical, Loader2, XCircle, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
 
 import {
   DndContext,
@@ -112,9 +113,16 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
 
   const svd = blockData?.student_view_data as unknown as SortableData | undefined;
 
-  // Initialize items from server data (once)
+  // Initialize items from server data (once) + khôi phục từ session store
   if (svd && !initialized) {
     if (svd.items && svd.items.length > 0) {
+      // Khôi phục kết quả từ session store nếu đã submit trước đó
+      const cached = useBlockSubmitStore.getState().getResult(usageKey);
+      if (cached) {
+        setResultMessage(cached.resultMessage);
+        setIsCorrect(cached.isCorrect);
+        setStarted(true);
+      }
       setItems(svd.items);
       setInitialized(true);
     }
@@ -154,6 +162,11 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
       if (data.status === "correct") {
         setIsCorrect(true);
         setResultMessage(data.message);
+        // Lưu vào session store
+        useBlockSubmitStore.getState().setResult(usageKey, {
+          resultMessage: data.message,
+          isCorrect: true,
+        });
         qc.invalidateQueries({ queryKey: ["block-detail", usageKey] });
         qc.invalidateQueries({ queryKey: ["course-blocks"] });
       } else {

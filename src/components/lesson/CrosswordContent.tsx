@@ -5,6 +5,7 @@ import { CheckCircle2, ChevronRight, Loader2, Play, XCircle } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
 
 interface CrosswordWord {
   id: number;
@@ -30,6 +31,7 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
   const [activeWordId, setActiveWordId] = useState<number | null>(null);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [restoredFromCache, setRestoredFromCache] = useState(false);
 
   const username = useAuthStore((s) => s.user?.username);
 
@@ -42,7 +44,7 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
 
   const svd = blockData?.student_view_data as unknown as CrosswordData | undefined;
 
-  // Set active answer clue logic
+  // Set active answer clue logic + khôi phục từ cache
   useEffect(() => {
     if (started) {
       if (svd) {
@@ -53,7 +55,24 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
         }
       }
     }
-  }, [started, svd, activeWordId]);
+    // Khôi phục kết quả từ session store nếu đã submit trước đó
+    if (!restoredFromCache && svd) {
+      const cached = useBlockSubmitStore.getState().getResult(usageKey);
+      if (cached) {
+        setResultMessage(cached.resultMessage);
+        setIsCorrect(cached.isCorrect);
+        if (cached.answers) {
+          const restoredAnswers: Record<string, string> = {};
+          for (const [k, v] of Object.entries(cached.answers)) {
+            if (typeof v === "string") restoredAnswers[k] = v;
+          }
+          setAnswers(restoredAnswers);
+        }
+        setStarted(true);
+      }
+      setRestoredFromCache(true);
+    }
+  }, [started, svd, activeWordId, restoredFromCache, usageKey]);
 
   // Submit Mutation
   const submitMutation = useMutation({
@@ -64,12 +83,24 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
       if (data.status === "correct") {
         setIsCorrect(true);
         setResultMessage(msg);
+        // Lưu vào session store
+        useBlockSubmitStore.getState().setResult(usageKey, {
+          resultMessage: msg,
+          isCorrect: true,
+          answers: { ...answers },
+        });
         // Invalidate block detail and course completion
         qc.invalidateQueries({ queryKey: ["block-detail", usageKey] });
         qc.invalidateQueries({ queryKey: ["course-blocks"] });
       } else if (data.status === "already_completed") {
         setIsCorrect(true);
         setResultMessage("🎉 Chính xác! Tuyệt vời!");
+        // Lưu vào session store
+        useBlockSubmitStore.getState().setResult(usageKey, {
+          resultMessage: "🎉 Chính xác! Tuyệt vời!",
+          isCorrect: true,
+          answers: { ...answers },
+        });
       } else {
         setIsCorrect(false);
         setResultMessage(msg);

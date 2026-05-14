@@ -17,6 +17,7 @@ import { useParams } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { markBlockComplete } from "@/api/progress";
 import { useQueryClient } from "@tanstack/react-query";
+import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
 
 // ── Custom Dropdown cho Problem Type: Dropdown ──
 function CustomDropdown({
@@ -126,8 +127,23 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
   const [fetchedExplanation, setFetchedExplanation] = useState<string>("");
 
   // Tải rendered HTML từ XBlock (qua Vite proxy) và parse
+  // HOẶC khôi phục từ session store nếu đã submit trước đó (skip re-fetch)
   useEffect(() => {
     if (!problemUsageKey) return;
+
+    // Kiểm tra session store trước — nếu đã submit, dùng luôn dữ liệu đã lưu
+    // (tránh re-fetch XBlock HTML bị server thay đổi sau submit → mất answers)
+    const cached = useBlockSubmitStore.getState().getResult(problemUsageKey);
+    if (cached && cached.parsedProblems && cached.parsedProblems.length > 0) {
+      console.log('[QuizContent] Restoring from session cache:', problemUsageKey);
+      setParsedProblems(cached.parsedProblems as ParsedProblem[]);
+      setResultMessage(cached.resultMessage);
+      setIsCorrect(cached.isCorrect);
+      if (cached.answers) setAnswers(cached.answers);
+      if (cached.explanationHtml) setFetchedExplanation(cached.explanationHtml);
+      setIsLoadingContent(false);
+      return;
+    }
 
     let cancelled = false;
 
@@ -198,16 +214,28 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
       }
 
       // CHỈ fetch giải thích đáp án khi trả lời ĐÚNG
+      let explanationHtml = "";
       if (result.correct) {
         try {
           const explanationResult = await fetchExplanation(problemUsageKey);
           if (explanationResult.explanationHtml) {
-            setFetchedExplanation(explanationResult.explanationHtml);
+            explanationHtml = explanationResult.explanationHtml;
+            setFetchedExplanation(explanationHtml);
           }
         } catch (e) {
           console.log('[QuizContent] Explanation not available (likely quiz setting):', e);
         }
       }
+
+      // Lưu kết quả vào session store để khôi phục khi quay lại unit
+      // Bao gồm parsedProblems để skip re-fetch XBlock HTML (tránh server trả HTML khác)
+      useBlockSubmitStore.getState().setResult(problemUsageKey, {
+        resultMessage: result.message,
+        isCorrect: result.correct,
+        answers: { ...answers },
+        explanationHtml: explanationHtml || undefined,
+        parsedProblems: [...parsedProblems],
+      });
 
       // CHỈ khi trả lời ĐÚNG mới gọi markBlockComplete và cập nhật tiến độ sidebar
       if (result.correct && courseId && user?.username) {

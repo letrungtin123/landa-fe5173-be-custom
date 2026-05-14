@@ -8,6 +8,8 @@ import { useAppStore } from "@/stores/useAppStore";
 import FacebookIcon from "@/assets/SocialIcon/facebook.png";
 import InstagramIcon from "@/assets/SocialIcon/instagram.png";
 import ZaloIcon from "@/assets/SocialIcon/zalo.png";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getCourseModalState, updateCourseModalState } from "@/api/modalState";
 
 interface Course100PercentModalProps {
   courseId: string;
@@ -92,8 +94,25 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
 
   const socialIcon = getSocialIcon();
 
+  const queryClient = useQueryClient();
+
+  const { data: modalState, isLoading: isModalStateLoading } = useQuery({
+    queryKey: ["courseModalState", courseId],
+    queryFn: () => getCourseModalState(courseId),
+    enabled: !!courseId && !isLoading,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { mutate: updateState } = useMutation({
+    mutationFn: (updates: { welcome_shown?: boolean; confirm_shown?: boolean; complete_shown?: boolean }) => 
+      updateCourseModalState(courseId, updates),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["courseModalState", courseId], data);
+    }
+  });
+
   useEffect(() => {
-    if (!courseId || isLoading || !config) return;
+    if (!courseId || isLoading || !config || isModalStateLoading || !modalState) return;
     
     // Lưu lại progress lần đầu khi API vừa load xong
     if (!initialPercentLoaded.current) {
@@ -104,9 +123,9 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
       }
     }
 
-    if (completionPercent < 100) {
-      localStorage.removeItem(`course_100_shown_${courseId}`);
-      // Không return sớm ở đây vì có thể cần setup effect khác, nhưng vì đây là modal 100% nên không sao.
+    if (completionPercent < 100 && modalState.complete_shown) {
+      // Nếu user rớt xuống dưới 100%, reset cờ lại
+      updateState({ complete_shown: false });
     }
 
     // Đăng ký lắng nghe sự kiện từ Confirm Modal
@@ -114,14 +133,14 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
     window.addEventListener("course_confirmed_event", handleConfirmEvent);
 
     // Kiểm tra xem đã confirm chưa
-    const isConfirmed = localStorage.getItem(`course_confirmed_${courseId}`);
+    const isConfirmed = modalState.confirm_shown;
     
     // Điều kiện bung modal
     const canShow = isEligible.current && completionPercent === 100 && isEnabled;
     const confirmSatisfied = !requiresConfirm || isConfirmed || confirmReady;
 
     if (canShow && confirmSatisfied) {
-      const hasShown = localStorage.getItem(`course_100_shown_${courseId}`);
+      const hasShown = modalState.complete_shown;
       if (!hasShown) {
         setIsPending(true); // Khóa huy hiệu ngay lập tức
         // Chỉ delay nếu không phải do event kích hoạt
@@ -129,7 +148,7 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
         const timer = setTimeout(() => {
           setIsPending(false);
           setOpen(true);
-          localStorage.setItem(`course_100_shown_${courseId}`, "true");
+          updateState({ complete_shown: true });
         }, delay);
         return () => {
           clearTimeout(timer);
@@ -140,7 +159,7 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
     }
 
     return () => window.removeEventListener("course_confirmed_event", handleConfirmEvent);
-  }, [courseId, completionPercent, isLoading, isEnabled, requiresConfirm, confirmReady, config]);
+  }, [courseId, completionPercent, isLoading, isEnabled, requiresConfirm, confirmReady, config, isModalStateLoading, modalState]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
