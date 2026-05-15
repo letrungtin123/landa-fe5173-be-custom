@@ -12,7 +12,7 @@ const NAV_ITEMS = [
 export function BottomNav() {
   const location = useLocation();
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 bg-background/95 backdrop-blur border-t border-border md:hidden px-2 pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 bg-background/95 backdrop-blur border-t border-border lg:hidden px-2 pb-safe">
       {NAV_ITEMS.map((item) => {
         const Icon = item.icon;
         const isActive =

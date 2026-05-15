@@ -96,7 +96,7 @@ export function Header() {
         </Link>
 
         {/* Nav Links */}
-        <nav className="hidden flex-1 items-center justify-center gap-1 md:flex">
+        <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex">
           {NAV_ITEMS.map((item) => {
             const isActive =
               location.pathname === item.path ||
@@ -123,7 +123,7 @@ export function Header() {
         </nav>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-1 translate-x-[2px]">
+        <div className="flex items-center gap-1 translate-x-[2px] ml-auto">
 
 
           {/* Theme Preset Picker */}

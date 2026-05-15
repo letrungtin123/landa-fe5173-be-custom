@@ -9,7 +9,7 @@ export function MainLayout() {
   const routeKey = isCourseRoute ? "courses" : location.pathname;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background pb-16 md:pb-0">
+    <div className="flex min-h-screen flex-col bg-background pb-16 lg:pb-0">
       <Header />
       <PageTransition animationKey={routeKey}>
         <Outlet />
