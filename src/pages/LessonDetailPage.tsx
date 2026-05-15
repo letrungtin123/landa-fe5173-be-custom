@@ -91,6 +91,18 @@ export function LessonDetailPage() {
     }
   }, [currentUnitIndex]);
 
+  // Lightbox state
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!lightboxSrc) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxSrc(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxSrc]);
+
   // Hook lắng nghe sự kiện scroll để hiện nút Back to Top
   const [showScrollTop, setShowScrollTop] = useState(false);
   useEffect(() => {
@@ -298,20 +310,28 @@ export function LessonDetailPage() {
                       FORBID_TAGS: ["script", "style"],
                       FORBID_ATTR: ["onerror", "onload", "onclick"],
                     });
+                    const hasImage = /<img[\s>]/i.test(comp.htmlContent);
                     return (
                       <div key={comp.id} className="rounded-3xl border border-border px-8 py-7 shadow-sm bg-card">
-                        {comp.displayName && (
+                        {comp.displayName && !hasImage && (
                           <div className="mb-1 inline-block">
                             <BadgeCyan><span className="uppercase">{comp.displayName}</span></BadgeCyan>
                           </div>
                         )}
                         <div
-                          className="prose max-w-none text-[14px] 2xl:text-[16px] font-normal leading-[18px] 2xl:leading-[24px] text-foreground/80 dark:prose-invert dark:text-foreground [&_p]:!text-[14px] 2xl:[&_p]:!text-[16px] [&_p]:!font-normal [&_p]:!leading-[18px] 2xl:[&_p]:!leading-[24px] [&_span]:!text-[14px] 2xl:[&_span]:!text-[16px] [&_span]:!font-normal [&_span]:!leading-[18px] 2xl:[&_span]:!leading-[24px] [&_li]:!text-[14px] 2xl:[&_li]:!text-[16px] [&_li]:!font-normal [&_li]:!leading-[18px] 2xl:[&_li]:!leading-[24px] [&_div]:!text-[14px] 2xl:[&_div]:!text-[16px] [&_div]:!font-normal [&_div]:!leading-[18px] 2xl:[&_div]:!leading-[24px] [&_h1]:!text-[36px] 2xl:[&_h1]:!text-[42px] [&_h1]:!font-semibold [&_h1]:!leading-[40px] 2xl:[&_h1]:!leading-[48px] [&_h2]:!text-[20px] 2xl:[&_h2]:!text-[24px] [&_h2]:!font-bold [&_h2]:!leading-[24px] 2xl:[&_h2]:!leading-[32px] [&_h3]:!text-[20px] 2xl:[&_h3]:!text-[24px] [&_h3]:!font-bold [&_h3]:!leading-[24px] 2xl:[&_h3]:!leading-[32px]"
+                          className="prose max-w-none text-[14px] 2xl:text-[16px] font-normal leading-[18px] 2xl:leading-[24px] text-foreground/80 dark:prose-invert dark:text-foreground [&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0 [&_p]:!text-[14px] 2xl:[&_p]:!text-[16px] [&_p]:!font-normal [&_p]:!leading-[18px] 2xl:[&_p]:!leading-[24px] [&_span]:!text-[14px] 2xl:[&_span]:!text-[16px] [&_span]:!font-normal [&_span]:!leading-[18px] 2xl:[&_span]:!leading-[24px] [&_li]:!text-[14px] 2xl:[&_li]:!text-[16px] [&_li]:!font-normal [&_li]:!leading-[18px] 2xl:[&_li]:!leading-[24px] [&_div]:!text-[14px] 2xl:[&_div]:!text-[16px] [&_div]:!font-normal [&_div]:!leading-[18px] 2xl:[&_div]:!leading-[24px] [&_h1]:!text-[28px] 2xl:[&_h1]:!text-[34px] [&_h1]:!font-bold [&_h1]:!leading-[36px] 2xl:[&_h1]:!leading-[42px] [&_h1]:!mt-6 [&_h1]:!mb-3 [&_h1]:!text-foreground [&_h2]:!text-[22px] 2xl:[&_h2]:!text-[26px] [&_h2]:!font-bold [&_h2]:!leading-[28px] 2xl:[&_h2]:!leading-[34px] [&_h2]:!mt-5 [&_h2]:!mb-2 [&_h2]:!text-foreground [&_h3]:!text-[18px] 2xl:[&_h3]:!text-[20px] [&_h3]:!font-semibold [&_h3]:!leading-[24px] 2xl:[&_h3]:!leading-[28px] [&_h3]:!mt-4 [&_h3]:!mb-1 [&_h3]:!text-foreground [&_img]:!cursor-zoom-in"
                           dangerouslySetInnerHTML={{ __html: cleanHtml }}
+                          onClick={(e) => {
+                            const target = e.target as HTMLElement;
+                            if (target.tagName === "IMG") {
+                              setLightboxSrc((target as HTMLImageElement).src);
+                            }
+                          }}
                         />
                       </div>
                     );
                   }
+
 
                   if (comp.type === "problem" && comp.problemUsageKey) {
                     return (
@@ -499,6 +519,29 @@ export function LessonDetailPage() {
       {courseId && <CompleteCourseModal courseId={courseId} config={modalConfig} />}
       {courseId && <Course100PercentModal courseId={courseId} completionPercent={completionPercent} isLoading={isProgressLoading} config={modalConfig} />}
       {courseId && courseTree && <SectionCompleteModal courseId={courseId} modules={courseTree.modules} />}
+
+      {/* ── Image Lightbox ── */}
+      {lightboxSrc && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          onClick={() => setLightboxSrc(null)}
+          style={{ animation: "fadeIn 0.15s ease" }}
+        >
+          <img
+            src={lightboxSrc}
+            alt=""
+            className="max-w-[90vw] max-h-[90vh] rounded-xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            className="absolute top-5 right-6 text-white/70 hover:text-white text-[32px] leading-none font-light transition-colors"
+            onClick={() => setLightboxSrc(null)}
+            aria-label="Đóng"
+          >
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 }
