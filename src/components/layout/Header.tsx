@@ -60,7 +60,7 @@ export function Header() {
   const markAllRead = useMarkAllRead();
   const [notifModalOpen, setNotifModalOpen] = useState(false);
 
-  const isLessonRoute = location.pathname.includes("/lessons/");
+  const isCourseRoute = location.pathname.includes("/courses/");
 
   const handleLogout = () => {
     logout();
@@ -73,12 +73,12 @@ export function Header() {
       <div className="h-16 w-full shrink-0" />
       <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 !mr-0">
       <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-4 px-4 md:px-6">
-        {/* Mobile menu toggle - ONLY SHOW IN LESSON ROUTE */}
-        {isLessonRoute && (
+        {/* Mobile menu toggle - ONLY SHOW IN COURSE ROUTE */}
+        {isCourseRoute && (
           <Button
             variant="ghost"
             size="icon"
-            className="shrink-0 md:hidden"
+            className="shrink-0 lg:hidden"
             onClick={toggleSidebar}
             aria-label="Toggle sidebar"
           >

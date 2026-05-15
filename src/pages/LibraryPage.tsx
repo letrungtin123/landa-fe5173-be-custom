@@ -516,48 +516,48 @@ export function LibraryPage() {
 
             <>
               {/* Desktop table */}
-              <div className="hidden md:block border border-border/50 rounded-2xl overflow-x-auto w-full bg-card">
+              <div className="hidden md:block border border-border/50 rounded-2xl overflow-hidden w-full bg-card">
                 <table className="w-full table-fixed">
                   <thead className="bg-[#f8fafc]/80 dark:bg-accent/5 backdrop-blur-sm border-b border-border/50">
                       <tr className="text-left text-[10px] font-bold leading-[14px] text-muted-foreground uppercase tracking-wider">
-                        <th className="px-6 py-4 w-[40%]">
+                        <th className="px-4 xl:px-6 py-4 w-[40%]">
                           Tên tài liệu
                         </th>
-                        <th className="px-6 py-4 w-[15%]">
+                        <th className="px-4 xl:px-6 py-4 w-[15%]">
                           Loại
                         </th>
-                        <th className="px-6 py-4 w-[15%]">
+                        <th className="px-4 xl:px-6 py-4 w-[15%]">
                           Dung lượng
                         </th>
-                        <th className="px-6 py-4 w-[25%]">
+                        <th className="px-4 xl:px-6 py-4 w-[20%]">
                           Người đăng
                         </th>
-                        <th className="px-6 py-4 w-[5%]"></th>
+                        <th className="pl-4 pr-8 xl:pl-6 xl:pr-10 py-4 w-[10%]"></th>
                       </tr>
                     </thead>
                     <tbody className={`divide-y divide-border/30 transition-opacity duration-300 ${docFetching ? 'opacity-50 pointer-events-none' : ''}`}>
                       {docLoading ? (
                         Array.from({ length: pageSize }).map((_, i) => (
                           <tr key={`skeleton-${i}`} className="animate-pulse">
-                            <td className="px-6 py-4">
+                            <td className="px-4 xl:px-6 py-4">
                               <div className="flex items-center gap-4">
                                 <div className="h-10 w-10 shrink-0 rounded-lg bg-accent/30"></div>
                                 <div className="h-4 w-32 sm:w-48 bg-accent/30 rounded"></div>
                               </div>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-4 xl:px-6 py-4">
                               <div className="h-5 w-12 bg-accent/30 rounded"></div>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-4 xl:px-6 py-4">
                               <div className="h-4 w-16 bg-accent/30 rounded"></div>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-4 xl:px-6 py-4">
                               <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-full bg-accent/30"></div>
-                                <div className="h-4 w-24 bg-accent/30 rounded"></div>
+                                <div className="h-8 w-8 rounded-full bg-accent/30 shrink-0"></div>
+                                <div className="h-4 w-24 bg-accent/30 rounded flex-1"></div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-right">
+                            <td className="pl-4 pr-8 xl:pl-6 xl:pr-10 py-4 text-right">
                               <div className="h-8 w-8 bg-accent/30 rounded-lg inline-block"></div>
                             </td>
                           </tr>
@@ -573,8 +573,8 @@ export function LibraryPage() {
                             onClick={() => setPreviewDoc(doc)}
                             className="group hover:bg-accent/5 transition-colors cursor-pointer"
                           >
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-4 min-w-0">
+                            <td className="px-4 xl:px-6 py-4">
+                              <div className="flex items-center gap-3 xl:gap-4 min-w-0">
                                 <div className="h-10 w-10 shrink-0 rounded-lg bg-background shadow-xs flex items-center justify-center border border-border/50 group-hover:shadow-sm transition-shadow overflow-hidden p-1.5">
                                   <img src={iconSrc} alt={doc.extension} className={`h-full w-full object-contain transition-transform ${doc.extension?.toLowerCase() === 'pdf' ? 'scale-[1.3]' : ''}`} />
                                 </div>
@@ -583,28 +583,29 @@ export function LibraryPage() {
                                 </span>
                               </div>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-4 xl:px-6 py-4">
                               <span
-                                className="inline-block text-white text-[10px] font-bold leading-[14px] px-2 py-0.5 rounded uppercase"
+                                className="inline-block text-white text-[10px] font-bold leading-[14px] px-2 py-0.5 rounded uppercase truncate max-w-full"
                                 style={{ backgroundColor: extColor }}
+                                title={doc.extension}
                               >
                                 {doc.extension}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-[14px] font-normal leading-[18px] text-muted-foreground whitespace-nowrap">
+                            <td className="px-4 xl:px-6 py-4 text-[14px] font-normal leading-[18px] text-muted-foreground truncate">
                               {formatFileSize(doc.file_size)}
                             </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-[10px] font-bold leading-[14px] shadow-sm">
+                            <td className="px-4 xl:px-6 py-4 min-w-0">
+                              <div className="flex items-center gap-2 xl:gap-3 min-w-0">
+                                <div className="h-8 w-8 shrink-0 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-[10px] font-bold leading-[14px] shadow-sm">
                                   {doc.uploaded_by_name.charAt(0)}
                                 </div>
-                                <span className="text-[14px] font-semibold leading-[18px] text-muted-foreground">
+                                <span className="text-[14px] font-semibold leading-[18px] text-muted-foreground truncate flex-1 min-w-0" title={doc.uploaded_by_name}>
                                   {doc.uploaded_by_name}
                                 </span>
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-right">
+                            <td className="pl-4 pr-8 xl:pl-6 xl:pr-10 py-4 text-right">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -612,7 +613,7 @@ export function LibraryPage() {
                                   const filename = doc.title.toLowerCase().endsWith(`.${ext}`) ? doc.title : `${doc.title}.${ext}`;
                                   handleSecureDownload(doc.download_url, filename);
                                 }}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg hover:bg-card border border-transparent hover:border-border hover:shadow-sm text-muted-foreground hover:text-foreground transition-all"
+                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg hover:bg-card border border-transparent hover:border-border hover:shadow-sm text-muted-foreground hover:text-foreground transition-all"
                               >
                                 <Download className="h-4 w-4" />
                               </button>
