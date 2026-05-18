@@ -17,6 +17,7 @@ import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DOMPurify from "dompurify";
 import { cn } from "@/lib/utils";
+import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 
 import { markBlocksComplete } from "@/api/progress";
 import { CrosswordContent } from "@/components/lesson/CrosswordContent";
@@ -164,9 +165,9 @@ export function LessonDetailPage() {
       email: m.email,
       phone_number: m.phone_number,
       bio: m.bio,
-      avatar: m.profile_image_url || null,
-      profile_image_url: m.profile_image_url || null,
-      profile_image_url_full: m.profile_image_url_full || null,
+      avatar: sanitizeUrlToRelative(m.profile_image_url || null),
+      profile_image_url: sanitizeUrlToRelative(m.profile_image_url || null),
+      profile_image_url_full: sanitizeUrlToRelative(m.profile_image_url_full || null),
     }));
   }, [fetchedMentors]);
 
