@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { ReactFlow, MiniMap, Controls, Background, useNodesState, useEdgesState } from '@xyflow/react';
+import { ReactFlow, MiniMap, Controls, Background, useNodesState, useEdgesState, ConnectionMode } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Maximize2, Minimize2 } from 'lucide-react';
 import CustomShapeNode from './CustomShapeNode';
 import type { DiagramNodeData } from './CustomShapeNode';
 import JunctionNode from './JunctionNode';
@@ -100,19 +100,40 @@ function DiagramRenderer({
   onGoBack: () => void;
 }) {
   const [nodes, setNodes, onNodesChange] = useNodesState(
-    activeDiagram.nodes.map((n) => ({ ...n, draggable: false, selectable: false, connectable: false }))
+    activeDiagram.nodes.map((n) => ({ ...n, draggable: false, selectable: false, connectable: false, data: { ...n.data, hidePorts: true } }))
   );
   const [edges, setEdges, onEdgesChange] = useEdgesState(
-    activeDiagram.edges.map((e) => ({ ...e, animated: true, type: 'step' }))
+    activeDiagram.edges.map((e) => ({ ...e, animated: false, type: 'step' }))
   );
 
   React.useEffect(() => {
-    setNodes(activeDiagram.nodes.map((n) => ({ ...n, draggable: false, selectable: false, connectable: false })));
-    setEdges(activeDiagram.edges.map((e) => ({ ...e, animated: true, type: 'step' })));
+    setNodes(activeDiagram.nodes.map((n) => ({ ...n, draggable: false, selectable: false, connectable: false, data: { ...n.data, hidePorts: true } })));
+    setEdges(activeDiagram.edges.map((e) => ({ ...e, animated: false, type: 'step' })));
   }, [activeDiagram, setNodes, setEdges]);
 
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = React.useCallback(() => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  }, []);
+
   return (
-    <div className="w-full h-full min-h-[500px] flex flex-col border border-border rounded-xl overflow-hidden bg-background">
+    <div ref={containerRef} className="w-full h-full min-h-[500px] flex flex-col border border-border rounded-xl overflow-hidden bg-background">
       <div className="flex items-center justify-between p-3 border-b border-border bg-muted/20">
         <div className="flex items-center gap-3">
           {history.length > 1 && (
@@ -127,6 +148,9 @@ function DiagramRenderer({
             {displayName}
           </span>
         )}
+        <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="h-8 w-8 ml-auto text-muted-foreground hover:text-foreground">
+          {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        </Button>
       </div>
       <div style={{ width: '100%', height: '600px' }} className="flex-1 relative">
         <ReactFlow
@@ -137,7 +161,9 @@ function DiagramRenderer({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
+          connectionMode={ConnectionMode.Loose}
           onNodeClick={onNodeClick}
+          onPaneClick={toggleFullscreen}
           fitView
           nodesDraggable={false}
           nodesConnectable={false}
@@ -146,7 +172,6 @@ function DiagramRenderer({
           panOnDrag={true}
         >
           <Controls showInteractive={false} />
-          <MiniMap />
           <Background gap={12} size={1} />
         </ReactFlow>
       </div>

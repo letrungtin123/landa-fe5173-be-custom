@@ -35,12 +35,14 @@ export default function CustomShapeNode({ data, selected }: NodeProps) {
         cursor: target_diagram_id ? 'pointer' : 'default',
       }}
     >
-      <Handle type="target" position={Position.Top} className="w-2 h-2 !bg-muted-foreground opacity-0" />
+      <Handle type="source" position={Position.Top} id="top" className="!w-2 !h-2 !opacity-0 !bg-transparent !border-none !rounded-none z-10" style={{ top: 0, transform: 'translate(-50%, -50%)' }} />
+      <Handle type="source" position={Position.Left} id="left" className="!w-2 !h-2 !opacity-0 !bg-transparent !border-none !rounded-none z-10" style={{ left: 0, transform: 'translate(-50%, -50%)' }} />
       <div className="text-sm font-semibold text-center whitespace-pre-wrap flex items-center gap-1">
         {label || 'Trống'}
         {target_diagram_id && <Link className="w-3 h-3 opacity-50" />}
       </div>
-      <Handle type="source" position={Position.Bottom} className="w-2 h-2 !bg-muted-foreground opacity-0" />
+      <Handle type="source" position={Position.Bottom} id="bottom" className="!w-2 !h-2 !opacity-0 !bg-transparent !border-none !rounded-none z-10" style={{ bottom: 0, transform: 'translate(-50%, 50%)' }} />
+      <Handle type="source" position={Position.Right} id="right" className="!w-2 !h-2 !opacity-0 !bg-transparent !border-none !rounded-none z-10" style={{ right: 0, transform: 'translate(50%, -50%)' }} />
     </div>
   );
 
