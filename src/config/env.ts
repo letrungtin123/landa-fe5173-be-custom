@@ -80,8 +80,13 @@ export const config = {
     "https://login.microsoftonline.com/common"
   ).trim(),
 
-  /** Base URL cho API — trong dev dùng proxy (rỗng), production dùng LMS URL */
+  /** Base URL cho API calls.
+   *  Luôn dùng relative path "" để:
+   *  - Dev: Vite proxy (server.proxy) intercept và forward tới LMS
+   *  - Production: Kong Gateway route /api/*, /oauth2/*, ... về LMS backend
+   *  lmsBaseUrl vẫn được dùng cho browser redirect (Studio, LMS links).
+   */
   get apiBaseUrl(): string {
-    return import.meta.env.DEV ? "" : this.lmsBaseUrl;
+    return "";
   },
 } as const;

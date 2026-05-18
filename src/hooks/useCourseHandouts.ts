@@ -6,7 +6,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { getCourseHandoutsHtml, parseHandoutsToDocuments } from "@/api/courseAssets";
-import { config } from "@/config/env";
 import type { ParsedDocument } from "@/api/courseAssets";
 
 export type { ParsedDocument };
@@ -19,7 +18,7 @@ export function useCourseHandouts(courseId: string) {
     queryFn: async () => {
       const { handouts_html } = await getCourseHandoutsHtml(courseId);
       if (!handouts_html) return [];
-      return parseHandoutsToDocuments(handouts_html, config.lmsBaseUrl);
+      return parseHandoutsToDocuments(handouts_html, window.location.origin);
     },
     enabled: isAuthenticated && !!courseId,
     staleTime: 10 * 60 * 1000,   // 10 phút — tài liệu không thay đổi thường xuyên
