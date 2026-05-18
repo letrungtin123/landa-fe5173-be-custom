@@ -4,7 +4,7 @@
 // ============================================================
 
 import { useState } from "react";
-import { Search, Compass, Loader2, BookOpen, ArrowRight } from "lucide-react";
+import { Search, Compass, Loader2, BookOpen, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -204,12 +204,18 @@ function ExploreCourseCard({
               variant="outline"
               className={cn(
                 "text-[10px] font-bold leading-[14px] py-0.5",
-                isEnrolled
+                isEnrolled && completionPercent === 100
                   ? "border-success/30 bg-success/10 text-success"
+                  : isEnrolled
+                  ? "border-blue-400/30 bg-blue-400/10 text-blue-500"
                   : "border-primary/30 bg-primary/10 text-primary"
               )}
             >
-              {isEnrolled ? "Đang học" : "Khóa học"}
+              {isEnrolled && completionPercent === 100
+                ? "Đã hoàn thành"
+                : isEnrolled
+                ? "Đang học"
+                : "Khóa học"}
             </Badge>
             <Badge variant="outline" className="text-[10px] font-bold leading-[14px] py-0.5">
               {course.pacing === "self" ? "Tự học" : "Có hướng dẫn"}
@@ -242,8 +248,22 @@ function ExploreCourseCard({
               </div>
             )}
             <div className="flex items-center gap-1 text-[14px] font-semibold leading-[18px] text-accent">
-              {isEnrolled ? "Tiếp tục học" : "Xem chi tiết"}
-              <ArrowRight className="h-3.5 w-3.5" />
+              {isEnrolled && completionPercent === 100 ? (
+                <>
+                  <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                  <span className="text-success">Đã hoàn thành</span>
+                </>
+              ) : isEnrolled ? (
+                <>
+                  Tiếp tục học
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </>
+              ) : (
+                <>
+                  Xem chi tiết
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </>
+              )}
             </div>
           </div>
         </CardContent>

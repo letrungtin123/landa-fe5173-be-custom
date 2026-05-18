@@ -3,7 +3,7 @@
 // ============================================================
 
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen } from "lucide-react";
+import { ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyEnrollments, useCourses, useCourseStructure } from "@/hooks/useCourses";
@@ -94,10 +94,17 @@ function CourseCard({ course, index }: { course: ContinueCourse; index: number }
                   />
                 </div>
               </div>
-              <span className="flex items-center gap-1 text-[13px] font-bold text-primary">
-                Tiếp tục học
-                <ArrowRight className="h-3.5 w-3.5" />
-              </span>
+              {completionPercent === 100 ? (
+                <span className="flex items-center gap-1 text-[13px] font-bold text-success">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Đã hoàn thành
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-[13px] font-bold text-primary">
+                  Tiếp tục học
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </span>
+              )}
             </div>
           </div>
         </div>
