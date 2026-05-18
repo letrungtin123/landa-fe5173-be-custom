@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import CustomShapeNode from './CustomShapeNode';
 import type { DiagramNodeData } from './CustomShapeNode';
+import JunctionNode from './JunctionNode';
 import { useThemeStore } from '@/stores/useThemeStore';
 
 const nodeTypes = {
   customShape: CustomShapeNode,
+  junction: JunctionNode,
 };
 
 export interface Diagram {
@@ -101,12 +103,12 @@ function DiagramRenderer({
     activeDiagram.nodes.map((n) => ({ ...n, draggable: false, selectable: false, connectable: false }))
   );
   const [edges, setEdges, onEdgesChange] = useEdgesState(
-    activeDiagram.edges.map((e) => ({ ...e, animated: true }))
+    activeDiagram.edges.map((e) => ({ ...e, animated: true, type: 'step' }))
   );
 
   React.useEffect(() => {
     setNodes(activeDiagram.nodes.map((n) => ({ ...n, draggable: false, selectable: false, connectable: false })));
-    setEdges(activeDiagram.edges.map((e) => ({ ...e, animated: true })));
+    setEdges(activeDiagram.edges.map((e) => ({ ...e, animated: true, type: 'step' })));
   }, [activeDiagram, setNodes, setEdges]);
 
   return (
