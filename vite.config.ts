@@ -48,6 +48,12 @@ export default defineConfig(({ mode }) => {
     server: {
       // Proxy API requests → Open edX LMS (chỉ trong development)
       // Giúp tránh CORS khi phát triển local
+      allowedHosts: [
+        'elearning.l-a.vn',
+        'www.elearning.l-a.vn',
+        '192.168.0.226',
+        '192.168.0.226.nip.io',
+      ],
       proxy: {
         // ── Asset proxy — ảnh/file từ course content ──
         // Open edX lưu static assets tại /asset-v1:Org+Course+Run+type@asset+block@filename
@@ -293,6 +299,16 @@ export default defineConfig(({ mode }) => {
           rewrite: (p: string) => p.replace(/^\/cms-api/, '/api'),
         },
       },
+    },
+    preview: {
+      host: '0.0.0.0',
+      port: 5173,
+      allowedHosts: [
+        'elearning.l-a.vn',
+        'www.elearning.l-a.vn',
+        '192.168.0.226',
+        '192.168.0.226.nip.io',
+      ],
     },
   }
 })
