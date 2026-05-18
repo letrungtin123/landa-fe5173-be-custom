@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { UserProfileCard } from "@/components/dashboard/UserProfileCard";
 import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
 import { ProgressRing } from "@/components/dashboard/ProgressRing";
-import { StreakCounter } from "@/components/dashboard/StreakCounter";
 import { ContinueLearning } from "@/components/dashboard/ContinueLearning";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { BadgeShowcase } from "@/components/badges/BadgeShowcase";
@@ -57,18 +56,13 @@ export function DashboardPage() {
             <div className="flex flex-col gap-6 lg:flex-row">
               {/* Banner chào mừng */}
               <div className="flex-1 space-y-6 w-full">
-                <WelcomeBanner
-                  actionRight={
-                    <div className="lg:hidden">
-                      <StreakCounter />
-                    </div>
-                  }
-                />
+                <WelcomeBanner />
               </div>
 
               {/* Cột thống kê bên phải */}
               <div className="hidden lg:flex flex-col gap-4 lg:w-[240px] shrink-0">
-                <StreakCounter />
+                {/* Spacer để giữ ProgressRing không bị đẩy lên quá cao, nhưng đã được giảm kích thước để xích lên trên một tí */}
+                <div className="h-[79px] mb-2 w-full pointer-events-none" />
                 <ProgressRing
                   progress={completionPercent}
                   courseTitle={firstCourseName || "Chưa có khóa học"}

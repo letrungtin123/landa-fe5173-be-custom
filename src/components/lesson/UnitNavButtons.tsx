@@ -15,6 +15,8 @@ interface UnitNavButtonsProps {
   isCompleted?: boolean;
   isLastUnit: boolean;
   hideCompleteButton?: boolean;
+  onNextLesson?: () => void;
+  hasNextLesson?: boolean;
 }
 
 export function UnitNavButtons({
@@ -27,6 +29,8 @@ export function UnitNavButtons({
   isCompleted = false,
   isLastUnit,
   hideCompleteButton = false,
+  onNextLesson,
+  hasNextLesson = false,
 }: UnitNavButtonsProps) {
   const isFirst = currentIndex === 0;
 
@@ -52,26 +56,40 @@ export function UnitNavButtons({
       </span>
 
       {/* Tiếp tục / Hoàn thành */}
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
         {isLastUnit ? (
-          hideCompleteButton ? null : (
-            <button
-              onClick={onComplete}
-              disabled={isCompleting || isCompleted}
-              className={`flex items-center gap-2 rounded-full px-6 py-2.5 text-[14px] font-semibold leading-[18px] shadow-sm transition-all whitespace-nowrap ${
-                isCompleted
-                  ? "bg-green-600 text-white cursor-default opacity-90"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] disabled:opacity-50"
-              }`}
-            >
-              {isCompleting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4" />
-              )}
-              {isCompleted ? "Đã hoàn thành" : "Hoàn thành"}
-            </button>
-          )
+          <>
+            {/* Nút Hoàn thành / Đã hoàn thành */}
+            {/* Nếu hideCompleteButton = true (bài quiz), ẩn lúc chưa complete để user phải làm bài, nhưng khi làm xong (isCompleted=true) thì hiện Đã hoàn thành */}
+            {!(hideCompleteButton && !isCompleted) && (
+              <button
+                onClick={onComplete}
+                disabled={isCompleting || isCompleted || hideCompleteButton}
+                className={`flex items-center gap-2 rounded-full px-6 py-2.5 text-[14px] font-semibold leading-[18px] shadow-sm transition-all whitespace-nowrap ${
+                  isCompleted
+                    ? "bg-green-600 text-white cursor-default opacity-90"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] disabled:opacity-50"
+                }`}
+              >
+                {isCompleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                {isCompleted ? "Đã hoàn thành" : "Hoàn thành"}
+              </button>
+            )}
+
+            {isCompleted && hasNextLesson && (
+              <button
+                onClick={onNextLesson}
+                className="flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-[14px] font-semibold leading-[18px] text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97]"
+              >
+                Tiếp tục học
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            )}
+          </>
         ) : (
           <button
             onClick={onNext}

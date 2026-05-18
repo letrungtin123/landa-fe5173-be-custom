@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getBlockDetail, submitCrosswordAnswer } from "@/api/blocks";
-import { CheckCircle2, ChevronRight, Loader2, Play, XCircle } from "lucide-react";
+import { CheckCircle2, ChevronRight, Lightbulb, Loader2, Play, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
@@ -10,6 +11,7 @@ import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
 interface CrosswordWord {
   id: number;
   clue: string;
+  hint?: string;
   row: number;
   col: number;
   direction: string;
@@ -31,6 +33,7 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
   const [activeWordId, setActiveWordId] = useState<number | null>(null);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+
   const [restoredFromCache, setRestoredFromCache] = useState(false);
 
   const username = useAuthStore((s) => s.user?.username);
@@ -302,7 +305,7 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
 
   // --- Màn hình Chơi Game ---
   return (
-    <div className="mt-8 rounded-[32px] border-2 border-primary/20 bg-[#F4F9FF] dark:bg-slate-900/50 p-6 md:p-10 shadow-sm relative overflow-hidden">
+    <div className="mt-8 rounded-[32px] border-2 border-primary/20 bg-[#F4F9FF] dark:bg-slate-900/50 p-6 md:p-10 shadow-sm relative">
 
       {/* Khung gợi ý câu hỏi nổi bật */}
       <div className="mb-10 rounded-2xl border-2 border-primary/30 bg-white dark:bg-slate-800 p-6 shadow-sm text-center relative z-10 transition-all duration-300 transform">
@@ -312,7 +315,7 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
       </div>
 
       {/* Lưới ô chữ */}
-      <div className="w-full relative z-10 mb-8 overflow-x-auto pt-2 pb-4 px-2">
+      <div className="w-full relative z-10 mb-8 overflow-x-auto overflow-y-visible pt-8 pb-4 px-2">
         <div className="flex flex-col items-start gap-3 w-max mx-auto">
           {words.map((word) => {
             const isActiveRow = (activeWordId === word.id);
@@ -337,9 +340,32 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
               >
                 <div className="flex items-center gap-2">
                   {/* Số thứ tự câu hỏi */}
-                  <div className="w-8 shrink-0 text-right font-bold text-muted-foreground mr-2 select-none">
+                  <div className="w-8 shrink-0 text-right font-bold text-muted-foreground select-none">
                     {word.id}.
                   </div>
+
+                  {/* Icon hint — chỉ hiện khi có hint */}
+                  {word.hint ? (
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={(e) => e.stopPropagation()}
+                            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-amber-500 hover:text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                          >
+                            <Lightbulb className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[300px] text-sm font-medium whitespace-normal break-words">
+                          <p>💡 {word.hint}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    <div className="shrink-0 w-7" />
+                  )}
+
 
                   {/* Khoảng trống căn lề */}
                   {Array.from({ length: word.col }).map((_, i) => (
@@ -409,14 +435,14 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
         <h3 className="font-extrabold text-foreground mb-4 text-lg border-b pb-3">Danh sách câu hỏi</h3>
         <ul className="space-y-2">
           {words.map(w => (
-            <li
-              key={`clue-${w.id}`}
-              className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors ${activeWordId === w.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-primary/5 border border-transparent'}`}
-              onClick={() => setActiveWordId(w.id)}
-            >
-              <span className="font-black text-primary text-base min-w-[28px] mt-0.5">{w.id}.</span>
-              <span className={`text-[15px] leading-relaxed ${activeWordId === w.id ? 'font-bold text-foreground' : 'text-foreground/80 font-medium'}`}>{w.clue}</span>
-            </li>
+              <li
+                key={`clue-${w.id}`}
+                className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors ${activeWordId === w.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-primary/5 border border-transparent'}`}
+                onClick={() => setActiveWordId(w.id)}
+              >
+                <span className="font-black text-primary text-base min-w-[28px] mt-0.5">{w.id}.</span>
+                <span className={`text-[15px] leading-relaxed ${activeWordId === w.id ? 'font-bold text-foreground' : 'text-foreground/80 font-medium'}`}>{w.clue}</span>
+              </li>
           ))}
         </ul>
       </div>

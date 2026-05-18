@@ -12,7 +12,7 @@ import type { CourseFile } from "@/hooks/useCourseFiles";
 import { BookOpen, Download, FileText, FileSpreadsheet, Presentation, MessageCircle, CheckCircle2, ChevronUp } from "lucide-react";
 import { MentorSidebar } from "@/components/lesson/MentorSidebar";
 import { LessonImageCarousel } from "@/components/lesson/LessonImageCarousel";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DOMPurify from "dompurify";
@@ -43,6 +43,7 @@ const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
 
 export function LessonDetailPage() {
   const { courseId } = useParams();
+  const navigate = useNavigate();
   const { completionPercent, isLoading: isProgressLoading } = useCourseCompletion(courseId);
   const { data: modalConfig } = useCourseModalConfig(courseId);
   const currentLessonId = useAppStore((s) => s.currentLessonId);
@@ -175,6 +176,36 @@ export function LessonDetailPage() {
   const totalUnits = lesson?.units.length || 0;
   const currentUnit = lesson?.units[currentUnitIndex] || null;
   const isLastUnit = currentUnitIndex >= totalUnits - 1;
+
+  // Xác định next lesson & module trong toàn bộ course structure
+  const { nextLessonId, nextModuleId } = useMemo(() => {
+    let nLessonId: string | null = null;
+    let nModuleId: string | null = null;
+    if (courseTree && currentLessonId) {
+      let foundCurrent = false;
+      for (const mod of courseTree.modules) {
+        for (const l of mod.lessons) {
+          if (foundCurrent) {
+            nLessonId = l.id;
+            nModuleId = mod.id;
+            break;
+          }
+          if (l.id === currentLessonId) {
+            foundCurrent = true;
+          }
+        }
+        if (nLessonId) break;
+      }
+    }
+    return { nextLessonId: nLessonId, nextModuleId: nModuleId };
+  }, [courseTree, currentLessonId]);
+
+  const handleNextLesson = useCallback(() => {
+    if (nextModuleId && nextLessonId) {
+      setCurrentLesson(nextModuleId, nextLessonId);
+      navigate(`/courses/${encodeURIComponent(courseId || "c1")}/lessons/${nextLessonId}`);
+    }
+  }, [nextModuleId, nextLessonId, setCurrentLesson, navigate, courseId]);
 
   const handleNext = useCallback(() => {
     // Tự động mark hoàn thành cho các block text/video ở Unit HIỆN TẠI
@@ -422,7 +453,9 @@ export function LessonDetailPage() {
                   isCompleting={completeMutation.isPending}
                   isCompleted={isCompleted}
                   isLastUnit={isLastUnit}
-                  hideCompleteButton={currentUnit?.components.some((c) => c.type === "problem") || false}
+                  hideCompleteButton={currentUnit?.components.some((c) => ["problem", "la_crossword", "la_sortable", "la_diagram"].includes(c.type)) || false}
+                  onNextLesson={handleNextLesson}
+                  hasNextLesson={!!nextLessonId}
                 />
               </div>
 
