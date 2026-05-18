@@ -11,7 +11,6 @@
 // Hàm này chuyển /static/xxx thành URL asset đầy đủ trên LMS.
 // ============================================================
 
-import { config } from "@/config/env";
 
 /**
  * Trích xuất phần course key identifier từ courseId.
@@ -41,12 +40,8 @@ export function rewriteStaticUrls(html: string, courseId: string): string {
 
   const courseRun = extractCourseRun(courseId);
 
-  // Tạo base URL cho asset
-  // Trong development: dùng relative path qua proxy
-  // Trong production: dùng absolute LMS URL
-  const assetBase = import.meta.env.DEV
-    ? `/asset-v1:${courseRun}+type@asset+block@`
-    : `${config.lmsBaseUrl}/asset-v1:${courseRun}+type@asset+block@`;
+  // Asset URL luôn dùng relative path — Kong Gateway route /asset-v1 về LMS
+  const assetBase = `/asset-v1:${courseRun}+type@asset+block@`;
 
   // Pattern: match /static/filename trong attribute values (src, href, url())
   // Bắt cả dạng có/không quote, encoded/unencoded

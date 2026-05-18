@@ -16,7 +16,7 @@ import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DOMPurify from "dompurify";
 import { cn } from "@/lib/utils";
-import { config } from "@/config/env";
+
 import { markBlocksComplete } from "@/api/progress";
 import { CrosswordContent } from "@/components/lesson/CrosswordContent";
 import { SortableContent } from "@/components/lesson/SortableContent";
@@ -163,15 +163,9 @@ export function LessonDetailPage() {
       email: m.email,
       phone_number: m.phone_number,
       bio: m.bio,
-      avatar: m.profile_image_url
-        ? (m.profile_image_url.startsWith('http') ? m.profile_image_url : `${config.lmsBaseUrl}${m.profile_image_url}`)
-        : null,
-      profile_image_url: m.profile_image_url
-        ? (m.profile_image_url.startsWith('http') ? m.profile_image_url : `${config.lmsBaseUrl}${m.profile_image_url}`)
-        : null,
-      profile_image_url_full: m.profile_image_url_full
-        ? (m.profile_image_url_full.startsWith('http') ? m.profile_image_url_full : `${config.lmsBaseUrl}${m.profile_image_url_full}`)
-        : null,
+      avatar: m.profile_image_url || null,
+      profile_image_url: m.profile_image_url || null,
+      profile_image_url_full: m.profile_image_url_full || null,
     }));
   }, [fetchedMentors]);
 

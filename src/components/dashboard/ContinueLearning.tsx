@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyEnrollments, useCourses, useCourseStructure } from "@/hooks/useCourses";
 import { useCourseCompletion } from "@/hooks/useProgress";
-import { config } from "@/config/env";
+
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import type { ContinueCourse } from "@/data/types";
@@ -132,10 +132,7 @@ export function ContinueLearning() {
             const courseId = e.course_details.course_id;
             const fullCourse = courseMap.get(courseId);
           
-            let imageUrl = fullCourse?.media?.image?.large || fullCourse?.media?.course_image?.uri || null;
-            if (imageUrl && !imageUrl.startsWith("http")) {
-              imageUrl = `${config.lmsBaseUrl}${imageUrl}`;
-            }
+            const imageUrl = fullCourse?.media?.image?.large || fullCourse?.media?.course_image?.uri || null;
           
             return {
               id: courseId,

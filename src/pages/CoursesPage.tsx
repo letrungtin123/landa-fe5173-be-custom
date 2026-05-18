@@ -145,7 +145,7 @@ export function CoursesPage() {
                       >
                         {imageUrl && (
                           <img
-                            src={imageUrl.startsWith("http") ? imageUrl : `${config.lmsBaseUrl}${imageUrl}`}
+                            src={imageUrl}
                             alt={course.name}
                             className="absolute inset-0 z-10 h-full w-full object-cover"
                             onError={(e) => {

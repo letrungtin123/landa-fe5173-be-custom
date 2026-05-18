@@ -12,7 +12,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { apiClient } from "@/api/client";
-import { config } from "@/config/env";
+
 
 export interface CourseFile {
   id: string;
@@ -45,7 +45,7 @@ async function fetchCourseFiles(courseId: string): Promise<CourseFile[]> {
   );
   return data.files.map((f) => ({
     ...f,
-    fullUrl: f.url.startsWith("http") ? f.url : `${config.lmsBaseUrl}${f.url}`,
+    fullUrl: f.url,
   }));
 }
 

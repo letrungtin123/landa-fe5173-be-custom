@@ -21,17 +21,16 @@ function ensureLeadingSlash(path: string): string {
 /**
  * Build URL tới LMS từ relative path.
  *
+ * Luôn trả relative path vì:
+ *   - Dev:  Vite proxy intercept và forward tới LMS backend
+ *   - Prod: Kong Gateway route same-domain (elearning.l-a.vn/api/... → LMS)
+ *
  * @example
- *   lmsUrl("/oauth2/access_token")
- *   // Dev  → "/oauth2/access_token"
- *   // Prod → "http://192.168.0.226.nip.io/oauth2/access_token"
+ *   lmsUrl("/oauth2/access_token")  → "/oauth2/access_token"
+ *   lmsUrl("/csrf/api/v1/token")    → "/csrf/api/v1/token"
  */
 export function lmsUrl(path: string): string {
-  const normalized = ensureLeadingSlash(path);
-  if (import.meta.env.DEV) {
-    return normalized;
-  }
-  return `${config.lmsBaseUrl}${normalized}`;
+  return ensureLeadingSlash(path);
 }
 
 /**

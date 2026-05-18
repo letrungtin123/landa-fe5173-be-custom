@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 // import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { config } from "@/config/env";
 import { cn } from "@/lib/utils";
 import { useCourses, useMyEnrollments } from "@/hooks/useCourses";
 import { useCourseCompletion } from "@/hooks/useProgress";
@@ -177,11 +176,7 @@ function ExploreCourseCard({
         >
           {imageUrl && (
             <img
-              src={
-                imageUrl.startsWith("http")
-                  ? imageUrl
-                  : `${config.lmsBaseUrl}${imageUrl}`
-              }
+              src={imageUrl}
               alt={course.name}
               className="absolute inset-0 z-10 h-full w-full object-cover"
               onError={(e) => {
