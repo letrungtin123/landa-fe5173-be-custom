@@ -8,7 +8,7 @@ import { useParams } from "react-router-dom";
 import { useCourseBlocksRaw } from "@/hooks/useCourses";
 import type { LessonDetail, UnitDetail, UnitComponent } from "@/data/types";
 import type { Block, VideoBlockData } from "@/api/types";
-import { rewriteStaticUrls } from "@/transformers/staticUrlRewriter";
+import { rewriteStaticUrls, sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 
 /**
  * Hook lấy chi tiết bài học từ cấu trúc blocks của course.
@@ -68,7 +68,7 @@ export function useLessonDetail(lessonId: string) {
         _problemUsageKey: firstProblem?.problemUsageKey || null,
         _htmlBlocks: allComponents.filter((c) => c.type === "html").map((c) => c.id),
         _htmlContent: htmlContents.join("\n") || null,
-        _studentViewUrl: allComponents[0]?.studentViewUrl || sequentialBlock.student_view_url || null,
+        _studentViewUrl: sanitizeUrlToRelative(allComponents[0]?.studentViewUrl || sequentialBlock.student_view_url || null),
       };
     }
   }
@@ -118,7 +118,7 @@ function buildComponent(
     id: block.id,
     type: block.type,
     displayName: block.display_name || "",
-    studentViewUrl: block.student_view_url || null,
+    studentViewUrl: sanitizeUrlToRelative(block.student_view_url || null),
   };
 
   if (block.type === "video") {
@@ -130,7 +130,7 @@ function buildComponent(
     if (!videoUrl && block.student_view_url) {
       videoUrl = block.student_view_url;
     }
-    comp.videoUrl = videoUrl;
+    comp.videoUrl = sanitizeUrlToRelative(videoUrl);
     comp.videoDuration = videoData?.duration ? formatDuration(videoData.duration) : "";
   }
 
