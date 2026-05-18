@@ -26,23 +26,36 @@ function extractCourseRun(courseId: string): string {
 /**
  * Chuyển đổi các URL tuyệt đối (absolute URL) của LMS thành URL tương đối (relative path).
  * Dùng cho các URL đơn như videoUrl, studentViewUrl...
- * - Bỏ config.lmsBaseUrl
- * - Bỏ http://192.168.0.226.nip.io
+ * - Bỏ config.lmsBaseUrl (xử lý cả HTTP và HTTPS)
+ * - Bỏ cứng http://192.168.0.226.nip.io
+ * - Giữ nguyên query string (nếu có)
+ * - Không rewrite các loại url: data:, blob:, URL ngoài
  */
 export function sanitizeUrlToRelative(url: string | null): string | null {
   if (!url) return url;
   
-  let newUrl = url;
-  
-  // Bỏ LMS base URL
-  if (newUrl.startsWith(config.lmsBaseUrl)) {
-    newUrl = newUrl.substring(config.lmsBaseUrl.length);
+  if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('/assets/')) {
+    return url;
   }
   
-  // Bỏ cứng domain IP (nếu có hardcode trong DB Open edX)
+  let newUrl = url;
+  
+  // Bỏ LMS base URL host (cả http/https)
+  try {
+    const lmsUrlObj = new URL(config.lmsBaseUrl);
+    const lmsHost = lmsUrlObj.host; 
+    const lmsRegex = new RegExp(`^https?:\\/\\/${lmsHost.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
+    newUrl = newUrl.replace(lmsRegex, '');
+  } catch(e) {
+    if (newUrl.startsWith(config.lmsBaseUrl)) {
+      newUrl = newUrl.substring(config.lmsBaseUrl.length);
+    }
+  }
+  
+  // Bỏ cứng domain IP (kể cả http hay https)
   newUrl = newUrl.replace(/^https?:\/\/192\.168\.0\.226\.nip\.io/, "");
   
-  // Nếu url sau khi bỏ trở thành rỗng (rất hiếm, nhưng đề phòng), ta có thể gán nó thành '/'
+  // Đề phòng trường hợp newUrl == rỗng
   if (newUrl === "") newUrl = "/";
   
   return newUrl;
@@ -73,11 +86,19 @@ export function rewriteStaticUrls(html: string, courseId: string): string {
   let updatedHtml = html;
 
   // 1. Strip absolute LMS URLs (chuyển các URL từ absolute -> relative)
-  const lmsBaseUrlEscaped = config.lmsBaseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const lmsRegex = new RegExp(`(['"\\(])${lmsBaseUrlEscaped}`, 'g');
+  let lmsRegex: RegExp;
+  try {
+    const lmsUrlObj = new URL(config.lmsBaseUrl);
+    const lmsHost = lmsUrlObj.host; 
+    lmsRegex = new RegExp(`(['"\\(])https?:\\/\\/${lmsHost.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
+  } catch(e) {
+    const lmsBaseUrlEscaped = config.lmsBaseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    lmsRegex = new RegExp(`(['"\\(])${lmsBaseUrlEscaped}`, 'g');
+  }
+  
   updatedHtml = updatedHtml.replace(lmsRegex, '$1');
   
-  // Strip thêm hardcode IP (192.168.0.226.nip.io)
+  // Strip thêm hardcode IP (192.168.0.226.nip.io) cho mọi giao thức
   updatedHtml = updatedHtml.replace(/(['"\(\s])https?:\/\/192\.168\.0\.226\.nip\.io/g, '$1');
 
   // 2. Pattern: match /static/filename trong attribute values (src, href, url())

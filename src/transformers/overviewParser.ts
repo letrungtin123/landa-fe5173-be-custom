@@ -5,6 +5,7 @@
 // ============================================================
 
 import type { Mentor } from "@/data/types";
+import { sanitizeUrlToRelative } from "./staticUrlRewriter";
 
 /**
  * Parse mentor/instructor data from the course overview HTML.
@@ -53,7 +54,7 @@ export function parseMentorsFromOverview(overviewHtml: string): Mentor[] {
       const imgEl = el.querySelector(
         ".teacher-image img, img"
       ) as HTMLImageElement | null;
-      const avatar = imgEl?.getAttribute("src") || null;
+      const avatar = sanitizeUrlToRelative(imgEl?.getAttribute("src") || null);
 
       mentors.push({
         name,

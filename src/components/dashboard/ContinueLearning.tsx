@@ -12,6 +12,7 @@ import { useCourseCompletion } from "@/hooks/useProgress";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import type { ContinueCourse } from "@/data/types";
+import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 
 /** Card hiển thị 1 khóa học đang học kèm progress bar */
 function CourseCard({ course, index }: { course: ContinueCourse; index: number }) {
@@ -132,7 +133,7 @@ export function ContinueLearning() {
             const courseId = e.course_details.course_id;
             const fullCourse = courseMap.get(courseId);
           
-            const imageUrl = fullCourse?.media?.image?.large || fullCourse?.media?.course_image?.uri || null;
+            const imageUrl = sanitizeUrlToRelative(fullCourse?.media?.image?.large || fullCourse?.media?.course_image?.uri || null);
           
             return {
               id: courseId,

@@ -4,6 +4,7 @@
 
 import type { UserAccount } from "@/api/types";
 import type { User } from "@/data/types";
+import { sanitizeUrlToRelative } from "./staticUrlRewriter";
 
 /**
  * Transform Open edX account data into the FE User interface.
@@ -21,9 +22,11 @@ export function transformUserAccount(
     name: account.name || account.username,
     role: jobTitle || "",
     joinDate: formatJoinDate(account.date_joined),
-    avatar: account.profile_image?.has_image
-      ? account.profile_image.image_url_medium
-      : null,
+    avatar: sanitizeUrlToRelative(
+      account.profile_image?.has_image
+        ? account.profile_image.image_url_medium
+        : null
+    ),
     streak: extra?.streak ?? 0,
     overallProgress: extra?.overallProgress ?? 0,
   };

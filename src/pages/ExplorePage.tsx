@@ -14,6 +14,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useCourses, useMyEnrollments } from "@/hooks/useCourses";
 import { useCourseCompletion } from "@/hooks/useProgress";
+import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 
 export function ExplorePage() {
   const { colorStyle } = useThemeStore();
@@ -156,8 +157,9 @@ function ExploreCourseCard({
   isEnrolled: boolean;
   colorStyle: string;
 }) {
-  const imageUrl =
-    course.media?.image?.large || course.media?.course_image?.uri;
+  const imageUrl = sanitizeUrlToRelative(
+    course.media?.image?.large || course.media?.course_image?.uri || null
+  );
 
   // Chỉ gọi API check completion nếu user ĐÃ enroll khóa này
   const { completionPercent } = useCourseCompletion(

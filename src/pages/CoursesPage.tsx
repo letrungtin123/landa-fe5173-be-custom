@@ -14,6 +14,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { config } from "@/config/env";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 
 export function CoursesPage() {
   const { colorStyle } = useThemeStore();
@@ -123,7 +124,7 @@ export function CoursesPage() {
             {courses.map((course, index) => {
               const isEnrolled = enrolledIds.has(course.id);
               const cert = certMap.get(course.id);
-              const imageUrl = course.media?.image?.large || course.media?.course_image?.uri;
+              const imageUrl = sanitizeUrlToRelative(course.media?.image?.large || course.media?.course_image?.uri || null);
 
               return (
                 <motion.div
