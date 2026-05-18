@@ -7,6 +7,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { getUserAccount } from "@/api/auth";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 
 const GENDER_MAP: Record<string, string> = { m: "Nam", f: "Nữ", o: "Khác" };
 const COUNTRY_MAP: Record<string, string> = { VN: "Việt Nam", US: "Hoa Kỳ", JP: "Nhật Bản", KR: "Hàn Quốc", GB: "Anh", OTHER: "Khác" };
@@ -145,9 +146,9 @@ export function ProfilePage() {
 
           // Sau upload thành công: refetch profile để lấy URL avatar mới
           const freshProfile = await getUserAccount(user.username);
-          const newAvatarUrl = freshProfile?.profile_image?.has_image
+          const newAvatarUrl = sanitizeUrlToRelative(freshProfile?.profile_image?.has_image
             ? freshProfile.profile_image.image_url_full + "&_t=" + Date.now()
-            : null;
+            : null);
 
           if (newAvatarUrl) {
             // Cập nhật auth store — avatar hiển thị ngay không cần reload

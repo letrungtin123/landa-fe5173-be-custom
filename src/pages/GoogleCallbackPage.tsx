@@ -12,6 +12,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { getUserMe, getUserAccount } from "@/api/auth";
 import { establishLmsSessionFromToken } from "@/api/lmsSession";
 import { updateStreak } from "@/hooks/useUser";
+import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 
 type CallbackState = "loading" | "success" | "error";
 
@@ -54,9 +55,9 @@ export function GoogleCallbackPage() {
             username: me.username,
             email: me.email,
             name: account.name || me.username,
-            avatar: account.profile_image?.has_image
+            avatar: sanitizeUrlToRelative(account.profile_image?.has_image
               ? account.profile_image.image_url_full
-              : null,
+              : null),
             dateJoined: account.date_joined,
             isStaff: me.is_staff,
           },

@@ -11,6 +11,7 @@ import { establishLmsSession, establishLmsSessionFromToken, clearLmsSession } fr
 import { config } from "@/config/env";
 import { updateStreak } from "@/hooks/useUser";
 import { queryClient } from "@/App";
+import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 
 // ── Mã hóa/giải mã đơn giản cho token trong storage ──
 // Không phải mã hóa cấp quân sự nhưng ngăn đọc token trực tiếp
@@ -170,9 +171,9 @@ export const useAuthStore = create<AuthState>()(
             username: me.username,
             email: me.email,
             name: account.name || me.username,
-            avatar: account.profile_image?.has_image
+            avatar: sanitizeUrlToRelative(account.profile_image?.has_image
               ? account.profile_image.image_url_full
-              : null,
+              : null),
             dateJoined: account.date_joined,
             isStaff: me.is_staff,
           },
@@ -226,9 +227,9 @@ export const useAuthStore = create<AuthState>()(
             username: me.username,
             email: me.email,
             name: account.name || me.username,
-            avatar: account.profile_image?.has_image
+            avatar: sanitizeUrlToRelative(account.profile_image?.has_image
               ? account.profile_image.image_url_full
-              : null,
+              : null),
             dateJoined: account.date_joined,
             isStaff: me.is_staff,
           },
@@ -278,9 +279,9 @@ export const useAuthStore = create<AuthState>()(
             username: me.username,
             email: me.email,
             name: account.name || me.username,
-            avatar: account.profile_image?.has_image
+            avatar: sanitizeUrlToRelative(account.profile_image?.has_image
               ? account.profile_image.image_url_full
-              : null,
+              : null),
             dateJoined: account.date_joined,
             isStaff: me.is_staff,
           },
