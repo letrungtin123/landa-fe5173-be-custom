@@ -3,18 +3,22 @@
 // ============================================================
 
 import { BookOpen, ArrowRight, Loader2, Award, ExternalLink } from "lucide-react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCourses, useMyEnrollments, useEnrollCourse } from "@/hooks/useCourses";
 import { useMyCertificates } from "@/hooks/useCertificates";
+import { useBatchCourseProgress } from "@/hooks/useProgress";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { config } from "@/config/env";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
+import { CourseFilterBar, type CourseFilter } from "@/components/CourseFilterBar";
+import type { CourseCategoryInfo } from "@/api/types";
 
 export function CoursesPage() {
   const { colorStyle } = useThemeStore();
@@ -23,6 +27,7 @@ export function CoursesPage() {
   const { data: enrollments } = useMyEnrollments();
   const { data: certificates } = useMyCertificates();
   const enrollMutation = useEnrollCourse();
+  const [activeFilter, setActiveFilter] = useState<CourseFilter>('all');
 
   // Lookup sets cho tra cứu nhanh
   const enrolledIds = new Set(
@@ -32,11 +37,40 @@ export function CoursesPage() {
     (certificates || []).map((c) => [c.course_id, c])
   );
 
-  const courses = courseList?.results || [];
+  // Categories từ API response
+  const categories: CourseCategoryInfo[] = courseList?.categories || [];
+  const allCourses = courseList?.results || [];
+
+  // Batch progress cho tất cả enrolled courses
+  const enrolledCourseIds = useMemo(
+    () => allCourses.filter(c => enrolledIds.has(c.id)).map(c => c.id),
+    [allCourses, enrolledIds]
+  );
+  const { data: progressMap } = useBatchCourseProgress(enrolledCourseIds);
+
+  // Tính counts
+  const completedCount = allCourses.filter(c => (progressMap?.get(c.id) || 0) >= 100).length;
+  const inProgressCount = allCourses.filter(c => enrolledIds.has(c.id) && (progressMap?.get(c.id) || 0) < 100).length;
+  const categoryCounts = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const cat of categories) {
+      m.set(cat.id, allCourses.filter(c => c.categories?.some(cc => cc.id === cat.id)).length);
+    }
+    return m;
+  }, [categories, allCourses]);
+
+  // Filter courses
+  const courses = useMemo(() => {
+    if (activeFilter === 'all') return allCourses;
+    if (activeFilter === 'completed') return allCourses.filter(c => (progressMap?.get(c.id) || 0) >= 100);
+    if (activeFilter === 'in_progress') return allCourses.filter(c => enrolledIds.has(c.id) && (progressMap?.get(c.id) || 0) < 100);
+    // category filter (number)
+    return allCourses.filter(c => c.categories?.some(cat => cat.id === activeFilter));
+  }, [activeFilter, allCourses, progressMap, enrolledIds]);
 
   // Xử lý đăng ký khóa học
   const handleEnroll = (e: React.MouseEvent, courseId: string) => {
-    e.preventDefault(); // Ngăn navigate khi click Enroll
+    e.preventDefault();
     e.stopPropagation();
     enrollMutation.mutate(courseId);
   };
@@ -62,11 +96,22 @@ export function CoursesPage() {
           </a>
         )}
       </div>
-      <p className="mb-8 text-sm text-muted-foreground">
+      <p className="mb-4 text-sm text-muted-foreground">
         {isLoading && courses.length === 0 
           ? "Đang tải dữ liệu khóa học..." 
           : "Khám phá các khóa học và chương trình đào tạo tại L&A"}
       </p>
+
+      {/* Filter Bar */}
+      <CourseFilterBar
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
+        totalCount={allCourses.length}
+        completedCount={completedCount}
+        inProgressCount={inProgressCount}
+        categories={categories}
+        categoryCounts={categoryCounts}
+      />
 
       <AnimatePresence mode="wait">
         {isLoading && courses.length === 0 ? (
@@ -175,7 +220,7 @@ export function CoursesPage() {
                       </div>
 
                       <CardContent className="p-5">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <Badge
                             variant="outline"
                             className={cn(
@@ -186,6 +231,15 @@ export function CoursesPage() {
                           >
                             {isEnrolled ? "Đang học" : "Khóa học"}
                           </Badge>
+                          {course.categories?.map(cat => (
+                            <Badge
+                              key={cat.id}
+                              variant="outline"
+                              className="border-accent/30 bg-accent/10 text-accent text-[10px] px-2 py-0"
+                            >
+                              {cat.name}
+                            </Badge>
+                          ))}
                         </div>
                         <h3 className="text-lg font-bold text-foreground group-hover:text-accent transition-colors">
                           {course.name}

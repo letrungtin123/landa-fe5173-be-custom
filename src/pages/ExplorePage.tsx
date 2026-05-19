@@ -3,7 +3,7 @@
 // Tìm kiếm + danh sách courses từ API
 // ============================================================
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Search, Compass, Loader2, BookOpen, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,8 +13,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useCourses, useMyEnrollments } from "@/hooks/useCourses";
-import { useCourseCompletion } from "@/hooks/useProgress";
+import { useCourseCompletion, useBatchCourseProgress } from "@/hooks/useProgress";
 import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
+import { CourseFilterBar, type CourseFilter } from "@/components/CourseFilterBar";
 
 export function ExplorePage() {
   const { colorStyle } = useThemeStore();
@@ -23,13 +24,42 @@ export function ExplorePage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const { data: courseData, isLoading } = useCourses(debouncedSearch || undefined);
   const { data: enrollments } = useMyEnrollments();
+  const [activeFilter, setActiveFilter] = useState<CourseFilter>('all');
 
   // Set enrolled IDs cho lookup nhanh
   const enrolledIds = new Set(
     (enrollments || []).map((e) => e.course_details.course_id)
   );
 
-  const courses = courseData?.results || [];
+  const allCourses = courseData?.results || [];
+  const categories = courseData?.categories || [];
+
+  // Batch progress cho tất cả enrolled courses
+  const enrolledCourseIds = useMemo(
+    () => allCourses.filter(c => enrolledIds.has(c.id)).map(c => c.id),
+    [allCourses, enrolledIds]
+  );
+  const { data: progressMap } = useBatchCourseProgress(enrolledCourseIds);
+
+  // Tính counts
+  const completedCount = allCourses.filter(c => (progressMap?.get(c.id) || 0) >= 100).length;
+  const inProgressCount = allCourses.filter(c => enrolledIds.has(c.id) && (progressMap?.get(c.id) || 0) < 100).length;
+  const categoryCounts = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const cat of categories) {
+      m.set(cat.id, allCourses.filter(c => c.categories?.some((cc: any) => cc.id === cat.id)).length);
+    }
+    return m;
+  }, [categories, allCourses]);
+
+  // Filter courses
+  const courses = useMemo(() => {
+    if (activeFilter === 'all') return allCourses;
+    if (activeFilter === 'completed') return allCourses.filter(c => (progressMap?.get(c.id) || 0) >= 100);
+    if (activeFilter === 'in_progress') return allCourses.filter(c => enrolledIds.has(c.id) && (progressMap?.get(c.id) || 0) < 100);
+    // category filter (number)
+    return allCourses.filter(c => c.categories?.some((cat: any) => cat.id === activeFilter));
+  }, [activeFilter, allCourses, progressMap, enrolledIds]);
 
   // Xử lý search với debounce đơn giản
   const handleSearchChange = (value: string) => {
@@ -81,13 +111,28 @@ export function ExplorePage() {
       </div>
 
       {/* Tiêu đề danh sách */}
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-[20px] font-bold leading-[24px] text-foreground">
-          {debouncedSearch ? `Kết quả cho "${debouncedSearch}"` : "Tất cả khóa học"}
-        </h2>
-        <span className="text-[14px] font-normal leading-[18px] text-muted-foreground">
-          {courses.length} khóa học
-        </span>
+      <div className="mb-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[20px] font-bold leading-[24px] text-foreground">
+            {debouncedSearch ? `Kết quả cho "${debouncedSearch}"` : "Tất cả khóa học"}
+          </h2>
+          <span className="text-[14px] font-normal leading-[18px] text-muted-foreground">
+            {courses.length} khóa học
+          </span>
+        </div>
+        
+        {/* Filter Bar */}
+        {allCourses.length > 0 && (
+          <CourseFilterBar
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
+            totalCount={allCourses.length}
+            completedCount={completedCount}
+            inProgressCount={inProgressCount}
+            categories={categories}
+            categoryCounts={categoryCounts}
+          />
+        )}
       </div>
 
       {/* Đang tải */}

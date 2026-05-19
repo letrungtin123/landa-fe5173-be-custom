@@ -56,7 +56,7 @@ export function ProgressRing({
             {/* Center text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-[24px] font-medium text-foreground">
-                {progress}%
+                {progress.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}%
               </span>
             </div>
           </div>

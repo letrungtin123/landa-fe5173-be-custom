@@ -50,6 +50,12 @@ export interface UserAccount {
 
 // ── Khóa học ──
 
+export interface CourseCategoryInfo {
+  id: number;
+  name: string;
+  slug: string;
+}
+
 export interface CourseListResponse {
   pagination: {
     count: number;
@@ -58,6 +64,7 @@ export interface CourseListResponse {
     num_pages: number;
   };
   results: CourseInfo[];
+  categories?: CourseCategoryInfo[];
 }
 
 export interface CourseInfo {
@@ -84,6 +91,7 @@ export interface CourseInfo {
   effort: string | null;
   pacing: "self" | "instructor";
   visible_to_staff_only?: boolean;
+  categories?: CourseCategoryInfo[];
 }
 
 // ── Blocks ──

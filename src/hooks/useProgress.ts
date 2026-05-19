@@ -42,7 +42,7 @@ export function useAverageCourseCompletion(courseIds: string[]) {
       const progressPromises = courseIds.map((id) => getMyCourseProgress(id));
       const progressList = await Promise.all(progressPromises);
       const total = progressList.reduce((acc, curr) => acc + curr, 0);
-      return Math.round(total / courseIds.length);
+      return total / courseIds.length;
     },
     enabled: isAuthenticated && courseIds.length > 0,
     staleTime: 5 * 60 * 1000,
@@ -69,6 +69,7 @@ export function useMarkComplete() {
       qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
       qc.invalidateQueries({ queryKey: ["course-blocks"] });
       qc.invalidateQueries({ queryKey: ["enrollments"] });
+      qc.invalidateQueries({ queryKey: ["average-course-completion"] });
     },
   });
 }
@@ -90,6 +91,7 @@ export function useMarkBlocksComplete() {
       qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
       qc.invalidateQueries({ queryKey: ["course-blocks"] });
       qc.invalidateQueries({ queryKey: ["enrollments"] });
+      qc.invalidateQueries({ queryKey: ["average-course-completion"] });
     },
   });
 }
@@ -105,6 +107,31 @@ export function useCourseGrade(courseId?: string) {
     queryKey: ["course-grade", courseId, username],
     queryFn: () => getCourseGrade(courseId!, username!),
     enabled: isAuthenticated && !!courseId && !!username,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Lấy tiến độ cho nhiều khóa học cùng lúc.
+ * Trả về Map<courseId, percent>.
+ */
+export function useBatchCourseProgress(courseIds: string[]) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const stableKey = courseIds.sort().join(',');
+
+  return useQuery({
+    queryKey: ["batch-course-progress", stableKey],
+    queryFn: async (): Promise<Map<string, number>> => {
+      if (!courseIds || courseIds.length === 0) return new Map();
+      const results = await Promise.all(
+        courseIds.map(async (id) => {
+          const p = await getMyCourseProgress(id);
+          return [id, p] as [string, number];
+        })
+      );
+      return new Map(results);
+    },
+    enabled: isAuthenticated && courseIds.length > 0,
     staleTime: 5 * 60 * 1000,
   });
 }

@@ -4,15 +4,19 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyEnrollments, useCourses, useCourseStructure } from "@/hooks/useCourses";
-import { useCourseCompletion } from "@/hooks/useProgress";
+import { useCourseCompletion, useBatchCourseProgress } from "@/hooks/useProgress";
 
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import type { ContinueCourse } from "@/data/types";
 import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
+import { CourseFilterBar, type CourseFilter } from "@/components/CourseFilterBar";
+import type { CourseCategoryInfo } from "@/api/types";
 
 /** Card hiển thị 1 khóa học đang học kèm progress bar */
 function CourseCard({ course, index }: { course: ContinueCourse; index: number }) {
@@ -77,6 +81,21 @@ function CourseCard({ course, index }: { course: ContinueCourse; index: number }
               {course.title}
             </h3>
 
+            {/* Category badges */}
+            {course.categories && course.categories.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {course.categories.map(cat => (
+                  <Badge
+                    key={cat.id}
+                    variant="outline"
+                    className="border-accent/30 bg-accent/10 text-accent text-[9px] px-1.5 py-0 h-[18px] font-medium"
+                  >
+                    {cat.name}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
             <div className="mt-auto">
               {/* Thanh tiến độ thật */}
               <div className="mb-2">
@@ -117,15 +136,16 @@ function CourseCard({ course, index }: { course: ContinueCourse; index: number }
 export function ContinueLearning() {
   const { data: enrollments, isLoading: enrollLoading, error } = useMyEnrollments();
   const { data: courseList, isLoading: coursesLoading } = useCourses();
+  const [activeFilter, setActiveFilter] = useState<CourseFilter>('all');
 
   const isLoading = enrollLoading || coursesLoading;
   
   const coursesData = courseList?.results || [];
   const courseMap = new Map(coursesData.map(c => [c.id, c]));
+  const categories: CourseCategoryInfo[] = courseList?.categories || [];
 
   // Chuyển enrollments → ContinueCourse format
-  // Chỉ hiển thị enrollment nếu course tồn tại trong courseMap (đã được BE filter theo quyền)
-  const courses: ContinueCourse[] =
+  const allCourses: ContinueCourse[] =
     enrollments && enrollments.length > 0
       ? enrollments
           .filter((e) => courseMap.has(e.course_details.course_id))
@@ -141,9 +161,33 @@ export function ContinueLearning() {
               lessonLabel: e.course_details.course_name,
               title: e.course_details.course_name,
               thumbnail: imageUrl,
+              categories: fullCourse?.categories || [],
             };
           })
       : [];
+
+  // Batch progress
+  const courseIds = useMemo(() => allCourses.map(c => c.id), [allCourses]);
+  const { data: progressMap } = useBatchCourseProgress(courseIds);
+
+  // Counts
+  const completedCount = allCourses.filter(c => (progressMap?.get(c.id) || 0) >= 100).length;
+  const inProgressCount = allCourses.filter(c => (progressMap?.get(c.id) || 0) < 100).length;
+  const categoryCounts = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const cat of categories) {
+      m.set(cat.id, allCourses.filter(c => c.categories?.some(cc => cc.id === cat.id)).length);
+    }
+    return m;
+  }, [categories, allCourses]);
+
+  // Filter
+  const courses = useMemo(() => {
+    if (activeFilter === 'all') return allCourses;
+    if (activeFilter === 'completed') return allCourses.filter(c => (progressMap?.get(c.id) || 0) >= 100);
+    if (activeFilter === 'in_progress') return allCourses.filter(c => (progressMap?.get(c.id) || 0) < 100);
+    return allCourses.filter(c => c.categories?.some(cat => cat.id === activeFilter));
+  }, [activeFilter, allCourses, progressMap]);
 
   return (
     <div>
@@ -158,6 +202,21 @@ export function ContinueLearning() {
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
+
+      {/* Filter Bar */}
+      {allCourses.length > 0 && (
+        <div className="mb-6">
+          <CourseFilterBar
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
+            totalCount={allCourses.length}
+            completedCount={completedCount}
+            inProgressCount={inProgressCount}
+            categories={categories}
+            categoryCounts={categoryCounts}
+          />
+        </div>
+      )}
 
       {/* Đang tải */}
       {isLoading && (

@@ -109,4 +109,5 @@ export interface ContinueCourse {
   lessonLabel: string;
   title: string;
   thumbnail: string | null;
+  categories?: Array<{ id: number; name: string; slug: string }>;
 }
