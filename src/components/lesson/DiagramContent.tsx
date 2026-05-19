@@ -7,11 +7,16 @@ import { ArrowLeft, Maximize2, Minimize2 } from 'lucide-react';
 import CustomShapeNode from './CustomShapeNode';
 import type { DiagramNodeData } from './CustomShapeNode';
 import JunctionNode from './JunctionNode';
+import OrthogonalEdge from './OrthogonalEdge';
 import { useThemeStore } from '@/stores/useThemeStore';
 
 const nodeTypes = {
   customShape: CustomShapeNode,
   junction: JunctionNode,
+};
+
+const edgeTypes = {
+  orthogonal: OrthogonalEdge,
 };
 
 export interface Diagram {
@@ -103,12 +108,12 @@ function DiagramRenderer({
     activeDiagram.nodes.map((n) => ({ ...n, draggable: false, selectable: false, connectable: false, data: { ...n.data, hidePorts: true } }))
   );
   const [edges, setEdges, onEdgesChange] = useEdgesState(
-    activeDiagram.edges.map((e) => ({ ...e, animated: false, type: 'step' }))
+    activeDiagram.edges.map((e) => ({ ...e, animated: false, type: 'orthogonal' as const }))
   );
 
   React.useEffect(() => {
     setNodes(activeDiagram.nodes.map((n) => ({ ...n, draggable: false, selectable: false, connectable: false, data: { ...n.data, hidePorts: true } })));
-    setEdges(activeDiagram.edges.map((e) => ({ ...e, animated: false, type: 'step' })));
+    setEdges(activeDiagram.edges.map((e) => ({ ...e, animated: false, type: 'orthogonal' as const })));
   }, [activeDiagram, setNodes, setEdges]);
 
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -161,6 +166,7 @@ function DiagramRenderer({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           connectionMode={ConnectionMode.Loose}
           onNodeClick={onNodeClick}
           onPaneClick={toggleFullscreen}
