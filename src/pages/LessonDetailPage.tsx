@@ -453,7 +453,7 @@ export function LessonDetailPage() {
                   isCompleting={completeMutation.isPending}
                   isCompleted={isCompleted}
                   isLastUnit={isLastUnit}
-                  hideCompleteButton={currentUnit?.components.some((c) => ["problem", "la_crossword", "la_sortable", "la_diagram"].includes(c.type)) || false}
+                  hideCompleteButton={currentUnit?.components.some((c) => ["problem", "la_crossword", "la_sortable"].includes(c.type)) || false}
                   onNextLesson={handleNextLesson}
                   hasNextLesson={!!nextLessonId}
                 />
