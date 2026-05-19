@@ -22,6 +22,7 @@ import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 import { markBlocksComplete } from "@/api/progress";
 import { CrosswordContent } from "@/components/lesson/CrosswordContent";
 import { SortableContent } from "@/components/lesson/SortableContent";
+import { FaqContent } from "@/components/lesson/FaqContent";
 import DiagramContent from "@/components/lesson/DiagramContent";
 import { CompleteCourseModal } from "@/components/lesson/CompleteCourseModal";
 import { Course100PercentModal } from "@/components/lesson/Course100PercentModal";
@@ -139,7 +140,7 @@ export function LessonDetailPage() {
     if (!lesson) return [];
     return lesson.units.flatMap((unit) =>
       unit.components
-        .filter((c) => c.type === "html" || c.type === "video" || c.type === "la_diagram")
+        .filter((c) => c.type === "html" || c.type === "video" || c.type === "la_diagram" || c.type === "la_faq")
         .map((c) => c.id)
     );
   }, [lesson]);
@@ -211,7 +212,7 @@ export function LessonDetailPage() {
     // Tự động mark hoàn thành cho các block text/video ở Unit HIỆN TẠI
     if (currentUnit && user?.username && courseId) {
       const leafIdsToMark = currentUnit.components
-        .filter((c) => c.type === "html" || c.type === "video" || c.type === "la_diagram")
+        .filter((c) => c.type === "html" || c.type === "video" || c.type === "la_diagram" || c.type === "la_faq")
         .map((c) => c.id);
 
       if (leafIdsToMark.length > 0) {
@@ -428,6 +429,15 @@ export function LessonDetailPage() {
                       <div key={comp.id} className="rounded-3xl border border-border p-4 shadow-sm bg-card">
                         <DiagramContent data={comp.diagramData} />
                       </div>
+                    );
+                  }
+
+                  if (comp.type === "la_faq" && comp.faqUsageKey) {
+                    return (
+                      <FaqContent
+                        key={comp.id}
+                        usageKey={comp.faqUsageKey}
+                      />
                     );
                   }
 

@@ -153,6 +153,10 @@ function buildComponent(
     comp.sortableUsageKey = block.id;
   }
 
+  if (block.type === "la_faq") {
+    comp.faqUsageKey = block.id;
+  }
+
   if (block.type === "la_diagram") {
     try {
       const svd = block.student_view_data as any;
@@ -212,6 +216,7 @@ function determineLessonType(
     if (c.type === "la_crossword") return "quiz";
     if (c.type === "la_sortable") return "quiz";
     if (c.type === "la_diagram") return "quiz";
+    if (c.type === "la_faq") return "slide";
   }
   if (components.some((c) => c.type === "html")) return "slide";
   return "video";
