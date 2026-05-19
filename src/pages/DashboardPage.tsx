@@ -11,7 +11,7 @@ import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { BadgeShowcase } from "@/components/badges/BadgeShowcase";
 import { usePageLoading } from "@/hooks/usePageLoading";
 import { useMyEnrollments, useCourses } from "@/hooks/useCourses";
-import { useCourseCompletion } from "@/hooks/useProgress";
+import { useAverageCourseCompletion } from "@/hooks/useProgress";
 
 export function DashboardPage() {
   const { isLoading: pageLoading } = usePageLoading(1000);
@@ -24,10 +24,9 @@ export function DashboardPage() {
     (e) => publicCourseIds.has(e.course_details.course_id)
   );
 
-  // Lấy khóa học đầu tiên đang enrolled để hiển thị tiến độ
-  const firstCourseId = visibleEnrollments[0]?.course_details.course_id;
-  const firstCourseName = visibleEnrollments[0]?.course_details.course_name;
-  const { completionPercent } = useCourseCompletion(firstCourseId);
+  // Lấy danh sách ID của tất cả khóa học đang enrolled
+  const enrolledCourseIds = visibleEnrollments.map((e) => e.course_details.course_id);
+  const { data: averagePercent } = useAverageCourseCompletion(enrolledCourseIds);
 
   if (pageLoading) {
     return <DashboardSkeleton />;
@@ -64,26 +63,18 @@ export function DashboardPage() {
                 {/* Spacer để giữ ProgressRing không bị đẩy lên quá cao, nhưng đã được giảm kích thước để xích lên trên một tí */}
                 <div className="h-[79px] mb-2 w-full pointer-events-none" />
                 <ProgressRing
-                  progress={completionPercent}
-                  courseTitle={firstCourseName || "Chưa có khóa học"}
-                  courseLink={
-                    firstCourseId
-                      ? `/courses/${encodeURIComponent(firstCourseId)}/lessons/overview`
-                      : "/courses"
-                  }
+                  progress={averagePercent}
+                  courseTitle="Tất cả khóa học"
+                  courseLink="/explore"
                 />
               </div>
             </div>
 
             <div className="lg:hidden">
               <ProgressRing
-                progress={completionPercent}
-                courseTitle={firstCourseName || "Chưa có khóa học"}
-                courseLink={
-                  firstCourseId
-                    ? `/courses/${encodeURIComponent(firstCourseId)}/lessons/overview`
-                    : "/courses"
-                }
+                progress={averagePercent}
+                courseTitle="Tất cả khóa học"
+                courseLink="/explore"
               />
             </div>
 

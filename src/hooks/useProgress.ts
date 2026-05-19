@@ -29,6 +29,33 @@ export function useCourseCompletion(courseId?: string) {
 }
 
 /**
+ * Lấy phần trăm hoàn thành trung bình của tất cả các khóa học được truyền vào.
+ * Trả về số từ 0 → 100.
+ */
+export function useAverageCourseCompletion(courseIds: string[]) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  const { data: averagePercent, isLoading, error } = useQuery({
+    queryKey: ["average-course-completion", courseIds.join(',')],
+    queryFn: async () => {
+      if (!courseIds || courseIds.length === 0) return 0;
+      const progressPromises = courseIds.map((id) => getMyCourseProgress(id));
+      const progressList = await Promise.all(progressPromises);
+      const total = progressList.reduce((acc, curr) => acc + curr, 0);
+      return Math.round(total / courseIds.length);
+    },
+    enabled: isAuthenticated && courseIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  return {
+    data: averagePercent || 0,
+    isLoading,
+    error,
+  };
+}
+
+/**
  * Mutation đánh dấu một block/subsection đã hoàn thành.
  */
 export function useMarkComplete() {

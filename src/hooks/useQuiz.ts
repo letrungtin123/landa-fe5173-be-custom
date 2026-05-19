@@ -2,7 +2,7 @@
 // useQuiz Hook — Nộp bài kiểm tra và quản lý kết quả
 // ============================================================
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { submitProblemAnswer } from "@/api/blocks";
 
 interface QuizResult {
@@ -15,17 +15,13 @@ interface QuizResult {
 
 /**
  * Hook nộp câu trả lời quiz.
- * Sau khi nộp thành công → invalidate progress queries.
+ * KHÔNG tự invalidate queries — caller sẽ quyết định khi nào invalidate
+ * dựa trên kết quả đúng/sai.
  */
 export function useSubmitQuiz(usageKey: string) {
-  const qc = useQueryClient();
   return useMutation({
     mutationFn: (answers: Record<string, string | string[]>) =>
       submitProblemAnswer(usageKey, answers),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
-      qc.invalidateQueries({ queryKey: ["course-blocks"] });
-    },
   });
 }
 

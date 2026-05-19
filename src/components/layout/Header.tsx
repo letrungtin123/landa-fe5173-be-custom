@@ -11,6 +11,7 @@ import {
   Shield,
   BookOpen,
   Info,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -269,6 +270,15 @@ export function Header() {
                 <User className="mr-2 h-4 w-4" />
                 Hồ sơ cá nhân
               </DropdownMenuItem>
+              {user?.isStaff && (
+                <DropdownMenuItem 
+                  onClick={() => window.open(import.meta.env.VITE_ADMIN_URL || '/admin', '_blank')} 
+                  className="cursor-pointer text-primary focus:text-primary"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Quản trị hệ thống
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
