@@ -81,7 +81,7 @@ function CourseCard({ course, index }: { course: ContinueCourse; index: number }
               {course.title}
             </h3>
 
-            {/* Category badges */}
+            {/* Category badges — tạm ẩn theo yêu cầu
             {course.categories && course.categories.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-1.5">
                 {course.categories.map(cat => (
@@ -95,6 +95,7 @@ function CourseCard({ course, index }: { course: ContinueCourse; index: number }
                 ))}
               </div>
             )}
+            */}
 
             <div className="mt-auto">
               {/* Thanh tiến độ thật */}

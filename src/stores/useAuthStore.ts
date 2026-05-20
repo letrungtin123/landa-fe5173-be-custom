@@ -7,6 +7,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { loginApi, getUserMe, getUserAccount, refreshTokenApi } from "@/api/auth";
+import { apiClient } from "@/api/client";
 import { establishLmsSession, establishLmsSessionFromToken, clearLmsSession } from "@/api/lmsSession";
 import { config } from "@/config/env";
 import { updateStreak } from "@/hooks/useUser";
@@ -62,6 +63,7 @@ export interface AuthUser {
   avatar: string | null;
   dateJoined: string;
   isStaff: boolean;
+  isLearnerPlus: boolean;
 }
 
 interface AuthState {
@@ -165,7 +167,18 @@ export const useAuthStore = create<AuthState>()(
         // 5) Cập nhật streak đăng nhập
         updateStreak();
 
-        // 6) Lưu thông tin user
+        // 6) Kiểm tra learner_plus role
+        let isLearnerPlus = false;
+        if (!me.is_staff) {
+          try {
+            const { data: roleData } = await apiClient.get("/api/landa/v0/my-role/");
+            isLearnerPlus = roleData.role === "learner_plus";
+          } catch {
+            // Bỏ qua — learner thường không có role
+          }
+        }
+
+        // 7) Lưu thông tin user
         set({
           isAuthenticated: true,
           user: {
@@ -177,6 +190,7 @@ export const useAuthStore = create<AuthState>()(
               : null),
             dateJoined: account.date_joined,
             isStaff: me.is_staff,
+            isLearnerPlus,
           },
         });
 
@@ -221,7 +235,18 @@ export const useAuthStore = create<AuthState>()(
         // 4) Cập nhật streak đăng nhập
         updateStreak();
 
-        // 5) Lưu thông tin user
+        // 5) Kiểm tra learner_plus role
+        let isLearnerPlus = false;
+        if (!me.is_staff) {
+          try {
+            const { data: roleData } = await apiClient.get("/api/landa/v0/my-role/");
+            isLearnerPlus = roleData.role === "learner_plus";
+          } catch {
+            // Bỏ qua
+          }
+        }
+
+        // 6) Lưu thông tin user
         set({
           isAuthenticated: true,
           user: {
@@ -233,6 +258,7 @@ export const useAuthStore = create<AuthState>()(
               : null),
             dateJoined: account.date_joined,
             isStaff: me.is_staff,
+            isLearnerPlus,
           },
         });
 
@@ -274,6 +300,17 @@ export const useAuthStore = create<AuthState>()(
 
         updateStreak();
 
+        // Kiểm tra learner_plus role
+        let isLearnerPlus = false;
+        if (!me.is_staff) {
+          try {
+            const { data: roleData } = await apiClient.get("/api/landa/v0/my-role/");
+            isLearnerPlus = roleData.role === "learner_plus";
+          } catch {
+            // Bỏ qua
+          }
+        }
+
         set({
           isAuthenticated: true,
           user: {
@@ -285,6 +322,7 @@ export const useAuthStore = create<AuthState>()(
               : null),
             dateJoined: account.date_joined,
             isStaff: me.is_staff,
+            isLearnerPlus,
           },
         });
 

@@ -270,7 +270,7 @@ export function Header() {
                 <User className="mr-2 h-4 w-4" />
                 Hồ sơ cá nhân
               </DropdownMenuItem>
-              {user?.isStaff && (
+              {(user?.isStaff || user?.isLearnerPlus) && (
                 <DropdownMenuItem 
                   onClick={() => window.open(import.meta.env.VITE_ADMIN_URL || '/admin', '_blank')} 
                   className="cursor-pointer text-primary focus:text-primary"
