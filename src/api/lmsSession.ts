@@ -91,7 +91,7 @@ export async function establishLmsSession(
         "X-CSRFToken": csrfToken,
       },
       body: new URLSearchParams({
-        email_or_username: username,
+        email: username,
         password,
       }),
     });
