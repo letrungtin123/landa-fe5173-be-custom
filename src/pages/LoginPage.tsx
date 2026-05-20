@@ -74,6 +74,7 @@ export function LoginPage() {
       await login(email, password);
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
+      console.error("[LoginPage] login() threw:", err);
       const axiosErr = err as { response?: { status?: number } };
       if (axiosErr.response?.status === 401 || axiosErr.response?.status === 400) {
         setErrors({ email: "Tên đăng nhập hoặc mật khẩu không đúng" });
