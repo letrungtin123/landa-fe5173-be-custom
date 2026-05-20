@@ -347,7 +347,8 @@ export const useAuthStore = create<AuthState>()(
         // 2. Xóa toàn bộ cache React Query
         try { queryClient.clear(); } catch { /* App chưa mount */ }
 
-        // 2.5 Xóa các cờ modal trong localStorage để user khác đăng nhập (hoặc chính user đăng nhập lại) không bị dính cờ cũ
+        // 2.5 Xóa các dữ liệu per-user trong localStorage
+        // để user khác đăng nhập không bị dính data cũ
         Object.keys(localStorage).forEach((key) => {
           if (
             key.startsWith("course_welcome_shown_") ||
@@ -357,6 +358,9 @@ export const useAuthStore = create<AuthState>()(
             localStorage.removeItem(key);
           }
         });
+        localStorage.removeItem("la-streak");
+        localStorage.removeItem("la_study_time_weekly");
+        localStorage.removeItem("la_study_time_last_sync");
 
         // 3. Xóa LMS session cookie + gọi server logout
         try {
