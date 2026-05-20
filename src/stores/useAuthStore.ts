@@ -19,20 +19,21 @@ const STORAGE_KEY = "la-auth-v2";
 const OBFUSCATION_KEY = 42;
 
 function obfuscate(text: string): string {
-  return btoa(
-    text
-      .split("")
-      .map((c) => String.fromCharCode(c.charCodeAt(0) ^ OBFUSCATION_KEY))
-      .join("")
-  );
+  const bytes = new TextEncoder().encode(text);
+  const xored = bytes.map((b) => b ^ OBFUSCATION_KEY);
+  let binary = "";
+  for (const b of xored) binary += String.fromCharCode(b);
+  return btoa(binary);
 }
 
 function deobfuscate(encoded: string): string {
   try {
-    return atob(encoded)
-      .split("")
-      .map((c) => String.fromCharCode(c.charCodeAt(0) ^ OBFUSCATION_KEY))
-      .join("");
+    const binary = atob(encoded);
+    const xored = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      xored[i] = binary.charCodeAt(i) ^ OBFUSCATION_KEY;
+    }
+    return new TextDecoder().decode(xored);
   } catch {
     return "";
   }
