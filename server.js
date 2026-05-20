@@ -28,6 +28,7 @@ const LMS_PROXY_PATHS = [
   "/courses/",
   "/enrollment",
   "/search/",
+  "/media/",
 ];
 
 const MIME_TYPES = {
