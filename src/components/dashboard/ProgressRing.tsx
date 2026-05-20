@@ -69,6 +69,7 @@ export function ProgressRing({
             {courseTitle}
           </p>
 
+          {/* Tạm ẩn nút Tiếp tục học
           <Link
             to={courseLink}
             className="flex items-center gap-1.5 text-[15px] font-medium text-primary transition-colors hover:text-primary/80 mt-auto"
@@ -76,6 +77,8 @@ export function ProgressRing({
             Tiếp tục học
             <ArrowRight className="h-4 w-4" />
           </Link>
+          */}
+          <div className="mt-auto" />
         </div>
       </div>
     </motion.div>
