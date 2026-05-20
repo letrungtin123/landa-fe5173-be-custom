@@ -485,7 +485,7 @@ export function ProfilePage() {
           <div className="h-64 w-64 md:h-80 md:w-80 overflow-hidden rounded-3xl border-4 border-card shadow-2xl bg-muted">
             {avatarPreview || profile?.profile_image?.has_image ? (
               <img
-                src={avatarPreview || profile?.profile_image?.image_url_full || user?.avatar || ""}
+                src={avatarPreview || sanitizeUrlToRelative(profile?.profile_image?.image_url_full || null) || user?.avatar || ""}
                 alt="Avatar"
                 className="h-full w-full object-cover"
               />
