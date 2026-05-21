@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { getUserMe, getUserAccount } from "@/api/auth";
+import { apiClient } from "@/api/client";
 import { establishLmsSessionFromToken } from "@/api/lmsSession";
 import { updateStreak } from "@/hooks/useUser";
 import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
@@ -48,6 +49,17 @@ export function GoogleCallbackPage() {
         // Cập nhật streak
         updateStreak();
 
+        // Kiểm tra learner_plus role
+        let isLearnerPlus = false;
+        if (!me.is_staff) {
+          try {
+            const { data: roleData } = await apiClient.get("/api/landa/v0/my-role/");
+            isLearnerPlus = roleData.role === "learner_plus";
+          } catch {
+            // Bỏ qua — learner thường không có role
+          }
+        }
+
         // Lưu user info vào store (không có OAuth tokens vì flow là session-based)
         set({
           isAuthenticated: true,
@@ -60,6 +72,7 @@ export function GoogleCallbackPage() {
               : null),
             dateJoined: account.date_joined,
             isStaff: me.is_staff,
+            isLearnerPlus,
           },
         });
 
