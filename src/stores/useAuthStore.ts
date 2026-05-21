@@ -92,6 +92,12 @@ interface AuthState {
    */
   loginWithMicrosoft: (edxTokens: import("@/api/types").OAuthTokenResponse) => Promise<"learner" | "staff">;
 
+  /**
+   * Đăng nhập bằng Keycloak SSO.
+   * Nhận edX tokens đã exchange sẵn → lưu + fetch user info.
+   */
+  loginWithKeycloak: (edxTokens: import("@/api/types").OAuthTokenResponse) => Promise<"learner" | "staff">;
+
   /** Xóa toàn bộ auth state + hủy session LMS. */
   logout: () => Promise<void>;
 
@@ -301,6 +307,67 @@ export const useAuthStore = create<AuthState>()(
         updateStreak();
 
         // Kiểm tra learner_plus role
+        let isLearnerPlus = false;
+        if (!me.is_staff) {
+          try {
+            const { data: roleData } = await apiClient.get("/api/landa/v0/my-role/");
+            isLearnerPlus = roleData.role === "learner_plus";
+          } catch {
+            // Bỏ qua
+          }
+        }
+
+        set({
+          isAuthenticated: true,
+          user: {
+            username: me.username,
+            email: me.email,
+            name: account.name || me.username,
+            avatar: sanitizeUrlToRelative(account.profile_image?.has_image
+              ? account.profile_image.image_url_full
+              : null),
+            dateJoined: account.date_joined,
+            isStaff: me.is_staff,
+            isLearnerPlus,
+          },
+        });
+
+        get().scheduleTokenRefresh();
+
+        return me.is_staff ? "staff" : "learner";
+      },
+
+      loginWithKeycloak: async (edxTokens) => {
+        const expiresAt = Date.now() + edxTokens.expires_in * 1000;
+        set({
+          accessToken: edxTokens.access_token,
+          refreshToken: edxTokens.refresh_token,
+          tokenType: edxTokens.token_type || "Bearer",
+          tokenExpiresAt: expiresAt,
+        });
+
+        await establishLmsSessionFromToken();
+
+        const me = await getUserMe();
+
+        let account;
+        try {
+          account = await getUserAccount(me.username);
+        } catch {
+          account = {
+            name: me.username,
+            profile_image: { has_image: false, image_url_medium: "" },
+            date_joined: new Date().toISOString(),
+          };
+        }
+
+        if (account.is_active === false) {
+          get().logout();
+          throw new Error("Tài khoản của bạn đã bị khóa.");
+        }
+
+        updateStreak();
+
         let isLearnerPlus = false;
         if (!me.is_staff) {
           try {

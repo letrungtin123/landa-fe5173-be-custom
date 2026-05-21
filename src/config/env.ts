@@ -80,6 +80,12 @@ export const config = {
     "https://login.microsoftonline.com/common"
   ).trim(),
 
+  /** Keycloak OIDC Authority URL — tùy chọn, không crash nếu thiếu */
+  keycloakAuthority: (import.meta.env.VITE_KEYCLOAK_AUTHORITY || "").trim(),
+
+  /** Keycloak OIDC Client ID — tùy chọn, không crash nếu thiếu */
+  keycloakClientId: (import.meta.env.VITE_KEYCLOAK_CLIENT_ID || "").trim(),
+
   /** Base URL cho API calls.
    *  Luôn dùng relative path "" để:
    *  - Dev: Vite proxy (server.proxy) intercept và forward tới LMS
