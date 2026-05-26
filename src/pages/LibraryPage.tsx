@@ -230,12 +230,13 @@ export function LibraryPage() {
           {activeCategory ? (
             <div className="space-y-6">
               <div>
-                <Button 
-                  onClick={() => handleCategoryClick("")} 
-                  className="rounded-full px-5 text-[14px] font-semibold leading-[18px] shadow-sm"
+                <button
+                  onClick={() => handleCategoryClick("")}
+                  className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-foreground transition-colors mb-4"
                 >
-                  <ChevronLeft className="mr-2 h-4 w-4" /> Quay lại
-                </Button>
+                  <ChevronLeft className="h-4 w-4" />
+                  Quay lại
+                </button>
               </div>
 
               <h1 className="text-[36px] font-semibold leading-[40px] text-foreground uppercase tracking-tight">

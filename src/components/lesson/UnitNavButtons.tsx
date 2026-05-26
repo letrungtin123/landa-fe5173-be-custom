@@ -3,7 +3,7 @@
 // Bám sát layout Figma, dùng theme tokens
 // ============================================================
 
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Check } from "lucide-react";
 
 interface UnitNavButtonsProps {
   currentIndex: number;
@@ -62,22 +62,25 @@ export function UnitNavButtons({
             {/* Nút Hoàn thành / Đã hoàn thành */}
             {/* Nếu hideCompleteButton = true (bài quiz), ẩn lúc chưa complete để user phải làm bài, nhưng khi làm xong (isCompleted=true) thì hiện Đã hoàn thành */}
             {!(hideCompleteButton && !isCompleted) && (
-              <button
-                onClick={onComplete}
-                disabled={isCompleting || isCompleted || hideCompleteButton}
-                className={`flex items-center gap-2 rounded-full px-6 py-2.5 text-[14px] font-semibold leading-[18px] shadow-sm transition-all whitespace-nowrap ${
-                  isCompleted
-                    ? "bg-green-600 text-white cursor-default opacity-90"
-                    : "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] disabled:opacity-50"
-                }`}
-              >
-                {isCompleting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4" />
-                )}
-                {isCompleted ? "Đã hoàn thành" : "Hoàn thành"}
-              </button>
+              isCompleted ? (
+                <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400 px-4 py-2.5">
+                  <Check className="h-5 w-5 stroke-[3]" />
+                  <span className="text-[14px] font-bold">Đã hoàn thành</span>
+                </div>
+              ) : (
+                <button
+                  onClick={onComplete}
+                  disabled={isCompleting || hideCompleteButton}
+                  className="flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-[14px] font-semibold leading-[18px] text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97] disabled:opacity-50 whitespace-nowrap"
+                >
+                  {isCompleting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
+                  Hoàn thành
+                </button>
+              )
             )}
 
             {isCompleted && hasNextLesson && (

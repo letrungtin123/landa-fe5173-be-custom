@@ -2,9 +2,9 @@
 // ContinueLearning — Danh sách khóa học đang học + tiến độ thật
 // ============================================================
 
-import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, BookOpen, Check } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,9 +29,10 @@ function CourseCard({ course, index }: { course: ContinueCourse; index: number }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.15 * index }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3 }}
     >
       <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`}>
         <div className="group flex h-[180px] overflow-hidden rounded-3xl border border-primary shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-card transition-all duration-200 hover:shadow-md hover:scale-[1.02]">
@@ -116,10 +117,10 @@ function CourseCard({ course, index }: { course: ContinueCourse; index: number }
                 </div>
               </div>
               {completionPercent === 100 ? (
-                <span className="flex items-center gap-1 text-[13px] font-bold text-success">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Đã hoàn thành
-                </span>
+                <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                  <Check className="h-4 w-4 stroke-[3]" />
+                  <span className="text-[13px] font-bold">Đã hoàn thành</span>
+                </div>
               ) : (
                 <span className="flex items-center gap-1 text-[13px] font-bold text-primary">
                   Tiếp tục học
@@ -138,6 +139,17 @@ export function ContinueLearning() {
   const { data: enrollments, isLoading: enrollLoading, error } = useMyEnrollments();
   const { data: courseList, isLoading: coursesLoading } = useCourses();
   const [activeFilter, setActiveFilter] = useState<CourseFilter>('all');
+
+  useEffect(() => {
+    // Khi bộ lọc thay đổi, nếu phần đầu của danh sách bị khuất phía trên thì cuộn mượt lại lên vị trí đó
+    const container = document.getElementById("continue-learning-section");
+    if (container) {
+      const rect = container.getBoundingClientRect();
+      if (rect.top < 0) {
+        container.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }, [activeFilter]);
 
   const isLoading = enrollLoading || coursesLoading;
   
@@ -191,7 +203,7 @@ export function ContinueLearning() {
   }, [activeFilter, allCourses, progressMap]);
 
   return (
-    <div>
+    <div id="continue-learning-section" className="scroll-mt-24">
       {/* Tiêu đề */}
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-bold text-foreground">Tiếp tục học</h2>
@@ -215,6 +227,7 @@ export function ContinueLearning() {
             inProgressCount={inProgressCount}
             categories={categories}
             categoryCounts={categoryCounts}
+            showOnlyStatus={true}
           />
         </div>
       )}
@@ -274,11 +287,17 @@ export function ContinueLearning() {
 
       {/* Danh sách khóa học với progress bar thật */}
       {courses.length > 0 && (
-        <div className="grid gap-6 sm:grid-cols-2">
-          {courses.map((course, index) => (
-            <CourseCard key={course.id} course={course} index={index} />
-          ))}
-        </div>
+        <motion.div
+          layout="size"
+          className="grid gap-6 sm:grid-cols-2"
+          transition={{ duration: 0.3 }}
+        >
+          <AnimatePresence>
+            {courses.map((course, index) => (
+              <CourseCard key={course.id} course={course} index={index} />
+            ))}
+          </AnimatePresence>
+        </motion.div>
       )}
     </div>
   );
