@@ -341,11 +341,13 @@ export function LessonDetailPage() {
                     
                     let images: { src: string; alt: string }[] = [];
                     let finalHtml = cleanHtml;
+                    let hasImage = false;
                     
                     try {
                       const parser = new DOMParser();
                       const doc = parser.parseFromString(cleanHtml, 'text/html');
                       const imgEls = doc.querySelectorAll('img');
+                      hasImage = imgEls.length > 0;
                       
                       if (imgEls.length >= 2) {
                         images = Array.from(imgEls).map(img => ({
@@ -369,7 +371,7 @@ export function LessonDetailPage() {
 
                     return (
                       <div key={comp.id} className="rounded-3xl border border-border px-8 py-7 shadow-sm bg-card">
-                        {comp.displayName && (
+                        {comp.displayName && !hasImage && (
                           <div className="mb-4 inline-block">
                             <BadgeCyan><span className="uppercase">{comp.displayName}</span></BadgeCyan>
                           </div>

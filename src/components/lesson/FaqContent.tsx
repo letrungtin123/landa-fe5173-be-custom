@@ -46,7 +46,7 @@ export function FaqContent({ usageKey }: { usageKey: string }) {
 
   if (isLoading) {
     return (
-      <div className="mt-8 rounded-[32px] border-2 border-primary/10 bg-[#F4F9FF] dark:bg-slate-900/50 p-8 shadow-sm">
+      <div className="rounded-[32px] border-2 border-primary/10 bg-[#F4F9FF] dark:bg-slate-900/50 p-8 shadow-sm">
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -56,7 +56,7 @@ export function FaqContent({ usageKey }: { usageKey: string }) {
 
   if (!svd || !svd.items || svd.items.length === 0) {
     return (
-      <div className="mt-8 rounded-[32px] border-2 border-primary/10 bg-[#F4F9FF] dark:bg-slate-900/50 p-8 shadow-sm text-center">
+      <div className="rounded-[32px] border-2 border-primary/10 bg-[#F4F9FF] dark:bg-slate-900/50 p-8 shadow-sm text-center">
         <MessageCircleQuestion className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
         <p className="text-muted-foreground font-medium">Chưa có câu hỏi thường gặp nào.</p>
       </div>
@@ -64,7 +64,7 @@ export function FaqContent({ usageKey }: { usageKey: string }) {
   }
 
   return (
-    <div className="mt-8 rounded-[32px] border-2 border-primary/10 bg-[#F4F9FF] dark:bg-slate-900/50 p-6 md:p-10 shadow-sm relative overflow-hidden">
+    <div className="rounded-[32px] border-2 border-primary/10 bg-[#F4F9FF] dark:bg-slate-900/50 px-6 py-7 md:px-10 md:py-7 shadow-sm relative overflow-hidden">
 
       {/* Trang trí góc phải */}
       <div className="absolute right-0 top-0 -mr-16 -mt-16 w-64 h-64 opacity-[0.07] pointer-events-none">

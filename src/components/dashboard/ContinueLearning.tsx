@@ -3,12 +3,12 @@
 // ============================================================
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, BookOpen, Check } from "lucide-react";
+import { ArrowRight, BookOpen, Check, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMyEnrollments, useCourses, useCourseStructure } from "@/hooks/useCourses";
+import { useMyEnrollments, useCourses } from "@/hooks/useCourses";
 import { useCourseCompletion, useBatchCourseProgress } from "@/hooks/useProgress";
 
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -21,11 +21,7 @@ import type { CourseCategoryInfo } from "@/api/types";
 /** Card hiển thị 1 khóa học đang học kèm progress bar */
 function CourseCard({ course, index }: { course: ContinueCourse; index: number }) {
   const { completionPercent } = useCourseCompletion(course.id);
-  const { data: courseData } = useCourseStructure(course.id);
   const { colorStyle } = useThemeStore();
-
-  const sectionName = courseData?.modules?.[0]?.title || course.moduleLabel;
-  const unitName = courseData?.modules?.[0]?.lessons?.[0]?.title || course.lessonLabel;
 
   return (
     <motion.div
@@ -51,8 +47,8 @@ function CourseCard({ course, index }: { course: ContinueCourse; index: number }
                 />
                 <div 
                   className={cn(
-                    "hidden h-full w-full items-center justify-center rounded-[18px]",
-                    colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent"
+                     "hidden h-full w-full items-center justify-center rounded-[18px]",
+                     colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent"
                   )}
                 >
                   <BookOpen className="h-10 w-10 text-white/50" />
@@ -73,9 +69,11 @@ function CourseCard({ course, index }: { course: ContinueCourse; index: number }
           {/* Nội dung */}
           <div className="flex flex-col p-5 w-[60%]">
             <div className="mb-2 w-full flex items-center gap-1.5 text-[10px] font-semibold leading-[20px] tracking-[-0.05px] text-primary">
-              <span className="truncate max-w-[45%]">{sectionName}</span>
-              <span className="shrink-0">•</span>
-              <span className="truncate">{unitName}</span>
+              <span className="truncate">
+                {course.categories && course.categories.length > 0
+                  ? course.categories.map((c) => c.name).join(" • ")
+                  : "Khóa học"}
+              </span>
             </div>
 
             <h3 className="text-[20px] font-semibold leading-[24px] tracking-normal text-foreground group-hover:text-primary transition-colors line-clamp-2">
@@ -100,22 +98,24 @@ function CourseCard({ course, index }: { course: ContinueCourse; index: number }
 
             <div className="mt-auto">
               {/* Thanh tiến độ thật */}
-              <div className="mb-2">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] font-medium text-muted-foreground">
-                    Tiến độ
-                  </span>
-                  <span className="text-[11px] font-bold text-primary">
-                    {completionPercent}%
-                  </span>
+              {completionPercent < 100 && (
+                <div className="mb-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] font-medium text-muted-foreground">
+                      Tiến độ
+                    </span>
+                    <span className="text-[11px] font-bold text-primary">
+                      {completionPercent}%
+                    </span>
+                  </div>
+                  <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width] duration-500"
+                      style={{ width: `${completionPercent}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-primary transition-[width] duration-500"
-                    style={{ width: `${completionPercent}%` }}
-                  />
-                </div>
-              </div>
+              )}
               {completionPercent === 100 ? (
                 <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
                   <Check className="h-4 w-4 stroke-[3]" />
@@ -139,8 +139,12 @@ export function ContinueLearning() {
   const { data: enrollments, isLoading: enrollLoading, error } = useMyEnrollments();
   const { data: courseList, isLoading: coursesLoading } = useCourses();
   const [activeFilter, setActiveFilter] = useState<CourseFilter>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4;
 
   useEffect(() => {
+    setCurrentPage(1);
     // Khi bộ lọc thay đổi, nếu phần đầu của danh sách bị khuất phía trên thì cuộn mượt lại lên vị trí đó
     const container = document.getElementById("continue-learning-section");
     if (container) {
@@ -150,6 +154,19 @@ export function ContinueLearning() {
       }
     }
   }, [activeFilter]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    const container = document.getElementById("continue-learning-section");
+    if (container) {
+      container.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
 
   const isLoading = enrollLoading || coursesLoading;
   
@@ -196,11 +213,32 @@ export function ContinueLearning() {
 
   // Filter
   const courses = useMemo(() => {
-    if (activeFilter === 'all') return allCourses;
-    if (activeFilter === 'completed') return allCourses.filter(c => (progressMap?.get(c.id) || 0) >= 100);
-    if (activeFilter === 'in_progress') return allCourses.filter(c => (progressMap?.get(c.id) || 0) < 100);
-    return allCourses.filter(c => c.categories?.some(cat => cat.id === activeFilter));
-  }, [activeFilter, allCourses, progressMap]);
+    let filtered = allCourses;
+    
+    // Filter by status
+    if (activeFilter === 'completed') {
+      filtered = allCourses.filter(c => (progressMap?.get(c.id) || 0) >= 100);
+    } else if (activeFilter === 'in_progress') {
+      filtered = allCourses.filter(c => (progressMap?.get(c.id) || 0) < 100);
+    } else if (activeFilter !== 'all') {
+      filtered = allCourses.filter(c => c.categories?.some(cat => cat.id === activeFilter));
+    }
+    
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(c => c.title.toLowerCase().includes(searchLower));
+    }
+    
+    return filtered;
+  }, [activeFilter, allCourses, progressMap, searchTerm]);
+
+  const totalPages = Math.ceil(courses.length / itemsPerPage);
+
+  const paginatedCourses = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return courses.slice(startIndex, startIndex + itemsPerPage);
+  }, [courses, currentPage]);
 
   return (
     <div id="continue-learning-section" className="scroll-mt-24">
@@ -216,19 +254,32 @@ export function ContinueLearning() {
         </Link>
       </div>
 
-      {/* Filter Bar */}
+      {/* Filter Bar & Search */}
       {allCourses.length > 0 && (
-        <div className="mb-6">
-          <CourseFilterBar
-            activeFilter={activeFilter}
-            onFilterChange={setActiveFilter}
-            totalCount={allCourses.length}
-            completedCount={completedCount}
-            inProgressCount={inProgressCount}
-            categories={categories}
-            categoryCounts={categoryCounts}
-            showOnlyStatus={true}
-          />
+        <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <CourseFilterBar
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
+              totalCount={allCourses.length}
+              completedCount={completedCount}
+              inProgressCount={inProgressCount}
+              categories={categories}
+              categoryCounts={categoryCounts}
+              showOnlyStatus={true}
+              className="mb-0"
+            />
+          </div>
+          <div className="relative w-full md:max-w-xs shrink-0">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm khóa học..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-full outline-none focus:border-primary transition-colors text-[13px] font-normal leading-[18px] shadow-sm"
+            />
+          </div>
         </div>
       )}
 
@@ -287,17 +338,58 @@ export function ContinueLearning() {
 
       {/* Danh sách khóa học với progress bar thật */}
       {courses.length > 0 && (
-        <motion.div
-          layout="size"
-          className="grid gap-6 sm:grid-cols-2"
-          transition={{ duration: 0.3 }}
-        >
-          <AnimatePresence>
-            {courses.map((course, index) => (
-              <CourseCard key={course.id} course={course} index={index} />
-            ))}
-          </AnimatePresence>
-        </motion.div>
+        <div className="space-y-8">
+          <motion.div
+            layout="size"
+            className="grid gap-6 sm:grid-cols-2"
+            transition={{ duration: 0.3 }}
+          >
+            <AnimatePresence mode="wait">
+              {paginatedCourses.map((course, index) => (
+                <CourseCard key={course.id} course={course} index={index} />
+              ))}
+            </AnimatePresence>
+          </motion.div>
+
+          {/* Phân trang */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <button
+                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                disabled={currentPage <= 1}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                aria-label="Trang trước"
+              >
+                <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => {
+                const pageNum = i + 1;
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    className={cn(
+                      "inline-flex h-9 w-9 items-center justify-center rounded-lg text-[14px] font-semibold leading-[18px] transition-all duration-200",
+                      currentPage === pageNum
+                        ? "bg-primary text-primary-foreground shadow-sm scale-105"
+                        : "border border-border bg-card hover:bg-accent/10"
+                    )}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage >= totalPages}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                aria-label="Trang sau"
+              >
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

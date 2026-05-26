@@ -17,6 +17,7 @@ interface Props {
   /** Course count per category */
   categoryCounts: Map<number, number>;
   showOnlyStatus?: boolean;
+  className?: string;
 }
 
 export function CourseFilterBar({
@@ -28,6 +29,7 @@ export function CourseFilterBar({
   categories,
   categoryCounts,
   showOnlyStatus = false,
+  className,
 }: Props) {
   const pills: Array<{ key: CourseFilter; label: string; count: number }> = showOnlyStatus
     ? [
@@ -47,7 +49,7 @@ export function CourseFilterBar({
       ];
 
   return (
-    <div className="flex flex-wrap gap-2 mb-6">
+    <div className={cn("flex flex-wrap gap-2 mb-6", className)}>
       {pills.map(p => (
         <button
           key={String(p.key)}

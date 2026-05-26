@@ -50,6 +50,12 @@ const MIME_TYPES = {
 };
 
 function shouldProxy(pathname) {
+  // /courses/ URLs — chỉ proxy khi chứa /xblock/ (LMS API calls),
+  // các URL khác như /courses/{id}/lessons/... là SPA routes → không proxy.
+  // Logic giống với bypass trong vite.config.ts (dev mode).
+  if (pathname.startsWith("/courses/")) {
+    return pathname.includes("/xblock/");
+  }
   return LMS_PROXY_PATHS.some((prefix) => pathname.startsWith(prefix));
 }
 
