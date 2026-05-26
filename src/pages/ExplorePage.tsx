@@ -347,10 +347,10 @@ export function ExplorePage() {
                     style={{ border: '1.5px solid hsl(var(--primary))' }}
                   >
                     <h3 className="text-[18px] font-bold leading-[24px] text-foreground mb-0.5">
-                      Bộ lọc khoá học
+                      Bộ lọc danh mục khoá học
                     </h3>
                     <p className="text-[13px] text-muted-foreground mb-4">
-                      Có thể chọn nhiều kết quả
+                      Có thể chọn nhiều danh mục
                     </p>
 
                     <div className="flex flex-col gap-2.5 h-[140px] lg:h-auto lg:flex-1 overflow-y-auto overflow-x-hidden pr-3 min-h-0 scrollbar-thin">
