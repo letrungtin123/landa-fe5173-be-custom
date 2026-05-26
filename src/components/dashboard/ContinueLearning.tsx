@@ -3,8 +3,8 @@
 // ============================================================
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, BookOpen, Check, ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
+import { ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -141,7 +141,20 @@ export function ContinueLearning() {
   const [activeFilter, setActiveFilter] = useState<CourseFilter>('all');
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 4;
+  const [itemsPerPage, setItemsPerPage] = useState(4);
+  const [pageSizeOpen, setPageSizeOpen] = useState(false);
+  const pageSizeRef = useRef<HTMLDivElement>(null);
+
+  // Click outside để đóng page size dropdown
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (pageSizeRef.current && !pageSizeRef.current.contains(e.target as Node)) {
+        setPageSizeOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -224,10 +237,12 @@ export function ContinueLearning() {
       filtered = allCourses.filter(c => c.categories?.some(cat => cat.id === activeFilter));
     }
     
-    // Filter by search term
+    // Filter by search term (bỏ dấu tiếng Việt khi so sánh)
     if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(c => c.title.toLowerCase().includes(searchLower));
+      const normalize = (s: string) =>
+        s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+      const q = normalize(searchTerm);
+      filtered = filtered.filter(c => normalize(c.title).includes(q));
     }
     
     return filtered;
@@ -242,19 +257,34 @@ export function ContinueLearning() {
 
   return (
     <div id="continue-learning-section" className="scroll-mt-24">
-      {/* Tiêu đề */}
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-foreground">Tiếp tục học</h2>
+      {/* Tiêu đề + Search + Xem tất cả */}
+      <div className="mb-6 flex items-center gap-4">
+        <h2 className="text-lg font-bold text-foreground whitespace-nowrap shrink-0">Tiếp tục học</h2>
+
+        {/* Search bar — giữa */}
+        {allCourses.length > 0 && (
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm khóa học..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-full outline-none focus:border-primary transition-colors text-[13px] font-normal leading-[18px] shadow-sm"
+            />
+          </div>
+        )}
+
         <Link
           to="/explore"
-          className="flex items-center gap-1 text-sm font-medium text-accent transition-colors hover:text-accent/80"
+          className="flex items-center gap-1 text-sm font-medium text-accent transition-colors hover:text-accent/80 whitespace-nowrap shrink-0 ml-auto"
         >
           Xem tất cả
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
 
-      {/* Filter Bar & Search */}
+      {/* Filter Bar — tạm comment
       {allCourses.length > 0 && (
         <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -270,18 +300,9 @@ export function ContinueLearning() {
               className="mb-0"
             />
           </div>
-          <div className="relative w-full md:max-w-xs shrink-0">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm khóa học..."
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-full outline-none focus:border-primary transition-colors text-[13px] font-normal leading-[18px] shadow-sm"
-            />
-          </div>
         </div>
       )}
+      */}
 
       {/* Đang tải */}
       {isLoading && (
@@ -387,6 +408,50 @@ export function ContinueLearning() {
               >
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </button>
+
+              {/* Page size selector — custom dropdown */}
+              <div className="ml-4 flex items-center gap-1.5 border-l border-border pl-4">
+                <span className="text-[12px] text-muted-foreground whitespace-nowrap">Hiển thị</span>
+                <div className="relative" ref={pageSizeRef}>
+                  <button
+                    onClick={() => setPageSizeOpen(prev => !prev)}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-[12px] font-semibold text-foreground hover:border-primary/40 transition-colors cursor-pointer"
+                  >
+                    {itemsPerPage}
+                    <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", pageSizeOpen && "rotate-180")} />
+                  </button>
+                  <AnimatePresence>
+                    {pageSizeOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 4, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                        transition={{ duration: 0.12 }}
+                        className="absolute bottom-full mb-2 left-0 z-50 min-w-[48px] rounded-xl border border-border bg-card p-1 shadow-lg"
+                      >
+                        {[2, 4, 6].map(size => (
+                          <button
+                            key={size}
+                            onClick={() => {
+                              setItemsPerPage(size);
+                              setCurrentPage(1);
+                              setPageSizeOpen(false);
+                            }}
+                            className={cn(
+                              "w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors",
+                              itemsPerPage === size
+                                ? "bg-primary/10 text-primary"
+                                : "text-foreground hover:bg-muted/50"
+                            )}
+                          >
+                            {size}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
             </div>
           )}
         </div>

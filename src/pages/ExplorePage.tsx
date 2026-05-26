@@ -1,10 +1,10 @@
 // ============================================================
 // ExplorePage — Khám phá khóa học (dữ liệu thật từ Open edX)
-// Grouped by category, max 6 per section, expand to full view
+// Grouped by category, filter theo trạng thái học
 // ============================================================
 
-import { useState, useMemo } from "react";
-import { Search, Loader2, BookOpen, ArrowRight, CheckCircle2, ChevronLeft, Check } from "lucide-react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { Search, Loader2, BookOpen, ArrowRight, Check, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,13 +28,24 @@ export function ExplorePage() {
   const { data: courseData, isLoading } = useCourses(debouncedSearch || undefined);
   const { data: enrollments } = useMyEnrollments();
 
-  // State cho detail view khi click "Xem tất cả"
-  const [expandedCategoryId, setExpandedCategoryId] = useState<number | null>(null);
+  // State cho bộ filter trạng thái học (hiển thị mặc định)
   const [detailFilter, setDetailFilter] = useState<DetailFilter>('all');
-  const [detailSearch, setDetailSearch] = useState("");
 
   // State cho right panel filter danh mục (multi-select)
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<number>>(new Set());
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Click outside để đóng dropdown
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setCategoryDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   // Set enrolled IDs cho lookup nhanh
   const enrolledIds = new Set(
@@ -72,40 +83,22 @@ export function ExplorePage() {
     return map;
   }, [categories, allCourses]);
 
-  // Expanded category data
-  const expandedCategory = expandedCategoryId !== null
-    ? coursesByCategory.get(expandedCategoryId)
-    : null;
 
-  // Filter courses trong detail view
-  const filteredDetailCourses = useMemo(() => {
-    if (!expandedCategory) return [];
-    let filtered = expandedCategory.courses;
-
-    // Apply search
-    if (detailSearch.trim()) {
-      const q = detailSearch.toLowerCase();
-      filtered = filtered.filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        c.short_description?.toLowerCase().includes(q)
-      );
-    }
-
-    // Apply filter
+  // Helper: filter 1 mảng courses theo detailFilter
+  const applyStatusFilter = (courses: typeof allCourses) => {
     if (detailFilter === 'in_progress') {
-      filtered = filtered.filter(c =>
+      return courses.filter(c =>
         enrolledIds.has(c.id) && (progressMap?.get(c.id) || 0) < 100
       );
     } else if (detailFilter === 'completed') {
-      filtered = filtered.filter(c =>
+      return courses.filter(c =>
         enrolledIds.has(c.id) && (progressMap?.get(c.id) || 0) >= 100
       );
     } else if (detailFilter === 'not_enrolled') {
-      filtered = filtered.filter(c => !enrolledIds.has(c.id));
+      return courses.filter(c => !enrolledIds.has(c.id));
     }
-
-    return filtered;
-  }, [expandedCategory, detailFilter, detailSearch, enrolledIds, progressMap]);
+    return courses;
+  };
 
   // Xử lý search hero với debounce
   const handleSearchChange = (value: string) => {
@@ -116,21 +109,7 @@ export function ExplorePage() {
     }, 500);
   };
 
-  // Mở detail view
-  const handleViewAll = (catId: number) => {
-    setExpandedCategoryId(catId);
-    setDetailFilter('all');
-    setDetailSearch("");
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
-  // Quay lại overview
-  const handleBack = () => {
-    setExpandedCategoryId(null);
-    setDetailFilter('all');
-    setDetailSearch("");
-  };
 
   // Right panel click: toggle danh mục trong filter
   const handleCategoryClick = (catId: number | 'all') => {
@@ -156,7 +135,7 @@ export function ExplorePage() {
     return entries.filter(([id]) => selectedCategoryIds.has(id));
   }, [coursesByCategory, selectedCategoryIds]);
 
-  const isDetailView = expandedCategoryId !== null;
+
 
   return (
     <motion.div
@@ -177,115 +156,6 @@ export function ExplorePage() {
         {/* Main Content */}
         <div className="flex-1 min-w-0 lg:pl-8 mt-8 lg:mt-0 pt-8">
           <AnimatePresence mode="wait">
-            {isDetailView ? (
-              /* ══════════════ DETAIL VIEW — Full category ══════════════ */
-              <motion.div
-                key="detail-view"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                {/* Header + Back button */}
-                <div className="mb-6">
-                  <button
-                    onClick={handleBack}
-                    className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-foreground transition-colors mb-4"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Quay lại
-                  </button>
-
-                  <h1 className="text-[28px] font-bold leading-[34px] text-foreground mb-4">
-                    {expandedCategory?.name}
-                  </h1>
-
-                  {/* Filter pills + Search */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    {/* Filter pills */}
-                    <div className="flex flex-wrap gap-2">
-                      {([
-                        { key: 'all' as DetailFilter, label: 'Tất cả' },
-                        { key: 'in_progress' as DetailFilter, label: 'Đang học' },
-                        { key: 'completed' as DetailFilter, label: 'Đã học' },
-                        { key: 'not_enrolled' as DetailFilter, label: 'Chưa học' },
-                      ]).map(pill => (
-                        <button
-                          key={pill.key}
-                          onClick={() => setDetailFilter(pill.key)}
-                          className={cn(
-                            "px-4 py-1.5 rounded-full text-[13px] font-medium border transition-all",
-                            detailFilter === pill.key
-                              ? "bg-primary text-white border-primary"
-                              : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
-                          )}
-                        >
-                          {pill.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Search bar */}
-                    <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 sm:ml-auto sm:w-[280px]">
-                      <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <input
-                        type="text"
-                        value={detailSearch}
-                        onChange={(e) => setDetailSearch(e.target.value)}
-                        placeholder="Tìm trong danh mục..."
-                        className="flex-1 bg-transparent text-[13px] text-foreground placeholder-muted-foreground/60 outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <p className="mt-3 text-[13px] text-muted-foreground">
-                    {filteredDetailCourses.length} khóa học
-                  </p>
-                </div>
-
-                {/* Course grid */}
-                {filteredDetailCourses.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-border bg-card/50 p-16 text-center">
-                    <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-                      <BookOpen className="h-10 w-10 text-primary/40" />
-                    </div>
-                    <h3 className="mb-2 text-[18px] font-bold text-foreground">
-                      Không tìm thấy khóa học
-                    </h3>
-                    <p className="text-[14px] text-muted-foreground">
-                      Không có khóa học nào phù hợp với bộ lọc hiện tại.
-                    </p>
-                  </div>
-                ) : (
-                  <motion.div
-                    className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
-                    initial="hidden"
-                    animate="visible"
-                    variants={{
-                      visible: { transition: { staggerChildren: 0.06 } },
-                    }}
-                  >
-                    {filteredDetailCourses.map((course) => (
-                      <motion.div
-                        key={course.id}
-                        variants={{
-                          hidden: { opacity: 0, y: 16 },
-                          visible: { opacity: 1, y: 0 },
-                        }}
-                        transition={{ duration: 0.35 }}
-                      >
-                        <ExploreCourseCard
-                          course={course}
-                          isEnrolled={enrolledIds.has(course.id)}
-                          colorStyle={colorStyle}
-                          categoryName={expandedCategory?.name}
-                        />
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                )}
-              </motion.div>
-            ) : (
               /* ══════════════ OVERVIEW — Grouped by category ══════════════ */
               <motion.div
                 key="overview"
@@ -341,8 +211,8 @@ export function ExplorePage() {
                     />
                   </div>
 
-                  {/* Right Panel — Bộ lọc khoá học */}
-                  <div
+                  {/* Right Panel — Bộ lọc khoá học (commented out, replaced by dropdown below) */}
+                  {/* <div
                     className="w-full lg:w-[320px] shrink-0 rounded-[32px] bg-card p-6 flex flex-col lg:h-[270px]"
                     style={{ border: '1.5px solid hsl(var(--primary))' }}
                   >
@@ -354,7 +224,6 @@ export function ExplorePage() {
                     </p>
 
                     <div className="flex flex-col gap-2.5 h-[140px] lg:h-auto lg:flex-1 overflow-y-auto overflow-x-hidden pr-3 min-h-0 scrollbar-thin">
-                      {/* Tất cả danh mục — clear filter */}
                       <button
                         onClick={() => handleCategoryClick('all')}
                         className={cn(
@@ -367,7 +236,6 @@ export function ExplorePage() {
                         Tất cả danh mục
                       </button>
 
-                      {/* Dynamic category buttons — toggle multi-select */}
                       {categories.map((cat) => (
                         <button
                           key={cat.id}
@@ -383,6 +251,115 @@ export function ExplorePage() {
                         </button>
                       ))}
                     </div>
+                  </div> */}
+                </div>
+
+                {/* Bộ lọc trạng thái học + dropdown danh mục */}
+                <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+                  {/* Left — Filter pills */}
+                  <div className="flex flex-wrap gap-2">
+                    {([
+                      { key: 'all' as DetailFilter, label: 'Tất cả' },
+                      { key: 'in_progress' as DetailFilter, label: 'Đang học' },
+                      { key: 'completed' as DetailFilter, label: 'Đã học' },
+                      { key: 'not_enrolled' as DetailFilter, label: 'Chưa học' },
+                    ]).map(pill => (
+                      <button
+                        key={pill.key}
+                        onClick={() => setDetailFilter(pill.key)}
+                        className={cn(
+                          "px-4 py-1.5 rounded-full text-[13px] font-medium border transition-all",
+                          detailFilter === pill.key
+                            ? "bg-primary text-white border-primary"
+                            : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+                        )}
+                      >
+                        {pill.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Right — Category dropdown */}
+                  <div className="relative" ref={dropdownRef}>
+                    <button
+                      onClick={() => setCategoryDropdownOpen(prev => !prev)}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-1.5 rounded-full text-[13px] font-medium border transition-all",
+                        selectedCategoryIds.size > 0
+                          ? "bg-primary/10 text-primary border-primary"
+                          : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+                      )}
+                    >
+                      Danh mục
+                      {selectedCategoryIds.size > 0 && (
+                        <span className="flex items-center justify-center h-[18px] min-w-[18px] rounded-full bg-primary text-white text-[11px] font-bold px-1">
+                          {selectedCategoryIds.size}
+                        </span>
+                      )}
+                      <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", categoryDropdownOpen && "rotate-180")} />
+                    </button>
+
+                    {/* Dropdown menu */}
+                    <AnimatePresence>
+                      {categoryDropdownOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute right-0 top-full mt-2 z-50 w-[240px] rounded-2xl border border-border bg-card p-2 shadow-xl"
+                        >
+                          {/* Tất cả danh mục — clear */}
+                          <button
+                            onClick={() => handleCategoryClick('all')}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-colors text-left",
+                              selectedCategoryIds.size === 0
+                                ? "bg-primary/10 text-primary"
+                                : "text-foreground hover:bg-muted/50"
+                            )}
+                          >
+                            <div className={cn(
+                              "flex items-center justify-center h-4 w-4 rounded border-[1.5px] shrink-0 transition-colors",
+                              selectedCategoryIds.size === 0
+                                ? "border-primary bg-primary"
+                                : "border-muted-foreground/40"
+                            )}>
+                              {selectedCategoryIds.size === 0 && <Check className="h-3 w-3 text-white stroke-[3]" />}
+                            </div>
+                            Tất cả danh mục
+                          </button>
+
+                          <div className="h-px bg-border my-1" />
+
+                          {/* Danh mục items */}
+                          <div className="max-h-[240px] overflow-y-auto space-y-0.5 scrollbar-thin">
+                            {categories.map((cat) => (
+                              <button
+                                key={cat.id}
+                                onClick={() => handleCategoryClick(cat.id)}
+                                className={cn(
+                                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-colors text-left",
+                                  selectedCategoryIds.has(cat.id)
+                                    ? "bg-primary/10 text-primary"
+                                    : "text-foreground hover:bg-muted/50"
+                                )}
+                              >
+                                <div className={cn(
+                                  "flex items-center justify-center h-4 w-4 rounded border-[1.5px] shrink-0 transition-colors",
+                                  selectedCategoryIds.has(cat.id)
+                                    ? "border-primary bg-primary"
+                                    : "border-muted-foreground/40"
+                                )}>
+                                  {selectedCategoryIds.has(cat.id) && <Check className="h-3 w-3 text-white stroke-[3]" />}
+                                </div>
+                                {cat.name}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
 
@@ -426,35 +403,46 @@ export function ExplorePage() {
                   </div>
                 )}
 
-                {/* Category sections — max 6 course cards each */}
+                {/* Empty state — filter trạng thái học không có kết quả */}
+                {!isLoading && allCourses.length > 0 && visibleCategories.length > 0
+                  && detailFilter !== 'all'
+                  && visibleCategories.every(([, { courses }]) => applyStatusFilter(courses).length === 0)
+                  && (
+                  <div className="rounded-2xl border border-dashed border-border bg-card/50 p-16 text-center">
+                    <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+                      <BookOpen className="h-10 w-10 text-primary/40" />
+                    </div>
+                    <h3 className="mb-2 text-[18px] font-bold text-foreground">
+                      Không tìm thấy khóa học
+                    </h3>
+                    <p className="text-[14px] text-muted-foreground">
+                      Không có khóa học nào phù hợp với bộ lọc hiện tại.
+                    </p>
+                  </div>
+                )}
+
+                {/* Category sections — hiển thị tất cả courses */}
                 {!isLoading && allCourses.length > 0 && (
                   <div className="space-y-10">
                     {visibleCategories.map(([catId, { name, courses: catCourses }]) => {
-                      const displayCourses = catCourses.slice(0, 6);
-                      const hasMore = catCourses.length > 6;
+                      const displayCourses = applyStatusFilter(catCourses);
+
+                      // Ẩn category nếu filter ra 0 kết quả
+                      if (displayCourses.length === 0) return null;
 
                       return (
                         <section key={catId} id={`category-section-${catId}`} className="scroll-mt-6">
                           {/* Category header */}
-                          <div className="flex items-center justify-between mb-5">
-                            <div className="flex items-baseline gap-2">
-                              <h2 className="text-[22px] font-bold leading-[28px] text-foreground">
-                                {name}
-                              </h2>
-                              <span className="text-[13px] text-muted-foreground">
-                                ({catCourses.length} khóa học)
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => handleViewAll(catId)}
-                              className="flex items-center gap-1 text-[14px] font-semibold text-primary hover:text-primary/80 transition-colors shrink-0"
-                            >
-                              Xem tất cả
-                              <ArrowRight className="h-4 w-4" />
-                            </button>
+                          <div className="flex items-baseline gap-2 mb-5">
+                            <h2 className="text-[22px] font-bold leading-[28px] text-foreground">
+                              {name}
+                            </h2>
+                            <span className="text-[13px] text-muted-foreground">
+                              ({displayCourses.length} khóa học)
+                            </span>
                           </div>
 
-                          {/* Course grid — max 6 */}
+                          {/* Course grid — hiển thị tất cả */}
                           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                             {displayCourses.map((course) => (
                               <ExploreCourseCard
@@ -473,7 +461,6 @@ export function ExplorePage() {
                   </div>
                 )}
               </motion.div>
-            )}
           </AnimatePresence>
         </div>
       </div>
