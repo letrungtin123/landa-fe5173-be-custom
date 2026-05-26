@@ -298,7 +298,7 @@ export function ExplorePage() {
                 <div className="mb-8 flex flex-col lg:flex-row gap-6 w-full items-stretch">
                   {/* Left Panel — Hero */}
                   <div
-                    className="relative flex-1 rounded-[32px] p-8 overflow-hidden bg-card flex flex-col justify-between min-h-[300px] lg:h-[360px]"
+                    className="relative flex-1 rounded-[32px] p-8 overflow-hidden bg-card flex flex-col justify-between min-h-[260px] lg:h-[310px]"
                     style={{ border: '1.5px solid hsl(var(--primary))' }}
                   >
                     <div className="relative z-10 flex flex-col h-full justify-between">
@@ -343,7 +343,7 @@ export function ExplorePage() {
 
                   {/* Right Panel — Bộ lọc khoá học */}
                   <div
-                    className="w-full lg:w-[320px] shrink-0 rounded-[32px] bg-card p-8 flex flex-col lg:h-[360px]"
+                    className="w-full lg:w-[360px] shrink-0 rounded-[32px] bg-card p-8 flex flex-col lg:h-[310px]"
                     style={{ border: '1.5px solid hsl(var(--primary))' }}
                   >
                     <h3 className="text-[18px] font-bold leading-[24px] text-foreground mb-1">
