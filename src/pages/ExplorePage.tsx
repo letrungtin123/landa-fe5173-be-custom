@@ -298,27 +298,27 @@ export function ExplorePage() {
                 <div className="mb-8 flex flex-col lg:flex-row gap-6 w-full items-stretch">
                   {/* Left Panel — Hero */}
                   <div
-                    className="relative flex-1 rounded-[32px] p-8 overflow-hidden bg-card flex flex-col justify-between min-h-[260px] lg:h-[310px]"
+                    className="relative flex-1 rounded-[32px] p-6 bg-card flex flex-col justify-between min-h-[250px] lg:h-[270px]"
                     style={{ border: '1.5px solid hsl(var(--primary))' }}
                   >
                     <div className="relative z-10 flex flex-col h-full justify-between">
                       <div>
                         {/* Badge COURSE */}
                         <div
-                          className="mb-4 inline-flex w-fit whitespace-nowrap items-center justify-center h-[23px] rounded-[41px] px-3 py-1 text-[10px] font-bold uppercase tracking-widest font-['SF_Pro',_sans-serif]"
+                          className="mb-3 inline-flex w-fit whitespace-nowrap items-center justify-center h-[23px] rounded-[41px] px-3 py-1 text-[10px] font-bold uppercase tracking-widest font-['SF_Pro',_sans-serif]"
                           style={{ backgroundColor: "#43FDD7", color: "#000" }}
                         >
                           COURSE
                         </div>
 
                         {/* Title */}
-                        <h1 className="mb-6 max-w-[380px] text-[32px] font-bold leading-[40px] text-foreground">
+                        <h1 className="mb-4 max-w-[320px] text-[24px] lg:text-[26px] font-bold leading-[32px] text-foreground">
                           Khám phá hành trình học tập của tôi
                         </h1>
                       </div>
 
                       {/* Search bar */}
-                      <div className="mt-auto flex w-full max-w-[340px] items-center gap-2.5 rounded-full border border-border bg-card px-5 py-3 shadow-sm">
+                      <div className="mt-auto flex w-full max-w-[340px] items-center gap-2.5 rounded-full border border-border bg-card px-5 py-2.5 shadow-sm">
                         <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
                         <input
                           type="text"
@@ -337,23 +337,23 @@ export function ExplorePage() {
                     <img
                       src={heroIllustration}
                       alt="Khám phá hành trình học tập"
-                      className="hidden md:block absolute right-4 bottom-0 h-[88%] w-auto max-w-[300px] object-contain pointer-events-none select-none z-0"
+                      className="hidden md:block absolute right-6 pt-8 bottom-0 h-[280px] w-auto max-w-[260px] object-contain pointer-events-none select-none z-0"
                     />
                   </div>
 
                   {/* Right Panel — Bộ lọc khoá học */}
                   <div
-                    className="w-full lg:w-[360px] shrink-0 rounded-[32px] bg-card p-8 flex flex-col lg:h-[310px]"
+                    className="w-full lg:w-[320px] shrink-0 rounded-[32px] bg-card p-6 flex flex-col lg:h-[270px]"
                     style={{ border: '1.5px solid hsl(var(--primary))' }}
                   >
-                    <h3 className="text-[18px] font-bold leading-[24px] text-foreground mb-1">
-                      Bộ lọc danh mục khoá học
+                    <h3 className="text-[18px] font-bold leading-[24px] text-foreground mb-0.5">
+                      Bộ lọc khoá học
                     </h3>
-                    <p className="text-[13px] text-muted-foreground mb-5">
-                      Có thể chọn nhiều danh mục
+                    <p className="text-[13px] text-muted-foreground mb-4">
+                      Có thể chọn nhiều kết quả
                     </p>
 
-                    <div className="flex flex-col gap-2.5 h-[140px] lg:h-auto lg:flex-1 overflow-y-auto overflow-x-hidden pr-1 min-h-0 scrollbar-thin">
+                    <div className="flex flex-col gap-2.5 h-[140px] lg:h-auto lg:flex-1 overflow-y-auto overflow-x-hidden pr-3 min-h-0 scrollbar-thin">
                       {/* Tất cả danh mục — clear filter */}
                       <button
                         onClick={() => handleCategoryClick('all')}
