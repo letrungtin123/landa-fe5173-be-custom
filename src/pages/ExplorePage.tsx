@@ -343,7 +343,7 @@ export function ExplorePage() {
 
                   {/* Right Panel — Bộ lọc khoá học */}
                   <div
-                    className="w-full lg:w-[320px] shrink-0 rounded-[32px] bg-card p-8 flex flex-col"
+                    className="w-full lg:w-[320px] lg:h-[340px] shrink-0 rounded-[32px] bg-card p-8 flex flex-col"
                     style={{ border: '1.5px solid hsl(var(--primary))' }}
                   >
                     <h3 className="text-[18px] font-bold leading-[24px] text-foreground mb-1">
@@ -352,8 +352,8 @@ export function ExplorePage() {
                     <p className="text-[13px] text-muted-foreground mb-5">
                       Có thể chọn nhiều danh mục
                     </p>
-
-                    <div className="flex flex-row flex-wrap lg:flex-col gap-2.5 lg:max-h-[280px] lg:overflow-y-auto lg:pr-1">
+ 
+                    <div className="flex flex-row flex-wrap lg:flex-col gap-2.5 lg:max-h-[200px] lg:overflow-y-auto lg:pr-1.5">
                       {/* Tất cả danh mục — clear filter */}
                       <button
                         onClick={() => handleCategoryClick('all')}
@@ -366,7 +366,7 @@ export function ExplorePage() {
                       >
                         Tất cả danh mục
                       </button>
-
+ 
                       {/* Dynamic category buttons — toggle multi-select */}
                       {categories.map((cat) => (
                         <button
