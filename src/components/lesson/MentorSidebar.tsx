@@ -31,7 +31,7 @@ export function MentorSidebar({ mentors }: MentorSidebarProps) {
 
   return (
     <>
-      <div className="px-8 pb-8">
+      <div className="px-8 pb-2">
         <div className="space-y-4">
           {mentors.map((mentor, i) => (
             <button
@@ -55,10 +55,10 @@ export function MentorSidebar({ mentors }: MentorSidebarProps) {
               </div>
               {/* Info */}
               <div className="min-w-0 flex-1 flex flex-col justify-center pt-0.5">
-                <img 
-                  src={LogoLanda} 
-                  alt="Le & Associates" 
-                  className="h-[22px] w-auto object-contain object-left mb-1 opacity-100 -translate-x-1" 
+                <img
+                  src={LogoLanda}
+                  alt="Le & Associates"
+                  className="h-[22px] w-auto object-contain object-left mb-1 opacity-100 -translate-x-1"
                 />
                 <p className="text-[16px] font-bold leading-[20px] text-foreground truncate group-hover:text-primary transition-colors">
                   {mentor.name || mentor.full_name}

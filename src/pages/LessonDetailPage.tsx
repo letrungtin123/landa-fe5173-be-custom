@@ -528,7 +528,7 @@ export function LessonDetailPage() {
                   <div className="mx-8 border-t border-border/60" />
 
                   {/* Bottom: Company section */}
-                  <div className="px-8 py-7">
+                  <div className="px-8 py-4">
                     <img
                       src={LogoLanda}
                       alt="Le & Associates"

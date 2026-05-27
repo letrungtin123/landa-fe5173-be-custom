@@ -36,7 +36,7 @@ export function WelcomeCourseModal({ courseId, completionPercent, isLoading, con
   });
 
   const { mutate: updateState } = useMutation({
-    mutationFn: (updates: { welcome_shown?: boolean; confirm_shown?: boolean; complete_shown?: boolean }) => 
+    mutationFn: (updates: { welcome_shown?: boolean; confirm_shown?: boolean; complete_shown?: boolean }) =>
       updateCourseModalState(courseId, updates),
     onSuccess: (data) => {
       queryClient.setQueryData(["courseModalState", courseId], data);
@@ -84,7 +84,7 @@ export function WelcomeCourseModal({ courseId, completionPercent, isLoading, con
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <div 
+        <div
           style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
           className="relative w-[600px] bg-background rounded-3xl shadow-2xl flex flex-col items-center overflow-visible"
         >
@@ -99,7 +99,7 @@ export function WelcomeCourseModal({ courseId, completionPercent, isLoading, con
 
           {/* Content */}
           <div className="px-10 pt-6 pb-10 flex flex-col items-center text-center w-full shrink-0">
-            <h2 className="text-[22px] font-bold text-foreground mb-3 tracking-tight break-words line-clamp-3 max-w-full">
+            <h2 className="text-[22px] font-bold text-foreground mb-3 tracking-tight break-words line-clamp-3 max-w-full py-1 leading-snug">
               {config?.welcome_title || 'Chào mừng bạn đến với khóa học!'}
             </h2>
             <p className="text-muted-foreground text-[15px] leading-relaxed mb-8 max-w-[500px]">

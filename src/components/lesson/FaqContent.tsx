@@ -75,7 +75,7 @@ export function FaqContent({ usageKey }: { usageKey: string }) {
             FAQ
           </span>
         </div>
-        <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+        <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
           {svd.display_name}
         </h2>
         <p className="mt-2 text-[14px] text-foreground/60 font-medium">
