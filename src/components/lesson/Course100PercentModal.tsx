@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import VideoCompleteFinal from "@/assets/CompleteCourseModal/VideoCompleteFinal.gif";
@@ -68,10 +68,9 @@ const Confetti = () => {
 export function Course100PercentModal({ courseId, completionPercent, isLoading, config }: Course100PercentModalProps) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const initialPercentLoaded = useRef(false);
-  const isEligible = useRef(false);
-  const [confirmReady, setConfirmReady] = useState(false);
   const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
+  const confirmJustClosed = useAppStore((s) => s.confirmJustClosed);
+  const setConfirmJustClosed = useAppStore((s) => s.setConfirmJustClosed);
 
   // Nếu admin tắt completion modal → không render
   const isEnabled = config?.completion_enabled === true;
@@ -113,53 +112,41 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
 
   useEffect(() => {
     if (!courseId || isLoading || !config || isModalStateLoading || !modalState) return;
-    
-    // Lưu lại progress lần đầu khi API vừa load xong
-    if (!initialPercentLoaded.current) {
-      initialPercentLoaded.current = true;
-      // Chỉ cho phép hiện modal nếu lúc đầu chưa phải 100%
-      if (completionPercent < 100) {
-        isEligible.current = true;
-      }
-    }
 
+    // Reset complete_shown khi progress rớt xuống dưới 100%
     if (completionPercent < 100 && modalState.complete_shown) {
-      // Nếu user rớt xuống dưới 100%, reset cờ lại
       updateState({ complete_shown: false });
+      return;
     }
 
-    // Đăng ký lắng nghe sự kiện từ Confirm Modal
-    const handleConfirmEvent = () => setConfirmReady(true);
-    window.addEventListener("course_confirmed_event", handleConfirmEvent);
+    // Điều kiện cơ bản: progress = 100%, admin bật, chưa hiện
+    const canShow = completionPercent === 100 && isEnabled && !modalState.complete_shown;
+    if (!canShow) return;
 
-    // Kiểm tra xem đã confirm chưa
-    const isConfirmed = modalState.confirm_shown;
-    
-    // Điều kiện bung modal
-    const canShow = isEligible.current && completionPercent === 100 && isEnabled;
-    const confirmSatisfied = !requiresConfirm || isConfirmed || confirmReady;
+    // Kiểm tra confirm đã thỏa mãn chưa:
+    // - Nếu course KHÔNG bật confirm → thỏa mãn ngay
+    // - Nếu course BẬT confirm → cần confirm_shown = true HOẶC confirmJustClosed = true
+    const confirmSatisfied = !requiresConfirm || modalState.confirm_shown || confirmJustClosed;
+    if (!confirmSatisfied) return;
 
-    if (canShow && confirmSatisfied) {
-      const hasShown = modalState.complete_shown;
-      if (!hasShown) {
-        setIsPending(true); // Khóa huy hiệu ngay lập tức
-        // Chỉ delay nếu không phải do event kích hoạt
-        const delay = confirmReady ? 100 : 800;
-        const timer = setTimeout(() => {
-          setIsPending(false);
-          setOpen(true);
-          updateState({ complete_shown: true });
-        }, delay);
-        return () => {
-          clearTimeout(timer);
-          setIsPending(false);
-          window.removeEventListener("course_confirmed_event", handleConfirmEvent);
-        }
+    setIsPending(true);
+    // Delay ngắn nếu confirm vừa đóng (chain nối tiếp), delay dài hơn nếu hiện trực tiếp
+    const delay = confirmJustClosed ? 100 : 800;
+    const timer = setTimeout(() => {
+      setIsPending(false);
+      setOpen(true);
+      updateState({ complete_shown: true });
+      // Reset flag sau khi đã xử lý
+      if (confirmJustClosed) {
+        setConfirmJustClosed(false);
       }
-    }
+    }, delay);
 
-    return () => window.removeEventListener("course_confirmed_event", handleConfirmEvent);
-  }, [courseId, completionPercent, isLoading, isEnabled, requiresConfirm, confirmReady, config, isModalStateLoading, modalState]);
+    return () => {
+      clearTimeout(timer);
+      setIsPending(false);
+    };
+  }, [courseId, completionPercent, isLoading, isEnabled, requiresConfirm, confirmJustClosed, config, isModalStateLoading, modalState]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

@@ -624,7 +624,7 @@ export function LessonDetailPage() {
       </footer>
 
       {courseId && <WelcomeCourseModal courseId={courseId} completionPercent={completionPercent} isLoading={isProgressLoading} config={modalConfig} />}
-      {courseId && <CompleteCourseModal courseId={courseId} config={modalConfig} />}
+      {courseId && <CompleteCourseModal courseId={courseId} completionPercent={completionPercent} isLoading={isProgressLoading} config={modalConfig} />}
       {courseId && <Course100PercentModal courseId={courseId} completionPercent={completionPercent} isLoading={isProgressLoading} config={modalConfig} />}
       {courseId && courseTree && <SectionCompleteModal courseId={courseId} modules={courseTree.modules} />}
 

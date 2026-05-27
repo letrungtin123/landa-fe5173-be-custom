@@ -5,6 +5,7 @@ import { Sparkles, ArrowRight } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getSectionModalConfigs, getSectionModalShown, markSectionModalShown } from "@/api/sectionModalConfig";
 import type { Module } from "@/data/types";
+import { useAppStore } from "@/stores/useAppStore";
 
 // ── Confetti Animation ──
 const Confetti = () => {
@@ -65,6 +66,13 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
   const [open, setOpen] = useState(false);
   const [currentConfig, setCurrentConfig] = useState<{ section_id: string; title: string; description: string } | null>(null);
   const queryClient = useQueryClient();
+  const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
+
+  // Đồng bộ trạng thái modal với hệ thống isCourseModalActive
+  useEffect(() => {
+    setCourseModalActive(open);
+    return () => setCourseModalActive(false);
+  }, [open, setCourseModalActive]);
 
   // Lấy config các section được bật modal khích lệ
   const { data: configs } = useQuery({

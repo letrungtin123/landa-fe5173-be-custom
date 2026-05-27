@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import ConfirmPicture from "@/assets/CompleteCourseModal/ConfirmPicture.png";
 import GraduationHat from "@/assets/CompleteCourseModal/GraduationHat.png";
 import { ArrowRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCourseCompletion } from "@/hooks/useProgress";
 import type { CourseModalConfigData } from "@/api/modalConfig";
 import { useAppStore } from "@/stores/useAppStore";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -13,19 +12,23 @@ import { getCourseModalState, updateCourseModalState } from "@/api/modalState";
 
 interface CompleteCourseModalProps {
   courseId: string;
+  completionPercent: number;
+  isLoading?: boolean;
   config?: CourseModalConfigData;
 }
 
-export function CompleteCourseModal({ courseId, config }: CompleteCourseModalProps) {
+export function CompleteCourseModal({ courseId, completionPercent, isLoading, config }: CompleteCourseModalProps) {
   const [open, setOpen] = useState(false);
   const [checked, setChecked] = useState(false);
-  const { completionPercent, isLoading } = useCourseCompletion(courseId);
-  const [justConfirmed, setJustConfirmed] = useState(false);
   const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
+  const setConfirmJustClosed = useAppStore((s) => s.setConfirmJustClosed);
 
   const [isPending, setIsPending] = useState(false);
 
   const isEnabled = config?.confirm_enabled === true;
+
+  // Chỉ reset confirm_shown 1 lần per session, tránh gọi API thừa
+  const hasResetRef = useRef(false);
 
   useEffect(() => {
     setCourseModalActive(open || isPending);
@@ -52,17 +55,22 @@ export function CompleteCourseModal({ courseId, config }: CompleteCourseModalPro
   useEffect(() => {
     if (!courseId || isLoading || !config || isModalStateLoading || !modalState) return;
     
+    // Reset confirm_shown khi progress rớt dưới 100%, nhưng chỉ 1 lần
     if (completionPercent < 100) {
-      if (modalState.confirm_shown) {
+      if (modalState.confirm_shown && !hasResetRef.current) {
+        hasResetRef.current = true;
         updateState({ confirm_shown: false });
       }
-      return; // Khỏi chạy logic ở dưới
+      return;
     }
+
+    // Khi đạt 100% lại → cho phép reset lần sau
+    hasResetRef.current = false;
 
     const isConfirmed = modalState.confirm_shown;
     // Chỉ hiển thị modal khi tiến độ = 100%, chưa confirm và admin bật
     if (!isConfirmed && completionPercent === 100 && isEnabled) {
-      setIsPending(true); // Khóa huy hiệu ngay lập tức
+      setIsPending(true);
       // Delay một chút để progress bar kịp chạy tới 100%
       const timer = setTimeout(() => {
         setIsPending(false);
@@ -78,11 +86,9 @@ export function CompleteCourseModal({ courseId, config }: CompleteCourseModalPro
   const handleContinue = () => {
     if (!checked) return;
     updateState({ confirm_shown: true });
-    setJustConfirmed(true);
     setOpen(false);
-    // Khi modal close, do React state render, component CompletionModal sẽ đọc được cờ từ localStorage để bật lên.
-    // Hoặc dispatch sự kiện để đảm bảo đồng bộ
-    window.dispatchEvent(new Event("course_confirmed_event"));
+    // Thông báo cho Complete modal qua Zustand store (thay vì DOM event)
+    setConfirmJustClosed(true);
   };
 
   const [scale, setScale] = useState(1);
