@@ -2,14 +2,16 @@
 // Session-level store: Lưu kết quả submit của các interactive block
 // (Quiz, Crossword, Sortable) trong phiên xem course hiện tại.
 //
-// Mục đích: Khi learner quay lại unit trước đó bằng nút navigation,
-// component mount lại sẽ khôi phục trạng thái đã submit thay vì reset.
+// Mục đích: Khi learner quay lại unit trước đó bằng nút navigation
+// hoặc F5 reload, component mount lại sẽ khôi phục trạng thái đã
+// submit thay vì reset.
 //
-// KHÔNG persist: khi learner rời trang course detail → store bị xóa
-// → learner vào lại sẽ làm bài từ đầu.
+// Persist bằng sessionStorage: F5 reload → giữ state,
+// đóng tab → mất state (learner vào lại sẽ fetch từ server).
 // ============================================================
 
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 interface BlockSubmitResult {
   resultMessage: string;
@@ -20,6 +22,9 @@ interface BlockSubmitResult {
   explanationHtml?: string;
   // Lưu parsed problems cho Quiz (tránh re-fetch XBlock HTML bị thay đổi sau submit)
   parsedProblems?: unknown[];
+  // Fingerprint nội dung — dùng để phát hiện admin đã update content
+  // Nếu fingerprint khác so với data server hiện tại → cache bị stale → xóa
+  contentFingerprint?: string;
 }
 
 interface BlockSubmitStore {
@@ -35,15 +40,23 @@ interface BlockSubmitStore {
   clearAll: () => void;
 }
 
-export const useBlockSubmitStore = create<BlockSubmitStore>((set, get) => ({
-  results: {},
+export const useBlockSubmitStore = create<BlockSubmitStore>()(
+  persist(
+    (set, get) => ({
+      results: {},
 
-  setResult: (usageKey, result) =>
-    set((state) => ({
-      results: { ...state.results, [usageKey]: result },
-    })),
+      setResult: (usageKey, result) =>
+        set((state) => ({
+          results: { ...state.results, [usageKey]: result },
+        })),
 
-  getResult: (usageKey) => get().results[usageKey],
+      getResult: (usageKey) => get().results[usageKey],
 
-  clearAll: () => set({ results: {} }),
-}));
+      clearAll: () => set({ results: {} }),
+    }),
+    {
+      name: "la-block-submit",
+      storage: createJSONStorage(() => sessionStorage),
+    }
+  )
+);

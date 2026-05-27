@@ -61,7 +61,9 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
     // Khôi phục kết quả từ session store nếu đã submit trước đó
     if (!restoredFromCache && svd) {
       const cached = useBlockSubmitStore.getState().getResult(usageKey);
-      if (cached) {
+      // So sánh fingerprint: nếu admin đã update content → bỏ qua cache
+      const currentFingerprint = JSON.stringify(svd.words.map(w => w.clue + '|' + w.length));
+      if (cached && cached.contentFingerprint === currentFingerprint) {
         setResultMessage(cached.resultMessage);
         setIsCorrect(cached.isCorrect);
         if (cached.answers) {
@@ -72,6 +74,9 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
           setAnswers(restoredAnswers);
         }
         setStarted(true);
+      } else if (cached) {
+        // Content đã thay đổi → xóa cache cũ
+        useBlockSubmitStore.getState().setResult(usageKey, undefined as any);
       }
       setRestoredFromCache(true);
     }
@@ -86,11 +91,13 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
       if (data.status === "correct") {
         setIsCorrect(true);
         setResultMessage(msg);
-        // Lưu vào session store
+        // Lưu vào session store (kèm fingerprint để phát hiện content thay đổi)
+        const fp = svd ? JSON.stringify(svd.words.map(w => w.clue + '|' + w.length)) : '';
         useBlockSubmitStore.getState().setResult(usageKey, {
           resultMessage: msg,
           isCorrect: true,
           answers: { ...answers },
+          contentFingerprint: fp,
         });
         // Invalidate block detail and course completion
         qc.invalidateQueries({ queryKey: ["block-detail", usageKey] });
@@ -99,10 +106,12 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
         setIsCorrect(true);
         setResultMessage("🎉 Chính xác! Tuyệt vời!");
         // Lưu vào session store
+        const fp2 = svd ? JSON.stringify(svd.words.map(w => w.clue + '|' + w.length)) : '';
         useBlockSubmitStore.getState().setResult(usageKey, {
           resultMessage: "🎉 Chính xác! Tuyệt vời!",
           isCorrect: true,
           answers: { ...answers },
+          contentFingerprint: fp2,
         });
       } else {
         setIsCorrect(false);
@@ -223,13 +232,13 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
 
         <div className="mb-2 flex items-center gap-2">
           <span 
-            className="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider"
+            className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider"
             style={{ backgroundColor: "#43FDD7", color: "#000" }}
           >
             Game
           </span>
         </div>
-        <h2 className="mb-8 text-4xl font-black text-foreground">
+        <h2 className="mb-8 text-4xl font-bold text-foreground">
           {svd.display_name || "Đố vui ô chữ"}
         </h2>
 
@@ -264,20 +273,23 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
     clueBoxTitle = currentClue;
   }
 
-  let spinner = null;
-  if (submitMutation.isPending) {
-    spinner = <Loader2 className="mr-2 h-5 w-5 animate-spin" />;
+  let actionArea = null;
+  if (isCorrect !== true) {
+    let spinner = null;
+    if (submitMutation.isPending) {
+      spinner = <Loader2 className="mr-2 h-5 w-5 animate-spin" />;
+    }
+    actionArea = (
+      <Button
+        onClick={handleSubmit}
+        disabled={submitMutation.isPending}
+        className="h-12 w-full max-w-sm rounded-full font-bold text-[15px] shadow-lg"
+      >
+        {spinner}
+        Nộp bài chấm điểm
+      </Button>
+    );
   }
-  let actionArea = (
-    <Button
-      onClick={handleSubmit}
-      disabled={submitMutation.isPending}
-      className="h-12 w-full max-w-sm rounded-full font-bold text-[15px] shadow-lg"
-    >
-      {spinner}
-      Nộp bài chấm điểm
-    </Button>
-  );
 
   let resultBlock = null;
   if (resultMessage) {
@@ -395,12 +407,13 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
                       <input
                         key={`cell-${c}`}
                         type="text"
-                        maxLength={1}
                         value={charVal}
                         onChange={(e) => {
-                          const val = e.target.value;
-                          handleCellChange(word.id, c, val);
-                          if (val) {
+                          // Lấy ký tự cuối cùng (ký tự mới nhập) để cho phép overwrite
+                          const raw = e.target.value;
+                          const lastChar = raw.slice(-1);
+                          handleCellChange(word.id, c, lastChar);
+                          if (lastChar) {
                             if (e.target.nextElementSibling) {
                               if (e.target.nextElementSibling.tagName === "INPUT") {
                                 (e.target.nextElementSibling as HTMLInputElement).focus();

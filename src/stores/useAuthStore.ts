@@ -13,6 +13,7 @@ import { config } from "@/config/env";
 import { updateStreak } from "@/hooks/useUser";
 import { queryClient } from "@/App";
 import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
+import { useStudyTimeStore } from "@/stores/useStudyTimeStore";
 
 // ── Mã hóa/giải mã đơn giản cho token trong storage ──
 // Không phải mã hóa cấp quân sự nhưng ngăn đọc token trực tiếp
@@ -428,6 +429,9 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem("la-streak");
         localStorage.removeItem("la_study_time_weekly");
         localStorage.removeItem("la_study_time_last_sync");
+
+        // 2.6 Reset Zustand study time store (xóa data trong memory)
+        useStudyTimeStore.getState().reset();
 
         // 3. Xóa LMS session cookie + gọi server logout
         try {

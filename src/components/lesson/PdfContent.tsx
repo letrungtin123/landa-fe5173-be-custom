@@ -103,7 +103,7 @@ export function PdfContent({ usageKey }: { usageKey: string }) {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-white truncate">{svd.display_name}</p>
-            <p className="text-[11px] text-white/40 font-medium">Tài liệu PDF</p>
+            <p className="text-[11px] text-white/40 font-medium">Hãy ấn đè phím Ctrl và rê chuột để phóng to</p>
           </div>
         </div>
 

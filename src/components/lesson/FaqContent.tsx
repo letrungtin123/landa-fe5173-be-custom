@@ -22,7 +22,7 @@ interface FaqData {
  */
 export function FaqContent({ usageKey }: { usageKey: string }) {
   const username = useAuthStore((s) => s.user?.username);
-  const [openIds, setOpenIds] = useState<Set<number>>(new Set());
+  const [openId, setOpenId] = useState<number | null>(null);
 
   const { data: blockData, isLoading } = useQuery({
     queryKey: ["block-detail", usageKey, username],
@@ -33,15 +33,7 @@ export function FaqContent({ usageKey }: { usageKey: string }) {
   const svd = blockData?.student_view_data as unknown as FaqData | undefined;
 
   const toggleItem = (id: number) => {
-    setOpenIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+    setOpenId((prev) => (prev === id ? null : id));
   };
 
   if (isLoading) {
@@ -77,13 +69,13 @@ export function FaqContent({ usageKey }: { usageKey: string }) {
       <div className="mb-6 relative z-10">
         <div className="mb-2 flex items-center gap-2">
           <span
-            className="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider"
+            className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider"
             style={{ backgroundColor: "#43FDD7", color: "#000" }}
           >
             FAQ
           </span>
         </div>
-        <h2 className="text-2xl md:text-3xl font-black text-foreground">
+        <h2 className="text-2xl md:text-3xl font-bold text-foreground">
           {svd.display_name}
         </h2>
         <p className="mt-2 text-[14px] text-foreground/60 font-medium">
@@ -94,7 +86,7 @@ export function FaqContent({ usageKey }: { usageKey: string }) {
       {/* Accordion */}
       <div className="space-y-3 relative z-10 w-full max-w-3xl mx-auto">
         {svd.items.map((item, idx) => {
-          const isOpen = openIds.has(item.id);
+          const isOpen = openId === item.id;
 
           return (
             <div

@@ -119,10 +119,15 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
     if (svd.items && svd.items.length > 0) {
       // Khôi phục kết quả từ session store nếu đã submit trước đó
       const cached = useBlockSubmitStore.getState().getResult(usageKey);
-      if (cached) {
+      // So sánh fingerprint: nếu admin đã update content → bỏ qua cache
+      const currentFingerprint = JSON.stringify(svd.items.map(i => i.text));
+      if (cached && cached.contentFingerprint === currentFingerprint) {
         setResultMessage(cached.resultMessage);
         setIsCorrect(cached.isCorrect);
         setStarted(true);
+      } else if (cached) {
+        // Content đã thay đổi → xóa cache cũ
+        useBlockSubmitStore.getState().setResult(usageKey, undefined as any);
       }
       setItems(svd.items);
       setInitialized(true);
@@ -163,10 +168,12 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
       if (data.status === "correct") {
         setIsCorrect(true);
         setResultMessage(data.message);
-        // Lưu vào session store
+        // Lưu vào session store (kèm fingerprint)
+        const fp = svd ? JSON.stringify(svd.items.map(i => i.text)) : '';
         useBlockSubmitStore.getState().setResult(usageKey, {
           resultMessage: data.message,
           isCorrect: true,
+          contentFingerprint: fp,
         });
         qc.invalidateQueries({ queryKey: ["block-detail", usageKey] });
         qc.invalidateQueries({ queryKey: ["course-blocks"] });
@@ -221,13 +228,13 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
 
         <div className="mb-2 flex items-center gap-2">
           <span 
-            className="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider"
+            className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider"
             style={{ backgroundColor: "#43FDD7", color: "#000" }}
           >
             Sắp xếp
           </span>
         </div>
-        <h2 className="mb-8 text-4xl font-black text-foreground">
+        <h2 className="mb-8 text-4xl font-bold text-foreground">
           {svd.display_name || "Sắp xếp đúng thứ tự"}
         </h2>
 
@@ -259,7 +266,7 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
   // ── Result Block ──
   let resultBlock = null;
   if (resultMessage) {
-    let wrapperClass = "mb-4 w-full flex items-center gap-3 rounded-xl p-4 ";
+    let wrapperClass = "mb-4 w-full max-w-sm flex items-center gap-3 rounded-xl p-4 ";
     let textClass = "font-medium ";
     let icon = null;
 
@@ -294,7 +301,7 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
       {/* Badge */}
       <div className="mb-2 flex items-center gap-2">
         <span 
-          className="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider"
+          className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider"
           style={{ backgroundColor: "#43FDD7", color: "#000" }}
         >
           Sắp xếp
@@ -302,7 +309,7 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
       </div>
 
       {/* Title */}
-      <h2 className="mb-4 text-3xl md:text-4xl font-black text-foreground">
+      <h2 className="mb-4 text-3xl md:text-4xl font-bold text-foreground">
         {svd.display_name || "Sắp xếp đúng thứ tự"}
       </h2>
 
@@ -338,14 +345,16 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
       {/* Submit area */}
       <div className="flex flex-col items-center justify-center relative z-10 border-t border-primary/10 pt-6 mt-4">
         {resultBlock}
-        <Button
-          onClick={handleSubmit}
-          disabled={submitMutation.isPending}
-          className="h-12 w-full max-w-sm rounded-full font-bold text-[15px] shadow-lg"
-        >
-          {spinner}
-          Nộp bài chấm điểm
-        </Button>
+        {isCorrect !== true && (
+          <Button
+            onClick={handleSubmit}
+            disabled={submitMutation.isPending}
+            className="h-12 w-full max-w-sm rounded-full font-bold text-[15px] shadow-lg"
+          >
+            {spinner}
+            Nộp bài chấm điểm
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -16,6 +16,7 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { CourseLayout } from "@/components/layout/CourseLayout";
 import { GlobalBadgeWatcher } from "@/components/badges/GlobalBadgeWatcher";
+import { StudyTimeTracker } from "@/components/global/StudyTimeTracker";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { GoogleOAuthProvider } from "@react-oauth/google";
@@ -91,6 +92,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     <>
       {/* Global badge watcher — hiện modal khi earn badge mới bất kể đang ở route nào */}
       <GlobalBadgeWatcher />
+      {/* Global study time tracker — đếm giờ học ngay khi login, mọi route */}
+      <StudyTimeTracker />
       {children}
     </>
   );

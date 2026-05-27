@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 interface AppState {
   sidebarOpen: boolean;
@@ -18,31 +19,45 @@ interface AppState {
   setConfirmJustClosed: (v: boolean) => void;
 }
 
-export const useAppStore = create<AppState>()((set, get) => ({
-  sidebarOpen: false,
-  currentModuleId: "m2",
-  currentLessonId: "l-m2-1",
-  currentUnitIndex: 0,
-  isCourseModalActive: false,
-  confirmJustClosed: false,
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      sidebarOpen: false,
+      currentModuleId: "",
+      currentLessonId: "",
+      currentUnitIndex: 0,
+      isCourseModalActive: false,
+      confirmJustClosed: false,
 
-  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-  setSidebarOpen: (open) => set({ sidebarOpen: open }),
-  setCurrentLesson: (moduleId, lessonId) =>
-    set({ currentModuleId: moduleId, currentLessonId: lessonId, currentUnitIndex: 0 }),
-  setUnitIndex: (index) => set({ currentUnitIndex: index }),
-  nextUnit: (totalUnits) => {
-    const current = get().currentUnitIndex;
-    if (current >= totalUnits - 1) return false;
-    set({ currentUnitIndex: current + 1 });
-    return true;
-  },
-  prevUnit: () => {
-    const current = get().currentUnitIndex;
-    if (current <= 0) return false;
-    set({ currentUnitIndex: current - 1 });
-    return true;
-  },
-  setCourseModalActive: (active) => set({ isCourseModalActive: active }),
-  setConfirmJustClosed: (v) => set({ confirmJustClosed: v }),
-}));
+      toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+      setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      setCurrentLesson: (moduleId, lessonId) =>
+        set({ currentModuleId: moduleId, currentLessonId: lessonId, currentUnitIndex: 0 }),
+      setUnitIndex: (index) => set({ currentUnitIndex: index }),
+      nextUnit: (totalUnits) => {
+        const current = get().currentUnitIndex;
+        if (current >= totalUnits - 1) return false;
+        set({ currentUnitIndex: current + 1 });
+        return true;
+      },
+      prevUnit: () => {
+        const current = get().currentUnitIndex;
+        if (current <= 0) return false;
+        set({ currentUnitIndex: current - 1 });
+        return true;
+      },
+      setCourseModalActive: (active) => set({ isCourseModalActive: active }),
+      setConfirmJustClosed: (v) => set({ confirmJustClosed: v }),
+    }),
+    {
+      name: "la-app-nav",
+      storage: createJSONStorage(() => sessionStorage),
+      // Chỉ persist vị trí navigation — không persist UI state (sidebar, modals)
+      partialize: (state) => ({
+        currentModuleId: state.currentModuleId,
+        currentLessonId: state.currentLessonId,
+        currentUnitIndex: state.currentUnitIndex,
+      }),
+    }
+  )
+);

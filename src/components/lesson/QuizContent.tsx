@@ -128,23 +128,9 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
   const [fetchedExplanation, setFetchedExplanation] = useState<string>("");
 
   // Tải rendered HTML từ XBlock (qua Vite proxy) và parse
-  // HOẶC khôi phục từ session store nếu đã submit trước đó (skip re-fetch)
+  // Sau đó kiểm tra cache với fingerprint để phát hiện admin đã update content
   useEffect(() => {
     if (!problemUsageKey) return;
-
-    // Kiểm tra session store trước — nếu đã submit, dùng luôn dữ liệu đã lưu
-    // (tránh re-fetch XBlock HTML bị server thay đổi sau submit → mất answers)
-    const cached = useBlockSubmitStore.getState().getResult(problemUsageKey);
-    if (cached && cached.parsedProblems && cached.parsedProblems.length > 0) {
-      console.log('[QuizContent] Restoring from session cache:', problemUsageKey);
-      setParsedProblems(cached.parsedProblems as ParsedProblem[]);
-      setResultMessage(cached.resultMessage);
-      setIsCorrect(cached.isCorrect);
-      if (cached.answers) setAnswers(cached.answers);
-      if (cached.explanationHtml) setFetchedExplanation(cached.explanationHtml);
-      setIsLoadingContent(false);
-      return;
-    }
 
     let cancelled = false;
 
@@ -152,20 +138,38 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
     getXBlockHtml(problemUsageKey)
       .then((html) => {
         if (cancelled) return;
-        console.log('[QuizContent] XBlock HTML length:', html.length);
-        console.log('[QuizContent] XBlock HTML preview:', html.substring(0, 500));
         const problems = parseProblemHtml(html);
-        console.log('[QuizContent] Parsed problems:', problems.length, problems);
-        setParsedProblems(problems);
-        // Chỉ bật nút "Xem gợi ý" nếu BẤT KỲ problem nào có hint
-        const anyHasHints = problems.some(p => p.hasHints);
-        setHasMoreHints(anyHasHints);
-        setFetchedHints([]);
-        setHintIndex(0);
-        setFetchedExplanation("");
-        setAnswers({});
-        setResultMessage(null);
-        setIsCorrect(null);
+        console.log('[QuizContent] Parsed problems:', problems.length);
+
+        // Tạo fingerprint từ nội dung quiz hiện tại
+        const currentFingerprint = JSON.stringify(problems.map(p => p.type + '|' + (p.options?.map(o => o.text).join(',') || '')));
+
+        // Kiểm tra cache với fingerprint
+        const cached = useBlockSubmitStore.getState().getResult(problemUsageKey);
+        if (cached && cached.parsedProblems && cached.parsedProblems.length > 0 && cached.contentFingerprint === currentFingerprint) {
+          // Content không đổi → khôi phục từ cache
+          console.log('[QuizContent] Restoring from cache (fingerprint matched):', problemUsageKey);
+          setParsedProblems(cached.parsedProblems as ParsedProblem[]);
+          setResultMessage(cached.resultMessage);
+          setIsCorrect(cached.isCorrect);
+          if (cached.answers) setAnswers(cached.answers);
+          if (cached.explanationHtml) setFetchedExplanation(cached.explanationHtml);
+        } else {
+          // Content mới hoặc không có cache → hiển quiz mới
+          if (cached) {
+            console.log('[QuizContent] Cache invalidated (content changed):', problemUsageKey);
+            useBlockSubmitStore.getState().setResult(problemUsageKey, undefined as any);
+          }
+          setParsedProblems(problems);
+          const anyHasHints = problems.some(p => p.hasHints);
+          setHasMoreHints(anyHasHints);
+          setFetchedHints([]);
+          setHintIndex(0);
+          setFetchedExplanation("");
+          setAnswers({});
+          setResultMessage(null);
+          setIsCorrect(null);
+        }
         setIsLoadingContent(false);
       })
       .catch((err) => {
@@ -228,14 +232,15 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
         }
       }
 
-      // Lưu kết quả vào session store để khôi phục khi quay lại unit
-      // Bao gồm parsedProblems để skip re-fetch XBlock HTML (tránh server trả HTML khác)
+      // Lưu kết quả vào session store (kèm fingerprint để phát hiện content thay đổi)
+      const fp = JSON.stringify(parsedProblems.map(p => p.type + '|' + (p.options?.map(o => o.text).join(',') || '')));
       useBlockSubmitStore.getState().setResult(problemUsageKey, {
         resultMessage: result.message,
         isCorrect: result.correct,
         answers: { ...answers },
         explanationHtml: explanationHtml || undefined,
         parsedProblems: [...parsedProblems],
+        contentFingerprint: fp,
       });
 
       // CHỈ khi trả lời ĐÚNG mới gọi markBlockComplete và cập nhật tiến độ sidebar
