@@ -518,7 +518,7 @@ export function LessonDetailPage() {
                   {/* Top: Mentor section */}
                   <div className="px-8 pt-7 pb-2">
                     <BadgeCyan>Mentor</BadgeCyan>
-                    <h3 className="mb-1 mt-1 text-[24px] font-bold leading-[28px] text-foreground">
+                    <h3 className="mb-1 mt-1 text-[20px] font-bold leading-[28px] text-foreground">
                       Người hướng dẫn
                     </h3>
                   </div>
