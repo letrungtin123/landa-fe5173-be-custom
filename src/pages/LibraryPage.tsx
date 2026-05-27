@@ -59,14 +59,28 @@ const EXTENSION_COLORS: Record<string, string> = {
   png: "#0d9488",
 };
 
-const getCategoryColor = (slug: string) => {
-  // Use a hash-based color for custom categories
-  const colors = ["#ea4335", "#0ea5e9", "#10b981", "#ff6c37", "#8b5cf6", "#ec4899"];
-  let hash = 0;
-  for (let i = 0; i < slug.length; i++) {
-    hash = slug.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
+// Palette 16 màu phân biệt rõ ràng, gán theo index → không trùng
+const CATEGORY_COLORS = [
+  "#ea4335", // đỏ
+  "#0ea5e9", // xanh dương
+  "#10b981", // xanh lá
+  "#ff6c37", // cam
+  "#8b5cf6", // tím
+  "#ec4899", // hồng
+  "#f59e0b", // vàng amber
+  "#06b6d4", // cyan
+  "#6366f1", // indigo
+  "#14b8a6", // teal
+  "#e11d48", // rose đậm
+  "#84cc16", // lime
+  "#d946ef", // fuchsia
+  "#0284c7", // sky đậm
+  "#dc2626", // red đậm
+  "#7c3aed", // violet
+];
+
+const getCategoryColor = (index: number) => {
+  return CATEGORY_COLORS[index % CATEGORY_COLORS.length];
 };
 
 const formatFileSize = (bytes: number): string => {
@@ -427,8 +441,8 @@ export function LibraryPage() {
                   ref={categoryCarouselRef}
                   className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 -mb-4 hide-scrollbar"
                 >
-                  {categories.map((cat: DocumentCategory) => {
-                    const bgColor = getCategoryColor(cat.slug);
+                  {categories.map((cat: DocumentCategory, catIndex: number) => {
+                    const bgColor = getCategoryColor(catIndex);
                     const isActive = activeCategory === cat.slug;
 
                     return (
@@ -470,7 +484,7 @@ export function LibraryPage() {
                       categoryCarouselRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
                     }
                   }}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-background border shadow-md hover:scale-105 text-foreground opacity-0 group-hover:opacity-100 transition-all duration-200"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-background border shadow-md hover:scale-105 text-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200"
                   aria-label="Trước"
                 >
                   <ChevronLeft className="h-5 w-5" />
@@ -484,7 +498,7 @@ export function LibraryPage() {
                       categoryCarouselRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                     }
                   }}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-background border shadow-md hover:scale-105 text-foreground opacity-0 group-hover:opacity-100 transition-all duration-200"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-background border shadow-md hover:scale-105 text-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200"
                   aria-label="Sau"
                 >
                   <ChevronRight className="h-5 w-5" />
@@ -521,16 +535,19 @@ export function LibraryPage() {
                 <table className="w-full table-fixed">
                   <thead className="bg-[#f8fafc]/80 dark:bg-accent/5 backdrop-blur-sm border-b border-border/50">
                       <tr className="text-left text-[10px] font-bold leading-[14px] text-muted-foreground uppercase tracking-wider">
-                        <th className="px-4 xl:px-6 py-4 w-[40%]">
+                        <th className="px-4 xl:px-6 py-4 w-[32%]">
                           Tên tài liệu
                         </th>
-                        <th className="px-4 xl:px-6 py-4 w-[15%]">
+                        <th className="px-4 xl:px-6 py-4 w-[18%]">
+                          Danh mục
+                        </th>
+                        <th className="px-4 xl:px-6 py-4 w-[10%]">
                           Loại
                         </th>
-                        <th className="px-4 xl:px-6 py-4 w-[15%]">
+                        <th className="px-4 xl:px-6 py-4 w-[12%]">
                           Dung lượng
                         </th>
-                        <th className="px-4 xl:px-6 py-4 w-[20%]">
+                        <th className="px-4 xl:px-6 py-4 w-[18%]">
                           Người đăng
                         </th>
                         <th className="pl-4 pr-8 xl:pl-6 xl:pr-10 py-4 w-[10%]"></th>
@@ -545,6 +562,9 @@ export function LibraryPage() {
                                 <div className="h-10 w-10 shrink-0 rounded-lg bg-accent/30"></div>
                                 <div className="h-4 w-32 sm:w-48 bg-accent/30 rounded"></div>
                               </div>
+                            </td>
+                            <td className="px-4 xl:px-6 py-4">
+                              <div className="h-4 w-20 bg-accent/30 rounded"></div>
                             </td>
                             <td className="px-4 xl:px-6 py-4">
                               <div className="h-5 w-12 bg-accent/30 rounded"></div>
@@ -586,6 +606,14 @@ export function LibraryPage() {
                             </td>
                             <td className="px-4 xl:px-6 py-4">
                               <span
+                                className="text-[13px] font-medium leading-[18px] text-muted-foreground truncate block max-w-full"
+                                title={doc.category_name}
+                              >
+                                {doc.category_name || "—"}
+                              </span>
+                            </td>
+                            <td className="px-4 xl:px-6 py-4">
+                              <span
                                 className="inline-block text-white text-[10px] font-bold leading-[14px] px-2 py-0.5 rounded uppercase truncate max-w-full"
                                 style={{ backgroundColor: extColor }}
                                 title={doc.extension}
@@ -624,7 +652,7 @@ export function LibraryPage() {
                         })
                       ) : (
                         <tr>
-                          <td colSpan={5} className="p-16 text-center text-muted-foreground bg-card/50">
+                          <td colSpan={6} className="p-16 text-center text-muted-foreground bg-card/50">
                             <div className="flex flex-col items-center justify-center gap-2">
                               <FileText className="h-8 w-8 opacity-20" />
                               <p>

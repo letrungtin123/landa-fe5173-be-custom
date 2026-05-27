@@ -49,7 +49,59 @@ interface WelcomeBannerProps {
 export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
   const { colorStyle } = useThemeStore();
   const userName = useAuthStore((s) => s.user?.name || "Learner");
-  const { chartData, percentile } = useStudyTimeTracker();
+  const { chartData, todayMinutes, weeklyAvgMinutes, comparisonPercent } = useStudyTimeTracker();
+
+  // Format minutes thành text dễ đọc
+  const formatTime = (mins: number) => {
+    if (mins < 60) return `${mins} phút`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m > 0 ? `${h} tiếng ${m} phút` : `${h} tiếng`;
+  };
+
+  // Dynamic message dựa trên so sánh hôm nay vs trung bình tuần
+  const renderMomentumMessage = () => {
+    if (todayMinutes === 0) {
+      return (
+        <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
+          Hôm nay bạn chưa bắt đầu học.<br />
+          Hãy dành chút thời gian để duy trì nhịp độ tuần này nhé!
+        </p>
+      );
+    }
+
+    if (weeklyAvgMinutes === 0) {
+      return (
+        <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
+          Bạn đã học <span className="text-[#45FFCA] font-semibold">{formatTime(todayMinutes)}</span> hôm nay.<br />
+          Khởi đầu tuần mới thật tuyệt vời!
+        </p>
+      );
+    }
+
+    if (comparisonPercent >= 100) {
+      const overPercent = comparisonPercent - 100;
+      return (
+        <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
+          Hôm nay bạn đã học <span className="text-[#45FFCA] font-semibold">{formatTime(todayMinutes)}</span>,{' '}
+          {overPercent > 0 ? (
+            <>cao hơn <span className="text-[#45FFCA] font-semibold">{overPercent}%</span> so với</>
+          ) : (
+            <>bằng với</>
+          )}{' '}
+          trung bình tuần ({formatTime(weeklyAvgMinutes)}/ngày).<br />
+          Giữ vững nhịp độ này nhé!
+        </p>
+      );
+    }
+
+    return (
+      <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
+        Hôm nay bạn đã học <span className="text-[#45FFCA] font-semibold">{formatTime(todayMinutes)}</span>.<br />
+        Trung bình tuần của bạn là {formatTime(weeklyAvgMinutes)}/ngày — cố thêm một chút nữa nhé!
+      </p>
+    );
+  };
 
   return (
     <motion.div
@@ -92,10 +144,7 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
       >
         <div className="relative z-10 w-full px-8 md:px-10 mb-1">
           <h3 className="mb-2 text-[22px] font-bold tracking-tight text-white">Weekly Momentum</h3>
-          <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
-            Thật ấn tượng! Thời gian học tập của bạn <span className="text-[#45FFCA] font-semibold">cao hơn {percentile}%</span> người học<br />
-            trên hệ thống tuần qua. Giữ vững phong độ này nhé!
-          </p>
+          {renderMomentumMessage()}
         </div>
 
         <div className="relative w-full flex-1 mt-auto">

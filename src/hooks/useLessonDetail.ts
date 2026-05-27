@@ -157,6 +157,11 @@ function buildComponent(
     comp.faqUsageKey = block.id;
   }
 
+  if (block.type === "la_pdf") {
+    const svd = block.student_view_data as Record<string, unknown> | undefined;
+    comp.pdfUrl = (svd?.pdf_url as string) || null;
+  }
+
   if (block.type === "la_diagram") {
     try {
       const svd = block.student_view_data as any;
@@ -217,6 +222,7 @@ function determineLessonType(
     if (c.type === "la_sortable") return "quiz";
     if (c.type === "la_diagram") return "quiz";
     if (c.type === "la_faq") return "slide";
+    if (c.type === "la_pdf") return "slide";
   }
   if (components.some((c) => c.type === "html")) return "slide";
   return "video";

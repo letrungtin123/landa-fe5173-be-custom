@@ -211,7 +211,7 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
   // ── Màn hình Hướng dẫn (Chưa bắt đầu) ──
   if (!started) {
     return (
-      <div className="mt-8 rounded-[32px] border-2 border-primary/10 bg-[#F4F9FF] dark:bg-slate-900/50 p-8 shadow-sm relative overflow-hidden">
+      <div className="rounded-3xl border-2 border-primary/10 bg-[#F4F9FF] dark:bg-slate-900/50 p-8 shadow-sm relative overflow-hidden">
         {/* Trang trí góc phải */}
         <div className="absolute right-0 top-0 -mr-16 -mt-16 w-64 h-64 opacity-20 pointer-events-none">
           <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
@@ -289,7 +289,7 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
 
   // ── Main Render ──
   return (
-    <div className="mt-8 rounded-[32px] border-2 border-primary/20 bg-[#F4F9FF] dark:bg-slate-900/50 p-6 md:p-10 shadow-sm relative overflow-hidden">
+    <div className="rounded-3xl border-2 border-primary/20 bg-[#F4F9FF] dark:bg-slate-900/50 p-6 md:p-10 shadow-sm relative overflow-hidden">
 
       {/* Badge */}
       <div className="mb-2 flex items-center gap-2">

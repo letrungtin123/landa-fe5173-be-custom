@@ -46,6 +46,7 @@ export interface UnitComponent {
   crosswordUsageKey?: string | null;
   sortableUsageKey?: string | null;
   faqUsageKey?: string | null;
+  pdfUrl?: string | null;
   diagramData?: any;
   studentViewUrl?: string | null;
 }

@@ -24,6 +24,7 @@ import { refetchProgressWithRetry } from "@/lib/progressRefetch";
 import { CrosswordContent } from "@/components/lesson/CrosswordContent";
 import { SortableContent } from "@/components/lesson/SortableContent";
 import { FaqContent } from "@/components/lesson/FaqContent";
+import { PdfContent } from "@/components/lesson/PdfContent";
 import DiagramContent from "@/components/lesson/DiagramContent";
 import { CompleteCourseModal } from "@/components/lesson/CompleteCourseModal";
 import { Course100PercentModal } from "@/components/lesson/Course100PercentModal";
@@ -44,7 +45,7 @@ const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
 );
 
 // Block types chỉ cần xem, không cần tương tác → auto-mark complete khi user navigate đến unit
-const PASSIVE_BLOCK_TYPES = ["html", "video", "la_diagram", "la_faq"];
+const PASSIVE_BLOCK_TYPES = ["html", "video", "la_diagram", "la_faq", "la_pdf"];
 const INTERACTIVE_BLOCK_TYPES = ["problem", "la_crossword", "la_sortable"];
 
 export function LessonDetailPage() {
@@ -145,7 +146,7 @@ export function LessonDetailPage() {
     if (!lesson) return [];
     return lesson.units.flatMap((unit) =>
       unit.components
-        .filter((c) => c.type === "html" || c.type === "video" || c.type === "la_diagram" || c.type === "la_faq")
+        .filter((c) => c.type === "html" || c.type === "video" || c.type === "la_diagram" || c.type === "la_faq" || c.type === "la_pdf")
         .map((c) => c.id)
     );
   }, [lesson]);
@@ -242,7 +243,7 @@ export function LessonDetailPage() {
     // Tự động mark hoàn thành cho các block text/video ở Unit HIỆN TẠI
     if (currentUnit && user?.username && courseId) {
       const leafIdsToMark = currentUnit.components
-        .filter((c) => c.type === "html" || c.type === "video" || c.type === "la_diagram" || c.type === "la_faq")
+        .filter((c) => c.type === "html" || c.type === "video" || c.type === "la_diagram" || c.type === "la_faq" || c.type === "la_pdf")
         .map((c) => c.id);
 
       if (leafIdsToMark.length > 0) {
@@ -302,7 +303,7 @@ export function LessonDetailPage() {
       <div className="flex flex-1">
         {/* ── Left: Main Content ── */}
         <div className="flex-1 min-w-0" ref={contentRef}>
-          <div className="w-full px-6 py-6 md:px-10 md:py-8 2xl:px-16 2xl:py-12">
+          <div className="w-full px-6 py-6 md:px-7 md:py-8 2xl:px-8 2xl:py-12">
             {/* Header: Module + Tiêu đề + Progress */}
             <div className="mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <div className="flex-1">
@@ -349,7 +350,7 @@ export function LessonDetailPage() {
             )}
 
             {/* ── Row: Content + Right sidebar ── */}
-            <div className="flex flex-col xl:flex-row gap-8 xl:gap-10">
+            <div className="flex flex-col xl:flex-row gap-8 xl:gap-8">
               {/* ── Left Column ── */}
               <div className="flex-1 min-w-0 flex flex-col gap-5">
                 {/* Render current Unit components */}
@@ -367,31 +368,31 @@ export function LessonDetailPage() {
                       FORBID_TAGS: ["script", "style"],
                       FORBID_ATTR: ["onerror", "onload", "onclick"],
                     });
-                    
+
                     let images: { src: string; alt: string }[] = [];
                     let finalHtml = cleanHtml;
                     let hasImage = false;
-                    
+
                     try {
                       const parser = new DOMParser();
                       const doc = parser.parseFromString(cleanHtml, 'text/html');
                       const imgEls = doc.querySelectorAll('img');
                       hasImage = imgEls.length > 0;
-                      
+
                       if (imgEls.length >= 2) {
                         images = Array.from(imgEls).map(img => ({
                           src: img.getAttribute('src') || '',
                           alt: img.getAttribute('alt') || ''
                         }));
-                        
+
                         imgEls.forEach(img => img.remove());
-                        
+
                         doc.querySelectorAll('p').forEach(p => {
                           if (!p.textContent?.trim() && p.children.length === 0) {
                             p.remove();
                           }
                         });
-                        
+
                         finalHtml = doc.body.innerHTML;
                       }
                     } catch (e) {
@@ -406,14 +407,14 @@ export function LessonDetailPage() {
                           </div>
                         )}
                         {images.length >= 2 && (
-                          <LessonImageCarousel 
-                            images={images} 
-                            onImageClick={(src) => setLightboxSrc(src)} 
+                          <LessonImageCarousel
+                            images={images}
+                            onImageClick={(src) => setLightboxSrc(src)}
                           />
                         )}
                         {finalHtml.trim() && (
                           <div
-                            className="prose max-w-none text-[14px] 2xl:text-[16px] font-normal leading-[18px] 2xl:leading-[24px] text-foreground/80 dark:prose-invert dark:text-foreground [&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0 [&_p]:!text-[14px] 2xl:[&_p]:!text-[16px] [&_p]:!font-normal [&_p]:!leading-[18px] 2xl:[&_p]:!leading-[24px] [&_span]:!text-[14px] 2xl:[&_span]:!text-[16px] [&_span]:!font-normal [&_span]:!leading-[18px] 2xl:[&_span]:!leading-[24px] [&_li]:!text-[14px] 2xl:[&_li]:!text-[16px] [&_li]:!font-normal [&_li]:!leading-[18px] 2xl:[&_li]:!leading-[24px] [&_div]:!text-[14px] 2xl:[&_div]:!text-[16px] [&_div]:!font-normal [&_div]:!leading-[18px] 2xl:[&_div]:!leading-[24px] [&_h1]:!text-[28px] 2xl:[&_h1]:!text-[34px] [&_h1]:!font-bold [&_h1]:!leading-[36px] 2xl:[&_h1]:!leading-[42px] [&_h1]:!mt-6 [&_h1]:!mb-3 [&_h1]:!text-foreground [&_h2]:!text-[22px] 2xl:[&_h2]:!text-[26px] [&_h2]:!font-bold [&_h2]:!leading-[28px] 2xl:[&_h2]:!leading-[34px] [&_h2]:!mt-5 [&_h2]:!mb-2 [&_h2]:!text-foreground [&_h3]:!text-[18px] 2xl:[&_h3]:!text-[20px] [&_h3]:!font-semibold [&_h3]:!leading-[24px] 2xl:[&_h3]:!leading-[28px] [&_h3]:!mt-4 [&_h3]:!mb-1 [&_h3]:!text-foreground [&_img]:!cursor-zoom-in"
+                            className="prose max-w-none text-[14px] 2xl:text-[16px] font-normal leading-[18px] 2xl:leading-[24px] text-foreground/80 dark:prose-invert dark:text-foreground [&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0 [&_p]:!text-[14px] 2xl:[&_p]:!text-[16px] [&_p]:!font-normal [&_p]:!leading-[18px] 2xl:[&_p]:!leading-[24px] [&_span]:!text-[14px] 2xl:[&_span]:!text-[16px] [&_span]:!font-normal [&_span]:!leading-[18px] 2xl:[&_span]:!leading-[24px] [&_li]:!text-[14px] 2xl:[&_li]:!text-[16px] [&_li]:!font-normal [&_li]:!leading-[18px] 2xl:[&_li]:!leading-[24px] [&_div]:!text-[14px] 2xl:[&_div]:!text-[16px] [&_div]:!font-normal [&_div]:!leading-[18px] 2xl:[&_div]:!leading-[24px] [&_h1]:!text-[28px] 2xl:[&_h1]:!text-[34px] [&_h1]:!font-semibold [&_h1]:!leading-[36px] 2xl:[&_h1]:!leading-[42px] [&_h1]:!mt-6 [&_h1]:!mb-3 [&_h1]:!text-foreground [&_h2]:!text-[22px] 2xl:[&_h2]:!text-[26px] [&_h2]:!font-bold [&_h2]:!leading-[28px] 2xl:[&_h2]:!leading-[34px] [&_h2]:!mt-5 [&_h2]:!mb-2 [&_h2]:!text-foreground [&_h3]:!text-[18px] 2xl:[&_h3]:!text-[20px] [&_h3]:!font-semibold [&_h3]:!leading-[24px] 2xl:[&_h3]:!leading-[28px] [&_h3]:!mt-4 [&_h3]:!mb-1 [&_h3]:!text-foreground [&_img]:!cursor-zoom-in"
                             dangerouslySetInnerHTML={{ __html: finalHtml }}
                             onClick={(e) => {
                               const target = e.target as HTMLElement;
@@ -472,6 +473,15 @@ export function LessonDetailPage() {
                     );
                   }
 
+                  if (comp.type === "la_pdf" && comp.pdfUrl) {
+                    return (
+                      <PdfContent
+                        key={comp.id}
+                        usageKey={comp.id}
+                      />
+                    );
+                  }
+
                   return null;
                 })}
 
@@ -501,7 +511,7 @@ export function LessonDetailPage() {
               </div>
 
               {/* ── Right sidebar content (xl+) ── */}
-              <div className="hidden xl:flex w-[300px] shrink-0 flex-col gap-6">
+              <div className="hidden xl:flex w-[260px] shrink-0 flex-col gap-6">
 
                 {/* MENTOR & COMPANY INFO CARD */}
                 <div className="rounded-3xl border border-border shadow-sm bg-card flex flex-col">

@@ -372,8 +372,8 @@ export function ContinueLearning() {
             </AnimatePresence>
           </motion.div>
 
-          {/* Phân trang */}
-          {totalPages > 1 && (
+          {/* Phân trang — luôn hiện khi có data để user thấy page size selector */}
+          {courses.length > 0 && (
             <div className="flex items-center justify-center gap-2 pt-2">
               <button
                 onClick={() => handlePageChange(Math.max(1, currentPage - 1))}

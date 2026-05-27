@@ -198,10 +198,22 @@ export function useStudyTimeTracker() {
     rawMinutes: d.minutes,
   }));
 
-  // Percentile (mock: based on total time, 10h = 100%)
-  const totalMinutes = weeklyData.reduce((acc, curr) => acc + curr.minutes, 0);
-  const rawPercentile = Math.min(99, Math.max(10, Math.floor((totalMinutes / 600) * 100)));
-  const percentile = rawPercentile < 85 ? 85 : rawPercentile;
+  // So sánh hôm nay vs trung bình cộng các ngày đã qua trong tuần
+  const todayFullDate = format(new Date(), 'yyyy-MM-dd');
+  const todayData = weeklyData.find(d => d.fullDate === todayFullDate);
+  const todayMinutes = todayData?.minutes || 0;
 
-  return { chartData, percentile };
+  // Tính trung bình cộng các ngày ĐÃ QUA (không tính hôm nay, chỉ các ngày trước đó có data)
+  const pastDays = weeklyData.filter(d => d.fullDate < todayFullDate);
+  const pastDaysWithData = pastDays.filter(d => d.minutes > 0);
+  const weeklyAvgMinutes = pastDaysWithData.length > 0
+    ? Math.round(pastDaysWithData.reduce((acc, d) => acc + d.minutes, 0) / pastDaysWithData.length)
+    : 0;
+
+  // Tỉ lệ so sánh: hôm nay / trung bình tuần (%)
+  const comparisonPercent = weeklyAvgMinutes > 0
+    ? Math.round((todayMinutes / weeklyAvgMinutes) * 100)
+    : 0;
+
+  return { chartData, todayMinutes, weeklyAvgMinutes, comparisonPercent };
 }

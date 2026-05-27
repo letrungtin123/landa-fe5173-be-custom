@@ -60,7 +60,7 @@ export async function getCourseBlocks(
         ...(username ? { username } : {}),
         requested_fields:
           "children,display_name,type,graded,completion,student_view_url,student_view_data",
-        student_view_data: "video,html,la_diagram,la_faq",
+        student_view_data: "video,html,la_diagram,la_faq,la_pdf",
       },
     }
   );
