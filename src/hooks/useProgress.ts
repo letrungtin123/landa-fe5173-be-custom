@@ -5,6 +5,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { markBlockComplete, markBlocksComplete, getCourseGrade, getMyCourseProgress } from "@/api/progress";
+import { refetchProgressWithRetry } from "@/lib/progressRefetch";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 /**
@@ -66,10 +67,7 @@ export function useMarkComplete() {
     mutationFn: ({ courseId, usageKey }: { courseId: string; usageKey: string }) => 
       markBlockComplete(user?.username || "", courseId, usageKey),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
-      qc.invalidateQueries({ queryKey: ["course-blocks"] });
-      qc.invalidateQueries({ queryKey: ["enrollments"] });
-      qc.invalidateQueries({ queryKey: ["average-course-completion"] });
+      refetchProgressWithRetry(qc);
     },
   });
 }
@@ -88,10 +86,7 @@ export function useMarkBlocksComplete() {
     mutationFn: ({ courseId, blockIds }: { courseId: string; blockIds: string[] }) =>
       markBlocksComplete(user?.username || "", courseId, blockIds),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
-      qc.invalidateQueries({ queryKey: ["course-blocks"] });
-      qc.invalidateQueries({ queryKey: ["enrollments"] });
-      qc.invalidateQueries({ queryKey: ["average-course-completion"] });
+      refetchProgressWithRetry(qc);
     },
   });
 }

@@ -16,6 +16,7 @@ import type { ParsedProblem } from "@/transformers/problemParser";
 import { useParams } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { markBlockComplete } from "@/api/progress";
+import { refetchProgressWithRetry } from "@/lib/progressRefetch";
 import { useQueryClient } from "@tanstack/react-query";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
 
@@ -245,12 +246,8 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
           console.error("Failed to mark block complete:", e);
         }
 
-        // Đợi một chút để LMS xử lý điểm số và cập nhật tiến độ vào database (qua Celery task)
-        // Sau đó mới fetch lại course-completion và course-blocks
-        setTimeout(() => {
-          qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
-          qc.invalidateQueries({ queryKey: ["course-blocks"] });
-        }, 1000);
+        // Refetch progress với retry để bắt kịp backend aggregation
+        refetchProgressWithRetry(qc);
       }
       // Nếu trả lời SAI → KHÔNG gọi API completion, KHÔNG invalidate queries → sidebar giữ nguyên
 

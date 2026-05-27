@@ -5,6 +5,7 @@ import { CheckCircle2, GripVertical, Loader2, XCircle, Play } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
+import { refetchProgressWithRetry } from "@/lib/progressRefetch";
 
 import {
   DndContext,
@@ -169,6 +170,8 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
         });
         qc.invalidateQueries({ queryKey: ["block-detail", usageKey] });
         qc.invalidateQueries({ queryKey: ["course-blocks"] });
+        // Refetch progress với retry để bắt kịp backend aggregation
+        refetchProgressWithRetry(qc);
       } else {
         setIsCorrect(false);
         setResultMessage(data.message);

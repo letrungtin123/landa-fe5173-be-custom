@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 
 import { markBlocksComplete } from "@/api/progress";
+import { refetchProgressWithRetry } from "@/lib/progressRefetch";
 import { CrosswordContent } from "@/components/lesson/CrosswordContent";
 import { SortableContent } from "@/components/lesson/SortableContent";
 import { FaqContent } from "@/components/lesson/FaqContent";
@@ -153,8 +154,7 @@ export function LessonDetailPage() {
     mutationFn: () =>
       markBlocksComplete(user?.username || "", courseId || "", leafBlockIds),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["course-blocks"] });
-      qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
+      refetchProgressWithRetry(qc);
     },
   });
 
@@ -203,8 +203,7 @@ export function LessonDetailPage() {
 
     markBlocksComplete(user.username, courseId, passiveIds)
       .then(() => {
-        qc.invalidateQueries({ queryKey: ["course-blocks"] });
-        qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
+        refetchProgressWithRetry(qc);
       })
       .catch((e) => console.error("Failed to auto-mark passive blocks:", e));
   }, [currentUnit?.id, user?.username, courseId]);
@@ -250,8 +249,7 @@ export function LessonDetailPage() {
         markBlocksComplete(user.username, courseId, leafIdsToMark)
           .catch((e) => console.error("Failed to auto-mark block on next:", e))
           .finally(() => {
-            qc.invalidateQueries({ queryKey: ["course-blocks"] });
-            qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
+            refetchProgressWithRetry(qc);
           });
       }
     }
