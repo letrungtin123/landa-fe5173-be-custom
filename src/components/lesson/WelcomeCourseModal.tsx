@@ -99,7 +99,7 @@ export function WelcomeCourseModal({ courseId, completionPercent, isLoading, con
 
           {/* Content */}
           <div className="px-10 pt-6 pb-10 flex flex-col items-center text-center w-full shrink-0">
-            <h2 className="text-[28px] font-bold text-foreground mb-3 tracking-tight">
+            <h2 className="text-[22px] font-bold text-foreground mb-3 tracking-tight break-words line-clamp-3 max-w-full">
               {config?.welcome_title || 'Chào mừng bạn đến với khóa học!'}
             </h2>
             <p className="text-muted-foreground text-[15px] leading-relaxed mb-8 max-w-[500px]">

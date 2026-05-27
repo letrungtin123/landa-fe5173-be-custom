@@ -42,6 +42,10 @@ const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
   </span>
 );
 
+// Block types chỉ cần xem, không cần tương tác → auto-mark complete khi user navigate đến unit
+const PASSIVE_BLOCK_TYPES = ["html", "video", "la_diagram", "la_faq"];
+const INTERACTIVE_BLOCK_TYPES = ["problem", "la_crossword", "la_sortable"];
+
 export function LessonDetailPage() {
   const { courseId } = useParams();
   const navigate = useNavigate();
@@ -154,6 +158,7 @@ export function LessonDetailPage() {
     },
   });
 
+
   // ✅ Hooks phải gọi TRƯỚC mọi early return
   const mentors = useMemo(() => {
     if (!fetchedMentors || fetchedMentors.length === 0) return [];
@@ -177,6 +182,32 @@ export function LessonDetailPage() {
   const totalUnits = lesson?.units.length || 0;
   const currentUnit = lesson?.units[currentUnitIndex] || null;
   const isLastUnit = currentUnitIndex >= totalUnits - 1;
+
+  // ── Auto-mark passive blocks (la_faq, html, video, la_diagram) khi user vào unit ──
+  // Các block này chỉ cần xem, không cần tương tác → mark complete ngay khi navigate đến.
+  // Đảm bảo khi unit có mix interactive (sortable/crossword/problem) + passive (faq/text/video),
+  // submit xong interactive thì unit sẽ đạt 100% completion.
+  useEffect(() => {
+    if (!currentUnit || !user?.username || !courseId) return;
+
+    // Chỉ auto-mark khi unit có MIX interactive + passive.
+    // Khi unit chỉ có passive blocks → giữ logic cũ (click "Hoàn thành" / "Tiếp tục").
+    const hasInteractive = currentUnit.components.some((c) => INTERACTIVE_BLOCK_TYPES.includes(c.type));
+    if (!hasInteractive) return;
+
+    const passiveIds = currentUnit.components
+      .filter((c) => PASSIVE_BLOCK_TYPES.includes(c.type))
+      .map((c) => c.id);
+
+    if (passiveIds.length === 0) return;
+
+    markBlocksComplete(user.username, courseId, passiveIds)
+      .then(() => {
+        qc.invalidateQueries({ queryKey: ["course-blocks"] });
+        qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
+      })
+      .catch((e) => console.error("Failed to auto-mark passive blocks:", e));
+  }, [currentUnit?.id, user?.username, courseId]);
 
   // Xác định next lesson & module trong toàn bộ course structure
   const { nextLessonId, nextModuleId } = useMemo(() => {
