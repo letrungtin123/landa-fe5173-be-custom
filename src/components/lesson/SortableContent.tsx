@@ -228,7 +228,7 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
 
         <div className="mb-2 flex items-center gap-2">
           <span 
-            className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider"
+            className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest"
             style={{ backgroundColor: "#43FDD7", color: "#000" }}
           >
             Sắp xếp
