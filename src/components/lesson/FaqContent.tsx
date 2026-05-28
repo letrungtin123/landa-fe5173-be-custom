@@ -69,13 +69,13 @@ export function FaqContent({ usageKey }: { usageKey: string }) {
       <div className="mb-6 relative z-10">
         <div className="mb-2 flex items-center gap-2">
           <span
-            className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest"
+            className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-widest"
             style={{ backgroundColor: "#43FDD7", color: "#000" }}
           >
             FAQ
           </span>
         </div>
-        <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+        <h2 className="text-[28px] 2xl:text-[34px] font-semibold leading-[36px] 2xl:leading-[42px] text-foreground mb-4">
           {svd.display_name}
         </h2>
         <p className="mt-2 text-[14px] text-foreground/60 font-medium">

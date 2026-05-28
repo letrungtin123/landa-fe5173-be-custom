@@ -37,7 +37,7 @@ import LogoLanda from "@/assets/leandassociate.webp";
 // ── Badge component (declared outside render to satisfy React Compiler) ──
 const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
   <span
-    className="mb-1 inline-block rounded-full px-3 py-1 text-[10px] font-bold leading-[14px] uppercase tracking-widest"
+    className="mb-1 inline-block rounded-full px-3 py-1 text-[10px] font-semibold leading-[14px] uppercase tracking-widest"
     style={{ backgroundColor: "#43FDD7", color: "#000" }}
   >
     {children}
@@ -518,7 +518,7 @@ export function LessonDetailPage() {
                   {/* Top: Mentor section */}
                   <div className="px-8 pt-7 pb-2">
                     <BadgeCyan>Mentor</BadgeCyan>
-                    <h3 className="mb-1 mt-1 text-[20px] font-bold leading-[28px] text-foreground">
+                    <h3 className="mb-1 mt-1 text-[20px] font-semibold leading-[28px] text-foreground">
                       Người hướng dẫn
                     </h3>
                   </div>
@@ -544,7 +544,7 @@ export function LessonDetailPage() {
 
                 {/* Tài liệu tham khảo — LANDA API: file unlocked trên Studio */}
                 <div className="rounded-3xl bg-primary p-8 text-primary-foreground shadow-sm">
-                  <h3 className="mb-4 text-[20px] font-bold leading-[24px]">
+                  <h3 className="mb-4 text-[20px] font-semibold leading-[24px]">
                     Tài liệu tham khảo
                   </h3>
                   {refDocs.length > 0 ? (

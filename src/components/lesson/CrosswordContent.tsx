@@ -232,13 +232,13 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
 
         <div className="mb-2 flex items-center gap-2">
           <span 
-            className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest"
+            className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-widest"
             style={{ backgroundColor: "#43FDD7", color: "#000" }}
           >
             Game
           </span>
         </div>
-        <h2 className="mb-8 text-4xl font-bold text-foreground">
+        <h2 className="mb-8 text-[28px] 2xl:text-[34px] font-semibold leading-[36px] 2xl:leading-[42px] text-foreground">
           {svd.display_name || "Đố vui ô chữ"}
         </h2>
 
