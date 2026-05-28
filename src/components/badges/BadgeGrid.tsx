@@ -79,45 +79,53 @@ export function BadgeGrid({ earnedBadges, className }: BadgeGridProps) {
       </div>
 
       {/* Badge grid */}
-      <AnimatePresence mode="popLayout">
-        <motion.div
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
-          layout
-        >
-          {filteredBadges.map((badge, i) => (
+      <div className="w-full min-h-[200px]">
+        <AnimatePresence mode="popLayout">
+          {filteredBadges.length > 0 ? (
             <motion.div
-              key={badge.id}
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 w-full"
               layout
-              className="h-full"
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{
-                duration: 0.3,
-                delay: i * 0.05,
-                type: "spring",
-                stiffness: 300,
-                damping: 25,
-              }}
             >
-              <BadgeCard
-                badge={badge}
-                earned={earnedMap.get(badge.id)}
-                onClick={() => {
-                  const earned = earnedMap.get(badge.id);
-                  if (earned) setSelectedBadge({ badge, earned });
-                }}
-              />
+              {filteredBadges.map((badge, i) => (
+                <motion.div
+                  key={badge.id}
+                  layout
+                  className="h-full"
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{
+                    duration: 0.3,
+                    delay: i * 0.05,
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 25,
+                  }}
+                >
+                  <BadgeCard
+                    badge={badge}
+                    earned={earnedMap.get(badge.id)}
+                    onClick={() => {
+                      const earned = earnedMap.get(badge.id);
+                      if (earned) setSelectedBadge({ badge, earned });
+                    }}
+                  />
+                </motion.div>
+              ))}
             </motion.div>
-          ))}
-        </motion.div>
-      </AnimatePresence>
-
-      {filteredBadges.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-          <p className="text-sm">Không có danh hiệu nào phù hợp với bộ lọc</p>
-        </div>
-      )}
+          ) : (
+            <motion.div
+              key="empty-state"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center py-12 text-muted-foreground w-full"
+            >
+              <p className="text-sm">Không có danh hiệu nào phù hợp với bộ lọc</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Modal Detail */}
       <AnimatePresence>

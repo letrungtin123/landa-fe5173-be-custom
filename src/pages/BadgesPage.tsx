@@ -28,12 +28,47 @@ export function BadgesPage() {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-[1000px] px-4 py-8 md:px-6">
-        <div className="space-y-6">
-          <div className="h-8 w-48 rounded-lg bg-muted animate-pulse" />
-          <div className="h-4 w-32 rounded bg-muted animate-pulse" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="h-48 rounded-3xl bg-muted animate-pulse" />
+        <div className="space-y-8">
+          {/* Header skeleton */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-10 w-10 rounded-lg bg-muted animate-pulse shrink-0" />
+              <div className="space-y-2">
+                <div className="h-7 w-44 rounded-lg bg-muted animate-pulse" />
+                <div className="h-4 w-64 max-w-full rounded bg-muted animate-pulse" />
+              </div>
+            </div>
+
+            {/* Progress bar skeleton */}
+            <div className="mt-6 rounded-2xl border border-border/50 bg-card p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="h-4 w-28 rounded bg-muted animate-pulse" />
+                <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+              </div>
+              <div className="h-3 w-full rounded-full bg-muted animate-pulse" />
+              <div className="mt-2 h-3 w-40 rounded bg-muted animate-pulse" />
+            </div>
+          </div>
+
+          {/* Filter tabs skeleton */}
+          <div className="flex flex-wrap gap-2">
+            {[72, 64, 72, 88, 80, 80].map((w, i) => (
+              <div
+                key={i}
+                className="h-8 rounded-full bg-muted animate-pulse"
+                style={{ width: w }}
+              />
+            ))}
+          </div>
+
+          {/* Badge grid skeleton — matches real grid: 2 / 3 / 4 cols */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+              <div key={i} className="flex flex-col gap-3 rounded-3xl border border-border/30 bg-card p-4 animate-pulse">
+                <div className="aspect-square w-full rounded-2xl bg-muted" />
+                <div className="h-4 w-3/4 rounded bg-muted mx-auto" />
+                <div className="h-3 w-1/2 rounded bg-muted mx-auto" />
+              </div>
             ))}
           </div>
         </div>
