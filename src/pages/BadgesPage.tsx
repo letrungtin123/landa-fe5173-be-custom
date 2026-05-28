@@ -82,7 +82,7 @@ export function BadgesPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="mx-auto max-w-[1000px] px-4 py-8 md:px-6"
+        className="mx-auto w-full max-w-[1000px] px-4 py-8 md:px-6"
       >
         {/* Header section */}
         <motion.div
