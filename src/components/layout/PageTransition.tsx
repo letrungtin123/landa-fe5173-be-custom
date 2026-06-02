@@ -33,7 +33,7 @@ export function PageTransition({ children, animationKey }: { children: React.Rea
         initial="initial"
         animate="animate"
         exit="exit"
-        className="flex flex-col flex-1 w-full"
+        className="flex flex-col min-h-full w-full"
       >
         {children}
       </motion.div>

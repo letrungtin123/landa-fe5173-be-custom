@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Sun,
@@ -12,6 +12,7 @@ import {
   BookOpen,
   Info,
   Settings,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +35,7 @@ import type { Notification } from "@/data/types";
 import { cn } from "@/lib/utils";
 import logoImg from "@/assets/leandassociate.webp";
 import { NotificationModal } from "@/components/dashboard/NotificationModal";
+import { TenantSwitchModal } from "@/components/layout/TenantSwitchModal";
 
 const ICON_MAP: Record<Notification["icon"], React.ElementType> = {
   badge: Shield,
@@ -55,11 +57,19 @@ export function Header() {
   const { toggleSidebar, sidebarOpen, setSidebarOpen } = useAppStore();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
+  const managedTenants = useAuthStore((s) => s.managedTenants);
   const navigate = useNavigate();
   const { count: unreadCount } = useUnreadNotificationCount();
   const { notifications, isLoading } = useNotifications();
   const markAllRead = useMarkAllRead();
   const [notifModalOpen, setNotifModalOpen] = useState(false);
+  const [tenantModalOpen, setTenantModalOpen] = useState(false);
+
+  const currentTenantName = useMemo(() => {
+    if (!user?.tenantId) return null;
+    const found = managedTenants.find((t) => t.id === user.tenantId);
+    return found?.name || user.tenantName || null;
+  }, [user?.tenantId, user?.tenantName, managedTenants]);
 
   const isCourseRoute = location.pathname.includes("/courses/");
 
@@ -264,13 +274,13 @@ export function Header() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuLabel className="text-xs text-muted-foreground truncate">
-                {user?.name || user?.username || "Tài khoản"}
+              {user?.fullName || user?.username || "Tài khoản"}
               </DropdownMenuLabel>
               <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
                 Hồ sơ cá nhân
               </DropdownMenuItem>
-              {(user?.isStaff || user?.isLearnerPlus) && (
+              {(user?.role === 'staff' || user?.role === 'superuser' || user?.role === 'superadmin') && (
                 <DropdownMenuItem 
                   onClick={() => window.open(import.meta.env.VITE_ADMIN_URL || '/admin', '_blank')} 
                   className="cursor-pointer text-primary focus:text-primary"
@@ -278,6 +288,24 @@ export function Header() {
                   <Settings className="mr-2 h-4 w-4" />
                   Quản trị hệ thống
                 </DropdownMenuItem>
+              )}
+              {/* Tenant Switcher — CHỈ cho superadmin */}
+              {user?.role === 'superadmin' && managedTenants.length > 1 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setTenantModalOpen(true)}
+                    className="cursor-pointer gap-2"
+                  >
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm">Chuyển tổ chức</span>
+                      {currentTenantName && (
+                        <p className="text-[11px] text-muted-foreground truncate">{currentTenantName}</p>
+                      )}
+                    </div>
+                  </DropdownMenuItem>
+                </>
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
@@ -289,6 +317,9 @@ export function Header() {
         </div>
       </div>
     </header>
+
+    {/* Tenant Switch Modal */}
+    <TenantSwitchModal open={tenantModalOpen} onOpenChange={setTenantModalOpen} />
     </>
   );
 }

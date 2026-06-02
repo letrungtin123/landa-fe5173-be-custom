@@ -108,8 +108,8 @@ export function LibraryPage() {
     setCurrentPage(1);
   }, []);
 
-  const handleCategoryClick = useCallback((slug: string) => {
-    setActiveCategory((prev) => (prev === slug ? "" : slug));
+  const handleCategoryClick = useCallback((catId: string) => {
+    setActiveCategory((prev) => (prev === catId ? "" : catId));
     setCurrentPage(1);
   }, []);
 
@@ -135,7 +135,7 @@ export function LibraryPage() {
     if (!debouncedSearch) return true;
     return cat.name.toLowerCase().includes(debouncedSearch.toLowerCase());
   });
-  const totalDocuments = categoriesData?.total || 0;
+  const totalDocuments = (categoriesData?.categories || []).reduce((sum, c) => sum + (c.count || 0), 0);
   const documents = documentsData?.results || [];
   const totalCount = documentsData?.count || 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -254,7 +254,7 @@ export function LibraryPage() {
               </div>
 
               <h1 className="text-[36px] font-semibold leading-[40px] text-foreground uppercase tracking-tight">
-                {categoriesData?.categories?.find(c => c.slug === activeCategory)?.name || "Danh mục"}
+                {categoriesData?.categories?.find(c => c.id === activeCategory)?.name || "Danh mục"}
               </h1>
 
               <div className="flex flex-col sm:flex-row gap-4 sm:items-center pt-2 pb-4">
@@ -443,12 +443,12 @@ export function LibraryPage() {
                 >
                   {categories.map((cat: DocumentCategory, catIndex: number) => {
                     const bgColor = getCategoryColor(catIndex);
-                    const isActive = activeCategory === cat.slug;
+                    const isActive = activeCategory === cat.id;
 
                     return (
                       <Card
                         key={cat.id}
-                        onClick={() => handleCategoryClick(cat.slug)}
+                        onClick={() => handleCategoryClick(cat.id)}
                         className={`group/card cursor-pointer overflow-hidden border-2 transition-all duration-300 shrink-0 snap-start w-[85vw] sm:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] ${
                           isActive
                             ? "ring-2 ring-offset-2 ring-primary border-primary shadow-md"
@@ -516,7 +516,7 @@ export function LibraryPage() {
             <div className="flex items-center justify-between">
               <h2 className="text-[20px] font-bold leading-[24px] text-foreground">
                 {activeCategory
-                  ? `Tài liệu: ${categories.find((c: DocumentCategory) => c.slug === activeCategory)?.name || ""}`
+                  ? `Tài liệu: ${categories.find((c: DocumentCategory) => c.id === activeCategory)?.name || ""}`
                   : "Tất cả tài liệu"}
               </h2>
               {activeCategory && (

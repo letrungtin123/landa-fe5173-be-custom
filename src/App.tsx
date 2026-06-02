@@ -19,7 +19,7 @@ import { GlobalBadgeWatcher } from "@/components/badges/GlobalBadgeWatcher";
 import { StudyTimeTracker } from "@/components/global/StudyTimeTracker";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { GoogleOAuthProvider } from "@react-oauth/google";
+
 import { config } from "@/config/env";
 
 // ── Lazy-load pages — giảm initial bundle size ──
@@ -103,7 +103,7 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <GoogleOAuthProvider clientId={config.googleClientId}>
+        {/* GoogleOAuthProvider removed — SSO tạm không dùng */}
           <ThemeProvider>
             <BrowserRouter>
               <Suspense fallback={<PageLoader />}>
@@ -149,7 +149,7 @@ function App() {
             </Suspense>
           </BrowserRouter>
         </ThemeProvider>
-        </GoogleOAuthProvider>
+
       </QueryClientProvider>
     </ErrorBoundary>
   );

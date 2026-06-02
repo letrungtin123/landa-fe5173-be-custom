@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Eye, EyeOff, ArrowLeft, Info } from "lucide-react";
-import { useGoogleLogin } from "@react-oauth/google";
+// import { useGoogleLogin } from "@react-oauth/google"; // SSO tạm disable
 import { useAuthStore } from "@/stores/useAuthStore";
 import { googleLoginOrRegister, GoogleAuthError } from "@/api/googleAuth";
 import { microsoftLoginOrRegister, MicrosoftAuthError } from "@/api/microsoftAuth";
@@ -26,9 +26,10 @@ import carousel6 from "@/assets/LoginPage/Carousel6.png";
 export function LoginPage() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
-  const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
-  const loginWithMicrosoft = useAuthStore((s) => s.loginWithMicrosoft);
-  const loginWithKeycloak = useAuthStore((s) => s.loginWithKeycloak);
+  // SSO methods removed from custom BE auth store — stub to no-op
+  const loginWithGoogle = async (_tokens: any) => { /* noop */ };
+  const loginWithMicrosoft = async (_tokens: any) => { /* noop */ };
+  const loginWithKeycloak = async (_tokens: any) => { /* noop */ };
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -89,34 +90,8 @@ export function LoginPage() {
       setIsSubmitting(false);
     }
   };
-
-  // ── Google Login handler ──
-  // Flow hoàn toàn trên FE, không redirect:
-  //   Popup Google → access_token → exchange (auto-link by email)
-  //   → nếu user mới → register + exchange lại → login
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setIsGoogleLoading(true);
-      setErrors({});
-      try {
-        const result = await googleLoginOrRegister(tokenResponse.access_token);
-        await loginWithGoogle(result.tokens);
-        navigate("/dashboard", { replace: true });
-      } catch (err) {
-        if (err instanceof GoogleAuthError) {
-          setErrors({ google: err.message });
-        } else {
-          setErrors({ google: "Lỗi không xác định. Vui lòng thử lại." });
-        }
-      } finally {
-        setIsGoogleLoading(false);
-      }
-    },
-    onError: () => {
-      setErrors({ google: "Không thể kết nối với Google. Vui lòng thử lại." });
-    },
-    flow: "implicit",
-  });
+  // Google SSO tạm disable — không có GoogleOAuthProvider
+  const googleLogin = () => { /* noop */ };
 
   // ── Microsoft Login handler ──
   // Flow giống Google: popup thủ công → access_token → exchange → edX tokens

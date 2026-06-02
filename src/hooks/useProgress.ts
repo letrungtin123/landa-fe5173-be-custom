@@ -1,10 +1,10 @@
 // ============================================================
 // useProgress Hook — Theo dõi tiến độ học tập
+// Adapted for Custom Backend
 // ============================================================
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
-import { markBlockComplete, markBlocksComplete, getCourseGrade, getMyCourseProgress } from "@/api/progress";
+import { markBlockComplete, markBlocksComplete, getMyCourseProgress } from "@/api/progress";
 import { refetchProgressWithRetry } from "@/lib/progressRefetch";
 import { useAuthStore } from "@/stores/useAuthStore";
 
@@ -30,8 +30,7 @@ export function useCourseCompletion(courseId?: string) {
 }
 
 /**
- * Lấy phần trăm hoàn thành trung bình của tất cả các khóa học được truyền vào.
- * Trả về số từ 0 → 100.
+ * Lấy phần trăm hoàn thành trung bình cho nhiều khóa học.
  */
 export function useAverageCourseCompletion(courseIds: string[]) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -57,15 +56,14 @@ export function useAverageCourseCompletion(courseIds: string[]) {
 }
 
 /**
- * Mutation đánh dấu một block/subsection đã hoàn thành.
+ * Mutation đánh dấu một block đã hoàn thành.
  */
 export function useMarkComplete() {
   const qc = useQueryClient();
-  const user = useAuthStore((s) => s.user);
 
   return useMutation({
-    mutationFn: ({ courseId, usageKey }: { courseId: string; usageKey: string }) => 
-      markBlockComplete(user?.username || "", courseId, usageKey),
+    mutationFn: ({ courseId, usageKey }: { courseId: string; usageKey: string }) =>
+      markBlockComplete(courseId, usageKey),
     onSuccess: () => {
       refetchProgressWithRetry(qc);
     },
@@ -73,42 +71,22 @@ export function useMarkComplete() {
 }
 
 /**
- * Mutation đánh dấu NHIỀU leaf blocks hoàn thành (batch).
- *
- * Dùng khi user click "Hoàn thành" cho lesson chỉ có text/video.
- * Sẽ mark tất cả html/video blocks trong lesson.
+ * Mutation đánh dấu NHIỀU blocks hoàn thành (batch).
  */
 export function useMarkBlocksComplete() {
   const qc = useQueryClient();
-  const user = useAuthStore((s) => s.user);
 
   return useMutation({
     mutationFn: ({ courseId, blockIds }: { courseId: string; blockIds: string[] }) =>
-      markBlocksComplete(user?.username || "", courseId, blockIds),
+      markBlocksComplete(courseId, blockIds),
     onSuccess: () => {
       refetchProgressWithRetry(qc);
     },
-  });
-}
-
-/**
- * Lấy điểm số của user cho một khóa học.
- */
-export function useCourseGrade(courseId?: string) {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const username = useAuthStore((s) => s.user?.username);
-
-  return useQuery({
-    queryKey: ["course-grade", courseId, username],
-    queryFn: () => getCourseGrade(courseId!, username!),
-    enabled: isAuthenticated && !!courseId && !!username,
-    staleTime: 5 * 60 * 1000,
   });
 }
 
 /**
  * Lấy tiến độ cho nhiều khóa học cùng lúc.
- * Trả về Map<courseId, percent>.
  */
 export function useBatchCourseProgress(courseIds: string[]) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);

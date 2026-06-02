@@ -6,267 +6,258 @@ import { apiClient } from "./client";
 import type { Block } from "./types";
 
 /**
- * Lấy chi tiết block đơn lẻ (video, problem, html, etc.).
+ * Lấy chi tiết block đơn lẻ.
+ * Dùng custom BE endpoint + build student_view_data đúng format cho mỗi loại block.
  */
-export async function getBlockDetail(usageKey: string, username?: string): Promise<Block> {
-  const { data } = await apiClient.get<any>(
-    `/api/courses/v1/blocks/${usageKey}/`,
-    {
-      params: {
-        requested_fields:
-          "student_view_data,display_name,type,children,completion",
-        student_view_data: "video,html,la_crossword,la_sortable,la_diagram,la_faq,la_pdf",
-        ...(username ? { username } : {}),
-      },
+export async function getBlockDetail(usageKey: string, _username?: string): Promise<Block> {
+  try {
+    const { data } = await apiClient.get<any>(
+      `/api/learner/blocks/${encodeURIComponent(usageKey)}`
+    );
+    const raw = data.data || data;
+    const blockType = raw.block_type || 'unknown';
+    const rawData = raw.data || {};
+    const meta = raw.metadata || {};
+
+    console.log(`[getBlockDetail] ${blockType} "${raw.display_name}" rawData type:`, typeof rawData, 'meta keys:', meta ? Object.keys(meta) : 'null');
+
+    const svd = buildBlockStudentViewData(blockType, rawData, meta, raw.display_name);
+    console.log(`[getBlockDetail] ${blockType} student_view_data keys:`, Object.keys(svd));
+
+    return {
+      id: raw.id,
+      type: blockType,
+      display_name: raw.display_name,
+      children: [],
+      completion: raw.completed ? 1 : 0,
+      student_view_data: svd,
+      student_view_url: meta?.student_view_url || undefined,
+      graded: meta?.graded || false,
+    };
+  } catch (err) {
+    console.error('[getBlockDetail] ERROR for', usageKey, err);
+    return {
+      id: usageKey,
+      type: 'unknown',
+      display_name: '',
+      children: [],
+      completion: 0,
+      student_view_data: {},
+    };
+  }
+}
+
+/**
+ * Build student_view_data đúng format cho mỗi loại block.
+ * CrosswordContent expects: { words, keyword_coordinates, display_name }
+ * FaqContent expects: { items, display_name }
+ * SortableContent expects: { sortable_data, question_text, display_name }
+ * QuizContent expects: HTML string (qua getXBlockHtml)
+ * PdfContent expects: { pdf_url, display_name }
+ */
+function buildBlockStudentViewData(
+  blockType: string,
+  rawData: any,
+  meta: any,
+  displayName?: string,
+): Record<string, unknown> {
+  switch (blockType) {
+    case 'la_crossword': {
+      // DB format 1 (edX xblock): metadata.crossword_data = { words: [...] }
+      // DB format 2 (direct): metadata.words = [...], metadata.grid_size = 10
+      // Component expects: svd.words, svd.keyword_coordinates at root
+      const cd = meta?.crossword_data || (typeof rawData?.crossword_data === 'string'
+        ? safeJsonParse(rawData.crossword_data) : rawData?.crossword_data) || null;
+      const words = cd?.words || meta?.words || rawData?.words || [];
+      return {
+        display_name: displayName,
+        completed: false,
+        score: 0,
+        words: words.map((w: any) => ({
+          ...w,
+          length: w.length || (w.answer ? w.answer.length : 0),
+        })),
+        keyword_coordinates: cd?.keyword_coordinates || meta?.keyword_coordinates || [],
+        grid_size: cd?.grid_size || meta?.grid_size || 10,
+      };
     }
-  );
-  // Open edX blocks API rertuns { root: "...", blocks: { "...": Block } }
-  if (data && data.blocks && data.blocks[usageKey]) {
-    return data.blocks[usageKey] as Block;
+
+    case 'la_faq': {
+      // DB format 1 (edX xblock): metadata.faq_data = { items: [...] }
+      // DB format 2 (direct): metadata.items = [...]
+      // Component expects: svd.items at root
+      const fd = meta?.faq_data || (typeof rawData?.faq_data === 'string'
+        ? safeJsonParse(rawData.faq_data) : rawData?.faq_data) || null;
+      return {
+        display_name: displayName,
+        items: fd?.items || meta?.items || rawData?.items || [],
+      };
+    }
+
+    case 'la_sortable': {
+      // DB format 1 (edX xblock): metadata.sortable_data = { items: [...] }
+      // DB format 2 (direct): metadata.items = [...]
+      // SortableContent expects: svd.items at root, svd.question_text
+      const sd = meta?.sortable_data || (typeof rawData?.sortable_data === 'string'
+        ? safeJsonParse(rawData.sortable_data) : rawData?.sortable_data) || null;
+      return {
+        display_name: displayName,
+        completed: false,
+        items: sd?.items || meta?.items || rawData?.items || [],
+        question_text: meta?.question_text || rawData?.question_text || sd?.question_text || '',
+      };
+    }
+
+    case 'la_diagram': {
+      // DB: metadata.diagram_data = { diagrams: [...], start_diagram_id: "..." }
+      // Component expects: svd.diagram_data (wrapped)
+      const dd = meta?.diagram_data || (typeof rawData?.diagram_data === 'string'
+        ? safeJsonParse(rawData.diagram_data) : rawData?.diagram_data) || {};
+      return {
+        display_name: displayName,
+        diagram_data: dd,
+      };
+    }
+
+    case 'la_pdf': {
+      // DB: metadata = { pdf_url, display_name, ... }
+      // Component expects: svd.pdf_url
+      return {
+        display_name: displayName,
+        pdf_url: meta?.pdf_url || rawData?.pdf_url || '',
+        ...meta,
+      };
+    }
+
+    case 'html': {
+      // DB: data = "<p>HTML content</p>" (string)
+      // Component (getXBlockHtml) expects: svd.data = HTML string
+      if (typeof rawData === 'string') {
+        return { data: rawData };
+      }
+      return rawData as Record<string, unknown>;
+    }
+
+    case 'video': {
+      // DB: data = { url, duration } or metadata = { video_url }
+      const merged = { ...(rawData as Record<string, unknown>), ...meta };
+      if ((merged.url || merged.video_url) && !merged.encoded_videos) {
+        merged.encoded_videos = {
+          fallback: { url: merged.url || merged.video_url },
+        };
+      }
+      return merged;
+    }
+
+    case 'problem': {
+      // DB: data = "<problem>XML</problem>" (string)
+      // QuizContent uses getXBlockHtml → needs raw data string
+      if (typeof rawData === 'string') {
+        return { data: rawData, html: rawData };
+      }
+      return rawData as Record<string, unknown>;
+    }
+
+    default:
+      return { ...(rawData as Record<string, unknown>), ...meta };
   }
-  return data as Block;
+}
+
+function safeJsonParse(str: string): any {
+  try { return JSON.parse(str); } catch { return null; }
 }
 
 /**
- * Lấy rendered HTML content qua Courseware Sequence API.
+ * Lấy rendered HTML content của block.
+ * Custom BE: HTML content lưu trong block.data (JSONB).
  */
-export interface SequenceContent {
-  items: Array<{
-    id: string;
-    content: string;
-    type: string;
-  }>;
-}
-
-export async function getSequenceContent(
-  sequenceId: string
-): Promise<SequenceContent> {
-  const { data } = await apiClient.get<SequenceContent>(
-    `/api/courseware/sequence/${sequenceId}`
-  );
-  return data;
-}
-
-// ── Helper: Trích courseKey từ usageKey ──
-// block-v1:Org+Course+Run+type@problem+block@id → course-v1:Org+Course+Run
-function extractCourseKey(usageKey: string): string {
-  const match = usageKey.match(/^block-v1:(.+?)\+type@/);
-  if (match) {
-    return `course-v1:${match[1]}`;
+export async function getXBlockHtml(usageKey: string): Promise<string> {
+  try {
+    const block = await getBlockDetail(usageKey);
+    const svd = block.student_view_data as Record<string, unknown>;
+    const html = (svd?.data as string) || (svd?.html as string) || '';
+    if (html) return html;
+    throw new Error('Block has no HTML content');
+  } catch (error) {
+    console.error("[getXBlockHtml] Failed:", error);
+    return '<p>Không thể tải nội dung</p>';
   }
-  return usageKey.replace(/^block-v1:/, "course-v1:").replace(/\+type@.*$/, "");
-}
-
-/**
- * Lấy rendered HTML content của XBlock.
- *
- * Dùng xblock_view API (Bearer auth, JSON response):
- *   GET /courses/{courseKey}/xblock/{usageKey}/view/student_view
- *   → { html: "...", resources: [...], csrf_token: "..." }
- *
- * Feature flag cần bật: FEATURES["ENABLE_XBLOCK_VIEW_ENDPOINT"] = True
- * (đã bật qua Tutor plugin la_custom_settings)
- *
- * Ưu điểm so với /xblock/ endpoint:
- * - Dùng Bearer auth (không cần session cookie)
- * - Trả JSON chuẩn (dễ parse)
- * - Sử dụng @view_auth_classes (tương thích OAuth2)
- */
-export async function getXBlockHtml(
-  usageKey: string
-): Promise<string> {
-  const courseKey = extractCourseKey(usageKey);
-
-  const { data } = await apiClient.get<{ html: string; resources: unknown[]; csrf_token: string }>(
-    `/courses/${courseKey}/xblock/${usageKey}/view/student_view`
-  );
-
-  if (data?.html) {
-    console.log("[getXBlockHtml] ✅ Got HTML via xblock_view API, length:", data.html.length);
-    return data.html;
-  }
-
-  throw new Error("xblock_view API returned empty HTML");
 }
 
 /**
  * Submit đáp án quiz/problem.
- * Dùng xmodule_handler endpoint.
+ * Custom BE: POST /api/learner/blocks/:blockId/submit
  */
 export async function submitProblemAnswer(
   usageKey: string,
   answers: Record<string, string | string[]>
 ): Promise<Record<string, unknown>> {
-  const courseKey = extractCourseKey(usageKey);
-
-  const params = new URLSearchParams();
-  for (const [key, val] of Object.entries(answers)) {
-    if (Array.isArray(val)) {
-      val.forEach((v) => params.append(key, v));
-    } else {
-      params.append(key, val);
-    }
+  try {
+    const { data } = await apiClient.post(
+      `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
+      { answers }
+    );
+    return (data as any).data || data;
+  } catch {
+    return { success: false, message: 'Submit chưa được hỗ trợ' };
   }
-
-  const { data } = await apiClient.post(
-    `/courses/${courseKey}/xblock/${usageKey}/handler/xmodule_handler/problem_check`,
-    params,
-    {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-    }
-  );
-  return data;
 }
 
 /**
  * Submit đáp án Đố Vui Ô Chữ.
- * Dùng XBlock json_handler 'submit_answers'
+ * Custom BE: POST /api/learner/blocks/:blockId/submit
  */
 export async function submitCrosswordAnswer(
   usageKey: string,
   answers: Record<string, string>
 ): Promise<{ status: string; message: string; score?: number }> {
-  const courseKey = extractCourseKey(usageKey);
-
-  const { data } = await apiClient.post(
-    `/courses/${courseKey}/xblock/${usageKey}/handler/submit_answers`,
-    { answers },
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
-  return data;
+  try {
+    const { data } = await apiClient.post(
+      `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
+      { answers }
+    );
+    return (data as any).data || data;
+  } catch {
+    return { status: 'error', message: 'Submit chưa được hỗ trợ' };
+  }
 }
 
 /**
  * Submit đáp án Sắp Xếp Đúng Thứ Tự.
- * Dùng XBlock json_handler 'submit_answers'
+ * Custom BE: POST /api/learner/blocks/:blockId/submit
  */
 export async function submitSortableAnswer(
   usageKey: string,
   answer: number[]
 ): Promise<{ status: string; message: string; score?: number }> {
-  const courseKey = extractCourseKey(usageKey);
-
-  const { data } = await apiClient.post(
-    `/courses/${courseKey}/xblock/${usageKey}/handler/submit_answers`,
-    { answer },
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
-  return data;
+  try {
+    const { data } = await apiClient.post(
+      `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
+      { answer }
+    );
+    return (data as any).data || data;
+  } catch {
+    return { status: 'error', message: 'Submit chưa được hỗ trợ' };
+  }
 }
 
 /**
- * Lấy hint từ Open edX (demand hint).
- * Open edX handle_ajax expects request.POST (form-encoded data), NOT JSON.
- * Response format: { success: true, hint_index: N, should_enable_next_hint: bool, msg: "<html>..." }
+ * Lấy hint (gợi ý).
+ * Custom BE chưa implement → trả empty.
  */
 export async function fetchHint(
-  usageKey: string,
-  hintIndex: number = 0
+  _usageKey: string,
+  _hintIndex: number = 0
 ): Promise<{ hint: string; hasMoreHints: boolean }> {
-  const courseKey = extractCourseKey(usageKey);
-
-  try {
-    // MUST send as form-encoded data (application/x-www-form-urlencoded)
-    // edX handle_ajax uses request.POST which is webob.multidict.MultiDict
-    const formData = new URLSearchParams();
-    formData.append("hint_index", String(hintIndex));
-
-    const { data } = await apiClient.post(
-      `/courses/${courseKey}/xblock/${usageKey}/handler/xmodule_handler/hint_button`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
-
-    // edX returns: { success: true, hint_index: N, should_enable_next_hint: bool, msg: "<ol>...</ol>" }
-    // 'msg' contains the hint HTML, NOT 'contents'
-    const hintHtml = data?.msg || "";
-    const shouldEnableNext = data?.should_enable_next_hint ?? false;
-
-    return {
-      hint: hintHtml,
-      hasMoreHints: shouldEnableNext,
-    };
-  } catch (error) {
-    console.error("[fetchHint] Failed:", error);
-    return { hint: "", hasMoreHints: false };
-  }
+  return { hint: '', hasMoreHints: false };
 }
 
 /**
- * Lấy giải thích đáp án (explanation/solution) từ Open edX.
- * 
- * Trong edX, explanation KHÔNG nằm trong response của problem_check (submit).
- * Explanation chỉ có thể lấy qua endpoint problem_show (handler "Show Answer"):
- *   POST /courses/{course}/xblock/{usage}/handler/xmodule_handler/problem_show
- *   → { answers: { input_id: "html_with_solution" }, correct_status_html: "..." }
- * 
- * Mỗi answer value có thể chứa <div class="detailed-solution">...</div> 
- * hoặc trực tiếp là text giải thích. Ngoài ra, edX JS inject answer vào 
- * #solution_{id} span (class="solution-span").
- * 
- * Lưu ý: endpoint này chỉ trả về kết quả nếu quiz setting "Show Answer" cho phép
- * (e.g. "Always", "Attempted", "Answered", etc.).
- * Nếu không được phép → trả về 404/error.
+ * Lấy giải thích đáp án.
+ * Custom BE chưa implement → trả empty.
  */
 export async function fetchExplanation(
-  usageKey: string
+  _usageKey: string
 ): Promise<{ explanationHtml: string; answers: Record<string, string> }> {
-  const courseKey = extractCourseKey(usageKey);
-
-  try {
-    const { data } = await apiClient.post(
-      `/courses/${courseKey}/xblock/${usageKey}/handler/xmodule_handler/problem_show`,
-      new URLSearchParams(), // empty form data
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
-
-    // data = { answers: { "input_id": "<html>..." }, correct_status_html: "..." }
-    const answers: Record<string, string> = {};
-    let explanationHtml = "";
-
-    if (data?.answers && typeof data.answers === "object") {
-      const parser = new DOMParser();
-      
-      for (const [key, value] of Object.entries(data.answers)) {
-        const answerStr = String(value);
-        answers[key] = answerStr;
-        
-        // Try to extract .detailed-solution from the answer HTML
-        if (answerStr.includes("<")) {
-          const doc = parser.parseFromString(answerStr, "text/html");
-          const solution = doc.querySelector(".detailed-solution");
-          if (solution && solution.textContent?.trim()) {
-            let html = solution.innerHTML;
-            // Làm sạch và Việt hóa chữ "Explanation" mặc định của Open edX
-            html = html.replace(/>\s*Explanation\s*</gi, ">Giải thích: <");
-            html = html.replace(/(^|>|<br\s*\/?>|\s)Explanation(?![\w])/g, "$1Giải thích:");
-            explanationHtml = html;
-          }
-        }
-      }
-    }
-
-    return { explanationHtml, answers };
-  } catch (error) {
-    console.error("[fetchExplanation] Failed:", error);
-    return { explanationHtml: "", answers: {} };
-  }
+  return { explanationHtml: '', answers: {} };
 }

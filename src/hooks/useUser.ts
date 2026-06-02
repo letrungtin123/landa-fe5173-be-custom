@@ -1,13 +1,10 @@
 // ============================================================
-// useUser Hook — Fetches user profile data from Open edX
+// useUser Hook — Fetches user profile data from Custom Backend
 // ============================================================
 
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { getUserAccount } from "@/api/auth";
 import { useCourseCompletion } from "@/hooks/useProgress";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { transformUserAccount } from "@/transformers/userTransformer";
 import type { User } from "@/data/types";
 
 /**
@@ -15,59 +12,37 @@ import type { User } from "@/data/types";
  * Optionally includes overall progress from a specific course.
  */
 export function useUser(courseId?: string) {
-  const username = useAuthStore((s) => s.user?.username);
+  const storeUser = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-
-  const accountQuery = useQuery({
-    queryKey: ["user-account", username],
-    queryFn: () => getUserAccount(username!),
-    enabled: isAuthenticated && !!username,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  });
-
-  // ── Redis Blacklist check — API siêu nhẹ (< 1ms, 0 DB query) ──
-  // Polling mỗi 30s + check lại khi chuyển tab/focus
-  const statusQuery = useQuery({
-    queryKey: ["account-status"],
-    queryFn: async () => {
-      const { apiClient } = await import("@/api/client");
-      const { data } = await apiClient.get("/api/landa/v1/account/status/");
-      return data as { is_active: boolean };
-    },
-    enabled: isAuthenticated,
-    staleTime: 0, // Luôn coi là stale để refetchOnWindowFocus luôn gọi
-    refetchOnWindowFocus: "always",
-    refetchInterval: 30 * 1000, // Polling mỗi 30 giây
-    retry: false, // Nếu 401 → không retry (middleware đã chặn)
-  });
-
-  // Tự động logout nếu bị blacklist
-  useEffect(() => {
-    // Case 1: API status trả về is_active = false
-    if (statusQuery.data && statusQuery.data.is_active === false) {
-      useAuthStore.getState().logout();
-      window.location.href = "/login?error=account_disabled";
-      return;
-    }
-    // Case 2: API status trả lỗi 401 (middleware chặn) → interceptor đã xử lý logout
-  }, [statusQuery.data]);
 
   const { completionPercent } = useCourseCompletion(courseId);
 
   // Calculate streak from localStorage
   const streak = getStreak();
 
-  const user: User | undefined = accountQuery.data
-    ? transformUserAccount(accountQuery.data, {
+  const user: User | undefined = storeUser
+    ? {
+        name: storeUser.fullName || storeUser.username,
+        email: storeUser.email,
+        avatar: storeUser.avatar || "",
+        bio: "",
+        role: storeUser.role === 'learner' ? 'Học viên' : storeUser.role,
+        company: storeUser.tenantName || "",
         streak,
         overallProgress: completionPercent || 0,
-      })
+        phone_number: storeUser.phone || "",
+        gender: null,
+        year_of_birth: null,
+        level_of_education: null,
+        country: null,
+        language: null,
+      }
     : undefined;
 
   return {
     user,
-    isLoading: accountQuery.isLoading,
-    error: accountQuery.error,
+    isLoading: false,
+    error: null,
   };
 }
 

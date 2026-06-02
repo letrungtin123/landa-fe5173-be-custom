@@ -26,18 +26,21 @@ export interface ParsedProblem {
 }
 
 /**
- * Trích xuất các câu hỏi từ mã HTML Problem trả về của Open edX.
- * Open edX Capa HTML thường có cấu trúc:
- * <div class="problem">
- *   <p>Đề bài</p>
- *   <div class="wrapper-problem-response">
- *     <!-- inputs -->
- *   </div>
- * </div>
+ * Trích xuất các câu hỏi từ mã HTML/OLX Problem.
+ * Hỗ trợ cả:
+ * 1. OLX XML (custom BE lưu trực tiếp): <problem><multiplechoiceresponse>...
+ * 2. Rendered HTML (edX student_view): <div class="problem">...
  */
 export function parseProblemHtml(html: string): ParsedProblem[] {
   if (!html) return [];
 
+  // Detect OLX XML format: starts with <problem> tag
+  const trimmed = html.trim();
+  if (trimmed.startsWith('<problem>') || trimmed.startsWith('<problem ')) {
+    return parseOlxProblem(trimmed);
+  }
+
+  // Fallback: parse as rendered edX HTML (legacy support)
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
   const problems: ParsedProblem[] = [];
@@ -396,3 +399,176 @@ export function parseProblemHtml(html: string): ParsedProblem[] {
   return problems;
 }
 
+/**
+ * Parse OLX XML format (custom BE lưu trực tiếp).
+ * Hỗ trợ 5 loại problem edX:
+ * 1. multiplechoiceresponse → single-select (radio)
+ * 2. choiceresponse → multi-select (checkbox)
+ * 3. optionresponse → dropdown
+ * 4. stringresponse → text-input
+ * 5. numericalresponse → text-input
+ */
+function parseOlxProblem(xml: string): ParsedProblem[] {
+  const parser = new DOMParser();
+  // Parse as HTML (more lenient than XML parser)
+  const doc = parser.parseFromString(xml, "text/html");
+  const problemEl = doc.querySelector("problem") || doc.body;
+  const problems: ParsedProblem[] = [];
+
+  // Extract question text: everything before the first response element
+  const responseSelectors = [
+    "multiplechoiceresponse", "choiceresponse", "optionresponse",
+    "stringresponse", "numericalresponse",
+  ];
+
+  // Collect all response elements
+  const responseEls = problemEl.querySelectorAll(responseSelectors.join(","));
+  if (responseEls.length === 0) return [];
+
+  // Question text = all content before first response element
+  let questionHtml = "";
+  const allChildren = Array.from(problemEl.childNodes);
+  for (const child of allChildren) {
+    if (child.nodeType === Node.ELEMENT_NODE) {
+      const el = child as Element;
+      const tag = el.tagName.toLowerCase();
+      if (responseSelectors.includes(tag) || tag === "solution" || tag === "demandhint") break;
+      questionHtml += el.outerHTML;
+    } else if (child.nodeType === Node.TEXT_NODE && child.textContent?.trim()) {
+      questionHtml += child.textContent.trim();
+    }
+  }
+
+  // Extract solution/explanation
+  let explanationHtml = "";
+  const solutionEl = problemEl.querySelector("solution");
+  if (solutionEl) {
+    const detailedSolution = solutionEl.querySelector(".detailed-solution");
+    explanationHtml = detailedSolution ? detailedSolution.innerHTML : solutionEl.innerHTML;
+  }
+
+  // Extract hints
+  let hintHtml = "";
+  const hints = problemEl.querySelectorAll("demandhint hint");
+  const hasHints = hints.length > 0;
+  if (hasHints) {
+    hintHtml = Array.from(hints)
+      .map(h => h.textContent?.trim())
+      .filter(Boolean)
+      .join("<br/>");
+  }
+
+  let problemIndex = 0;
+
+  // 1. multiplechoiceresponse → single-select
+  problemEl.querySelectorAll("multiplechoiceresponse").forEach((resp) => {
+    const options: ProblemOption[] = [];
+    let correctAnswerHtml = "";
+    resp.querySelectorAll("choice").forEach((choice, i) => {
+      const text = choice.textContent?.trim() || "";
+      const id = `choice_${i}`;
+      options.push({ id, text });
+      if (choice.getAttribute("correct") === "true") {
+        correctAnswerHtml = text;
+      }
+    });
+    problems.push({
+      id: `olx_mcq_${problemIndex++}`,
+      type: "single-select",
+      questionHtml: questionHtml || "Chọn đáp án đúng:",
+      options,
+      explanationHtml: explanationHtml || undefined,
+      hintHtml: hintHtml || undefined,
+      correctAnswerHtml: correctAnswerHtml || undefined,
+      hasHints,
+    });
+  });
+
+  // 2. choiceresponse → multi-select
+  problemEl.querySelectorAll("choiceresponse").forEach((resp) => {
+    const options: ProblemOption[] = [];
+    let correctParts: string[] = [];
+    resp.querySelectorAll("choice").forEach((choice, i) => {
+      const text = choice.textContent?.trim() || "";
+      const id = `choice_${i}`;
+      options.push({ id, text });
+      if (choice.getAttribute("correct") === "true") {
+        correctParts.push(text);
+      }
+    });
+    problems.push({
+      id: `olx_multi_${problemIndex++}`,
+      type: "multi-select",
+      questionHtml: questionHtml || "Chọn tất cả đáp án đúng:",
+      options,
+      explanationHtml: explanationHtml || undefined,
+      hintHtml: hintHtml || undefined,
+      correctAnswerHtml: correctParts.join(" ; ") || undefined,
+      hasHints,
+    });
+  });
+
+  // 3. optionresponse → dropdown
+  problemEl.querySelectorAll("optionresponse").forEach((resp) => {
+    const options: ProblemOption[] = [];
+    const optionInput = resp.querySelector("optioninput");
+    if (optionInput) {
+      // Options can be in 'options' attribute: "('opt1','opt2')" or <option> children
+      const optionsAttr = optionInput.getAttribute("options");
+      if (optionsAttr) {
+        const matches = optionsAttr.match(/'([^']+)'/g);
+        if (matches) {
+          matches.forEach((m, i) => {
+            const text = m.replace(/'/g, "");
+            options.push({ id: text, text });
+          });
+        }
+      }
+      optionInput.querySelectorAll("option").forEach((opt) => {
+        const text = opt.textContent?.trim() || "";
+        if (text) options.push({ id: text, text });
+      });
+    }
+    const correct = optionInput?.getAttribute("correct") || "";
+    problems.push({
+      id: `olx_dropdown_${problemIndex++}`,
+      type: "dropdown",
+      questionHtml: questionHtml || "Chọn đáp án từ danh sách:",
+      options,
+      explanationHtml: explanationHtml || undefined,
+      hintHtml: hintHtml || undefined,
+      correctAnswerHtml: correct || undefined,
+      hasHints,
+    });
+  });
+
+  // 4. stringresponse → text-input
+  problemEl.querySelectorAll("stringresponse").forEach((resp) => {
+    const correct = resp.getAttribute("answer") || "";
+    problems.push({
+      id: `olx_text_${problemIndex++}`,
+      type: "text-input",
+      questionHtml: questionHtml || "Nhập câu trả lời:",
+      explanationHtml: explanationHtml || undefined,
+      hintHtml: hintHtml || undefined,
+      correctAnswerHtml: correct || undefined,
+      hasHints,
+    });
+  });
+
+  // 5. numericalresponse → text-input
+  problemEl.querySelectorAll("numericalresponse").forEach((resp) => {
+    const correct = resp.getAttribute("answer") || "";
+    problems.push({
+      id: `olx_num_${problemIndex++}`,
+      type: "text-input",
+      questionHtml: questionHtml || "Nhập đáp án số:",
+      explanationHtml: explanationHtml || undefined,
+      hintHtml: hintHtml || undefined,
+      correctAnswerHtml: correct || undefined,
+      hasHints,
+    });
+  });
+
+  return problems;
+}

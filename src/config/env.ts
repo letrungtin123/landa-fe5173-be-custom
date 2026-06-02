@@ -1,25 +1,9 @@
 // ============================================================
-// Cấu hình môi trường — Xác thực bắt buộc, không fallback
-// Ứng dụng sẽ CRASH ngay nếu thiếu bất kỳ biến nào
+// Cấu hình môi trường — Custom Backend
 // ============================================================
 
 /**
  * Lấy giá trị biến môi trường — throw error nếu thiếu.
- * Không bao giờ trả về giá trị mặc định để tránh lộ secrets.
- */
-function requireEnv(key: string): string {
-  const value = import.meta.env[key];
-  if (!value || value.trim() === "") {
-    throw new Error(
-      `[ENV] Thiếu biến môi trường bắt buộc: ${key}. ` +
-      `Hãy kiểm tra file .env.local (copy từ .env.example).`
-    );
-  }
-  return value.trim();
-}
-
-/**
- * Lấy giá trị số từ biến môi trường — throw nếu không phải số.
  */
 function requireEnvNumber(key: string, fallback?: number): number {
   const raw = import.meta.env[key];
@@ -33,66 +17,33 @@ function requireEnvNumber(key: string, fallback?: number): number {
   return num;
 }
 
-/**
- * Xác thực URL hợp lệ — phải bắt đầu bằng http:// hoặc https://
- */
-function requireUrl(key: string): string {
-  const url = requireEnv(key);
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    throw new Error(
-      `[ENV] ${key} phải là URL hợp lệ (http:// hoặc https://), nhận được: "${url}"`
-    );
-  }
-  // Bỏ trailing slash
-  return url.replace(/\/+$/, "");
-}
-
-// ── Xác thực tất cả biến khi app khởi động ──
-
 export const config = {
-  /** URL LMS chính — dùng cho API calls */
-  lmsBaseUrl: requireUrl("VITE_OPENEDX_LMS_URL"),
-
-  /** URL Studio (CMS) — redirect admin/mentor */
-  studioBaseUrl: requireUrl("VITE_OPENEDX_CMS_URL"),
-
-  /** OAuth2 Client ID */
-  clientId: requireEnv("VITE_OPENEDX_CLIENT_ID"),
-
-  /** OAuth2 Client Secret */
-  clientSecret: requireEnv("VITE_OPENEDX_CLIENT_SECRET"),
+  /** Timeout (ms) cho API calls */
+  apiTimeoutMs: requireEnvNumber("VITE_API_TIMEOUT_MS", 30_000),
 
   /** Thời gian (ms) refresh token trước khi hết hạn */
   tokenRefreshBufferMs: requireEnvNumber("VITE_TOKEN_REFRESH_BUFFER_MS", 300_000),
 
-  /** Timeout (ms) cho API calls */
-  apiTimeoutMs: requireEnvNumber("VITE_API_TIMEOUT_MS", 30_000),
-
-  /** Google OAuth2 Client ID — tùy chọn, không crash nếu thiếu */
-  googleClientId: (import.meta.env.VITE_GOOGLE_CLIENT_ID || "").trim(),
-
-  /** Microsoft Azure AD Client ID — tùy chọn, không crash nếu thiếu */
-  microsoftClientId: (import.meta.env.VITE_MICROSOFT_CLIENT_ID || "").trim(),
-
-  /** Microsoft Azure AD Authority URL — mặc định multi-tenant */
-  microsoftAuthority: (
-    import.meta.env.VITE_MICROSOFT_AUTHORITY ||
-    "https://login.microsoftonline.com/common"
-  ).trim(),
-
-  /** Keycloak OIDC Authority URL — tùy chọn, không crash nếu thiếu */
-  keycloakAuthority: (import.meta.env.VITE_KEYCLOAK_AUTHORITY || "").trim(),
-
-  /** Keycloak OIDC Client ID — tùy chọn, không crash nếu thiếu */
-  keycloakClientId: (import.meta.env.VITE_KEYCLOAK_CLIENT_ID || "").trim(),
-
-  /** Base URL cho API calls.
-   *  Luôn dùng relative path "" để:
-   *  - Dev: Vite proxy (server.proxy) intercept và forward tới LMS
-   *  - Production: Kong Gateway route /api/*, /oauth2/*, ... về LMS backend
-   *  lmsBaseUrl vẫn được dùng cho browser redirect (Studio, LMS links).
+  /**
+   * Base URL cho API calls.
+   * Dev: Vite proxy (server.proxy) intercept và forward tới custom backend
+   * Production: Kong Gateway hoặc reverse proxy route /api/* về backend
    */
   get apiBaseUrl(): string {
-    return "";
+    return (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
+  },
+
+  /** @deprecated SSO — hiện tại không dùng, giữ cho LoginPage guard */
+  microsoftClientId: import.meta.env.VITE_MICROSOFT_CLIENT_ID || "",
+  keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || "",
+
+  /** @deprecated Chỉ dùng cho staticUrlRewriter fallback */
+  get lmsBaseUrl(): string {
+    return (import.meta.env.VITE_LMS_BASE_URL || import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
+  },
+
+  /** @deprecated Studio không còn dùng */
+  get studioBaseUrl(): string {
+    return import.meta.env.VITE_STUDIO_BASE_URL || "";
   },
 } as const;

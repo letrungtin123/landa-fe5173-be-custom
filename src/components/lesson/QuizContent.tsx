@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import DOMPurify from "dompurify";
 import { Loader2, CheckCircle2, XCircle, ChevronDown, Info, Lightbulb } from "lucide-react";
-import { getXBlockHtml, fetchHint, fetchExplanation } from "@/api/blocks";
+import { getXBlockHtml, fetchExplanation } from "@/api/blocks";
 import { useSubmitQuiz, parseQuizResult } from "@/hooks/useQuiz";
 import { parseProblemHtml } from "@/transformers/problemParser";
 import type { ParsedProblem } from "@/transformers/problemParser";
@@ -117,12 +117,8 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
 
-  // Hint state: lưu danh sách hints đã fetch
-  const [fetchedHints, setFetchedHints] = useState<string[]>([]);
-  const [hintIndex, setHintIndex] = useState(0);
-  // Bắt đầu = false, chỉ set true khi parser xác nhận quiz CÓ hint
-  const [hasMoreHints, setHasMoreHints] = useState(false);
-  const [isLoadingHint, setIsLoadingHint] = useState(false);
+  // Hint state: dùng hints từ OLX parser, show on-demand khi click button
+  const [showHint, setShowHint] = useState(false);
 
   // Explanation state: lưu giải thích đáp án fetch từ problem_show API
   const [fetchedExplanation, setFetchedExplanation] = useState<string>("");
@@ -161,10 +157,7 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
             useBlockSubmitStore.getState().setResult(problemUsageKey, undefined as any);
           }
           setParsedProblems(problems);
-          const anyHasHints = problems.some(p => p.hasHints);
-          setHasMoreHints(anyHasHints);
-          setFetchedHints([]);
-          setHintIndex(0);
+          setShowHint(false);
           setFetchedExplanation("");
           setAnswers({});
           setResultMessage(null);
@@ -246,7 +239,7 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
       // CHỈ khi trả lời ĐÚNG mới gọi markBlockComplete và cập nhật tiến độ sidebar
       if (result.correct && courseId && user?.username) {
         try {
-          await markBlockComplete(user.username, courseId, problemUsageKey);
+          await markBlockComplete(courseId, problemUsageKey);
         } catch (e) {
           console.error("Failed to mark block complete:", e);
         }
@@ -262,27 +255,13 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
     }
   }, [answers, problemUsageKey, submit, courseId, user?.username]);
 
-  // Fetch hint từ Open edX on demand
-  const handleFetchHint = useCallback(async () => {
-    if (!problemUsageKey || isLoadingHint || !hasMoreHints) return;
-    setIsLoadingHint(true);
-    try {
-      const result = await fetchHint(problemUsageKey, hintIndex);
-      // edX get_demand_hint returns ALL hints cumulatively (hint 0 to hintIndex in one <ol>)
-      // So we REPLACE the stored hint HTML (not append) to avoid duplication
-      if (result.hint) {
-        setFetchedHints([result.hint]);
-        setHintIndex(prev => prev + 1);
-        setHasMoreHints(result.hasMoreHints);
-      } else {
-        setHasMoreHints(false);
-      }
-    } catch (e) {
-      console.error('[QuizContent] Failed to fetch hint:', e);
-    } finally {
-      setIsLoadingHint(false);
-    }
-  }, [problemUsageKey, hintIndex, isLoadingHint, hasMoreHints]);
+  // Toggle hint visibility — dùng hints từ OLX parser (prob.hintHtml)
+  const handleToggleHint = useCallback(() => {
+    setShowHint(prev => !prev);
+  }, []);
+
+  // Check xem có hint không (từ OLX parsed data)
+  const hasHints = parsedProblems.some(p => p.hasHints && p.hintHtml);
 
   // ── Loading state ──
   if (isLoadingContent) {
@@ -468,18 +447,17 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
               )}
             </div>
 
-            {/* Giải thích đáp án (hiện sau khi nộp bài) */}
-            {/* Ưu tiên: fetchedExplanation (từ problem_show API) > prob.explanationHtml (từ parser) */}
-            {((fetchedExplanation || prob.explanationHtml) || prob.correctAnswerHtml || (isCorrect && prob.type === 'text-input')) && resultMessage && (
+            {/* Giải thích đáp án — CHỈ hiện khi trả lời ĐÚNG */}
+            {isCorrect === true && resultMessage && ((fetchedExplanation || prob.explanationHtml) || prob.correctAnswerHtml || prob.type === 'text-input') && (
               <div className="mt-8">
                 <div className="rounded-xl bg-success/10 border border-success/20 p-5">
                   <div className="flex items-center gap-2 mb-3 text-success">
                     <Info className="h-5 w-5" />
-                    {/* <span className="font-bold text-sm tracking-wide uppercase">Kết quả & Giải thích</span> */}
+                    <span className="font-bold text-sm tracking-wide uppercase">Đáp án & Giải thích</span>
                   </div>
 
-                  {/* Lấy đáp án từ parser, nếu trống mà user đã trả lời đúng (như text-input) thì lấy luôn text user đã nhập */}
-                  {(prob.correctAnswerHtml || (isCorrect && answers[prob.id])) && (
+                  {/* Đáp án đúng */}
+                  {(prob.correctAnswerHtml || answers[prob.id]) && (
                     <div className="mb-4 pb-4 border-b border-success/20">
                       <span className="text-[14px] font-semibold text-success/90 uppercase tracking-wider block mb-1">
                         Đáp án đúng:
@@ -491,6 +469,7 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
                     </div>
                   )}
 
+                  {/* Giải thích chi tiết */}
                   {(fetchedExplanation || prob.explanationHtml) && (
                     <div
                       className="prose prose-sm prose-success dark:prose-invert max-w-none text-[14px] leading-relaxed text-foreground/90"
@@ -501,29 +480,8 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
               </div>
             )}
 
-            {/* Gợi ý — fetch on demand từ edX hint_button API */}
-            {fetchedHints.length > 0 && (
-              <div className="mt-4">
-                <div className="rounded-xl bg-warning/10 border border-warning/20 p-5">
-                  <div className="flex items-center gap-2 mb-3 text-warning">
-                    <Lightbulb className="h-5 w-5" />
-                    <span className="font-bold text-sm tracking-wide uppercase">Gợi ý</span>
-                  </div>
-                  <div className="space-y-2">
-                    {fetchedHints.map((hint, idx) => (
-                      <div
-                        key={idx}
-                        className="prose prose-sm prose-warning dark:prose-invert max-w-none text-[14px] leading-relaxed text-foreground/90"
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(hint) }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Nút lấy hint từ parser (nếu có sẵn trong HTML) */}
-            {prob.hintHtml && (
+            {/* Gợi ý — CHỈ hiện khi click button "Xem gợi ý" */}
+            {showHint && prob.hintHtml && (
               <div className="mt-4">
                 <div className="rounded-xl bg-warning/10 border border-warning/20 p-5">
                   <div className="flex items-center gap-2 mb-3 text-warning">
@@ -561,20 +519,15 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
 
         {/* Nút nộp bài / Thử lại + Xem gợi ý */}
         <div className="mt-8 flex items-center justify-between">
-          {/* Nút xem gợi ý (bên trái) */}
+          {/* Nút xem gợi ý (bên trái) — chỉ hiện khi chưa trả lời đúng và có hint */}
           <div>
-            {hasMoreHints && !isCorrect && (
+            {hasHints && isCorrect !== true && (
               <button
-                onClick={handleFetchHint}
-                disabled={isLoadingHint}
-                className="flex items-center gap-2 rounded-full border-2 border-warning/30 bg-warning/5 px-5 py-2.5 text-[13px] font-semibold text-warning transition-all hover:bg-warning/10 active:scale-[0.97] disabled:opacity-50"
+                onClick={handleToggleHint}
+                className="flex items-center gap-2 rounded-full border-2 border-warning/30 bg-warning/5 px-5 py-2.5 text-[13px] font-semibold text-warning transition-all hover:bg-warning/10 active:scale-[0.97]"
               >
-                {isLoadingHint ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Lightbulb className="h-4 w-4" />
-                )}
-                {fetchedHints.length > 0 ? "Gợi ý tiếp" : "Xem gợi ý"}
+                <Lightbulb className="h-4 w-4" />
+                {showHint ? "Ẩn gợi ý" : "Xem gợi ý"}
               </button>
             )}
           </div>
@@ -598,6 +551,7 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
                   setAnswers({});
                   setResultMessage(null);
                   setIsCorrect(null);
+                  setShowHint(false);
                 }}
                 className="rounded-full bg-secondary text-secondary-foreground px-8 py-3 text-[14px] font-bold shadow-sm transition-all hover:bg-secondary/80 active:scale-[0.97] flex items-center gap-2"
               >

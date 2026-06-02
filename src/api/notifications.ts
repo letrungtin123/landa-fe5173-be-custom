@@ -1,65 +1,48 @@
 // ============================================================
-// Notifications API
+// Notifications API — Custom Backend
 // ============================================================
 
 import { apiClient } from "./client";
-import type { NotificationResponse } from "./types";
+import type { ApiResponse, NotificationListResponse } from "./types";
 
 /**
- * Get paginated list of notifications for the current user.
+ * Lấy danh sách thông báo (phân trang).
  */
 export async function getNotifications(params?: {
   page?: number;
   page_size?: number;
-}): Promise<NotificationResponse> {
+}): Promise<NotificationListResponse> {
   try {
-    const { data } = await apiClient.get<NotificationResponse>(
-      "/api/notifications/",
+    const { data } = await apiClient.get<ApiResponse<NotificationListResponse>>(
+      "/api/learner/notifications",
       { params }
     );
-    return data;
-  } catch (error: any) {
-    // Gracefully handle missing notifications API on Open edX (e.g. 404)
-    if (error.response?.status === 404) {
-      return { count: 0, next: null, results: [] };
-    }
-    throw error;
+    return data.data;
+  } catch {
+    return { data: [], total: 0, unread_count: 0 };
   }
 }
 
 /**
- * Mark a single notification as read.
+ * Đánh dấu 1 thông báo đã đọc.
  */
-export async function markNotificationRead(
-  notificationId: number
-): Promise<unknown> {
-  const { data } = await apiClient.patch(
-    `/api/notifications/read/`,
-    { notification_id: notificationId }
-  );
-  return data;
+export async function markNotificationRead(notificationId: string): Promise<void> {
+  await apiClient.patch(`/api/learner/notifications/${notificationId}/read`);
 }
 
 /**
- * Mark all notifications as read.
+ * Đánh dấu tất cả thông báo đã đọc.
  */
-export async function markAllNotificationsRead(): Promise<unknown> {
-  // Open edX requires app_name to mark all as read. We patch the core apps.
-  const apps = ['discussion', 'updates', 'grading'];
-  await Promise.all(
-    apps.map(app_name => 
-      apiClient.patch("/api/notifications/read/", { app_name })
-    )
-  );
-  return { success: true };
+export async function markAllNotificationsRead(): Promise<void> {
+  await apiClient.patch("/api/learner/notifications/read-all");
 }
 
 /**
- * Get count of unread notifications.
+ * Lấy số thông báo chưa đọc.
  */
 export async function getUnreadCount(): Promise<{ count: number }> {
-  const { data } = await apiClient.get<{ count: number }>(
-    "/api/notifications/count/"
+  const { data } = await apiClient.get<ApiResponse<{ count: number }>>(
+    "/api/learner/notifications/unread-count"
   );
-  return data;
+  return data.data;
 }

@@ -1,111 +1,76 @@
 // ============================================================
-// Courses & Enrollment API
+// Courses & Enrollment API — Custom Backend
 // ============================================================
 
 import { apiClient } from "./client";
-import { useAuthStore } from "@/stores/useAuthStore";
 import type {
+  ApiResponse,
   CourseListResponse,
   CourseInfo,
-  BlocksResponse,
+  CourseBlocksResponse,
   EnrollmentItem,
 } from "./types";
 
 /**
- * Get paginated list of all available courses.
- * Truyền username để BE xác định quyền user (staff thấy courses private).
+ * Lấy danh sách khóa học learner được thấy.
+ * - learner: chỉ courses assign qua team
+ * - staff/superuser/superadmin: toàn bộ trong tenant
  */
 export async function getCourses(params?: {
-  search_term?: string;
+  search?: string;
   page?: number;
   page_size?: number;
-  org?: string;
 }): Promise<CourseListResponse> {
-  const username = useAuthStore.getState().user?.username;
-  const { data } = await apiClient.get<CourseListResponse>(
-    "/api/courses/v1/courses/",
-    { params: { ...params, username } }
+  const { data } = await apiClient.get<ApiResponse<CourseListResponse>>(
+    "/api/learner/courses",
+    { params }
   );
-  return data;
+  return data.data;
 }
 
 /**
- * Get details for a single course.
+ * Lấy chi tiết 1 khóa học.
  */
 export async function getCourse(courseId: string): Promise<CourseInfo> {
-  const { data } = await apiClient.get<CourseInfo>(
-    `/api/courses/v1/courses/${courseId}/`
+  const { data } = await apiClient.get<ApiResponse<CourseInfo>>(
+    `/api/learner/courses/${encodeURIComponent(courseId)}`
   );
-  return data;
+  return data.data;
 }
 
 /**
- * Lấy cấu trúc blocks đầy đủ của khóa học (sections → subsections → units → components).
- * API chính để xây sidebar / navigation.
- * - `student_view_data`: param riêng, chỉ định block type nào trả thêm data phát video
- * - `requested_fields`: chứa `student_view_data` để include field đó trong response
+ * Lấy cấu trúc blocks đầy đủ của khóa học.
+ * Trả về flat list blocks kèm completion status.
  */
 export async function getCourseBlocks(
   courseId: string,
-  username?: string
-): Promise<BlocksResponse> {
-  const { data } = await apiClient.get<BlocksResponse>(
-    "/api/courses/v1/blocks/",
-    {
-      params: {
-        course_id: courseId,
-        depth: "all",
-        nav_depth: 3,
-        // username is REQUIRED for completion field to return per-user data
-        ...(username ? { username } : {}),
-        requested_fields:
-          "children,display_name,type,graded,completion,student_view_url,student_view_data",
-        student_view_data: "video,html,la_diagram,la_faq,la_pdf",
-      },
-    }
+): Promise<CourseBlocksResponse> {
+  const { data } = await apiClient.get<ApiResponse<CourseBlocksResponse>>(
+    `/api/learner/courses/${encodeURIComponent(courseId)}/blocks`
   );
-  return data;
+  return data.data;
 }
 
 /**
- * Get the currently authenticated user's enrollments.
+ * Lấy enrollments hiện tại kèm progress.
  */
 export async function getMyEnrollments(): Promise<EnrollmentItem[]> {
-  const { data } = await apiClient.get<EnrollmentItem[]>(
-    "/api/enrollment/v1/enrollment"
+  const { data } = await apiClient.get<ApiResponse<EnrollmentItem[]>>(
+    "/api/learner/enrollments"
   );
-  return data;
+  return data.data;
 }
 
 /**
- * Enroll the current user in a course.
+ * Ghi danh vào khóa học.
  */
-export async function enrollCourse(courseId: string): Promise<unknown> {
-  const { data } = await apiClient.post("/api/enrollment/v1/enrollment", {
-    course_details: { course_id: courseId },
-  });
-  return data;
-}
-
-/**
- * Lấy danh sách mentors (giảng viên/staff) cho khoá học
- */
-export async function getCourseMentors(courseId: string) {
-  const { data } = await apiClient.get<
-    {
-      mentors: {
-        id: number;
-        username: string;
-        email: string;
-        name: string;
-        full_name: string;
-        phone_number: string;
-        bio: string;
-        profile_image_url: string | null;
-        profile_image_url_full: string | null;
-        role: string;
-      }[];
-    }
-  >(`/api/courses/v1/courses/${encodeURIComponent(courseId)}/mentors/`);
-  return data.mentors;
+export async function enrollCourse(courseId: string): Promise<{
+  enrollment_id: string;
+  already_enrolled: boolean;
+}> {
+  const { data } = await apiClient.post<ApiResponse<{
+    enrollment_id: string;
+    already_enrolled: boolean;
+  }>>("/api/learner/enroll", { course_id: courseId });
+  return data.data;
 }

@@ -1,126 +1,79 @@
 // ============================================================
-// Progress & Completion API
+// Progress & Completion API — Custom Backend
 //
-// Open edX completion tracking:
-// - Completion chỉ áp dụng cho LEAF blocks (html, video, problem)
-// - Sequential/Chapter KHÔNG có completion riêng
-// - Phải mark completion cho từng leaf block riêng
-// - POST /api/completion/v1/completion-batch hỗ trợ batch update
+// Block completion tracking:
+// - POST /api/learner/complete-blocks (batch)
+// - BE tự tính lại course progress %
 // ============================================================
 
 import { apiClient } from "./client";
 import { enrollCourse } from "./courses";
-import type { CourseGradeResponse } from "./types";
+import type { ApiResponse, CourseProgress } from "./types";
 
 /**
- * Gọi completion-batch API.
- * Nếu 400 (user chưa enrolled) → tự enroll rồi retry 1 lần.
+ * Mark nhiều blocks hoàn thành cùng lúc (batch).
+ * BE tự tính lại % progress sau khi mark.
  *
- * Cần thiết vì staff user xem blocks không cần enrolled,
- * nhưng completion API bắt buộc phải enrolled.
+ * Nếu 400 (chưa enroll) → tự enroll rồi retry.
  */
-async function postCompletionWithAutoEnroll(
+export async function markBlocksComplete(
   courseId: string,
-  payload: Record<string, unknown>
+  blockIds: string[]
 ): Promise<unknown> {
+  if (blockIds.length === 0) return null;
+
   try {
-    const { data } = await apiClient.post(
-      "/api/completion/v1/completion-batch",
-      payload
+    const { data } = await apiClient.post<ApiResponse<{ marked: number }>>(
+      "/api/learner/complete-blocks",
+      { course_id: courseId, block_ids: blockIds }
     );
-    return data;
+    return data.data;
   } catch (err: any) {
     if (err?.response?.status === 400) {
-      // Thử enroll rồi retry
+      // Chưa enroll → tự enroll rồi retry
       try {
         await enrollCourse(courseId);
-        console.log("[AutoEnroll] Enrolled before completion:", courseId);
-      } catch {
-        // Enroll fail → throw lỗi gốc
-      }
-      const { data } = await apiClient.post(
-        "/api/completion/v1/completion-batch",
-        payload
+      } catch { /* ignore */ }
+      const { data } = await apiClient.post<ApiResponse<{ marked: number }>>(
+        "/api/learner/complete-blocks",
+        { course_id: courseId, block_ids: blockIds }
       );
-      return data;
+      return data.data;
     }
     throw err;
   }
 }
 
 /**
- * Mark một block hoàn thành.
- * Dùng cho single block (backward compat).
+ * Mark 1 block hoàn thành (wrapper cho markBlocksComplete).
  */
 export async function markBlockComplete(
-  username: string,
   courseId: string,
-  usageKey: string
+  blockId: string
 ): Promise<unknown> {
-  return postCompletionWithAutoEnroll(courseId, {
-    username,
-    course_key: courseId,
-    blocks: {
-      [usageKey]: 1.0,
-    },
-  });
+  return markBlocksComplete(courseId, [blockId]);
 }
 
 /**
- * Mark nhiều blocks hoàn thành cùng lúc (batch).
- *
- * Dùng khi user click "Hoàn thành" cho lesson (sequential) chỉ có text/video:
- * - Lấy tất cả leaf block IDs (html, video) trong lesson
- * - Gửi 1 batch request thay vì N requests
- *
- * Problem blocks KHÔNG cần gọi hàm này — chúng tự mark completion
- * khi user submit đáp án đúng qua xmodule_handler.
- */
-export async function markBlocksComplete(
-  username: string,
-  courseId: string,
-  blockIds: string[]
-): Promise<unknown> {
-  if (blockIds.length === 0) return null;
-
-  const blocksMap: Record<string, number> = {};
-  for (const id of blockIds) {
-    blocksMap[id] = 1.0;
-  }
-
-  return postCompletionWithAutoEnroll(courseId, {
-    username,
-    course_key: courseId,
-    blocks: blocksMap,
-  });
-}
-
-/**
- * Get grade info for a user in a course.
- */
-export async function getCourseGrade(
-  courseId: string,
-  username: string
-): Promise<CourseGradeResponse> {
-  const { data } = await apiClient.get<CourseGradeResponse>(
-    `/api/grades/v1/courses/${encodeURIComponent(courseId)}/`,
-    { params: { username } }
-  );
-  return data;
-}
-
-/**
- * Get accurate lightweight progress percentage from the custom LAndA backend.
+ * Lấy progress chi tiết cho 1 khóa học.
  */
 export async function getMyCourseProgress(courseId: string): Promise<number> {
   try {
-    const { data } = await apiClient.get(
-      `/api/landa/v1/my-progress/`,
-      { params: { course_id: courseId } }
+    const { data } = await apiClient.get<ApiResponse<CourseProgress>>(
+      `/api/learner/progress/${encodeURIComponent(courseId)}`
     );
-    return data?.progress || 0;
-  } catch (error) {
-    console.warn("Failed to get my course progress", error);
+    return Number(data.data?.progress) || 0;
+  } catch {
     return 0;
   }
+}
+
+/**
+ * Lấy progress đầy đủ (bao gồm is_completed, completed_at).
+ */
+export async function getCourseProgressDetail(courseId: string): Promise<CourseProgress> {
+  const { data } = await apiClient.get<ApiResponse<CourseProgress>>(
+    `/api/learner/progress/${encodeURIComponent(courseId)}`
+  );
+  return data.data;
 }

@@ -1,5 +1,6 @@
 // ============================================================
 // Modal Config API — Fetch cấu hình modal cho course
+// Gọi: GET /api/learner/courses/:courseId/modal-config
 // ============================================================
 
 import { apiClient } from "./client";
@@ -21,10 +22,10 @@ export interface CourseModalConfigData {
 
 export async function getCourseModalConfig(courseId: string): Promise<CourseModalConfigData> {
   try {
-    const { data } = await apiClient.get("/api/landa/v1/course-modal-config/", {
-      params: { course_id: courseId },
-    });
-    return data;
+    const { data } = await apiClient.get<{ success: boolean; data: CourseModalConfigData }>(
+      `/api/learner/courses/${courseId}/modal-config`
+    );
+    return data.data;
   } catch {
     // Fallback defaults nếu API lỗi
     return {

@@ -6,10 +6,19 @@
 export interface User {
   name: string;
   role: string;
-  joinDate: string;
+  joinDate?: string;
   avatar: string | null;
   streak: number;
   overallProgress: number;
+  email?: string;
+  bio?: string;
+  phone_number?: string;
+  company?: string;
+  gender?: string | null;
+  year_of_birth?: string | null;
+  level_of_education?: string | null;
+  country?: string | null;
+  language?: string | null;
 }
 
 export interface Lesson {

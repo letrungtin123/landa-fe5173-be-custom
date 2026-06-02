@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
 import { refetchProgressWithRetry } from "@/lib/progressRefetch";
+import { markBlockComplete } from "@/api/progress";
+import { useParams } from "react-router-dom";
 
 import {
   DndContext,
@@ -93,9 +95,25 @@ function SortableRow({ item, index }: { item: SortableItem; index: number }) {
   );
 }
 
+// ── Shuffle helper (Fisher-Yates) ──
+function shuffleArray<T>(arr: T[]): T[] {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  // Đảm bảo không trùng thứ tự gốc (nếu > 2 items)
+  if (arr.length > 2) {
+    const isSame = shuffled.every((item, i) => item === arr[i]);
+    if (isSame) return shuffleArray(arr);
+  }
+  return shuffled;
+}
+
 // ── Main Component ──
 
 export function SortableContent({ usageKey }: { usageKey: string }) {
+  const { courseId } = useParams();
   const qc = useQueryClient();
   const [items, setItems] = useState<SortableItem[]>([]);
   const [initialized, setInitialized] = useState(false);
@@ -125,11 +143,16 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
         setResultMessage(cached.resultMessage);
         setIsCorrect(cached.isCorrect);
         setStarted(true);
-      } else if (cached) {
-        // Content đã thay đổi → xóa cache cũ
-        useBlockSubmitStore.getState().setResult(usageKey, undefined as any);
+        setItems(svd.items); // Giữ nguyên thứ tự đã submit
+      } else {
+        if (cached) {
+          // Content đã thay đổi → xóa cache cũ
+          useBlockSubmitStore.getState().setResult(usageKey, undefined as any);
+        }
+        // Xáo trộn ngẫu nhiên cho learner
+        const shuffled = shuffleArray([...svd.items]);
+        setItems(shuffled);
       }
-      setItems(svd.items);
       setInitialized(true);
     }
   }
@@ -175,6 +198,11 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
           isCorrect: true,
           contentFingerprint: fp,
         });
+        // Mark block complete (giống edX: chỉ khi đúng)
+        if (courseId) {
+          markBlockComplete(courseId, usageKey)
+            .catch((e) => console.error('Failed to mark sortable complete:', e));
+        }
         qc.invalidateQueries({ queryKey: ["block-detail", usageKey] });
         qc.invalidateQueries({ queryKey: ["course-blocks"] });
         // Refetch progress với retry để bắt kịp backend aggregation

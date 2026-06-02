@@ -2,7 +2,7 @@
 // CoursesPage — Danh sách khóa học (API thật + Enroll + Certificate)
 // ============================================================
 
-import { BookOpen, ArrowRight, Loader2, Award, ExternalLink } from "lucide-react";
+import { BookOpen, ArrowRight, Loader2, Award } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -13,16 +13,17 @@ import { useMyCertificates } from "@/hooks/useCertificates";
 import { useBatchCourseProgress } from "@/hooks/useProgress";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { config } from "@/config/env";
+
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
+
 import { CourseFilterBar, type CourseFilter } from "@/components/CourseFilterBar";
 import type { CourseCategoryInfo } from "@/api/types";
 
 export function CoursesPage() {
   const { colorStyle } = useThemeStore();
-  const isStaff = useAuthStore((s) => s.user?.isStaff);
+  const role = useAuthStore((s) => s.user?.role);
+  const isStaff = role === 'staff' || role === 'superuser' || role === 'superadmin';
   const { data: courseList, isLoading } = useCourses();
   const { data: enrollments } = useMyEnrollments();
   const { data: certificates } = useMyCertificates();
@@ -31,15 +32,15 @@ export function CoursesPage() {
 
   // Lookup sets cho tra cứu nhanh
   const enrolledIds = new Set(
-    (enrollments || []).map((e) => e.course_details.course_id)
+    (enrollments || []).map((e: any) => e.course_id)
   );
   const certMap = new Map(
     (certificates || []).map((c) => [c.course_id, c])
   );
 
   // Categories từ API response
-  const categories: CourseCategoryInfo[] = courseList?.categories || [];
-  const allCourses = courseList?.results || [];
+  const categories: CourseCategoryInfo[] = [];
+  const allCourses = courseList?.data || [];
 
   // Batch progress cho tất cả enrolled courses
   const enrolledCourseIds = useMemo(
@@ -83,16 +84,15 @@ export function CoursesPage() {
     <div className="mx-auto max-w-[1600px] px-4 py-8 md:px-6">
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-3xl font-bold text-foreground">Chương trình học</h1>
-        {/* Staff/Admin có link truy cập Studio */}
+        {/* Staff/Admin có link truy cập admin dashboard */}
         {isStaff && (
           <a
-            href={config.studioBaseUrl}
+            href={import.meta.env.VITE_ADMIN_URL || '/admin'}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
           >
-            <ExternalLink className="h-3.5 w-3.5" />
-            Quản lý trên Studio
+            Quản trị hệ thống
           </a>
         )}
       </div>
@@ -169,7 +169,7 @@ export function CoursesPage() {
             {courses.map((course, index) => {
               const isEnrolled = enrolledIds.has(course.id);
               const cert = certMap.get(course.id);
-              const imageUrl = sanitizeUrlToRelative(course.media?.image?.large || course.media?.course_image?.uri || null);
+              const imageUrl = course.image_url || null;
 
               return (
                 <motion.div
@@ -192,7 +192,7 @@ export function CoursesPage() {
                         {imageUrl && (
                           <img
                             src={imageUrl}
-                            alt={course.name}
+                            alt={course.display_name}
                             className="absolute inset-0 z-10 h-full w-full object-cover"
                             onError={(e) => {
                               // Ảnh 404 → ẩn img, hiện icon fallback
@@ -242,10 +242,10 @@ export function CoursesPage() {
                           ))}
                         </div>
                         <h3 className="text-lg font-bold text-foreground group-hover:text-accent transition-colors">
-                          {course.name}
+                          {course.display_name}
                         </h3>
                         <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                          {course.short_description || `${course.org} • ${course.pacing === "self" ? "Tự học" : "Có hướng dẫn"}`}
+                          {course.org}
                         </p>
 
                         {/* Hành động */}

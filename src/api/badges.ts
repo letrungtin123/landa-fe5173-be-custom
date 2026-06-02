@@ -1,37 +1,35 @@
-import { apiClient } from "./client";
+// ============================================================
+// Badges API — Custom Backend
+// ============================================================
 
-export interface UserBadgeAPI {
-  badge_id: string;
-  is_shown: boolean;
-  earned_at: string;
-}
+import { apiClient } from "./client";
+import type { ApiResponse, UserBadge } from "./types";
 
 /**
- * Lấy danh sách danh hiệu của user từ Backend
+ * Lấy danh sách huy hiệu của user.
  */
-export async function getUserBadges(): Promise<UserBadgeAPI[]> {
+export async function getUserBadges(): Promise<UserBadge[]> {
   try {
-    const { data } = await apiClient.get<UserBadgeAPI[]>('/api/landa/v1/user-badges/');
-    return data;
-  } catch (error) {
-    console.warn("Failed to get user badges", error);
+    const { data } = await apiClient.get<ApiResponse<UserBadge[]>>("/api/learner/badges");
+    return data.data;
+  } catch {
     return [];
   }
 }
 
 /**
- * Lưu danh hiệu mới lên Backend
+ * Lưu huy hiệu mới.
  */
 export async function saveUserBadge(badgeId: string, markAsShown: boolean = false): Promise<void> {
-  await apiClient.post('/api/landa/v1/user-badges/', { badge_id: badgeId });
+  await apiClient.post("/api/learner/badges", { badge_id: badgeId });
   if (markAsShown) {
-    await apiClient.patch('/api/landa/v1/user-badges/', { badge_id: badgeId, is_shown: true });
+    await apiClient.patch("/api/learner/badges", { badge_id: badgeId, is_shown: true });
   }
 }
 
 /**
- * Đánh dấu danh hiệu đã hiển thị popup chúc mừng
+ * Đánh dấu huy hiệu đã hiển thị popup.
  */
 export async function updateBadgeShown(badgeId: string, isShown: boolean): Promise<void> {
-  await apiClient.patch('/api/landa/v1/user-badges/', { badge_id: badgeId, is_shown: isShown });
+  await apiClient.patch("/api/learner/badges", { badge_id: badgeId, is_shown: isShown });
 }

@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getUserAccount, updateUserAccount } from "@/api/auth";
+import { getUserMe, updateProfile as updateProfileApi } from "@/api/auth";
 import { useAuthStore } from "@/stores/useAuthStore";
-import type { UserAccount } from "@/api/types";
 
 const PROFILE_QUERY_KEY = ["userProfile"];
 
@@ -11,9 +10,13 @@ export function useProfile() {
 
   return useQuery({
     queryKey: [...PROFILE_QUERY_KEY, username],
-    queryFn: () => getUserAccount(username!),
+    queryFn: async () => {
+      const me = await getUserMe();
+      return me.user;
+    },
     enabled: !!username,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 }
 
@@ -23,21 +26,29 @@ export function useUpdateProfile() {
   const username = user?.username;
 
   return useMutation({
-    mutationFn: (data: Partial<UserAccount>) => {
+    mutationFn: (data: Partial<{
+      full_name: string;
+      phone: string;
+      bio: string;
+      avatar_url: string;
+      gender: string;
+      country: string;
+      language: string;
+      level_of_education: string;
+      year_of_birth: number;
+    }>) => {
       if (!username) throw new Error("No username found");
-      return updateUserAccount(username, data);
+      return updateProfileApi(data);
     },
-    onSuccess: (updatedProfile) => {
-      // Cập nhật cache ngay lập tức sau khi thành công
-      queryClient.setQueryData([...PROFILE_QUERY_KEY, username], updatedProfile);
+    onSuccess: (updatedProfile: any) => {
+      // Invalidate để force refetch từ /api/auth/me (trả đủ fields)
+      queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });
       
-      // Update store nếu cần (tùy thuộc vào store đang lưu trữ gì)
       const updateStore = useAuthStore.getState().updateUser;
-      if (updateStore && updatedProfile.name) {
-         updateStore({ name: updatedProfile.name });
+      if (updateStore && updatedProfile.full_name) {
+         updateStore({ fullName: updatedProfile.full_name });
       }
 
-      // Đánh dấu profile đã update để unlock badge
       localStorage.setItem(`la_profile_updated_${username}`, "true");
       window.dispatchEvent(new Event("la_profile_updated"));
     },

@@ -10,14 +10,44 @@ import { useQueries, useQuery, useMutation } from "@tanstack/react-query";
 import { useMyEnrollments } from "./useCourses";
 import { useMyCertificates } from "./useCertificates";
 import { getCourseBlocks } from "@/api/courses";
-import { getCourseGrade } from "@/api/progress";
-import { getUserAccount } from "@/api/auth";
+import { getMyCourseProgress } from "@/api/progress";
 import { getUserBadges, saveUserBadge, updateBadgeShown } from "@/api/badges";
 import { transformBlocksToCourse } from "@/transformers/blockTransformer";
 import { evaluateBadges, getShownBadgeIds, markBadgeShown, syncBadgesToLocalStorage, type EarnedBadge } from "@/lib/badgeEvaluator";
 import { BADGE_DEFINITIONS, type BadgeDefinition } from "@/data/badgeConfig";
 import { useAuthStore } from "@/stores/useAuthStore";
-import type { CourseGradeResponse } from "@/api/types";
+import type { CourseBlocksResponse, BlocksResponse, Block } from "@/api/types";
+
+/** Adapter: CourseBlocksResponse (flat array) → BlocksResponse (map) */
+function adaptBlocksForBadges(data: CourseBlocksResponse): BlocksResponse {
+  const blockMap: Record<string, Block> = {};
+  let rootId = data.root_id || "";
+  for (const cb of data.blocks) {
+    blockMap[cb.id] = {
+      id: cb.id,
+      type: cb.block_type,
+      display_name: cb.display_name,
+      children: [],
+      completion: cb.completed ? 1 : 0,
+      student_view_data: cb.data || {},
+      student_view_url: (cb.metadata as any)?.student_view_url || undefined,
+      graded: (cb.metadata as any)?.graded || false,
+    };
+    if (!rootId && cb.block_type === "course") rootId = cb.id;
+  }
+  for (const cb of data.blocks) {
+    if (cb.parent_id && blockMap[cb.parent_id]) {
+      blockMap[cb.parent_id].children!.push(cb.id);
+    }
+  }
+  const sortMap = new Map(data.blocks.map(cb => [cb.id, cb.sort_order]));
+  for (const block of Object.values(blockMap)) {
+    if (block.children && block.children.length > 1) {
+      block.children.sort((a, b) => (sortMap.get(a) || 0) - (sortMap.get(b) || 0));
+    }
+  }
+  return { root: rootId, blocks: blockMap };
+}
 
 export interface UseBadgesResult {
   earnedBadges: EarnedBadge[];
@@ -43,8 +73,16 @@ export function useBadges(): UseBadgesResult {
   const { data: certificates, isLoading: certLoading } = useMyCertificates();
 
   const { data: profile } = useQuery({
-    queryKey: ["userProfile", username],
-    queryFn: () => getUserAccount(username!),
+    queryKey: ["badgeProfile", username],
+    queryFn: async () => {
+      const user = useAuthStore.getState().user;
+      return user ? {
+        username: user.username,
+        name: user.fullName,
+        bio: null,
+        date_joined: '',
+      } : null;
+    },
     enabled: isAuthenticated && !!username,
     staleTime: 5 * 60 * 1000,
   });
@@ -67,27 +105,30 @@ export function useBadges(): UseBadgesResult {
   // Lấy tất cả course IDs từ enrollments
   const courseIds = useMemo(() => {
     if (!enrollments) return [];
-    return enrollments.map((e) => e.course_details.course_id);
+    return enrollments.map((e: any) => e.course_id);
   }, [enrollments]);
 
   // ── useQueries: fetch blocks cho TẤT CẢ courses ──
   // React Query cho phép dynamic array — không vi phạm Rules of Hooks
   const blockQueries = useQueries({
     queries: courseIds.map((courseId) => ({
-      queryKey: ["course-blocks", courseId, username],
-      queryFn: () => getCourseBlocks(courseId, username),
-      enabled: isAuthenticated && !!courseId && !!username,
+      queryKey: ["course-blocks", courseId],
+      queryFn: async () => {
+        const raw = await getCourseBlocks(courseId);
+        return adaptBlocksForBadges(raw);
+      },
+      enabled: isAuthenticated && !!courseId,
       staleTime: 2 * 60 * 1000,
       select: transformBlocksToCourse,
     })),
   });
 
-  // ── useQueries: fetch grades cho TẤT CẢ courses ──
+  // Grades: dùng progress từ enrollments thay vì edX grading
   const gradeQueries = useQueries({
     queries: courseIds.map((courseId) => ({
-      queryKey: ["course-grade", courseId, username],
-      queryFn: () => getCourseGrade(courseId, username!),
-      enabled: isAuthenticated && !!courseId && !!username,
+      queryKey: ["course-progress", courseId],
+      queryFn: () => getMyCourseProgress(courseId),
+      enabled: isAuthenticated && !!courseId,
       staleTime: 5 * 60 * 1000,
     })),
   });
@@ -122,11 +163,19 @@ export function useBadges(): UseBadgesResult {
   }, [courseIds, blockQueries.map((q) => q.data)]);
 
   const courseGrades = useMemo(() => {
-    const map = new Map<string, CourseGradeResponse>();
+    const map = new Map<string, any>();
 
     courseIds.forEach((id, idx) => {
-      const gradeData = gradeQueries[idx]?.data;
-      if (gradeData) map.set(id, gradeData);
+      const progress = gradeQueries[idx]?.data;
+      if (progress !== undefined) {
+        // Adapter: map custom progress (0-100) to grade-like structure
+        map.set(id, {
+          percent: (progress as number) / 100,
+          passed: (progress as number) >= 100,
+          letter_grade: null,
+          section_breakdown: [],
+        });
+      }
     });
 
     return map;

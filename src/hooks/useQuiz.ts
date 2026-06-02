@@ -26,15 +26,30 @@ export function useSubmitQuiz(usageKey: string) {
 }
 
 /**
- * Parse kết quả quiz từ response của Open edX.
+ * Parse kết quả quiz từ response.
+ * Hỗ trợ cả Custom BE format và legacy Open edX format.
  */
 export function parseQuizResult(
   response: Record<string, unknown>
 ): QuizResult {
+  // ── Custom BE format ──
+  // { status: 'correct'|'incorrect', message: '...', score: 100, correctness: {...} }
+  if (response.status === 'correct' || response.status === 'incorrect') {
+    const correct = response.status === 'correct';
+    return {
+      success: true,
+      correct,
+      score: typeof response.score === 'number' ? response.score : (correct ? 100 : 0),
+      message: correct
+        ? `🎉 ${response.message || 'Chính xác! Tuyệt vời!'}`
+        : (response.message as string) || 'Chưa đúng. Hãy thử lại!',
+    };
+  }
+
+  // ── Legacy Open edX format (backward-compat) ──
   const contents = response.contents ? String(response.contents) : "";
   const successVal = response.success;
   
-  // Xác định chuẩn xác đúng/sai qua HTML response của edX
   const isCorrectStatus = contents.includes('class="status correct"');
   const isIncorrectStatus = contents.includes('class="status incorrect"');
   

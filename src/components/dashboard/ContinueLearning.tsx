@@ -183,28 +183,28 @@ export function ContinueLearning() {
 
   const isLoading = enrollLoading || coursesLoading;
   
-  const coursesData = courseList?.results || [];
-  const courseMap = new Map(coursesData.map(c => [c.id, c]));
-  const categories: CourseCategoryInfo[] = courseList?.categories || [];
+  const coursesData = courseList?.data || [];
+  const courseMap = new Map(coursesData.map((c: any) => [c.id, c]));
+  const categories: CourseCategoryInfo[] = [];
 
   // Chuyển enrollments → ContinueCourse format
   const allCourses: ContinueCourse[] =
     enrollments && enrollments.length > 0
       ? enrollments
-          .filter((e) => courseMap.has(e.course_details.course_id))
-          .map((e) => {
-            const courseId = e.course_details.course_id;
+          .filter((e: any) => courseMap.has(e.course_id))
+          .map((e: any) => {
+            const courseId = e.course_id;
             const fullCourse = courseMap.get(courseId);
           
-            const imageUrl = sanitizeUrlToRelative(fullCourse?.media?.image?.large || fullCourse?.media?.course_image?.uri || null);
+            const imageUrl = (fullCourse as any)?.image_url || null;
           
             return {
               id: courseId,
               moduleLabel: "Course",
-              lessonLabel: e.course_details.course_name,
-              title: e.course_details.course_name,
+              lessonLabel: e.display_name,
+              title: e.display_name,
               thumbnail: imageUrl,
-              categories: fullCourse?.categories || [],
+              categories: [],
             };
           })
       : [];
@@ -217,7 +217,7 @@ export function ContinueLearning() {
   const completedCount = allCourses.filter(c => (progressMap?.get(c.id) || 0) >= 100).length;
   const inProgressCount = allCourses.filter(c => (progressMap?.get(c.id) || 0) < 100).length;
   const categoryCounts = useMemo(() => {
-    const m = new Map<number, number>();
+    const m = new Map<string, number>();
     for (const cat of categories) {
       m.set(cat.id, allCourses.filter(c => c.categories?.some(cc => cc.id === cat.id)).length);
     }

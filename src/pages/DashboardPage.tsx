@@ -19,13 +19,13 @@ export function DashboardPage() {
   const { data: courseList } = useCourses();
 
   // Chỉ lấy enrollment có course trong danh sách public (đã filter bởi BE)
-  const publicCourseIds = new Set((courseList?.results || []).map((c) => c.id));
+  const publicCourseIds = new Set((courseList?.data || []).map((c: any) => c.id));
   const visibleEnrollments = (enrollments || []).filter(
-    (e) => publicCourseIds.has(e.course_details.course_id)
+    (e: any) => publicCourseIds.has(e.course_id)
   );
 
   // Lấy danh sách ID của tất cả khóa học đang enrolled
-  const enrolledCourseIds = visibleEnrollments.map((e) => e.course_details.course_id);
+  const enrolledCourseIds = visibleEnrollments.map((e: any) => e.course_id);
   const { data: averagePercent } = useAverageCourseCompletion(enrolledCourseIds);
 
   if (pageLoading) {

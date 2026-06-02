@@ -27,13 +27,13 @@ export function useAutoEnroll() {
     // Chỉ chạy 1 lần per session, khi đã có cả 2 data
     if (!isAuthenticated || enrollLoading || coursesLoading) return;
     if (hasRun.current) return;
-    if (!coursesData?.results) return;
+    if (!coursesData?.data) return;
 
     const enrolledIds = new Set(
-      (enrollments || []).map(e => e.course_details.course_id)
+      (enrollments || []).map(e => e.course_id)
     );
 
-    const missingCourses = coursesData.results.filter(
+    const missingCourses = coursesData.data.filter(
       c => !enrolledIds.has(c.id)
     );
 

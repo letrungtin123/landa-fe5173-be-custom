@@ -1,97 +1,23 @@
 // ============================================================
-// Google Callback Page
-// Xử lý redirect từ LMS sau khi Google auth server-side flow
-// hoàn thành (link account cho user đã tồn tại).
-//
-// Flow: LMS redirect về /google-callback → detect session → login → dashboard
+// Google Callback Page — TODO: Implement SSO with Custom Backend
+// Currently a placeholder that redirects to login.
 // ============================================================
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "@/stores/useAuthStore";
-import { getUserMe, getUserAccount } from "@/api/auth";
-import { apiClient } from "@/api/client";
-import { establishLmsSessionFromToken } from "@/api/lmsSession";
-import { updateStreak } from "@/hooks/useUser";
-import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 
-type CallbackState = "loading" | "success" | "error";
+type CallbackState = "loading" | "error";
 
 export function GoogleCallbackPage() {
   const navigate = useNavigate();
   const [state, setState] = useState<CallbackState>("loading");
-  const [errorMsg, setErrorMsg] = useState("");
-
-  const set = useAuthStore.setState;
-  const scheduleTokenRefresh = useAuthStore((s) => s.scheduleTokenRefresh);
 
   useEffect(() => {
-    async function handleCallback() {
-      try {
-        // LMS server-side flow đã tạo session cookie.
-        // Thử lấy user info từ session.
-        const me = await getUserMe();
-
-        let account;
-        try {
-          account = await getUserAccount(me.username);
-        } catch {
-          account = {
-            name: me.username,
-            profile_image: { has_image: false, image_url_full: "" },
-            date_joined: new Date().toISOString(),
-          };
-        }
-
-        // Tạo LMS session từ cookie hiện có
-        await establishLmsSessionFromToken();
-
-        // Cập nhật streak
-        updateStreak();
-
-        // Kiểm tra learner_plus role
-        let isLearnerPlus = false;
-        if (!me.is_staff) {
-          try {
-            const { data: roleData } = await apiClient.get("/api/landa/v0/my-role/");
-            isLearnerPlus = roleData.role === "learner_plus";
-          } catch {
-            // Bỏ qua — learner thường không có role
-          }
-        }
-
-        // Lưu user info vào store (không có OAuth tokens vì flow là session-based)
-        set({
-          isAuthenticated: true,
-          user: {
-            username: me.username,
-            email: me.email,
-            name: account.name || me.username,
-            avatar: sanitizeUrlToRelative(account.profile_image?.has_image
-              ? account.profile_image.image_url_full
-              : null),
-            dateJoined: account.date_joined,
-            isStaff: me.is_staff,
-            isLearnerPlus,
-          },
-        });
-
-        scheduleTokenRefresh();
-
-        setState("success");
-        // Redirect về dashboard sau 500ms
-        setTimeout(() => navigate("/dashboard", { replace: true }), 500);
-      } catch (err) {
-        console.error("[google-callback] Failed to authenticate:", err);
-        setState("error");
-        setErrorMsg("Không thể hoàn tất đăng nhập. Vui lòng thử lại.");
-        // Redirect về login sau 3s
-        setTimeout(() => navigate("/login", { replace: true }), 3000);
-      }
-    }
-
-    handleCallback();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // TODO: Implement Google SSO callback with custom BE
+    // For now, redirect to login
+    setState("error");
+    setTimeout(() => navigate("/login", { replace: true }), 2000);
+  }, [navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#f8faff] to-[#e8f0fe]">
@@ -104,26 +30,16 @@ export function GoogleCallbackPage() {
             </p>
           </>
         )}
-        {state === "success" && (
-          <>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-              <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <p className="text-[15px] font-medium text-green-700">
-              Đăng nhập thành công!
-            </p>
-          </>
-        )}
         {state === "error" && (
           <>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+              <svg className="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <p className="text-[15px] font-medium text-red-700">{errorMsg}</p>
+            <p className="text-[15px] font-medium text-amber-700">
+              Tính năng đăng nhập Google chưa được hỗ trợ.
+            </p>
             <p className="text-[12px] text-[#999]">Đang chuyển về trang đăng nhập...</p>
           </>
         )}

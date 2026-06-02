@@ -1,114 +1,97 @@
 // ============================================================
 // Auth API — Đăng nhập, Refresh Token, Thông tin người dùng
+// Gọi Custom Backend (Express/PostgreSQL)
 // KHÔNG LOG BẤT KỲ DỮ LIỆU NHẠY CẢM NÀO (token, email, password)
 // ============================================================
 
-import axios from "axios";
-import { config } from "@/config/env";
-import { lmsUrl } from "@/config/openedx";
 import { apiClient } from "./client";
-import type { OAuthTokenResponse, UserMe, UserAccount } from "./types";
+import type { ApiResponse, LoginResponse, AuthUserInfo, PermissionsMap, TenantBasic } from "./types";
 
 /**
- * Đăng nhập bằng OAuth2 password grant.
- * Trả về access_token + refresh_token.
+ * Đăng nhập bằng username/email + password.
+ * Trả về JWT access_token + refresh_token + user info.
  */
 export async function loginApi(
   username: string,
   password: string
-): Promise<OAuthTokenResponse> {
-  const { data } = await axios.post<OAuthTokenResponse>(
-    lmsUrl("/oauth2/access_token"),
-    new URLSearchParams({
-      grant_type: "password",
-      client_id: config.clientId,
-      client_secret: config.clientSecret,
-      username,
-      password,
-    }),
-    {
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      timeout: config.apiTimeoutMs,
-    }
+): Promise<LoginResponse> {
+  const { data } = await apiClient.post<ApiResponse<LoginResponse>>(
+    "/api/auth/login",
+    { username, password }
   );
-  return data;
+  return data.data;
 }
 
 /**
  * Refresh access token bằng refresh_token.
- * Open edX DOT sử dụng single-use refresh token — mỗi lần dùng
- * sẽ nhận refresh_token mới và cái cũ bị vô hiệu.
+ * Token rotation: refresh_token cũ bị revoke, trả về token mới.
+ *
+ * QUAN TRỌNG: Dùng axios trực tiếp, KHÔNG dùng apiClient.
+ * apiClient interceptor sẽ gắn expired Bearer token → BE reject 401.
  */
 export async function refreshTokenApi(
   refreshToken: string
-): Promise<OAuthTokenResponse> {
-  const { data } = await axios.post<OAuthTokenResponse>(
-    lmsUrl("/oauth2/access_token"),
-    new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-      client_id: config.clientId,
-      client_secret: config.clientSecret,
-    }),
-    {
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      timeout: config.apiTimeoutMs,
-    }
+): Promise<LoginResponse> {
+  const axios = (await import("axios")).default;
+  const { config } = await import("@/config/env");
+  const baseURL = config.apiBaseUrl || "";
+
+  const { data } = await axios.post<ApiResponse<LoginResponse>>(
+    `${baseURL}/api/auth/refresh`,
+    { refresh_token: refreshToken },
+    { headers: { "Content-Type": "application/json" }, timeout: 10_000 }
   );
-  return data;
+  return data.data;
 }
 
 /**
- * Lấy thông tin cơ bản user hiện tại.
- * /api/user/v1/me trả về { username, is_staff }.
- * Email lấy thêm từ accounts endpoint.
+ * Lấy thông tin user hiện tại + permissions.
  */
-export async function getUserMe(): Promise<UserMe> {
-  const { data } = await apiClient.get("/api/user/v1/me");
+export async function getUserMe(): Promise<{
+  user: AuthUserInfo;
+  permissions: PermissionsMap;
+  tenant_modules: string[];
+  managed_tenants: TenantBasic[];
+}> {
+  const { data } = await apiClient.get<ApiResponse<{
+    user: AuthUserInfo;
+    permissions: PermissionsMap;
+    tenant_modules: string[];
+    managed_tenants: TenantBasic[];
+  }>>("/api/auth/me");
+  return data.data;
+}
 
-  // Lấy email từ accounts endpoint (vì /me không trả về)
-  let email = "";
+/**
+ * Đăng xuất — revoke refresh token phía server.
+ */
+export async function logoutApi(refreshToken: string): Promise<void> {
   try {
-    const acct = await apiClient.get(`/api/user/v1/accounts/${data.username}`);
-    email = acct.data.email || "";
+    await apiClient.post("/api/auth/logout", { refresh_token: refreshToken });
   } catch {
-    // Bỏ qua lỗi — email không bắt buộc cho flow chính
+    // Best-effort — server có thể không phản hồi
   }
-
-  return {
-    username: data.username,
-    email,
-    is_staff: data.is_staff === true,
-  };
 }
 
 /**
- * Lấy thông tin chi tiết tài khoản người dùng.
+ * Cập nhật thông tin cá nhân.
  */
-export async function getUserAccount(
-  username: string
-): Promise<UserAccount> {
-  const { data } = await apiClient.get(
-    `/api/user/v1/accounts/${username}`
+export async function updateProfile(
+  updates: Partial<{
+    full_name: string;
+    phone: string;
+    bio: string;
+    avatar_url: string;
+    gender: string;
+    country: string;
+    language: string;
+    level_of_education: string;
+    year_of_birth: number;
+  }>
+): Promise<Record<string, unknown>> {
+  const { data } = await apiClient.patch<ApiResponse<Record<string, unknown>>>(
+    "/api/auth/profile",
+    updates
   );
-  return data;
-}
-
-/**
- * Cập nhật thông tin chi tiết tài khoản người dùng.
- */
-export async function updateUserAccount(
-  username: string,
-  updateData: Partial<UserAccount>
-): Promise<UserAccount> {
-  const { data } = await apiClient.patch(
-    `/api/user/v1/accounts/${username}`,
-    updateData,
-    {
-      headers: {
-        "Content-Type": "application/merge-patch+json",
-      },
-    }
-  );
-  return data;
+  return data.data;
 }

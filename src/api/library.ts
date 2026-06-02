@@ -1,12 +1,11 @@
 // ============================================================
-// library.ts — Kho tài liệu nội bộ (LANDA Library API v1)
+// library.ts — Kho tài liệu nội bộ (LANDA Library)
 //
 // Gọi backend API:
-//   GET /api/landa/v1/library/documents/?page=1&category=nhan-su&search=...
-//   GET /api/landa/v1/library/categories/
+//   GET /api/learner/library/documents?page=1&category=...&search=...
+//   GET /api/learner/library/categories
 //
-// Không phụ thuộc course ảo — file lưu trong Django MEDIA_ROOT.
-// Admin quản lý qua CMS Django Admin → /admin/landa_library/
+// Team-scoped: learner chỉ thấy docs từ categories assign cho team mình.
 // ============================================================
 
 import { apiClient } from "@/api/client";
@@ -14,14 +13,14 @@ import { apiClient } from "@/api/client";
 // ── Types ──
 
 export interface DocumentCategory {
-  id: number;
+  id: string;
   name: string;
   slug: string;
   count: number;
 }
 
 export interface LibraryDocument {
-  id: number;
+  id: string;
   title: string;
   extension: string;
   file_size: number;
@@ -58,39 +57,42 @@ export interface LibraryDocumentsParams {
 export async function getLibraryDocuments(
   params?: LibraryDocumentsParams
 ): Promise<LibraryDocumentsResponse> {
-  const { data } = await apiClient.get<LibraryDocumentsResponse>(
-    "/api/landa/v1/library/documents/",
+  const { data } = await apiClient.get<{ success: boolean; data: LibraryDocumentsResponse }>(
+    "/api/learner/library/documents",
     { params }
   );
-  return data;
+  return data.data;
 }
 
 export async function getLibraryCategories(): Promise<LibraryCategoriesResponse> {
-  const { data } = await apiClient.get<LibraryCategoriesResponse>(
-    "/api/landa/v1/library/categories/"
+  const { data } = await apiClient.get<{ success: boolean; data: LibraryCategoriesResponse }>(
+    "/api/learner/library/categories"
   );
-  return data;
+  return data.data;
 }
 
 export async function downloadLibraryFileBlob(url: string): Promise<Blob> {
-  // Convert absolute URL to relative path to use Vite proxy in DEV mode and avoid CORS
+  // For Supabase Storage URLs, fetch directly (public bucket)
+  if (url.includes('/storage/v1/object/public/')) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Download failed: ${response.status}`);
+    return response.blob();
+  }
+
+  // For relative URLs, use apiClient with proxy
   let requestUrl = url;
   try {
     if (url.startsWith('http')) {
       const urlObj = new URL(url);
       requestUrl = urlObj.pathname + urlObj.search;
     }
-  } catch (e) {
+  } catch {
     // Fallback
   }
 
-  console.log('[downloadLibraryFileBlob] Requesting:', requestUrl);
-
   const { data } = await apiClient.get<Blob>(requestUrl, {
     responseType: 'blob',
-    // Bỏ Content-Type mặc định (application/json) — không phù hợp cho binary download
     headers: { 'Content-Type': undefined as any },
-    // Timeout riêng cho download file lớn (5 phút)
     timeout: 300_000,
   });
   return data;
@@ -109,7 +111,6 @@ export async function handleSecureDownload(url: string, filename: string) {
     document.body.removeChild(a);
   } catch (error: any) {
     console.error("Lỗi khi tải file:", error);
-    // Bắn lỗi ra để UI xử lý toast nếu cần, hoặc alert tạm
     alert(`Không thể tải file: ${error.message || 'Lỗi hệ thống'}`);
   }
 }

@@ -1,19 +1,165 @@
 // ============================================================
-// API Types — Kiểu dữ liệu response từ Open edX
+// API Types — Kiểu dữ liệu response từ Custom Backend
 // ============================================================
+
+// ── Wrapper response ──
+
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
 
 // ── Xác thực ──
 
+export interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number; // seconds
+  user: AuthUserInfo;
+  permissions: PermissionsMap;
+  tenant_modules: string[];
+  managed_tenants: TenantBasic[];
+}
+
+export interface AuthUserInfo {
+  id: string;
+  username: string;
+  email: string;
+  full_name: string;
+  phone: string | null;
+  avatar_url: string | null;
+  role: 'learner' | 'staff' | 'superuser' | 'superadmin';
+  tenant_id: string | null;
+  tenant_name: string | null;
+}
+
+export interface TenantBasic {
+  id: string;
+  name: string;
+}
+
+export interface PermissionsMap {
+  [moduleCode: string]: {
+    can_view: boolean;
+    can_add: boolean;
+    can_edit: boolean;
+    can_delete: boolean;
+  };
+}
+
+// ── Khóa học ──
+
+export interface CourseInfo {
+  id: string;
+  display_name: string;
+  org: string;
+  image_url: string;
+  start_date: string | null;
+  end_date: string | null;
+  visible_to_staff_only: boolean;
+  created_at: string;
+  /** Categories — optional, chưa implement trên custom BE */
+  categories?: Array<{ id: number; name: string; slug: string }>;
+}
+
+export interface CourseCategoryInfo {
+  id: string;
+  name: string;
+}
+
+export interface CourseListResponse {
+  data: CourseInfo[];
+  categories: CourseCategoryInfo[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+// ── Course Blocks ──
+
+export interface CourseBlock {
+  id: string;
+  parent_id: string | null;
+  block_type: 'course' | 'chapter' | 'sequential' | 'vertical' | 'video' | 'html' | 'problem' | 'la_crossword' | 'la_sortable' | 'la_diagram' | 'la_faq' | 'la_pdf';
+  display_name: string;
+  data: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  sort_order: number;
+  completed: boolean;
+}
+
+export interface CourseBlocksResponse {
+  root_id: string | null;
+  blocks: CourseBlock[];
+}
+
+// ── Ghi danh ──
+
+export interface EnrollmentItem {
+  id: string;
+  course_id: string;
+  enrolled_at: string;
+  is_active: boolean;
+  display_name: string;
+  image_url: string;
+  org: string;
+  progress: number;       // 0 - 100
+  is_completed: boolean;
+  completed_at: string | null;
+  last_activity_at: string | null;
+}
+
+// ── Tiến độ ──
+
+export interface CourseProgress {
+  progress: number;
+  is_completed: boolean;
+  completed_at: string | null;
+  last_activity_at: string | null;
+}
+
+// ── Badges ──
+
+export interface UserBadge {
+  badge_id: string;
+  is_shown: boolean;
+  earned_at: string;
+}
+
+// ── Thông báo ──
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  course_id: string | null;
+  created_at: string;
+  is_read: boolean;
+  read_at: string | null;
+  sent_by_name: string | null;
+}
+
+export interface NotificationListResponse {
+  data: Notification[];
+  total: number;
+  unread_count: number;
+}
+
+// ── Backward compat — giữ để không lỗi import chỗ cũ ──
+// Sẽ dọn dẹp sau
+
+/** @deprecated dùng LoginResponse */
 export interface OAuthTokenResponse {
   access_token: string;
   refresh_token: string;
-  token_type: string; // "Bearer"
+  token_type: string;
   expires_in: number;
   scope: string;
 }
 
-// ── Người dùng ──
-
+/** @deprecated dùng AuthUserInfo */
 export interface UserMe {
   username: string;
   email: string;
@@ -21,6 +167,7 @@ export interface UserMe {
   is_superuser?: boolean;
 }
 
+/** @deprecated */
 export interface UserAccount {
   username: string;
   name: string;
@@ -48,59 +195,13 @@ export interface UserAccount {
   }>;
 }
 
-// ── Khóa học ──
-
-export interface CourseCategoryInfo {
-  id: number;
-  name: string;
-  slug: string;
-}
-
-export interface CourseListResponse {
-  pagination: {
-    count: number;
-    previous: string | null;
-    next: string | null;
-    num_pages: number;
-  };
-  results: CourseInfo[];
-  categories?: CourseCategoryInfo[];
-}
-
-export interface CourseInfo {
-  id: string; // VD: "course-v1:L_A+ONB2026+2026"
-  name: string;
-  number: string;
-  org: string;
-  short_description: string;
-  overview: string;               // Full HTML overview from course about page
-  course_handouts: string | null;  // URL to course handouts page
-  start: string | null;
-  end: string | null;
-  enrollment_start: string | null;
-  enrollment_end: string | null;
-  media: {
-    course_image: { uri: string };
-    course_video: { uri: string | null };
-    image: { raw: string; small: string; large: string };
-  };
-  course_modes?: Array<{
-    slug: string;
-    name: string;
-  }>;
-  effort: string | null;
-  pacing: "self" | "instructor";
-  visible_to_staff_only?: boolean;
-  categories?: CourseCategoryInfo[];
-}
-
-// ── Blocks ──
-
+/** @deprecated */
 export interface BlocksResponse {
   root: string;
   blocks: Record<string, Block>;
 }
 
+/** @deprecated */
 export interface Block {
   id: string;
   type: string;
@@ -113,6 +214,7 @@ export interface Block {
   student_view_data?: VideoBlockData | Record<string, unknown>;
 }
 
+/** @deprecated */
 export interface VideoBlockData {
   duration: number | null;
   transcripts: Record<string, string>;
@@ -123,32 +225,13 @@ export interface VideoBlockData {
   only_on_web: boolean;
 }
 
-// ── Ghi danh ──
-
-export interface EnrollmentItem {
-  created: string;
-  mode: string;
-  is_active: boolean;
-  course_details: {
-    course_id: string;
-    course_name: string;
-    enrollment_start: string | null;
-    enrollment_end: string | null;
-    invite_only: boolean;
-    course_modes: Array<{ slug: string; name: string }>;
-  };
-  user: string;
-}
-
-// ── Tiến độ / Hoàn thành ──
-
+/** @deprecated */
 export interface CourseCompletionResponse {
-  completion: number; // 0.0 → 1.0
+  completion: number;
   course_key: string;
 }
 
-// ── Điểm ──
-
+/** @deprecated */
 export interface CourseGradeResponse {
   username: string;
   email: string;
@@ -162,14 +245,14 @@ export interface CourseGradeResponse {
   }>;
 }
 
-// ── Thông báo ──
-
+/** @deprecated */
 export interface NotificationResponse {
   count: number;
   next: string | null;
   results: OpenEdXNotification[];
 }
 
+/** @deprecated */
 export interface OpenEdXNotification {
   id: number;
   app_name: string;
@@ -185,9 +268,10 @@ export interface OpenEdXNotification {
   last_seen: string | null;
 }
 
-// ── XBlock ──
-
+/** @deprecated */
 export interface XBlockViewResponse {
-  content: string; // HTML đã render
+  content: string;
   resources: unknown[];
 }
+
+

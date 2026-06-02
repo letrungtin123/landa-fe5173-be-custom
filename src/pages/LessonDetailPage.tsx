@@ -6,7 +6,7 @@ import { usePageLoading } from "@/hooks/usePageLoading";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useLessonDetail } from "@/hooks/useLessonDetail";
-import { useCourse, useCourseStructure, useCourseMentors } from "@/hooks/useCourses";
+import { useCourse, useCourseStructure } from "@/hooks/useCourses";
 import { useCourseFiles } from "@/hooks/useCourseFiles";
 import type { CourseFile } from "@/hooks/useCourseFiles";
 import { BookOpen, Download, FileText, FileSpreadsheet, Presentation, MessageCircle, CheckCircle2, ChevronUp } from "lucide-react";
@@ -64,7 +64,6 @@ export function LessonDetailPage() {
   const { lesson, isLoading: dataLoading } = useLessonDetail(currentLessonId);
   const { data: courseDetail } = useCourse(courseId || "");
   const { data: courseTree } = useCourseStructure(courseId || "");
-  const { data: fetchedMentors } = useCourseMentors(courseId || "");
   const { data: refDocs = [] } = useCourseFiles(courseId || "");
 
   // Auto-select first lesson if none is selected or not in current course
@@ -153,7 +152,7 @@ export function LessonDetailPage() {
 
   const completeMutation = useMutation({
     mutationFn: () =>
-      markBlocksComplete(user?.username || "", courseId || "", leafBlockIds),
+      markBlocksComplete(courseId || "", leafBlockIds),
     onSuccess: () => {
       refetchProgressWithRetry(qc);
     },
@@ -162,39 +161,19 @@ export function LessonDetailPage() {
 
   // ✅ Hooks phải gọi TRƯỚC mọi early return
   const mentors = useMemo(() => {
-    if (!fetchedMentors || fetchedMentors.length === 0) return [];
-    return fetchedMentors.map((m) => ({
-      id: m.id,
-      username: m.username,
-      name: m.name || m.full_name,
-      full_name: m.full_name,
-      role: m.role,
-      company: '',
-      email: m.email,
-      phone_number: m.phone_number,
-      bio: m.bio,
-      avatar: sanitizeUrlToRelative(m.profile_image_url || null),
-      profile_image_url: sanitizeUrlToRelative(m.profile_image_url || null),
-      profile_image_url_full: sanitizeUrlToRelative(m.profile_image_url_full || null),
-    }));
-  }, [fetchedMentors]);
+    return [];
+  }, []);
 
   // Unit navigation handlers
   const totalUnits = lesson?.units.length || 0;
   const currentUnit = lesson?.units[currentUnitIndex] || null;
   const isLastUnit = currentUnitIndex >= totalUnits - 1;
 
-  // ── Auto-mark passive blocks (la_faq, html, video, la_diagram) khi user vào unit ──
-  // Các block này chỉ cần xem, không cần tương tác → mark complete ngay khi navigate đến.
-  // Đảm bảo khi unit có mix interactive (sortable/crossword/problem) + passive (faq/text/video),
-  // submit xong interactive thì unit sẽ đạt 100% completion.
+  // ── Auto-mark passive blocks khi user vào unit ──
+  // Các block dạng xem (html, video, faq, pdf, diagram) → auto-complete ngay khi navigate đến.
+  // Giống edX: passive blocks complete khi user mở, không cần tương tác.
   useEffect(() => {
     if (!currentUnit || !user?.username || !courseId) return;
-
-    // Chỉ auto-mark khi unit có MIX interactive + passive.
-    // Khi unit chỉ có passive blocks → giữ logic cũ (click "Hoàn thành" / "Tiếp tục").
-    const hasInteractive = currentUnit.components.some((c) => INTERACTIVE_BLOCK_TYPES.includes(c.type));
-    if (!hasInteractive) return;
 
     const passiveIds = currentUnit.components
       .filter((c) => PASSIVE_BLOCK_TYPES.includes(c.type))
@@ -202,7 +181,7 @@ export function LessonDetailPage() {
 
     if (passiveIds.length === 0) return;
 
-    markBlocksComplete(user.username, courseId, passiveIds)
+    markBlocksComplete(courseId, passiveIds)
       .then(() => {
         refetchProgressWithRetry(qc);
       })
@@ -241,13 +220,13 @@ export function LessonDetailPage() {
 
   const handleNext = useCallback(() => {
     // Tự động mark hoàn thành cho các block text/video ở Unit HIỆN TẠI
-    if (currentUnit && user?.username && courseId) {
+      if (currentUnit && courseId) {
       const leafIdsToMark = currentUnit.components
         .filter((c) => c.type === "html" || c.type === "video" || c.type === "la_diagram" || c.type === "la_faq" || c.type === "la_pdf")
         .map((c) => c.id);
 
       if (leafIdsToMark.length > 0) {
-        markBlocksComplete(user.username, courseId, leafIdsToMark)
+        markBlocksComplete(courseId, leafIdsToMark)
           .catch((e) => console.error("Failed to auto-mark block on next:", e))
           .finally(() => {
             refetchProgressWithRetry(qc);

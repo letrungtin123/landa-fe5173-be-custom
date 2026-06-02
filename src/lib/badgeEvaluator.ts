@@ -220,7 +220,7 @@ function checkBadge(
     case "first_step": {
       for (const [courseId, pct] of completions) {
         if (pct > 0) {
-          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
+          const name = enrollments.find(e => e.course_id === courseId)?.display_name;
           return { courseId, courseName: name };
         }
       }
@@ -230,7 +230,7 @@ function checkBadge(
     case "onboarding_warrior": {
       for (const [courseId, pct] of completions) {
         if (pct >= 100) {
-          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
+          const name = enrollments.find(e => e.course_id === courseId)?.display_name;
           if (name && name.toLowerCase().includes("onboarding")) {
             return { courseId, courseName: name };
           }
@@ -245,13 +245,13 @@ function checkBadge(
       }
       for (const [courseId, pct] of completions) {
         if (pct >= 100) {
-          const enrollment = enrollments.find(e => e.course_details.course_id === courseId);
-          if (enrollment && enrollment.created) {
-            const enrolledAt = new Date(enrollment.created).getTime();
+          const enrollment = enrollments.find(e => e.course_id === courseId);
+          if (enrollment && enrollment.enrolled_at) {
+            const enrolledAt = new Date(enrollment.enrolled_at).getTime();
             const now = Date.now();
             const diffMinutes = (now - enrolledAt) / (1000 * 60);
             if (diffMinutes <= 10) {
-              return { courseId, courseName: enrollment.course_details.course_name };
+              return { courseId, courseName: enrollment.display_name };
             }
           }
         }
@@ -263,7 +263,7 @@ function checkBadge(
       let onboardingCount = 0;
       for (const [courseId, pct] of completions) {
         if (pct >= 100) {
-          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
+          const name = enrollments.find(e => e.course_id === courseId)?.display_name;
           if (name && name.toLowerCase().includes("onboarding")) {
             onboardingCount++;
           }
@@ -302,7 +302,7 @@ function checkBadge(
       let hasOther = false;
       for (const [courseId, pct] of completions) {
         if (pct >= 100) {
-          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
+          const name = enrollments.find(e => e.course_id === courseId)?.display_name;
           if (name && name.toLowerCase().includes("onboarding")) {
             hasOnboarding = true;
           } else if (name) {
@@ -330,7 +330,7 @@ function checkBadge(
     case "recruitment_master": {
       for (const [courseId, pct] of completions) {
         if (pct >= 100) {
-          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
+          const name = enrollments.find(e => e.course_id === courseId)?.display_name;
           if (name && name.toLowerCase().includes("tuyển dụng")) {
             return { courseId, courseName: name };
           }
@@ -343,7 +343,7 @@ function checkBadge(
       let count = 0;
       for (const [courseId, pct] of completions) {
         if (pct >= 100) {
-          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
+          const name = enrollments.find(e => e.course_id === courseId)?.display_name;
           if (name && name.toLowerCase().includes("tuyển dụng")) {
             count++;
           }
@@ -359,7 +359,7 @@ function checkBadge(
       let count = 0;
       for (const [courseId, pct] of completions) {
         if (pct >= 100) {
-          const name = enrollments.find(e => e.course_details.course_id === courseId)?.course_details.course_name;
+          const name = enrollments.find(e => e.course_id === courseId)?.display_name;
           if (name && name.toLowerCase().includes("tuyển dụng")) {
             count++;
           }

@@ -1,14 +1,8 @@
 // ============================================================
-// Static URL Rewriter — Chuyển đổi URL ảnh từ Open edX HTML
+// Static URL Rewriter — Chuyển đổi URL ảnh từ course HTML blocks
 //
-// Open edX lưu ảnh trong HTML block dạng: /static/image.png
-// Khi render qua student_view, framework sẽ rewrite thành
-// /asset-v1:Org+Course+Run+type@asset+block@image.png
-//
-// Tuy nhiên, student_view_data() trả raw HTML chưa qua
-// rewrite, nên FE phải tự xử lý.
-//
-// Hàm này chuyển /static/xxx thành URL asset đầy đủ trên LMS.
+// Custom BE trả raw HTML, FE cần rewrite /static/xxx thành
+// URL asset đầy đủ.
 // ============================================================
 
 import { config } from "@/config/env";
@@ -24,9 +18,9 @@ function extractCourseRun(courseId: string): string {
 }
 
 /**
- * Chuyển đổi các URL tuyệt đối (absolute URL) của LMS thành URL tương đối (relative path).
- * Dùng cho các URL đơn như videoUrl, studentViewUrl...
- * - Bỏ config.lmsBaseUrl (xử lý cả HTTP và HTTPS)
+ * Chuyển đổi các URL tuyệt đối (absolute URL) thành URL tương đối (relative path).
+ * Dùng cho các URL đơn như videoUrl, studentViewUrl, avatar...
+ * - Bỏ API base URL (nếu có)
  * - Bỏ cứng http://192.168.0.226.nip.io
  * - Giữ nguyên query string (nếu có)
  * - Không rewrite các loại url: data:, blob:, URL ngoài
@@ -37,18 +31,26 @@ export function sanitizeUrlToRelative(url: string | null): string | null {
   if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('/assets/')) {
     return url;
   }
+
+  // Don't sanitize Supabase Storage URLs — they are hosted on a different server
+  if (url.includes('/storage/v1/object/')) {
+    return url;
+  }
   
   let newUrl = url;
   
-  // Bỏ LMS base URL host (cả http/https)
-  try {
-    const lmsUrlObj = new URL(config.lmsBaseUrl);
-    const lmsHost = lmsUrlObj.host; 
-    const lmsRegex = new RegExp(`^https?:\\/\\/${lmsHost.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
-    newUrl = newUrl.replace(lmsRegex, '');
-  } catch(e) {
-    if (newUrl.startsWith(config.lmsBaseUrl)) {
-      newUrl = newUrl.substring(config.lmsBaseUrl.length);
+  // Bỏ API base URL host (nếu config có)
+  const apiBaseUrl = config.apiBaseUrl;
+  if (apiBaseUrl) {
+    try {
+      const apiUrlObj = new URL(apiBaseUrl);
+      const apiHost = apiUrlObj.host; 
+      const apiRegex = new RegExp(`^https?:\\/\\/${apiHost.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
+      newUrl = newUrl.replace(apiRegex, '');
+    } catch {
+      if (newUrl.startsWith(apiBaseUrl)) {
+        newUrl = newUrl.substring(apiBaseUrl.length);
+      }
     }
   }
   
@@ -62,16 +64,13 @@ export function sanitizeUrlToRelative(url: string | null): string | null {
 }
 
 /**
- * Rewrite tất cả URL /static/xxx trong HTML thành URL asset đầy đủ
- * trên LMS server.
+ * Rewrite tất cả URL /static/xxx trong HTML thành URL asset đầy đủ.
  *
  * Quy tắc chuyển đổi:
  *   /static/filename.ext
  *     → /asset-v1:{courseRun}+type@asset+block@filename.ext
  *
- * Hoạt động cho cả development (Vite proxy) và production (same-domain).
- *
- * @param html - Raw HTML từ student_view_data
+ * @param html - Raw HTML từ course block data
  * @param courseId - Course ID dạng "course-v1:Org+Course+Run"
  * @returns HTML đã rewrite URL
  */
@@ -79,36 +78,31 @@ export function rewriteStaticUrls(html: string, courseId: string): string {
   if (!html || !courseId) return html;
 
   const courseRun = extractCourseRun(courseId);
-
-  // Asset URL luôn dùng relative path — Kong Gateway route /asset-v1 về LMS
   const assetBase = `/asset-v1:${courseRun}+type@asset+block@`;
 
   let updatedHtml = html;
 
-  // 1. Strip absolute LMS URLs (chuyển các URL từ absolute -> relative)
-  let lmsRegex: RegExp;
-  try {
-    const lmsUrlObj = new URL(config.lmsBaseUrl);
-    const lmsHost = lmsUrlObj.host; 
-    lmsRegex = new RegExp(`(['"\\(])https?:\\/\\/${lmsHost.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
-  } catch(e) {
-    const lmsBaseUrlEscaped = config.lmsBaseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    lmsRegex = new RegExp(`(['"\\(])${lmsBaseUrlEscaped}`, 'g');
+  // 1. Strip absolute API/LMS URLs (chuyển absolute → relative)
+  const apiBaseUrl = config.apiBaseUrl;
+  if (apiBaseUrl) {
+    try {
+      const apiUrlObj = new URL(apiBaseUrl);
+      const apiHost = apiUrlObj.host; 
+      const apiRegex = new RegExp(`(['"\\(])https?:\\/\\/${apiHost.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
+      updatedHtml = updatedHtml.replace(apiRegex, '$1');
+    } catch {
+      const escaped = apiBaseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const apiRegex = new RegExp(`(['"\\(])${escaped}`, 'g');
+      updatedHtml = updatedHtml.replace(apiRegex, '$1');
+    }
   }
   
-  updatedHtml = updatedHtml.replace(lmsRegex, '$1');
-  
-  // Strip thêm hardcode IP (192.168.0.226.nip.io) cho mọi giao thức
-  updatedHtml = updatedHtml.replace(/(['"\(\s])https?:\/\/192\.168\.0\.226\.nip\.io/g, '$1');
+  // Strip thêm hardcode IP
+  updatedHtml = updatedHtml.replace(/(['"(\s])https?:\/\/192\.168\.0\.226\.nip\.io/g, '$1');
 
-  // 2. Pattern: match /static/filename trong attribute values (src, href, url())
-  // Bắt cả dạng có/không quote, encoded/unencoded
-  // Ví dụ:
-  //   src="/static/image.png"
-  //   src='/static/image.png'
-  //   url(/static/bg.jpg)
+  // 2. Pattern: match /static/filename trong attribute values
   updatedHtml = updatedHtml.replace(
-    /(['"\(\s])\/static\/([^'"\)\s?#]+)/g,
+    /(['"(\s])\/static\/([^'")\s?#]+)/g,
     (_, prefix: string, filename: string) => {
       return `${prefix}${assetBase}${filename}`;
     }

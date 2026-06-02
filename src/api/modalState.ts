@@ -1,3 +1,9 @@
+// ============================================================
+// Modal State API — Per-user modal state cho course
+// GET  /api/learner/courses/:courseId/modal-state
+// PATCH /api/learner/courses/:courseId/modal-state
+// ============================================================
+
 import { apiClient } from "./client";
 
 export interface CourseModalState {
@@ -8,19 +14,19 @@ export interface CourseModalState {
 }
 
 export const getCourseModalState = async (courseId: string): Promise<CourseModalState> => {
-  const { data } = await apiClient.get(`/api/landa/v1/course-modal-state/`, {
-    params: { course_id: courseId }
-  });
-  return data;
+  const { data } = await apiClient.get<{ success: boolean; data: CourseModalState }>(
+    `/api/learner/courses/${courseId}/modal-state`
+  );
+  return data.data;
 };
 
 export const updateCourseModalState = async (
   courseId: string,
   updates: Partial<Omit<CourseModalState, "course_id">>
 ): Promise<CourseModalState> => {
-  const { data } = await apiClient.patch("/api/landa/v1/course-modal-state/", {
-    course_id: courseId,
-    ...updates,
-  });
-  return data;
+  const { data } = await apiClient.patch<{ success: boolean; data: CourseModalState }>(
+    `/api/learner/courses/${courseId}/modal-state`,
+    updates
+  );
+  return data.data;
 };

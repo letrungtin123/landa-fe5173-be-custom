@@ -1,14 +1,10 @@
 // ============================================================
-// Study Time API — Sync thời gian học lên server
-//
-// POST /api/landa/v1/study-time/sync/
-//     → Batch upsert entries [{date, minutes}]
-//
-// GET /api/landa/v1/study-time/weekly/
-//     → Trả 7 ngày tuần hiện tại
+// Study Time API — Custom Backend
+// POST /api/enrollments/study-session
 // ============================================================
 
 import { apiClient } from "./client";
+import type { ApiResponse } from "./types";
 
 export interface StudyTimeEntry {
   date: string; // format 'yyyy-MM-dd'
@@ -20,40 +16,39 @@ export interface StudyTimeWeeklyResponse {
 }
 
 /**
- * Sync study time lên server.
- * FE gửi tất cả entries tuần hiện tại → server dùng GREATEST() upsert.
- * Chỉ gửi entries có minutes > 0 để tiết kiệm bandwidth.
+ * Ghi nhận study session.
+ * FE gửi course_id + duration_minutes.
  */
 export async function syncStudyTime(
   entries: StudyTimeEntry[]
 ): Promise<{ success: boolean; synced: number }> {
-  // Chỉ gửi entries có data thật
   const filtered = entries.filter((e) => e.minutes > 0);
   if (filtered.length === 0) return { success: true, synced: 0 };
 
   try {
-    const { data } = await apiClient.post("/api/landa/v1/study-time/sync/", {
-      entries: filtered,
-    });
-    return data;
-  } catch (error) {
-    console.warn("[syncStudyTime] Failed:", error);
+    // Gửi từng entry như study session
+    for (const entry of filtered) {
+      await apiClient.post("/api/enrollments/study-session", {
+        duration_minutes: entry.minutes,
+        started_at: new Date(`${entry.date}T00:00:00`).toISOString(),
+      });
+    }
+    return { success: true, synced: filtered.length };
+  } catch {
     return { success: false, synced: 0 };
   }
 }
 
 /**
- * Lấy study time 7 ngày tuần hiện tại từ server.
- * Dùng khi page load để merge với localStorage.
+ * Lấy study time 7 ngày tuần hiện tại.
  */
 export async function getWeeklyStudyTime(): Promise<StudyTimeEntry[]> {
   try {
-    const { data } = await apiClient.get<StudyTimeWeeklyResponse>(
-      "/api/landa/v1/study-time/weekly/"
+    const { data } = await apiClient.get<ApiResponse<{ entries: StudyTimeEntry[] }>>(
+      "/api/enrollments/weekly-study-time"
     );
-    return data.entries || [];
-  } catch (error) {
-    console.warn("[getWeeklyStudyTime] Failed:", error);
+    return data.data.entries;
+  } catch {
     return [];
   }
 }

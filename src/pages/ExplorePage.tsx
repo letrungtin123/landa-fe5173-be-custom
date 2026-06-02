@@ -12,7 +12,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useCourses, useMyEnrollments } from "@/hooks/useCourses";
 import { useCourseCompletion, useBatchCourseProgress } from "@/hooks/useProgress";
-import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
+
 import heroIllustration from "@/assets/ExplorePage/KhamPhaHanhTrinhHocTapCuaToi.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserProfileCard } from "@/components/dashboard/UserProfileCard";
@@ -32,7 +32,7 @@ export function ExplorePage() {
   const [detailFilter, setDetailFilter] = useState<DetailFilter>('all');
 
   // State cho right panel filter danh mục (multi-select)
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<number>>(new Set());
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -49,10 +49,10 @@ export function ExplorePage() {
 
   // Set enrolled IDs cho lookup nhanh
   const enrolledIds = new Set(
-    (enrollments || []).map((e) => e.course_details.course_id)
+    (enrollments || []).map((e) => e.course_id)
   );
 
-  const allCourses = courseData?.results || [];
+  const allCourses = courseData?.data || [];
   const categories = courseData?.categories || [];
 
   // Batch progress cho tất cả enrolled courses
@@ -64,7 +64,7 @@ export function ExplorePage() {
 
   // Group courses by category
   const coursesByCategory = useMemo(() => {
-    const map = new Map<number, { name: string; courses: typeof allCourses }>();
+    const map = new Map<string, { name: string; courses: typeof allCourses }>();
     for (const cat of categories) {
       const catCourses = allCourses.filter(c =>
         c.categories?.some((cc: any) => cc.id === cat.id)
@@ -78,7 +78,7 @@ export function ExplorePage() {
       c => !c.categories || c.categories.length === 0
     );
     if (uncategorized.length > 0) {
-      map.set(-1, { name: "Khóa học khác", courses: uncategorized });
+      map.set('__uncategorized__', { name: "Khóa học khác", courses: uncategorized });
     }
     return map;
   }, [categories, allCourses]);
@@ -112,7 +112,7 @@ export function ExplorePage() {
 
 
   // Right panel click: toggle danh mục trong filter
-  const handleCategoryClick = (catId: number | 'all') => {
+  const handleCategoryClick = (catId: string | 'all') => {
     if (catId === 'all') {
       setSelectedCategoryIds(new Set());
       return;
@@ -480,9 +480,7 @@ function ExploreCourseCard({
   colorStyle: string;
   categoryName?: string;
 }) {
-  const imageUrl = sanitizeUrlToRelative(
-    course.media?.image?.large || course.media?.course_image?.uri || null
-  );
+  const imageUrl = (course as any).image_url || null;
 
   // Chỉ gọi API check completion nếu user ĐÃ enroll khóa này
   const { completionPercent } = useCourseCompletion(
@@ -502,7 +500,7 @@ function ExploreCourseCard({
           {imageUrl && (
             <img
               src={imageUrl}
-              alt={course.name}
+              alt={course.display_name}
               className="absolute inset-0 z-10 h-full w-full object-cover rounded-[20px]"
               onError={(e) => {
                 e.currentTarget.style.display = "none";
@@ -527,7 +525,7 @@ function ExploreCourseCard({
           )}
 
           <h3 className="mb-5 text-[20px] font-bold leading-[26px] text-foreground group-hover:text-accent transition-colors line-clamp-2">
-            {course.name}
+            {course.display_name}
           </h3>
 
           <div className="mt-auto pt-5">

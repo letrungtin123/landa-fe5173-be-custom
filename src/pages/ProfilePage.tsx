@@ -4,14 +4,13 @@ import { User, Mail, Save, ShieldCheck, Loader2, X, Camera, ChevronDown, MapPin,
 import { useQueryClient } from "@tanstack/react-query";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { getUserAccount } from "@/api/auth";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 
-const GENDER_MAP: Record<string, string> = { m: "Nam", f: "Nữ", o: "Khác" };
+const GENDER_MAP: Record<string, string> = { male: "Nam", female: "Nữ", other: "Khác" };
 const COUNTRY_MAP: Record<string, string> = { VN: "Việt Nam", US: "Hoa Kỳ", JP: "Nhật Bản", KR: "Hàn Quốc", GB: "Anh", OTHER: "Khác" };
-const EDU_MAP: Record<string, string> = { p: "Tiến sĩ (Doctorate)", m: "Thạc sĩ (Master's)", b: "Cử nhân (Bachelor's)", a: "Cao đẳng (Associate)", hs: "Trung học phổ thông", jhs: "Trung học cơ sở", el: "Tiểu học", none: "Không có", other: "Khác" };
+const EDU_MAP: Record<string, string> = { doctorate: "Tiến sĩ (Doctorate)", master: "Thạc sĩ (Master's)", bachelor: "Cử nhân (Bachelor's)", associate: "Cao đẳng (Associate)", high_school: "Trung học phổ thông", junior_high: "Trung học cơ sở", primary: "Tiểu học", none: "Không có", other: "Khác" };
 const LANG_MAP: Record<string, string> = { vi: "Tiếng Việt", en: "English", ja: "日本語 (Japanese)", ko: "한국어 (Korean)", zh: "中文 (Chinese)" };
 
 export function ProfilePage() {
@@ -43,14 +42,14 @@ export function ProfilePage() {
   useEffect(() => {
     if (profile) {
       setFormData({
-        name: profile.name || "",
-        bio: profile.bio || "",
-        gender: profile.gender || "",
-        country: profile.country || "",
-        level_of_education: profile.level_of_education || "",
-        language: profile.language_proficiencies?.[0]?.code || "",
-        year_of_birth: profile.year_of_birth ? String(profile.year_of_birth) : "",
-        phone_number: profile.phone_number || "",
+        name: (profile as any).full_name || "",
+        bio: (profile as any).bio || "",
+        gender: (profile as any).gender || "",
+        country: (profile as any).country || "",
+        level_of_education: (profile as any).level_of_education || "",
+        language: (profile as any).language || "",
+        year_of_birth: (profile as any).year_of_birth ? String((profile as any).year_of_birth) : "",
+        phone_number: (profile as any).phone || "",
       });
     }
   }, [profile]);
@@ -63,9 +62,9 @@ export function ProfilePage() {
   const MAX_AVATAR_SIZE_MB = 1;
   const MAX_AVATAR_SIZE_BYTES = MAX_AVATAR_SIZE_MB * 1024 * 1024;
   const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif"];
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Reset input value to allow re-selecting same file
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
 
     const file = e.target.files[0];
@@ -88,12 +87,46 @@ export function ProfilePage() {
       return;
     }
 
-    setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
+    // Preview ngay lập tức
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreview(previewUrl);
+
+    // Upload ngay, không cần nhấn LƯU
+    setIsUploadingAvatar(true);
+    try {
+      const { apiClient } = await import("@/api/client");
+      const fd = new FormData();
+      fd.append("file", file);
+      const avatarRes = await apiClient.post("/api/users/profile/avatar", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const newAvatarUrl = avatarRes.data?.data?.avatar_url;
+      if (newAvatarUrl) {
+        updateUser({ avatar: newAvatarUrl });
+      }
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+      setToast({ message: "Cập nhật ảnh đại diện thành công!", type: "success" });
+      setTimeout(() => setToast(null), 3000);
+    } catch {
+      setToast({ message: "Cập nhật ảnh đại diện thất bại. Vui lòng thử lại.", type: "error" });
+      setTimeout(() => setToast(null), 4000);
+      setAvatarPreview(null);
+    } finally {
+      setIsUploadingAvatar(false);
+      setAvatarFile(null);
+      e.target.value = "";
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Tên hiển thị là bắt buộc
+    if (!formData.name.trim()) {
+      setToast({ message: "Vui lòng nhập Tên hiển thị.", type: "error" });
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
 
     // Custom Validation
     if (formData.year_of_birth) {
@@ -117,69 +150,24 @@ export function ProfilePage() {
 
     try {
       // Chuẩn bị payload cho Open edX API
-      const { language, year_of_birth, ...restData } = formData;
       const payload: Record<string, unknown> = {
-        ...restData,
-        // Open edX nhận language dạng language_proficiencies
-        language_proficiencies: language ? [{ code: language }] : [],
+        full_name: formData.name,
+        bio: formData.bio,
+        gender: formData.gender,
+        country: formData.country,
+        level_of_education: formData.level_of_education,
+        language: formData.language,
+        phone: formData.phone_number,
       };
-      // year_of_birth phải là number hoặc null
-      if (year_of_birth) {
-        payload.year_of_birth = parseInt(year_of_birth, 10);
+      if (formData.year_of_birth) {
+        payload.year_of_birth = parseInt(formData.year_of_birth, 10);
       }
 
-      // 1. Cập nhật profile data
+      // Cập nhật profile data (avatar tự upload riêng khi chọn file)
       await updateProfile.mutateAsync(payload as any);
 
-      // 2. Cập nhật Avatar nếu có thay đổi
-      if (avatarFile && user?.username) {
-        const formDataAvatar = new FormData();
-        formDataAvatar.append("file", avatarFile);
-
-        const { apiClient } = await import("@/api/client");
-        try {
-          await apiClient.post(
-            `/api/profile_images/v1/${user.username}/upload`,
-            formDataAvatar,
-            { headers: { "Content-Type": "multipart/form-data" } }
-          );
-
-          // Sau upload thành công: refetch profile để lấy URL avatar mới
-          const freshProfile = await getUserAccount(user.username);
-          const newAvatarUrl = sanitizeUrlToRelative(freshProfile?.profile_image?.has_image
-            ? freshProfile.profile_image.image_url_full + "&_t=" + Date.now()
-            : null);
-
-          if (newAvatarUrl) {
-            // Cập nhật auth store — avatar hiển thị ngay không cần reload
-            updateUser({ avatar: newAvatarUrl });
-          }
-          // Invalidate cache để các component khác cũng cập nhật
-          await queryClient.invalidateQueries({ queryKey: ["userProfile", user.username] });
-          // Reset preview vì đã commit lên server
-          setAvatarFile(null);
-          setAvatarPreview(null);
-        } catch (avatarErr: unknown) {
-          // Kiểm tra lỗi từ axios response
-          const status = (avatarErr as { response?: { status?: number } })?.response?.status;
-          if (status === 413) {
-            setToast({
-              message: `Upload ảnh thất bại: File quá lớn. Server chỉ chấp nhận ảnh tối đa 1MB.`,
-              type: "error",
-            });
-          } else {
-            setToast({
-              message: "Upload ảnh thất bại. Vui lòng thử lại với ảnh khác.",
-              type: "error",
-            });
-          }
-          // Reset avatar state
-          setAvatarFile(null);
-          setAvatarPreview(null);
-          setTimeout(() => setToast(null), 5000);
-          return;
-        }
-      }
+      // Refetch profile to get latest data
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
 
       setToast({ message: "Cập nhật hồ sơ thành công!", type: "success" });
       setTimeout(() => setToast(null), 3000);
@@ -238,17 +226,25 @@ export function ProfilePage() {
                 className="flex h-32 w-32 md:h-40 md:w-40 shrink-0 items-center justify-center overflow-hidden rounded-full border-8 border-card bg-muted shadow-xl relative group cursor-pointer ring-1 ring-border/50 transition-transform hover:scale-[1.02]"
                 onClick={() => setShowAvatarModal(true)}
               >
-                {avatarPreview || user?.avatar ? (
-                  <img src={avatarPreview || user?.avatar || ""} alt="Avatar" className="h-full w-full object-cover" />
+                {avatarPreview || (profile as any)?.avatar_url || user?.avatar ? (
+                  <img src={avatarPreview || (profile as any)?.avatar_url || user?.avatar || ""} alt="Avatar" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-primary/10">
                     <User className="h-12 w-12 md:h-16 md:w-16 text-primary" />
                   </div>
                 )}
-                {/* Overlay hover */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none">
-                  <span className="text-xs md:text-sm font-semibold tracking-wider">XEM ẢNH</span>
-                </div>
+                {/* Upload loading overlay */}
+                {isUploadingAvatar && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-20">
+                    <Loader2 className="h-8 w-8 animate-spin text-white" />
+                  </div>
+                )}
+                {/* Hover overlay */}
+                {!isUploadingAvatar && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none">
+                    <span className="text-xs md:text-sm font-semibold tracking-wider">XEM ẢNH</span>
+                  </div>
+                )}
               </div>
 
               <input
@@ -261,10 +257,10 @@ export function ProfilePage() {
               
               {/* User Info */}
               <div className="flex flex-col items-center md:items-start text-center md:text-left mb-2">
-                <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">{profile?.name || user?.username}</h2>
+                <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">{(profile as any)?.full_name || user?.username}</h2>
                 <p className="mt-1 flex items-center justify-center gap-2 text-sm md:text-base font-medium text-muted-foreground">
                   <Mail className="h-4 w-4" />
-                  {profile?.email}
+                  {(profile as any)?.email || user?.email}
                 </p>
               </div>
               
@@ -284,7 +280,7 @@ export function ProfilePage() {
                   <label className="text-[13px] font-bold tracking-wide text-foreground flex items-center gap-1.5"><AtSign className="h-4 w-4" /> Tên đăng nhập (Username)</label>
                   <input
                     type="text"
-                    value={profile?.username || ""}
+                    value={(profile as any)?.username || ""}
                     disabled
                     className="w-full rounded-2xl border border-border/60 bg-muted/30 px-5 py-3.5 text-sm font-medium text-muted-foreground outline-none cursor-not-allowed"
                   />
@@ -293,7 +289,7 @@ export function ProfilePage() {
                   <label className="text-[13px] font-bold tracking-wide text-foreground flex items-center gap-1.5"><Mail className="h-4 w-4" /> Địa chỉ Email</label>
                   <input
                     type="email"
-                    value={profile?.email || ""}
+                    value={(profile as any)?.email || ""}
                     disabled
                     className="w-full rounded-2xl border border-border/60 bg-muted/30 px-5 py-3.5 text-sm font-medium text-muted-foreground outline-none cursor-not-allowed"
                   />
@@ -301,7 +297,7 @@ export function ProfilePage() {
               </div>
 
               <div className="group space-y-2">
-                <label className="text-[13px] font-bold tracking-wide text-foreground flex items-center gap-1.5"><Type className="h-4 w-4" /> Tên hiển thị</label>
+                <label className="text-[13px] font-bold tracking-wide text-foreground flex items-center gap-1.5"><Type className="h-4 w-4" /> Tên hiển thị <span className="text-red-500">*</span></label>
                 <input
                   name="name"
                   value={formData.name}
@@ -483,9 +479,9 @@ export function ProfilePage() {
 
           {/* Full-size avatar */}
           <div className="h-64 w-64 md:h-80 md:w-80 overflow-hidden rounded-3xl border-4 border-card shadow-2xl bg-muted">
-            {avatarPreview || profile?.profile_image?.has_image ? (
+            {avatarPreview || (profile as any)?.avatar_url ? (
               <img
-                src={avatarPreview || sanitizeUrlToRelative(profile?.profile_image?.image_url_full || null) || user?.avatar || ""}
+                src={avatarPreview || (profile as any)?.avatar_url || user?.avatar || ""}
                 alt="Avatar"
                 className="h-full w-full object-cover"
               />

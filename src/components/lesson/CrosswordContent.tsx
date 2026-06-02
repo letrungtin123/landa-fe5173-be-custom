@@ -7,6 +7,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
+import { markBlockComplete } from "@/api/progress";
+import { refetchProgressWithRetry } from "@/lib/progressRefetch";
+import { useParams } from "react-router-dom";
 
 interface CrosswordWord {
   id: number;
@@ -27,6 +30,7 @@ interface CrosswordData {
 }
 
 export function CrosswordContent({ usageKey }: { usageKey: string }) {
+  const { courseId } = useParams();
   const qc = useQueryClient();
   const [started, setStarted] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -99,9 +103,15 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
           answers: { ...answers },
           contentFingerprint: fp,
         });
+        // Mark block complete (giống edX: chỉ khi đúng)
+        if (courseId) {
+          markBlockComplete(courseId, usageKey)
+            .catch((e) => console.error('Failed to mark crossword complete:', e));
+        }
         // Invalidate block detail and course completion
         qc.invalidateQueries({ queryKey: ["block-detail", usageKey] });
         qc.invalidateQueries({ queryKey: ["course-blocks"] });
+        refetchProgressWithRetry(qc);
       } else if (data.status === "already_completed") {
         setIsCorrect(true);
         setResultMessage("🎉 Chính xác! Tuyệt vời!");

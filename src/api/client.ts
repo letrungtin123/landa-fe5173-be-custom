@@ -1,6 +1,6 @@
 // ============================================================
-// Axios API Client — Kết nối Open edX Backend
-// Xử lý Bearer auth, tự động refresh token, retry khi 401
+// Axios API Client — Kết nối Custom Backend (Express/PostgreSQL)
+// Xử lý Bearer auth (JWT), tự động refresh token, retry khi 401
 // KHÔNG LOG DỮ LIỆU NHẠY CẢM
 // ============================================================
 
@@ -20,29 +20,19 @@ export const apiClient = axios.create({
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
-// ── Helper: Đọc csrftoken từ cookie ──
-// Open edX set csrftoken cookie (không HttpOnly) → JS đọc được
-function getCsrfToken(): string {
-  const match = document.cookie.match(/csrftoken=([^;]+)/);
-  return match ? match[1] : "";
-}
-
-// ── Request Interceptor — gắn Bearer token + CSRF token ──
+// ── Request Interceptor — gắn Bearer token + Tenant ID ──
 apiClient.interceptors.request.use(
   (req) => {
-    // Bearer auth
-    const { accessToken, tokenType } = useAuthStore.getState();
+    const { accessToken, tokenType, user } = useAuthStore.getState();
+
+    // Bearer JWT auth
     if (accessToken) {
       req.headers.Authorization = `${tokenType} ${accessToken}`;
     }
 
-    // CSRF token cho POST/PUT/PATCH/DELETE
-    // Django yêu cầu X-CSRFToken header khớp với csrftoken cookie
-    if (req.method && req.method !== "get") {
-      const csrfToken = getCsrfToken();
-      if (csrfToken) {
-        req.headers["X-CSRFToken"] = csrfToken;
-      }
+    // Tenant ID — CHỈ superadmin mới cần header để switch tenant
+    if (user?.role === 'superadmin' && user?.tenantId) {
+      req.headers['X-Tenant-ID'] = user.tenantId;
     }
 
     return req;

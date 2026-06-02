@@ -1,22 +1,17 @@
 // ============================================================
-// Auth Store — Quản lý xác thực với Open edX
-// Token lưu trong localStorage (mã hóa) + tự động refresh
+// Auth Store — Quản lý xác thực với Custom Backend
+// JWT tokens lưu trong localStorage (mã hóa) + tự động refresh
 // KHÔNG LOG TOKEN HOẶC DỮ LIỆU NHẠY CẢM
 // ============================================================
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { loginApi, getUserMe, getUserAccount, refreshTokenApi } from "@/api/auth";
-import { apiClient } from "@/api/client";
-import { establishLmsSession, establishLmsSessionFromToken, clearLmsSession } from "@/api/lmsSession";
-import { config } from "@/config/env";
-import { updateStreak } from "@/hooks/useUser";
+import { loginApi, refreshTokenApi, logoutApi, getUserMe } from "@/api/auth";
 import { queryClient } from "@/App";
-import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 import { useStudyTimeStore } from "@/stores/useStudyTimeStore";
+import type { TenantBasic, PermissionsMap } from "@/api/types";
 
 // ── Mã hóa/giải mã đơn giản cho token trong storage ──
-// Không phải mã hóa cấp quân sự nhưng ngăn đọc token trực tiếp
 const STORAGE_KEY = "la-auth-v2";
 const OBFUSCATION_KEY = 42;
 
@@ -58,13 +53,15 @@ const encryptedStorage = createJSONStorage<AuthState>(() => ({
 
 // ── Kiểu dữ liệu ──
 export interface AuthUser {
+  id: string;
   username: string;
   email: string;
-  name: string;
+  fullName: string;
+  phone: string | null;
   avatar: string | null;
-  dateJoined: string;
-  isStaff: boolean;
-  isLearnerPlus: boolean;
+  role: 'learner' | 'staff' | 'superuser' | 'superadmin';
+  tenantId: string | null;
+  tenantName: string | null;
 }
 
 interface AuthState {
@@ -72,34 +69,16 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   tokenType: string;
-  tokenExpiresAt: number | null; // Unix timestamp (ms)
+  tokenExpiresAt: number | null;
   user: AuthUser | null;
+  permissions: PermissionsMap;
+  tenantModules: string[];
+  managedTenants: TenantBasic[];
 
-  /**
-   * Đăng nhập qua OAuth2 password grant.
-   * Trả về role để routing: 'staff' → Studio, 'learner' → FE.
-   */
-  login: (username: string, password: string) => Promise<"learner" | "staff">;
+  /** Đăng nhập bằng username/email + password. */
+  login: (username: string, password: string) => Promise<void>;
 
-  /**
-   * Đăng nhập bằng Google OAuth2.
-   * Nhận edX tokens đã exchange sẵn → lưu + fetch user info.
-   */
-  loginWithGoogle: (edxTokens: import("@/api/types").OAuthTokenResponse) => Promise<"learner" | "staff">;
-
-  /**
-   * Đăng nhập bằng Microsoft 365 (Azure AD OAuth2).
-   * Nhận edX tokens đã exchange sẵn → lưu + fetch user info.
-   */
-  loginWithMicrosoft: (edxTokens: import("@/api/types").OAuthTokenResponse) => Promise<"learner" | "staff">;
-
-  /**
-   * Đăng nhập bằng Keycloak SSO.
-   * Nhận edX tokens đã exchange sẵn → lưu + fetch user info.
-   */
-  loginWithKeycloak: (edxTokens: import("@/api/types").OAuthTokenResponse) => Promise<"learner" | "staff">;
-
-  /** Xóa toàn bộ auth state + hủy session LMS. */
+  /** Đăng xuất — revoke token + xóa state. */
   logout: () => Promise<void>;
 
   /** Thực hiện refresh token — trả về true nếu thành công. */
@@ -108,8 +87,11 @@ interface AuthState {
   /** Lên lịch auto-refresh trước khi token hết hạn. */
   scheduleTokenRefresh: () => void;
 
-  /** Cập nhật thông tin user trong store (dùng khi edit profile). */
+  /** Cập nhật thông tin user trong store. */
   updateUser: (updates: Partial<AuthUser>) => void;
+
+  /** Chuyển tenant (superuser/superadmin). */
+  switchTenant: (tenantId: string) => void;
 }
 
 // ── Timer ID cho auto-refresh ──
@@ -131,292 +113,69 @@ export const useAuthStore = create<AuthState>()(
       tokenType: "Bearer",
       tokenExpiresAt: null,
       user: null,
+      permissions: {},
+      tenantModules: [],
+      managedTenants: [],
 
       login: async (username: string, password: string) => {
-        // 1) Lấy access_token + refresh_token
-        // Song song: tạo LMS session cookie (cần cho /xblock/ quiz rendering)
-        const [tokenRes] = await Promise.all([
-          loginApi(username, password),
-          establishLmsSession(username, password),
-        ]);
+        const result = await loginApi(username, password);
 
-        const expiresAt = Date.now() + tokenRes.expires_in * 1000;
-        set({
-          accessToken: tokenRes.access_token,
-          refreshToken: tokenRes.refresh_token,
-          tokenType: tokenRes.token_type || "Bearer",
-          tokenExpiresAt: expiresAt,
-        });
-
-        // 2) Lấy thông tin user (bao gồm kiểm tra staff)
-        const me = await getUserMe();
-
-        // 3) Lấy chi tiết tài khoản
-        let account;
-        try {
-          account = await getUserAccount(me.username);
-        } catch {
-          // User mới có thể chưa có đầy đủ profile
-          account = {
-            name: me.username,
-            is_active: true, // Giả sử true nếu chưa fetch được profile
-            profile_image: { has_image: false, image_url_medium: "" },
-            date_joined: new Date().toISOString(),
-          };
+        // Superadmin/superuser: tenant_id = null → tự chọn tenant đầu tiên
+        let activeTenantId = result.user.tenant_id;
+        let activeTenantName = result.user.tenant_name;
+        if (!activeTenantId && result.managed_tenants?.length > 0) {
+          activeTenantId = result.managed_tenants[0].id;
+          activeTenantName = result.managed_tenants[0].name;
         }
 
-        // 4) Kiểm tra cờ is_active
-        if (account.is_active === false) {
-          get().logout();
-          throw new Error("Tài khoản của bạn đã bị khóa.");
-        }
-
-        // 5) Cập nhật streak đăng nhập
-        updateStreak();
-
-        // 6) Kiểm tra learner_plus role
-        let isLearnerPlus = false;
-        if (!me.is_staff) {
-          try {
-            const { data: roleData } = await apiClient.get("/api/landa/v0/my-role/");
-            isLearnerPlus = roleData.role === "learner_plus";
-          } catch {
-            // Bỏ qua — learner thường không có role
-          }
-        }
-
-        // 7) Lưu thông tin user
+        const expiresAt = Date.now() + result.expires_in * 1000;
         set({
           isAuthenticated: true,
-          user: {
-            username: me.username,
-            email: me.email,
-            name: account.name || me.username,
-            avatar: sanitizeUrlToRelative(account.profile_image?.has_image
-              ? account.profile_image.image_url_full
-              : null),
-            dateJoined: account.date_joined,
-            isStaff: me.is_staff,
-            isLearnerPlus,
-          },
-        });
-
-        // 6) Lên lịch tự động refresh
-        get().scheduleTokenRefresh();
-
-        return me.is_staff ? "staff" : "learner";
-      },
-
-      loginWithGoogle: async (edxTokens) => {
-        // 1) Lưu tokens đã exchange sẵn
-        const expiresAt = Date.now() + edxTokens.expires_in * 1000;
-        set({
-          accessToken: edxTokens.access_token,
-          refreshToken: edxTokens.refresh_token,
-          tokenType: edxTokens.token_type || "Bearer",
+          accessToken: result.access_token,
+          refreshToken: result.refresh_token,
+          tokenType: "Bearer",
           tokenExpiresAt: expiresAt,
-        });
-
-        // 2) Tạo LMS session từ edX access token
-        await establishLmsSessionFromToken();
-
-        // 3) Lấy thông tin user
-        const me = await getUserMe();
-
-        let account;
-        try {
-          account = await getUserAccount(me.username);
-        } catch {
-          account = {
-            name: me.username,
-            profile_image: { has_image: false, image_url_medium: "" },
-            date_joined: new Date().toISOString(),
-          };
-        }
-
-        if (account.is_active === false) {
-          get().logout();
-          throw new Error("Tài khoản của bạn đã bị khóa.");
-        }
-
-        // 4) Cập nhật streak đăng nhập
-        updateStreak();
-
-        // 5) Kiểm tra learner_plus role
-        let isLearnerPlus = false;
-        if (!me.is_staff) {
-          try {
-            const { data: roleData } = await apiClient.get("/api/landa/v0/my-role/");
-            isLearnerPlus = roleData.role === "learner_plus";
-          } catch {
-            // Bỏ qua
-          }
-        }
-
-        // 6) Lưu thông tin user
-        set({
-          isAuthenticated: true,
           user: {
-            username: me.username,
-            email: me.email,
-            name: account.name || me.username,
-            avatar: sanitizeUrlToRelative(account.profile_image?.has_image
-              ? account.profile_image.image_url_full
-              : null),
-            dateJoined: account.date_joined,
-            isStaff: me.is_staff,
-            isLearnerPlus,
+            id: result.user.id,
+            username: result.user.username,
+            email: result.user.email,
+            fullName: result.user.full_name,
+            phone: result.user.phone,
+            avatar: result.user.avatar_url,
+            role: result.user.role,
+            tenantId: activeTenantId,
+            tenantName: activeTenantName,
           },
+          permissions: result.permissions,
+          tenantModules: result.tenant_modules,
+          managedTenants: result.managed_tenants,
         });
 
-        // 6) Lên lịch tự động refresh
+        // Lên lịch tự động refresh
         get().scheduleTokenRefresh();
-
-        return me.is_staff ? "staff" : "learner";
-      },
-
-      loginWithMicrosoft: async (edxTokens) => {
-        // Logic giống hệt loginWithGoogle — cùng flow exchange tokens
-        const expiresAt = Date.now() + edxTokens.expires_in * 1000;
-        set({
-          accessToken: edxTokens.access_token,
-          refreshToken: edxTokens.refresh_token,
-          tokenType: edxTokens.token_type || "Bearer",
-          tokenExpiresAt: expiresAt,
-        });
-
-        await establishLmsSessionFromToken();
-
-        const me = await getUserMe();
-
-        let account;
-        try {
-          account = await getUserAccount(me.username);
-        } catch {
-          account = {
-            name: me.username,
-            profile_image: { has_image: false, image_url_medium: "" },
-            date_joined: new Date().toISOString(),
-          };
-        }
-
-        if (account.is_active === false) {
-          get().logout();
-          throw new Error("Tài khoản của bạn đã bị khóa.");
-        }
-
-        updateStreak();
-
-        // Kiểm tra learner_plus role
-        let isLearnerPlus = false;
-        if (!me.is_staff) {
-          try {
-            const { data: roleData } = await apiClient.get("/api/landa/v0/my-role/");
-            isLearnerPlus = roleData.role === "learner_plus";
-          } catch {
-            // Bỏ qua
-          }
-        }
-
-        set({
-          isAuthenticated: true,
-          user: {
-            username: me.username,
-            email: me.email,
-            name: account.name || me.username,
-            avatar: sanitizeUrlToRelative(account.profile_image?.has_image
-              ? account.profile_image.image_url_full
-              : null),
-            dateJoined: account.date_joined,
-            isStaff: me.is_staff,
-            isLearnerPlus,
-          },
-        });
-
-        get().scheduleTokenRefresh();
-
-        return me.is_staff ? "staff" : "learner";
-      },
-
-      loginWithKeycloak: async (edxTokens) => {
-        const expiresAt = Date.now() + edxTokens.expires_in * 1000;
-        set({
-          accessToken: edxTokens.access_token,
-          refreshToken: edxTokens.refresh_token,
-          tokenType: edxTokens.token_type || "Bearer",
-          tokenExpiresAt: expiresAt,
-        });
-
-        await establishLmsSessionFromToken();
-
-        const me = await getUserMe();
-
-        let account;
-        try {
-          account = await getUserAccount(me.username);
-        } catch {
-          account = {
-            name: me.username,
-            profile_image: { has_image: false, image_url_medium: "" },
-            date_joined: new Date().toISOString(),
-          };
-        }
-
-        if (account.is_active === false) {
-          get().logout();
-          throw new Error("Tài khoản của bạn đã bị khóa.");
-        }
-
-        updateStreak();
-
-        let isLearnerPlus = false;
-        if (!me.is_staff) {
-          try {
-            const { data: roleData } = await apiClient.get("/api/landa/v0/my-role/");
-            isLearnerPlus = roleData.role === "learner_plus";
-          } catch {
-            // Bỏ qua
-          }
-        }
-
-        set({
-          isAuthenticated: true,
-          user: {
-            username: me.username,
-            email: me.email,
-            name: account.name || me.username,
-            avatar: sanitizeUrlToRelative(account.profile_image?.has_image
-              ? account.profile_image.image_url_full
-              : null),
-            dateJoined: account.date_joined,
-            isStaff: me.is_staff,
-            isLearnerPlus,
-          },
-        });
-
-        get().scheduleTokenRefresh();
-
-        return me.is_staff ? "staff" : "learner";
       },
 
       logout: async () => {
         clearRefreshTimer();
-        
-        // 1. Xóa state local TRƯỚC để đảm bảo FE luôn đăng xuất
-        // Dù API logout có bị lỗi 401 (do bị blacklist) thì app vẫn thoát
+
+        const currentRefreshToken = get().refreshToken;
+
+        // 1. Xóa state local TRƯỚC
         set({
           user: null,
           isAuthenticated: false,
           accessToken: null,
           refreshToken: null,
           tokenExpiresAt: null,
+          permissions: {},
+          tenantModules: [],
+          managedTenants: [],
         });
 
         // 2. Xóa toàn bộ cache React Query
         try { queryClient.clear(); } catch { /* App chưa mount */ }
 
-        // 2.5 Xóa các dữ liệu per-user trong localStorage
-        // để user khác đăng nhập không bị dính data cũ
+        // 3. Xóa dữ liệu per-user trong localStorage
         Object.keys(localStorage).forEach((key) => {
           if (
             key.startsWith("course_welcome_shown_") ||
@@ -430,39 +189,56 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem("la_study_time_weekly");
         localStorage.removeItem("la_study_time_last_sync");
 
-        // 2.6 Reset Zustand study time store (xóa data trong memory)
+        // 4. Reset study time store
         useStudyTimeStore.getState().reset();
 
-        // 3. Xóa LMS session cookie + gọi server logout
-        try {
-          await clearLmsSession();
-        } catch (e) {
-          console.warn("Lỗi khi clear LMS session (có thể do token hết hạn hoặc bị khoá):", e);
+        // 5. Revoke refresh token phía server
+        if (currentRefreshToken) {
+          await logoutApi(currentRefreshToken);
         }
       },
 
       performTokenRefresh: async (): Promise<boolean> => {
         const { refreshToken: currentRefreshToken } = get();
-        if (!currentRefreshToken) {
-          return false;
-        }
+        if (!currentRefreshToken) return false;
 
         try {
-          const tokenRes = await refreshTokenApi(currentRefreshToken);
+          const result = await refreshTokenApi(currentRefreshToken);
 
-          const expiresAt = Date.now() + tokenRes.expires_in * 1000;
+          // Giữ tenant đang chọn (nếu superadmin/superuser đã switchTenant)
+          const currentUser = get().user;
+          let activeTenantId = result.user.tenant_id || currentUser?.tenantId || null;
+          let activeTenantName = result.user.tenant_name || currentUser?.tenantName || null;
+          if (!activeTenantId && result.managed_tenants?.length > 0) {
+            activeTenantId = result.managed_tenants[0].id;
+            activeTenantName = result.managed_tenants[0].name;
+          }
+
+          const expiresAt = Date.now() + result.expires_in * 1000;
           set({
-            accessToken: tokenRes.access_token,
-            refreshToken: tokenRes.refresh_token,
-            tokenType: tokenRes.token_type || "Bearer",
+            accessToken: result.access_token,
+            refreshToken: result.refresh_token,
+            tokenType: "Bearer",
             tokenExpiresAt: expiresAt,
+            user: {
+              id: result.user.id,
+              username: result.user.username,
+              email: result.user.email,
+              fullName: result.user.full_name,
+              phone: result.user.phone,
+              avatar: result.user.avatar_url,
+              role: result.user.role,
+              tenantId: activeTenantId,
+              tenantName: activeTenantName,
+            },
+            permissions: result.permissions,
+            tenantModules: result.tenant_modules,
+            managedTenants: result.managed_tenants,
           });
 
-          // Lên lịch refresh tiếp theo
           get().scheduleTokenRefresh();
           return true;
         } catch {
-          // Refresh thất bại → phải đăng nhập lại
           return false;
         }
       },
@@ -473,20 +249,17 @@ export const useAuthStore = create<AuthState>()(
         const { tokenExpiresAt } = get();
         if (!tokenExpiresAt) return;
 
-        // Tính thời gian còn lại trước khi refresh
         const now = Date.now();
-        const buffer = config.tokenRefreshBufferMs;
+        const buffer = 300_000; // 5 phút trước khi hết hạn
         const delay = tokenExpiresAt - now - buffer;
 
         if (delay <= 0) {
-          // Token đã gần hết hạn hoặc hết hạn rồi → refresh ngay
           get().performTokenRefresh().then((success) => {
             if (!success) get().logout();
           });
           return;
         }
 
-        // Đặt timer refresh trước khi hết hạn
         refreshTimerId = setTimeout(() => {
           get().performTokenRefresh().then((success) => {
             if (!success) get().logout();
@@ -497,40 +270,54 @@ export const useAuthStore = create<AuthState>()(
       updateUser: (updates) => {
         const currentUser = get().user;
         if (currentUser) {
-          set({
-            user: { ...currentUser, ...updates },
-          });
+          set({ user: { ...currentUser, ...updates } });
         }
+      },
+
+      switchTenant: (tenantId: string) => {
+        const { user, managedTenants } = get();
+        if (!user) return;
+
+        // Tìm tenant trong danh sách managed
+        const tenant = managedTenants.find(t => t.id === tenantId);
+        if (!tenant) return;
+
+        // Cập nhật tenant trong store
+        set({
+          user: {
+            ...user,
+            tenantId: tenant.id,
+            tenantName: tenant.name,
+          },
+        });
+
+        // Invalidate tất cả queries để refetch data theo tenant mới
+        try { queryClient.invalidateQueries(); } catch { /* ignore */ }
       },
     }),
     {
       name: STORAGE_KEY,
       storage: encryptedStorage,
       partialize: (state) => ({
-        // Chỉ lưu các field cần thiết — không lưu methods
         isAuthenticated: state.isAuthenticated,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         tokenType: state.tokenType,
         tokenExpiresAt: state.tokenExpiresAt,
         user: state.user,
+        permissions: state.permissions,
+        tenantModules: state.tenantModules,
+        managedTenants: state.managedTenants,
       }),
       onRehydrateStorage: () => {
-        // Callback sau khi khôi phục state từ storage
         return (state) => {
           if (state?.isAuthenticated && state?.tokenExpiresAt) {
-            // Kiểm tra token còn hiệu lực không
             if (Date.now() >= state.tokenExpiresAt) {
-              // Token đã hết hạn → thử refresh
               state.performTokenRefresh().then((success) => {
                 if (!success) state.logout();
               });
             } else {
-              // Token còn hiệu lực → lên lịch refresh
               state.scheduleTokenRefresh();
-              // Tạo LMS session từ access token (cần cho /xblock/ quiz rendering)
-              // Vite proxy capture sessionid từ response server-side
-              establishLmsSessionFromToken();
             }
           }
         };

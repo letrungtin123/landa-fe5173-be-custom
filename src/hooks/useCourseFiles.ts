@@ -1,52 +1,39 @@
 // ============================================================
 // useCourseFiles — Fetch danh sách tài liệu của course
 //
-// Dùng LANDA custom API thay vì Handouts API vì:
-//   - Admin chỉ cần upload file trên Studio + Unlock → xong
-//   - Không cần viết HTML handouts
-//
-// Endpoint: GET /api/landa/v0/course_files/{courseId}/
-// Auth: Bearer JWT, user phải enrolled (hoặc is_staff)
+// Endpoint custom BE: GET /api/learner/courses/:courseId/files
+// Tạm stub trả mảng rỗng — chờ BE implement endpoint
 // ============================================================
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { apiClient } from "@/api/client";
 
-
 export interface CourseFile {
   id: string;
   display_name: string;
-  url: string;          // relative: /asset-v1:...
-  fullUrl: string;      // absolute: http://local.openedx.io/asset-v1:...
-  extension: string;    // "pdf" | "docx" | "pptx" | "xlsx" | ...
+  url: string;
+  fullUrl: string;
+  extension: string;
   content_type: string;
   size: number;
   date_added: string;
 }
 
-interface CourseFilesResponse {
-  files: Array<{
-    id: string;
-    display_name: string;
-    url: string;
-    extension: string;
-    content_type: string;
-    size: number;
-    date_added: string;
-  }>;
-  total: number;
-}
-
 async function fetchCourseFiles(courseId: string): Promise<CourseFile[]> {
-  const encodedId = encodeURIComponent(courseId);
-  const { data } = await apiClient.get<CourseFilesResponse>(
-    `/api/landa/v0/course_files/${encodedId}/`
-  );
-  return data.files.map((f) => ({
-    ...f,
-    fullUrl: f.url,
-  }));
+  try {
+    const encodedId = encodeURIComponent(courseId);
+    const { data } = await apiClient.get<{ success: boolean; data: { files: any[]; total: number } }>(
+      `/api/learner/courses/${encodedId}/files`
+    );
+    return (data.data?.files || []).map((f: any) => ({
+      ...f,
+      fullUrl: f.url,
+    }));
+  } catch {
+    // Endpoint chưa tồn tại trên custom BE → trả mảng rỗng
+    return [];
+  }
 }
 
 export function useCourseFiles(courseId: string) {
@@ -56,8 +43,8 @@ export function useCourseFiles(courseId: string) {
     queryKey: ["course-files", courseId],
     queryFn: () => fetchCourseFiles(courseId),
     enabled: isAuthenticated && !!courseId,
-    staleTime: 5 * 60 * 1000,   // 5 phút
+    staleTime: 5 * 60 * 1000,
     placeholderData: [],
-    retry: false, // Không retry nếu API chưa có (backend chưa restart)
+    retry: false,
   });
 }
