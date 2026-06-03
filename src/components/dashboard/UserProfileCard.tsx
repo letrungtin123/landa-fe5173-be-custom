@@ -33,7 +33,7 @@ export function UserProfileCard() {
     };
   }, [showPwModal]);
 
-  const displayName = user?.name || "Learner";
+  const displayName = user?.fullName || user?.username || "Learner";
   const joinDate = user?.dateJoined
     ? new Date(user.dateJoined).toLocaleDateString("vi-VN", { month: "2-digit", year: "numeric" })
     : "";

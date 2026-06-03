@@ -64,8 +64,8 @@ export function useMarkComplete() {
   return useMutation({
     mutationFn: ({ courseId, usageKey }: { courseId: string; usageKey: string }) =>
       markBlockComplete(courseId, usageKey),
-    onSuccess: () => {
-      refetchProgressWithRetry(qc);
+    onSuccess: (_data, variables) => {
+      refetchProgressWithRetry(qc, variables.courseId);
     },
   });
 }
@@ -79,8 +79,8 @@ export function useMarkBlocksComplete() {
   return useMutation({
     mutationFn: ({ courseId, blockIds }: { courseId: string; blockIds: string[] }) =>
       markBlocksComplete(courseId, blockIds),
-    onSuccess: () => {
-      refetchProgressWithRetry(qc);
+    onSuccess: (_data, variables) => {
+      refetchProgressWithRetry(qc, variables.courseId);
     },
   });
 }

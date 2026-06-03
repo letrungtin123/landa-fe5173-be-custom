@@ -5,6 +5,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useState, useMemo, useEffect, useRef } from "react";
+import { storageUrl } from "@/utils/storageUrl";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -196,7 +197,7 @@ export function ContinueLearning() {
             const courseId = e.course_id;
             const fullCourse = courseMap.get(courseId);
           
-            const imageUrl = (fullCourse as any)?.image_url || null;
+            const imageUrl = storageUrl((fullCourse as any)?.image_url) || null;
           
             return {
               id: courseId,

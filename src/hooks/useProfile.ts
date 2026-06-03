@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getUserMe, updateProfile as updateProfileApi } from "@/api/auth";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { avatarUrl } from "@/utils/storageUrl";
 
 const PROFILE_QUERY_KEY = ["userProfile"];
 
@@ -12,6 +13,17 @@ export function useProfile() {
     queryKey: [...PROFILE_QUERY_KEY, username],
     queryFn: async () => {
       const me = await getUserMe();
+      // Sync avatar mới nhất từ DB vào auth store
+      // (fix: sau upload avatar + F5, store vẫn giữ URL cũ)
+      const freshAvatar = me.user.avatar_url
+        ? avatarUrl(me.user.avatar_url)
+        : null;
+      const currentAvatar = useAuthStore.getState().user?.avatar;
+      // So sánh base URL (bỏ ?v= cache-busting) để tránh infinite update
+      const stripQuery = (u: string | null | undefined) => u?.split('?')[0] ?? '';
+      if (stripQuery(freshAvatar) !== stripQuery(currentAvatar)) {
+        useAuthStore.getState().updateUser({ avatar: freshAvatar });
+      }
       return me.user;
     },
     enabled: !!username,

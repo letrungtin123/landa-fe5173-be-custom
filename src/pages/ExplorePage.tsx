@@ -4,6 +4,7 @@
 // ============================================================
 
 import { useState, useMemo, useRef, useEffect } from "react";
+import { storageUrl } from "@/utils/storageUrl";
 import { Search, Loader2, BookOpen, ArrowRight, Check, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -480,7 +481,7 @@ function ExploreCourseCard({
   colorStyle: string;
   categoryName?: string;
 }) {
-  const imageUrl = (course as any).image_url || null;
+  const imageUrl = storageUrl((course as any).image_url) || null;
 
   // Chỉ gọi API check completion nếu user ĐÃ enroll khóa này
   const { completionPercent } = useCourseCompletion(

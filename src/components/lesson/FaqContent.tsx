@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 interface FaqItem {
-  id: number;
   question: string;
   answer: string;
 }
@@ -86,11 +85,11 @@ export function FaqContent({ usageKey }: { usageKey: string }) {
       {/* Accordion */}
       <div className="space-y-3 relative z-10 w-full max-w-3xl mx-auto">
         {svd.items.map((item, idx) => {
-          const isOpen = openId === item.id;
+          const isOpen = openId === idx;
 
           return (
             <div
-              key={item.id}
+              key={idx}
               className={cn(
                 "rounded-2xl border-2 overflow-hidden transition-all duration-300 cursor-pointer",
                 isOpen
@@ -101,9 +100,9 @@ export function FaqContent({ usageKey }: { usageKey: string }) {
               {/* Question header — clickable */}
               <button
                 type="button"
-                onClick={() => toggleItem(item.id)}
+                onClick={() => toggleItem(idx)}
                 aria-expanded={isOpen}
-                aria-controls={`faq-answer-${item.id}`}
+                aria-controls={`faq-answer-${idx}`}
                 className="w-full flex items-center gap-4 px-5 py-4 md:px-6 md:py-5 text-left cursor-pointer transition-colors group"
               >
                 {/* Index badge */}
@@ -143,7 +142,7 @@ export function FaqContent({ usageKey }: { usageKey: string }) {
 
               {/* Answer — collapsible with CSS grid animation */}
               <div
-                id={`faq-answer-${item.id}`}
+                id={`faq-answer-${idx}`}
                 role="region"
                 className={cn(
                   "grid transition-all duration-300 ease-in-out",

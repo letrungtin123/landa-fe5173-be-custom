@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { storageUrl, avatarUrl } from "@/utils/storageUrl";
 import { motion } from "framer-motion";
 import { User, Mail, Save, ShieldCheck, Loader2, X, Camera, ChevronDown, MapPin, GraduationCap, Globe, Calendar, Phone, AtSign, FileText, Type, Users } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -102,7 +103,7 @@ export function ProfilePage() {
       });
       const newAvatarUrl = avatarRes.data?.data?.avatar_url;
       if (newAvatarUrl) {
-        updateUser({ avatar: newAvatarUrl });
+        updateUser({ avatar: avatarUrl(newAvatarUrl) });
       }
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       setToast({ message: "Cập nhật ảnh đại diện thành công!", type: "success" });
@@ -226,8 +227,8 @@ export function ProfilePage() {
                 className="flex h-32 w-32 md:h-40 md:w-40 shrink-0 items-center justify-center overflow-hidden rounded-full border-8 border-card bg-muted shadow-xl relative group cursor-pointer ring-1 ring-border/50 transition-transform hover:scale-[1.02]"
                 onClick={() => setShowAvatarModal(true)}
               >
-                {avatarPreview || (profile as any)?.avatar_url || user?.avatar ? (
-                  <img src={avatarPreview || (profile as any)?.avatar_url || user?.avatar || ""} alt="Avatar" className="h-full w-full object-cover" />
+                {avatarPreview || storageUrl((profile as any)?.avatar_url) || user?.avatar ? (
+                  <img src={avatarPreview || storageUrl((profile as any)?.avatar_url) || user?.avatar || ""} alt="Avatar" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-primary/10">
                     <User className="h-12 w-12 md:h-16 md:w-16 text-primary" />
@@ -479,9 +480,9 @@ export function ProfilePage() {
 
           {/* Full-size avatar */}
           <div className="h-64 w-64 md:h-80 md:w-80 overflow-hidden rounded-3xl border-4 border-card shadow-2xl bg-muted">
-            {avatarPreview || (profile as any)?.avatar_url ? (
+            {avatarPreview || storageUrl((profile as any)?.avatar_url) ? (
               <img
-                src={avatarPreview || (profile as any)?.avatar_url || user?.avatar || ""}
+                src={avatarPreview || storageUrl((profile as any)?.avatar_url) || user?.avatar || ""}
                 alt="Avatar"
                 className="h-full w-full object-cover"
               />

@@ -124,7 +124,7 @@ function safeJsonParse(str: string): any {
   try { return JSON.parse(str); } catch { return null; }
 }
 
-function adaptBlocksResponse(data: CourseBlocksResponse): BlocksResponse {
+export function adaptBlocksResponse(data: CourseBlocksResponse): BlocksResponse {
   const blockMap: Record<string, Block> = {};
 
   // Tìm root block
@@ -248,7 +248,7 @@ export function useCourseStructure(courseId: string) {
       }
     },
     enabled: isAuthenticated && !!courseId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
     select: (data) => transformBlocksToCourse(data),
   });
 }
@@ -266,15 +266,7 @@ export function useCourseBlocksRaw(courseId: string) {
     queryFn: async () => {
       try {
         const raw = await getCourseBlocks(courseId);
-        console.log('[useCourseBlocksRaw] raw blocks count:', raw?.blocks?.length, 'root_id:', raw?.root_id);
-        if (raw?.blocks) {
-          raw.blocks.filter((b: any) => !['course','chapter','sequential','vertical'].includes(b.block_type))
-            .forEach((b: any) => {
-              console.log(`[useCourseBlocksRaw] ${b.block_type} "${b.display_name}" data:`, typeof b.data, 'meta:', typeof b.metadata);
-            });
-        }
         const adapted = adaptBlocksResponse(raw);
-        console.log('[useCourseBlocksRaw] adapted root:', adapted.root, 'blocks count:', Object.keys(adapted.blocks).length);
         return adapted;
       } catch (err: any) {
         console.error('[useCourseBlocksRaw] ERROR:', err?.response?.status, err?.message);
@@ -290,7 +282,7 @@ export function useCourseBlocksRaw(courseId: string) {
       }
     },
     enabled: isAuthenticated && !!courseId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

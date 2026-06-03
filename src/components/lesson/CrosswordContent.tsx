@@ -110,8 +110,7 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
         }
         // Invalidate block detail and course completion
         qc.invalidateQueries({ queryKey: ["block-detail", usageKey] });
-        qc.invalidateQueries({ queryKey: ["course-blocks"] });
-        refetchProgressWithRetry(qc);
+        refetchProgressWithRetry(qc, courseId);
       } else if (data.status === "already_completed") {
         setIsCorrect(true);
         setResultMessage("🎉 Chính xác! Tuyệt vời!");

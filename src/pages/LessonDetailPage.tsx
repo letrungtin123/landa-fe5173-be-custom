@@ -14,6 +14,7 @@ import { MentorSidebar } from "@/components/lesson/MentorSidebar";
 import { LessonImageCarousel } from "@/components/lesson/LessonImageCarousel";
 import { useParams, useNavigate } from "react-router-dom";
 import { useMemo, useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DOMPurify from "dompurify";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ import { SortableContent } from "@/components/lesson/SortableContent";
 import { FaqContent } from "@/components/lesson/FaqContent";
 import { PdfContent } from "@/components/lesson/PdfContent";
 import DiagramContent from "@/components/lesson/DiagramContent";
+import { HtmlBlockContent } from "@/components/lesson/HtmlBlockContent";
 import { CompleteCourseModal } from "@/components/lesson/CompleteCourseModal";
 import { Course100PercentModal } from "@/components/lesson/Course100PercentModal";
 import { WelcomeCourseModal } from "@/components/lesson/WelcomeCourseModal";
@@ -91,8 +93,18 @@ export function LessonDetailPage() {
 
   // Scroll to top khi đổi unit
   const contentRef = useRef<HTMLDivElement>(null);
+  const isFirstMount = useRef(true);
   useEffect(() => {
     const scrollContainer = document.getElementById("course-main-scroll");
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      // F5 reload: browser scroll restoration có thể đẩy content ra khỏi viewport
+      // → force scroll to top ngay (instant, không smooth) để unit đầu tiên hiển thị
+      if (scrollContainer) {
+        scrollContainer.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+      }
+      return;
+    }
     if (scrollContainer) {
       scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
     } else {
@@ -154,7 +166,7 @@ export function LessonDetailPage() {
     mutationFn: () =>
       markBlocksComplete(courseId || "", leafBlockIds),
     onSuccess: () => {
-      refetchProgressWithRetry(qc);
+      refetchProgressWithRetry(qc, courseId);
     },
   });
 
@@ -166,8 +178,10 @@ export function LessonDetailPage() {
 
   // Unit navigation handlers
   const totalUnits = lesson?.units.length || 0;
-  const currentUnit = lesson?.units[currentUnitIndex] || null;
-  const isLastUnit = currentUnitIndex >= totalUnits - 1;
+  // Clamp unitIndex — sessionStorage có thể lưu index cũ vượt quá units mới
+  const safeUnitIndex = totalUnits > 0 ? Math.min(currentUnitIndex, totalUnits - 1) : 0;
+  const currentUnit = lesson?.units[safeUnitIndex] || null;
+  const isLastUnit = safeUnitIndex >= totalUnits - 1;
 
   // ── Auto-mark passive blocks khi user vào unit ──
   // Các block dạng xem (html, video, faq, pdf, diagram) → auto-complete ngay khi navigate đến.
@@ -183,7 +197,7 @@ export function LessonDetailPage() {
 
     markBlocksComplete(courseId, passiveIds)
       .then(() => {
-        refetchProgressWithRetry(qc);
+        refetchProgressWithRetry(qc, courseId);
       })
       .catch((e) => console.error("Failed to auto-mark passive blocks:", e));
   }, [currentUnit?.id, user?.username, courseId]);
@@ -219,23 +233,10 @@ export function LessonDetailPage() {
   }, [nextModuleId, nextLessonId, setCurrentLesson, navigate, courseId]);
 
   const handleNext = useCallback(() => {
-    // Tự động mark hoàn thành cho các block text/video ở Unit HIỆN TẠI
-      if (currentUnit && courseId) {
-      const leafIdsToMark = currentUnit.components
-        .filter((c) => c.type === "html" || c.type === "video" || c.type === "la_diagram" || c.type === "la_faq" || c.type === "la_pdf")
-        .map((c) => c.id);
-
-      if (leafIdsToMark.length > 0) {
-        markBlocksComplete(courseId, leafIdsToMark)
-          .catch((e) => console.error("Failed to auto-mark block on next:", e))
-          .finally(() => {
-            refetchProgressWithRetry(qc);
-          });
-      }
-    }
-
+    // Passive blocks (html, video, faq...) đã được auto-mark bởi useEffect khi user vào unit.
+    // KHÔNG cần mark lại ở đây — tránh duplicate POST + refetch cascade.
     nextUnit(totalUnits);
-  }, [currentUnit, user?.username, courseId, qc, nextUnit, totalUnits]);
+  }, [nextUnit, totalUnits]);
 
   const handlePrev = useCallback(() => {
     prevUnit();
@@ -247,7 +248,23 @@ export function LessonDetailPage() {
     }
   }, [isCompleted, leafBlockIds, completeMutation]);
 
-  if (pageLoading || dataLoading) {
+  // Reset scroll khi chuyển từ skeleton → content thực
+  const wasLoadingRef = useRef(true);
+  const isStillLoading = pageLoading || dataLoading;
+  useEffect(() => {
+    if (wasLoadingRef.current && !isStillLoading) {
+      const scrollEl = document.getElementById("course-main-scroll");
+      if (scrollEl) {
+        if ('scrollRestoration' in history) {
+          history.scrollRestoration = 'manual';
+        }
+        scrollEl.scrollTop = 0;
+      }
+    }
+    wasLoadingRef.current = isStillLoading;
+  }, [isStillLoading]);
+
+  if (isStillLoading) {
     return <LessonSkeleton />;
   }
 
@@ -343,67 +360,13 @@ export function LessonDetailPage() {
                   }
 
                   if (comp.type === "html" && comp.htmlContent) {
-                    const cleanHtml = DOMPurify.sanitize(comp.htmlContent, {
-                      FORBID_TAGS: ["script", "style"],
-                      FORBID_ATTR: ["onerror", "onload", "onclick"],
-                    });
-
-                    let images: { src: string; alt: string }[] = [];
-                    let finalHtml = cleanHtml;
-                    let hasImage = false;
-
-                    try {
-                      const parser = new DOMParser();
-                      const doc = parser.parseFromString(cleanHtml, 'text/html');
-                      const imgEls = doc.querySelectorAll('img');
-                      hasImage = imgEls.length > 0;
-
-                      if (imgEls.length >= 2) {
-                        images = Array.from(imgEls).map(img => ({
-                          src: img.getAttribute('src') || '',
-                          alt: img.getAttribute('alt') || ''
-                        }));
-
-                        imgEls.forEach(img => img.remove());
-
-                        doc.querySelectorAll('p').forEach(p => {
-                          if (!p.textContent?.trim() && p.children.length === 0) {
-                            p.remove();
-                          }
-                        });
-
-                        finalHtml = doc.body.innerHTML;
-                      }
-                    } catch (e) {
-                      console.error("Failed to parse HTML for carousel", e);
-                    }
-
                     return (
-                      <div key={comp.id} className="rounded-3xl border border-border px-8 py-7 shadow-sm bg-card">
-                        {comp.displayName && !hasImage && (
-                          <div className="mb-4 inline-block">
-                            <BadgeCyan><span className="uppercase">{comp.displayName}</span></BadgeCyan>
-                          </div>
-                        )}
-                        {images.length >= 2 && (
-                          <LessonImageCarousel
-                            images={images}
-                            onImageClick={(src) => setLightboxSrc(src)}
-                          />
-                        )}
-                        {finalHtml.trim() && (
-                          <div
-                            className="prose max-w-none text-[14px] 2xl:text-[16px] font-normal leading-[18px] 2xl:leading-[24px] text-foreground/80 dark:prose-invert dark:text-foreground [&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0 [&_p]:!text-[14px] 2xl:[&_p]:!text-[16px] [&_p]:!font-normal [&_p]:!leading-[18px] 2xl:[&_p]:!leading-[24px] [&_span]:!text-[14px] 2xl:[&_span]:!text-[16px] [&_span]:!font-normal [&_span]:!leading-[18px] 2xl:[&_span]:!leading-[24px] [&_li]:!text-[14px] 2xl:[&_li]:!text-[16px] [&_li]:!font-normal [&_li]:!leading-[18px] 2xl:[&_li]:!leading-[24px] [&_div]:!text-[14px] 2xl:[&_div]:!text-[16px] [&_div]:!font-normal [&_div]:!leading-[18px] 2xl:[&_div]:!leading-[24px] [&_h1]:!text-[28px] 2xl:[&_h1]:!text-[34px] [&_h1]:!font-semibold [&_h1]:!leading-[36px] 2xl:[&_h1]:!leading-[42px] [&_h1]:!mt-6 [&_h1]:!mb-3 [&_h1]:!text-foreground [&_h2]:!text-[22px] 2xl:[&_h2]:!text-[26px] [&_h2]:!font-bold [&_h2]:!leading-[28px] 2xl:[&_h2]:!leading-[34px] [&_h2]:!mt-5 [&_h2]:!mb-2 [&_h2]:!text-foreground [&_h3]:!text-[18px] 2xl:[&_h3]:!text-[20px] [&_h3]:!font-semibold [&_h3]:!leading-[24px] 2xl:[&_h3]:!leading-[28px] [&_h3]:!mt-4 [&_h3]:!mb-1 [&_h3]:!text-foreground [&_img]:!cursor-zoom-in"
-                            dangerouslySetInnerHTML={{ __html: finalHtml }}
-                            onClick={(e) => {
-                              const target = e.target as HTMLElement;
-                              if (target.tagName === "IMG") {
-                                setLightboxSrc((target as HTMLImageElement).src);
-                              }
-                            }}
-                          />
-                        )}
-                      </div>
+                      <HtmlBlockContent
+                        key={comp.id}
+                        htmlContent={comp.htmlContent}
+                        displayName={comp.displayName}
+                        onImageClick={(src) => setLightboxSrc(src)}
+                      />
                     );
                   }
 
@@ -575,33 +538,27 @@ export function LessonDetailPage() {
         </div>
       </div>
 
-      {/* ── AI Mentor floating button ── */}
-      <div className="fixed bottom-8 right-8 z-30 flex flex-col gap-4">
-        {/* Nút Cuộn Lên Đầu Trang */}
-        <button
-          onClick={() => {
-            const scrollContainer = document.getElementById("course-main-scroll");
-            if (scrollContainer) scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
-            else window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-          className={cn(
-            "flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-lg transition-all hover:scale-110",
-            showScrollTop ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0 pointer-events-none"
-          )}
-          title="Lên đầu trang"
-        >
-          <ChevronUp className="h-6 w-6" />
-        </button>
-
-        {/* Nút AI Mentor (Tạm ẩn)
-        <button
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl transition-transform hover:scale-110"
-          title="AI Mentor"
-        >
-          <MessageCircle className="h-6 w-6" />
-        </button>
-        */}
-      </div>
+      {/* ── Floating buttons — Portal to body để thoát khỏi motion.div transform ── */}
+      {createPortal(
+        <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-4">
+          {/* Nút Cuộn Lên Đầu Trang */}
+          <button
+            onClick={() => {
+              const scrollContainer = document.getElementById("course-main-scroll");
+              if (scrollContainer) scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
+              else window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className={cn(
+              "flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-lg transition-all hover:scale-110",
+              showScrollTop ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0 pointer-events-none"
+            )}
+            title="Lên đầu trang"
+          >
+            <ChevronUp className="h-6 w-6" />
+          </button>
+        </div>,
+        document.body
+      )}
 
       {/* ── Footer ── */}
       <footer className="border-t border-border py-6 text-center bg-muted/30">

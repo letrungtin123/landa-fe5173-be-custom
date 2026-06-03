@@ -204,9 +204,8 @@ export function SortableContent({ usageKey }: { usageKey: string }) {
             .catch((e) => console.error('Failed to mark sortable complete:', e));
         }
         qc.invalidateQueries({ queryKey: ["block-detail", usageKey] });
-        qc.invalidateQueries({ queryKey: ["course-blocks"] });
         // Refetch progress với retry để bắt kịp backend aggregation
-        refetchProgressWithRetry(qc);
+        refetchProgressWithRetry(qc, courseId);
       } else {
         setIsCorrect(false);
         setResultMessage(data.message);

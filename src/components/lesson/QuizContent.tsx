@@ -17,7 +17,7 @@ import { useParams } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { markBlockComplete } from "@/api/progress";
 import { refetchProgressWithRetry } from "@/lib/progressRefetch";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
 
 // ── Custom Dropdown cho Problem Type: Dropdown ──
@@ -123,57 +123,47 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
   // Explanation state: lưu giải thích đáp án fetch từ problem_show API
   const [fetchedExplanation, setFetchedExplanation] = useState<string>("");
 
-  // Tải rendered HTML từ XBlock (qua Vite proxy) và parse
-  // Sau đó kiểm tra cache với fingerprint để phát hiện admin đã update content
+  // Fetch quiz HTML qua useQuery — tự động dedup (Strict Mode safe) + cache
+  const { data: quizHtml } = useQuery({
+    queryKey: ["quiz-html", problemUsageKey],
+    queryFn: () => getXBlockHtml(problemUsageKey),
+    enabled: !!problemUsageKey,
+    staleTime: 5 * 60 * 1000, // cache 5 phút
+    gcTime: 10 * 60 * 1000,
+  });
+
+  // Parse quiz HTML khi data arrive
   useEffect(() => {
-    if (!problemUsageKey) return;
+    if (!quizHtml) return;
 
-    let cancelled = false;
+    const problems = parseProblemHtml(quizHtml);
 
-    console.log('[QuizContent] Fetching problem:', problemUsageKey);
-    getXBlockHtml(problemUsageKey)
-      .then((html) => {
-        if (cancelled) return;
-        const problems = parseProblemHtml(html);
-        console.log('[QuizContent] Parsed problems:', problems.length);
+    // Tạo fingerprint từ nội dung quiz hiện tại
+    const currentFingerprint = JSON.stringify(problems.map(p => p.type + '|' + (p.options?.map(o => o.text).join(',') || '')));
 
-        // Tạo fingerprint từ nội dung quiz hiện tại
-        const currentFingerprint = JSON.stringify(problems.map(p => p.type + '|' + (p.options?.map(o => o.text).join(',') || '')));
-
-        // Kiểm tra cache với fingerprint
-        const cached = useBlockSubmitStore.getState().getResult(problemUsageKey);
-        if (cached && cached.parsedProblems && cached.parsedProblems.length > 0 && cached.contentFingerprint === currentFingerprint) {
-          // Content không đổi → khôi phục từ cache
-          console.log('[QuizContent] Restoring from cache (fingerprint matched):', problemUsageKey);
-          setParsedProblems(cached.parsedProblems as ParsedProblem[]);
-          setResultMessage(cached.resultMessage);
-          setIsCorrect(cached.isCorrect);
-          if (cached.answers) setAnswers(cached.answers);
-          if (cached.explanationHtml) setFetchedExplanation(cached.explanationHtml);
-        } else {
-          // Content mới hoặc không có cache → hiển quiz mới
-          if (cached) {
-            console.log('[QuizContent] Cache invalidated (content changed):', problemUsageKey);
-            useBlockSubmitStore.getState().setResult(problemUsageKey, undefined as any);
-          }
-          setParsedProblems(problems);
-          setShowHint(false);
-          setFetchedExplanation("");
-          setAnswers({});
-          setResultMessage(null);
-          setIsCorrect(null);
-        }
-        setIsLoadingContent(false);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        console.error("Failed to load quiz XBlock:", err);
-        setParsedProblems([]);
-        setIsLoadingContent(false);
-      });
-
-    return () => { cancelled = true; };
-  }, [problemUsageKey]);
+    // Kiểm tra cache với fingerprint
+    const cached = useBlockSubmitStore.getState().getResult(problemUsageKey);
+    if (cached && cached.parsedProblems && cached.parsedProblems.length > 0 && cached.contentFingerprint === currentFingerprint) {
+      // Content không đổi → khôi phục từ cache
+      setParsedProblems(cached.parsedProblems as ParsedProblem[]);
+      setResultMessage(cached.resultMessage);
+      setIsCorrect(cached.isCorrect);
+      if (cached.answers) setAnswers(cached.answers);
+      if (cached.explanationHtml) setFetchedExplanation(cached.explanationHtml);
+    } else {
+      // Content mới hoặc không có cache → hiển quiz mới
+      if (cached) {
+        useBlockSubmitStore.getState().setResult(problemUsageKey, undefined as any);
+      }
+      setParsedProblems(problems);
+      setShowHint(false);
+      setFetchedExplanation("");
+      setAnswers({});
+      setResultMessage(null);
+      setIsCorrect(null);
+    }
+    setIsLoadingContent(false);
+  }, [quizHtml, problemUsageKey]);
 
   // Handle onChange
   const handleChange = useCallback((id: string, value: string, type: string, checked?: boolean) => {
@@ -245,7 +235,7 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
         }
 
         // Refetch progress với retry để bắt kịp backend aggregation
-        refetchProgressWithRetry(qc);
+        refetchProgressWithRetry(qc, courseId);
       }
       // Nếu trả lời SAI → KHÔNG gọi API completion, KHÔNG invalidate queries → sidebar giữ nguyên
 

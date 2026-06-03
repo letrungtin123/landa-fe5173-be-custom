@@ -1,0 +1,94 @@
+// ============================================================
+// HtmlBlockContent — Render HTML content block
+// ============================================================
+
+import { useMemo } from "react";
+import DOMPurify from "dompurify";
+import { LessonImageCarousel } from "./LessonImageCarousel";
+
+function BadgeCyan({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-widest"
+      style={{ backgroundColor: "#43FDD7", color: "#000" }}
+    >
+      {children}
+    </span>
+  );
+}
+
+interface HtmlBlockContentProps {
+  htmlContent: string;
+  displayName?: string;
+  onImageClick?: (src: string) => void;
+}
+
+export function HtmlBlockContent({ htmlContent, displayName, onImageClick }: HtmlBlockContentProps) {
+  const { finalHtml, images, hasImage } = useMemo(() => {
+    if (!htmlContent) return { finalHtml: "", images: [], hasImage: false };
+
+    const cleanHtml = DOMPurify.sanitize(htmlContent, {
+      FORBID_TAGS: ["script", "style"],
+      FORBID_ATTR: ["onerror", "onload", "onclick"],
+    });
+
+    let imgs: { src: string; alt: string }[] = [];
+    let html = cleanHtml;
+    let hasImg = false;
+
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(cleanHtml, "text/html");
+      const imgEls = doc.querySelectorAll("img");
+      hasImg = imgEls.length > 0;
+
+      if (imgEls.length >= 2) {
+        imgs = Array.from(imgEls).map((img) => ({
+          src: img.getAttribute("src") || "",
+          alt: img.getAttribute("alt") || "",
+        }));
+        imgEls.forEach((img) => img.remove());
+        doc.querySelectorAll("p").forEach((p) => {
+          if (!p.textContent?.trim() && p.children.length === 0) {
+            p.remove();
+          }
+        });
+        html = doc.body.innerHTML;
+      }
+    } catch (e) {
+      console.error("Failed to parse HTML for carousel", e);
+    }
+
+    return { finalHtml: html, images: imgs, hasImage: hasImg };
+  }, [htmlContent]);
+
+  return (
+    <div className="rounded-3xl border border-border px-8 py-7 shadow-sm bg-card">
+      {displayName && !hasImage && (
+        <div className="mb-4 inline-block">
+          <BadgeCyan>
+            <span className="uppercase">{displayName}</span>
+          </BadgeCyan>
+        </div>
+      )}
+      {images.length >= 2 && (
+        <LessonImageCarousel
+          images={images}
+          onImageClick={(src) => onImageClick?.(src)}
+        />
+      )}
+      {finalHtml.trim() && (
+        <div
+          className="prose max-w-none text-[14px] 2xl:text-[16px] font-normal leading-[18px] 2xl:leading-[24px] text-foreground/80 dark:prose-invert dark:text-foreground [&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0 [&_p]:!text-[14px] 2xl:[&_p]:!text-[16px] [&_p]:!font-normal [&_p]:!leading-[18px] 2xl:[&_p]:!leading-[24px] [&_span]:!text-[14px] 2xl:[&_span]:!text-[16px] [&_span]:!font-normal [&_span]:!leading-[18px] 2xl:[&_span]:!leading-[24px] [&_li]:!text-[14px] 2xl:[&_li]:!text-[16px] [&_li]:!font-normal [&_li]:!leading-[18px] 2xl:[&_li]:!leading-[24px] [&_div]:!text-[14px] 2xl:[&_div]:!text-[16px] [&_div]:!font-normal [&_div]:!leading-[18px] 2xl:[&_div]:!leading-[24px] [&_h1]:!text-[28px] 2xl:[&_h1]:!text-[34px] [&_h1]:!font-semibold [&_h1]:!leading-[36px] 2xl:[&_h1]:!leading-[42px] [&_h1]:!mt-6 [&_h1]:!mb-3 [&_h1]:!text-foreground [&_h2]:!text-[22px] 2xl:[&_h2]:!text-[26px] [&_h2]:!font-bold [&_h2]:!leading-[28px] 2xl:[&_h2]:!leading-[34px] [&_h2]:!mt-5 [&_h2]:!mb-2 [&_h2]:!text-foreground [&_h3]:!text-[18px] 2xl:[&_h3]:!text-[20px] [&_h3]:!font-semibold [&_h3]:!leading-[24px] 2xl:[&_h3]:!leading-[28px] [&_h3]:!mt-4 [&_h3]:!mb-1 [&_h3]:!text-foreground [&_img]:!cursor-zoom-in"
+          dangerouslySetInnerHTML={{ __html: finalHtml }}
+          onClick={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.tagName === "IMG") {
+              onImageClick?.((target as HTMLImageElement).src);
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}

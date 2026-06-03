@@ -1,47 +1,58 @@
 // ============================================================
-// progressRefetch — Retry refetch cho course-completion-fast
+// progressRefetch — Invalidate progress data sau khi mark complete
 //
-// Backend Open edX aggregate completion async (Celery task).
-// Sau khi mark block complete, progress API có thể chưa cập nhật ngay.
-// Helper này refetch nhiều lần với delay tăng dần để bắt kịp.
+// Chỉ invalidate queries liên quan đến course HIỆN TẠI.
+// KHÔNG dùng broad invalidation (["course-blocks"]) vì sẽ trigger
+// refetch cho TẤT CẢ courses → 429 Too Many Requests.
+//
+// Debounce 500ms — nếu gọi nhiều lần trong 500ms chỉ chạy 1 lần.
+// KHÔNG retry — invalidate 1 lần là đủ, React Query tự handle stale.
 // ============================================================
 
 import type { QueryClient } from "@tanstack/react-query";
 
+// Debounce tracker — tránh gọi nhiều lần liên tiếp
+let pendingTimer: ReturnType<typeof setTimeout> | null = null;
+
 /**
- * Invalidate ngay + retry refetch course-completion-fast với delay tăng dần.
- * Đảm bảo modal confirm/complete bắt được thay đổi progress real-time.
+ * Invalidate progress queries cho 1 course cụ thể.
+ * Debounce 500ms — nếu gọi nhiều lần trong 500ms chỉ chạy 1 lần.
  *
  * @param qc QueryClient instance
- * @param retries Số lần retry (default 3)
- * @param delays Mảng delay ms cho mỗi lần retry (default [2000, 4000, 7000])
+ * @param courseId Course ID cụ thể (BẮT BUỘC)
  */
 export function refetchProgressWithRetry(
   qc: QueryClient,
-  retries = 3,
-  delays = [2000, 4000, 7000]
+  courseId?: string,
 ): () => void {
-  // Invalidate ngay lập tức (lần 1)
-  qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
-  qc.invalidateQueries({ queryKey: ["course-blocks"] });
-  qc.invalidateQueries({ queryKey: ["enrollments"] });
-  qc.invalidateQueries({ queryKey: ["average-course-completion"] });
-
-  // Retry refetch với delay để bắt kịp backend aggregation
-  const timers: ReturnType<typeof setTimeout>[] = [];
-
-  for (let i = 0; i < retries && i < delays.length; i++) {
-    const timer = setTimeout(() => {
-      qc.refetchQueries({ queryKey: ["course-completion-fast"] });
-      qc.refetchQueries({ queryKey: ["course-blocks"] });
-    }, delays[i]);
-    timers.push(timer);
+  // Cleanup pending timer từ lần gọi trước
+  if (pendingTimer) {
+    clearTimeout(pendingTimer);
+    pendingTimer = null;
   }
+
+  // Debounce 500ms
+  pendingTimer = setTimeout(() => {
+    // 1. Invalidate course-blocks CHỈ cho course hiện tại
+    if (courseId) {
+      qc.invalidateQueries({ queryKey: ["course-blocks", courseId] });
+    }
+
+    // 2. Invalidate progress/completion (nhẹ, ít data)
+    qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
+    qc.invalidateQueries({ queryKey: ["enrollments"] });
+
+    // 3. Invalidate badge data cho course hiện tại (nếu có)
+    if (courseId) {
+      qc.invalidateQueries({ queryKey: ["badge-blocks", courseId] });
+    }
+  }, 500);
 
   // Return cleanup function
   return () => {
-    for (const t of timers) {
-      clearTimeout(t);
+    if (pendingTimer) {
+      clearTimeout(pendingTimer);
+      pendingTimer = null;
     }
   };
 }

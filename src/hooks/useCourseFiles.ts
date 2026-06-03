@@ -8,6 +8,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { apiClient } from "@/api/client";
+import { storageUrl } from "@/utils/storageUrl";
 
 export interface CourseFile {
   id: string;
@@ -28,7 +29,7 @@ async function fetchCourseFiles(courseId: string): Promise<CourseFile[]> {
     );
     return (data.data?.files || []).map((f: any) => ({
       ...f,
-      fullUrl: f.url,
+      fullUrl: storageUrl(f.url) || f.url,
     }));
   } catch {
     // Endpoint chưa tồn tại trên custom BE → trả mảng rỗng

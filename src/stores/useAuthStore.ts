@@ -9,6 +9,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { loginApi, refreshTokenApi, logoutApi, getUserMe } from "@/api/auth";
 import { queryClient } from "@/App";
 import { useStudyTimeStore } from "@/stores/useStudyTimeStore";
+import { avatarUrl } from "@/utils/storageUrl";
 import type { TenantBasic, PermissionsMap } from "@/api/types";
 
 // ── Mã hóa/giải mã đơn giản cho token trong storage ──
@@ -141,7 +142,7 @@ export const useAuthStore = create<AuthState>()(
             email: result.user.email,
             fullName: result.user.full_name,
             phone: result.user.phone,
-            avatar: result.user.avatar_url,
+            avatar: avatarUrl(result.user.avatar_url),
             role: result.user.role,
             tenantId: activeTenantId,
             tenantName: activeTenantName,
@@ -226,7 +227,7 @@ export const useAuthStore = create<AuthState>()(
               email: result.user.email,
               fullName: result.user.full_name,
               phone: result.user.phone,
-              avatar: result.user.avatar_url,
+              avatar: avatarUrl(result.user.avatar_url),
               role: result.user.role,
               tenantId: activeTenantId,
               tenantName: activeTenantName,

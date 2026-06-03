@@ -9,6 +9,7 @@
 // ============================================================
 
 import { apiClient } from "@/api/client";
+import { storageUrl } from "@/utils/storageUrl";
 
 // ── Types ──
 
@@ -72,30 +73,13 @@ export async function getLibraryCategories(): Promise<LibraryCategoriesResponse>
 }
 
 export async function downloadLibraryFileBlob(url: string): Promise<Blob> {
-  // For Supabase Storage URLs, fetch directly (public bucket)
-  if (url.includes('/storage/v1/object/public/')) {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Download failed: ${response.status}`);
-    return response.blob();
-  }
+  // Resolve storage path to proxy URL
+  const resolved = storageUrl(url) || url;
 
-  // For relative URLs, use apiClient with proxy
-  let requestUrl = url;
-  try {
-    if (url.startsWith('http')) {
-      const urlObj = new URL(url);
-      requestUrl = urlObj.pathname + urlObj.search;
-    }
-  } catch {
-    // Fallback
-  }
-
-  const { data } = await apiClient.get<Blob>(requestUrl, {
-    responseType: 'blob',
-    headers: { 'Content-Type': undefined as any },
-    timeout: 300_000,
-  });
-  return data;
+  // If it's a full proxy URL (absolute or /api/storage/...), fetch directly
+  const response = await fetch(resolved);
+  if (!response.ok) throw new Error(`Download failed: ${response.status}`);
+  return response.blob();
 }
 
 export async function handleSecureDownload(url: string, filename: string) {

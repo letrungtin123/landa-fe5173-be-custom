@@ -282,7 +282,19 @@ export function Header() {
               </DropdownMenuItem>
               {(user?.role === 'staff' || user?.role === 'superuser' || user?.role === 'superadmin') && (
                 <DropdownMenuItem 
-                  onClick={() => window.open(import.meta.env.VITE_ADMIN_URL || '/admin', '_blank')} 
+                  onClick={async () => {
+                    try {
+                      const { apiClient } = await import("@/api/client");
+                      const { data } = await apiClient.post("/api/auth/ott/generate");
+                      const ott = data?.data?.ott;
+                      const adminUrl = import.meta.env.VITE_ADMIN_URL || '/admin';
+                      const separator = adminUrl.includes('?') ? '&' : '?';
+                      window.open(`${adminUrl}${separator}ott=${ott}`, '_blank');
+                    } catch {
+                      // Fallback: mở admin mà không có OTT
+                      window.open(import.meta.env.VITE_ADMIN_URL || '/admin', '_blank');
+                    }
+                  }} 
                   className="cursor-pointer text-primary focus:text-primary"
                 >
                   <Settings className="mr-2 h-4 w-4" />

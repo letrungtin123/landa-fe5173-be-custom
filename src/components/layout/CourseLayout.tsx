@@ -19,6 +19,11 @@ export function CourseLayout() {
       if (isReload) {
         // F5 reload → giữ nguyên store, chỉ xóa flag
         sessionStorage.removeItem(RELOAD_FLAG);
+        // Reset scroll position để tránh browser restore scroll cũ → ẩn unit đầu tiên
+        requestAnimationFrame(() => {
+          const el = document.getElementById("course-main-scroll");
+          if (el) el.scrollTop = 0;
+        });
       } else {
         // Navigate vào từ route khác → clear store, learner làm lại
         useBlockSubmitStore.getState().clearAll();
@@ -43,7 +48,7 @@ export function CourseLayout() {
       <CourseSidebar />
 
       {/* Main Content Area */}
-      <div id="course-main-scroll" className="flex-1 overflow-y-scroll relative bg-background">
+      <div id="course-main-scroll" className="flex-1 overflow-y-auto relative bg-background">
         <PageTransition animationKey={location.pathname}>
           <Outlet />
         </PageTransition>

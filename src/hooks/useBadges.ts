@@ -18,36 +18,19 @@ import { BADGE_DEFINITIONS, type BadgeDefinition } from "@/data/badgeConfig";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { CourseBlocksResponse, BlocksResponse, Block } from "@/api/types";
 
-/** Adapter: CourseBlocksResponse (flat array) → BlocksResponse (map) */
-function adaptBlocksForBadges(data: CourseBlocksResponse): BlocksResponse {
-  const blockMap: Record<string, Block> = {};
-  let rootId = data.root_id || "";
-  for (const cb of data.blocks) {
-    blockMap[cb.id] = {
-      id: cb.id,
-      type: cb.block_type,
-      display_name: cb.display_name,
-      children: [],
-      completion: cb.completed ? 1 : 0,
-      student_view_data: cb.data || {},
-      student_view_url: (cb.metadata as any)?.student_view_url || undefined,
-      graded: (cb.metadata as any)?.graded || false,
-    };
-    if (!rootId && cb.block_type === "course") rootId = cb.id;
-  }
-  for (const cb of data.blocks) {
-    if (cb.parent_id && blockMap[cb.parent_id]) {
-      blockMap[cb.parent_id].children!.push(cb.id);
-    }
-  }
-  const sortMap = new Map(data.blocks.map(cb => [cb.id, cb.sort_order]));
-  for (const block of Object.values(blockMap)) {
-    if (block.children && block.children.length > 1) {
-      block.children.sort((a, b) => (sortMap.get(a) || 0) - (sortMap.get(b) || 0));
-    }
-  }
-  return { root: rootId, blocks: blockMap };
-}
+/** Adapter: CourseBlocksResponse (flat array) → BlocksResponse (map)
+ * 
+ * IMPORTANT: Dùng chung adaptBlocksResponse từ useCourses.ts
+ * để đảm bảo cùng query key ["course-blocks", courseId] luôn trả
+ * cùng data format. Nếu dùng adapter khác → cache bị ghi đè sai format
+ * → student_view_data cho html block thành raw string thay vì {data: string}
+ * → htmlContent = null → HTML text blocks biến mất.
+ */
+import { adaptBlocksResponse } from "./useCourses";
+
+/* Legacy alias — badges chỉ cần completion data nên adapter nào cũng được,
+   miễn sao format thống nhất với useCourseBlocksRaw */
+const adaptBlocksForBadges = adaptBlocksResponse;
 
 export interface UseBadgesResult {
   earnedBadges: EarnedBadge[];
@@ -109,16 +92,19 @@ export function useBadges(): UseBadgesResult {
   }, [enrollments]);
 
   // ── useQueries: fetch blocks cho TẤT CẢ courses ──
-  // React Query cho phép dynamic array — không vi phạm Rules of Hooks
+  // IMPORTANT: Dùng query key RIÊNG "badge-blocks" (không phải "course-blocks")
+  // để KHÔNG bị invalidate khi progressRefetch chạy cho course hiện tại.
+  // Badges chỉ cần completion data → staleTime cao (10 phút) để giảm requests.
   const blockQueries = useQueries({
     queries: courseIds.map((courseId) => ({
-      queryKey: ["course-blocks", courseId],
+      queryKey: ["badge-blocks", courseId],
       queryFn: async () => {
         const raw = await getCourseBlocks(courseId);
         return adaptBlocksForBadges(raw);
       },
       enabled: isAuthenticated && !!courseId,
-      staleTime: 2 * 60 * 1000,
+      staleTime: 10 * 60 * 1000, // 10 phút — badges không cần real-time
+      gcTime: 30 * 60 * 1000,    // giữ cache 30 phút
       select: transformBlocksToCourse,
     })),
   });
@@ -129,7 +115,8 @@ export function useBadges(): UseBadgesResult {
       queryKey: ["course-progress", courseId],
       queryFn: () => getMyCourseProgress(courseId),
       enabled: isAuthenticated && !!courseId,
-      staleTime: 5 * 60 * 1000,
+      staleTime: 10 * 60 * 1000, // 10 phút — đồng bộ với badge-blocks
+      gcTime: 30 * 60 * 1000,
     })),
   });
 

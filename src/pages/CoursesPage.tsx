@@ -4,6 +4,7 @@
 
 import { BookOpen, ArrowRight, Loader2, Award } from "lucide-react";
 import { useState, useMemo } from "react";
+import { storageUrl } from "@/utils/storageUrl";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -169,7 +170,7 @@ export function CoursesPage() {
             {courses.map((course, index) => {
               const isEnrolled = enrolledIds.has(course.id);
               const cert = certMap.get(course.id);
-              const imageUrl = course.image_url || null;
+              const imageUrl = storageUrl(course.image_url) || null;
 
               return (
                 <motion.div
