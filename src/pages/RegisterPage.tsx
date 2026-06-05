@@ -79,29 +79,29 @@ export function RegisterPage() {
       <div className="min-h-screen w-full bg-white text-black flex items-center justify-center">
         <div className="flex h-screen w-full max-w-[1440px] overflow-hidden bg-white">
           {/* Left Panel */}
-      <LeftPanel branding={branding} isLoading={brandingLoading} />
+          <LeftPanel branding={branding} isLoading={brandingLoading} />
 
-        {/* Right Panel — Success */}
-        <div className="flex flex-1 flex-col overflow-y-auto items-center justify-center bg-white px-6 py-12 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <div className="w-full max-w-[420px] my-auto text-center">
-            <div className="mb-6 flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-emerald-50">
-              <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+          {/* Right Panel — Success */}
+          <div className="flex flex-1 flex-col overflow-y-auto items-center justify-center bg-white px-6 py-12 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="w-full max-w-[420px] my-auto text-center">
+              <div className="mb-6 flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-emerald-50">
+                <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+              </div>
+              <h2 className="mb-3 text-[24px] font-bold tracking-tight text-[#1a1a1a]">
+                Đăng ký thành công!
+              </h2>
+              <p className="mb-8 text-[14px] text-[#888] leading-relaxed max-w-[340px] mx-auto">
+                Tài khoản của bạn đã được tạo và đang chờ quản trị viên duyệt.
+                Bạn sẽ có thể đăng nhập sau khi tài khoản được phê duyệt.
+              </p>
+              <button
+                onClick={() => navigate("/login")}
+                className="w-full rounded-full bg-[#1877F2] py-3 text-[15px] font-semibold text-white transition-all hover:bg-[#1466d8] active:scale-[0.98]"
+              >
+                Quay về đăng nhập
+              </button>
             </div>
-            <h2 className="mb-3 text-[24px] font-bold tracking-tight text-[#1a1a1a]">
-              Đăng ký thành công!
-            </h2>
-            <p className="mb-8 text-[14px] text-[#888] leading-relaxed max-w-[340px] mx-auto">
-              Tài khoản của bạn đã được tạo và đang chờ quản trị viên duyệt.
-              Bạn sẽ có thể đăng nhập sau khi tài khoản được phê duyệt.
-            </p>
-            <button
-              onClick={() => navigate("/login")}
-              className="w-full rounded-full bg-[#1877F2] py-3 text-[15px] font-semibold text-white transition-all hover:bg-[#1466d8] active:scale-[0.98]"
-            >
-              Quay về đăng nhập
-            </button>
           </div>
-        </div>
         </div>
       </div>
     );
@@ -112,206 +112,206 @@ export function RegisterPage() {
     <div className="min-h-screen w-full bg-white text-black flex items-center justify-center">
       <div className="flex h-screen w-full max-w-[1440px] overflow-hidden bg-white">
         {/* Left Panel */}
-      <LeftPanel branding={branding} isLoading={brandingLoading} />
+        <LeftPanel branding={branding} isLoading={brandingLoading} />
 
-      {/* Right Panel — Form */}
-      <div className="flex flex-1 h-full flex-col items-center justify-center bg-white px-6 relative overflow-hidden">
-        
-        <div className="w-full max-w-[429px] flex flex-col justify-center relative">
-          
-          {/* Back button */}
-          <button
-            onClick={() => navigate("/login")}
-            className="flex items-center gap-2 text-sm font-normal text-[#8f8f8f] hover:text-neutral-600 transition-colors font-['SF_Pro',_sans-serif] mb-6 w-fit"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Quay lại
-          </button>
+        {/* Right Panel — Form */}
+        <div className="flex flex-1 h-full flex-col items-center justify-center bg-white px-6 relative overflow-hidden">
 
-          <div className="w-full">
-            {/* Logo mark */}
-            <div className="flex flex-col items-start mb-4">
-              <div className="w-14 h-14 bg-[#011b54] rounded-xl flex items-center justify-center mb-3">
-                <img
-                  src={branding.squareIcon}
-                  alt="E-learning"
-                  className="w-[39px] object-contain"
-                />
-              </div>
+          <div className="w-full max-w-[429px] flex flex-col justify-center relative">
 
-              <div className="flex flex-col items-start gap-1 mb-6">
-                <h2 className="text-[28px] font-semibold text-black tracking-[0] leading-[35px] font-['SF_Pro',_sans-serif]">
-                  Đăng ký tài khoản
-                </h2>
-                <p className="text-sm font-normal text-[#8f8f8f] tracking-[0] leading-5 font-['SF_Pro',_sans-serif]">
-                  Đăng ký ngay để bắt đầu hành trình học tập của bạn.
-                </p>
-              </div>
-            </div>
+            {/* Back button */}
+            <button
+              onClick={() => navigate("/login")}
+              className="flex items-center gap-2 text-sm font-normal text-[#8f8f8f] hover:text-neutral-600 transition-colors font-['SF_Pro',_sans-serif] mb-6 w-fit"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Quay lại
+            </button>
 
-          {/* Global error */}
-          {errors.__all__ && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-600">
-              {errors.__all__}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
-            {/* Họ + Tên */}
-            <div className="flex gap-[10px]">
-              <div className="flex-1 flex flex-col gap-2">
-                <label htmlFor="reg-lastname" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
-                  <span className="text-black">Họ</span><span className="text-[#e9252f]">*</span>
-                </label>
-                <div className="relative w-full h-[38px] rounded-[10px] border border-solid border-[#ebeaea] bg-white transition-colors focus-within:border-[#0052d0]">
-                  <input
-                    id="reg-lastname"
-                    type="text"
-                    placeholder="Tran"
-                    value={lastName}
-                    onChange={(e) => { setLastName(e.target.value); clearError("last_name"); }}
-                    className={`absolute inset-0 w-full h-full px-[19px] text-sm font-normal text-black tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif] ${errors.last_name ? "border-[#e9252f]" : ""}`}
+            <div className="w-full">
+              {/* Logo mark */}
+              <div className="flex flex-col items-start mb-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3">
+                  <img
+                    src={branding.squareIcon}
+                    alt="E-learning"
+                    className="w-[39px] object-contain"
                   />
                 </div>
-                {errors.last_name && <p className="text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.last_name}</p>}
-              </div>
-              <div className="flex-1 flex flex-col gap-2">
-                <label htmlFor="reg-firstname" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
-                  <span className="text-black">Tên</span><span className="text-[#e9252f]">*</span>
-                </label>
-                <div className="relative w-full h-[38px] rounded-[10px] border border-solid border-[#ebeaea] bg-white transition-colors focus-within:border-[#0052d0]">
-                  <input
-                    id="reg-firstname"
-                    type="text"
-                    placeholder="Nhut"
-                    value={firstName}
-                    onChange={(e) => { setFirstName(e.target.value); clearError("first_name"); }}
-                    className={`absolute inset-0 w-full h-full px-[19px] text-sm font-normal text-black tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif] ${errors.first_name ? "border-[#e9252f]" : ""}`}
-                  />
+
+                <div className="flex flex-col items-start gap-1 mb-6">
+                  <h2 className="text-[28px] font-semibold text-black tracking-[0] leading-[35px] font-['SF_Pro',_sans-serif]">
+                    Đăng ký tài khoản
+                  </h2>
+                  <p className="text-sm font-normal text-[#8f8f8f] tracking-[0] leading-5 font-['SF_Pro',_sans-serif]">
+                    Đăng ký ngay để bắt đầu hành trình học tập của bạn.
+                  </p>
                 </div>
-                {errors.first_name && <p className="text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.first_name}</p>}
               </div>
-            </div>
 
-            {/* Email */}
-            <div className="flex flex-col gap-2">
-              <label htmlFor="reg-email" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
-                <span className="text-black">Địa chỉ email</span><span className="text-[#e9252f]">*</span>
-              </label>
-              <div className="relative w-full h-[38px] rounded-[10px] border border-solid border-[#ebeaea] bg-white transition-colors focus-within:border-[#0052d0]">
-                <input
-                  id="reg-email"
-                  type="email"
-                  placeholder="nhut.tran@hcm.nesso.vn"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
-                  className={`absolute inset-0 w-full h-full px-[19px] text-sm font-normal text-black tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif] ${errors.email ? "border-[#e9252f]" : ""}`}
-                />
+              {/* Global error */}
+              {errors.__all__ && (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-600">
+                  {errors.__all__}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
+                {/* Họ + Tên */}
+                <div className="flex gap-[10px]">
+                  <div className="flex-1 flex flex-col gap-2">
+                    <label htmlFor="reg-lastname" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
+                      <span className="text-black">Họ</span><span className="text-[#e9252f]">*</span>
+                    </label>
+                    <div className="relative w-full h-[38px] rounded-[10px] border border-solid border-[#ebeaea] bg-white transition-colors focus-within:border-[#0052d0]">
+                      <input
+                        id="reg-lastname"
+                        type="text"
+                        placeholder="Tran"
+                        value={lastName}
+                        onChange={(e) => { setLastName(e.target.value); clearError("last_name"); }}
+                        className={`absolute inset-0 w-full h-full px-[19px] text-sm font-normal text-black tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif] ${errors.last_name ? "border-[#e9252f]" : ""}`}
+                      />
+                    </div>
+                    {errors.last_name && <p className="text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.last_name}</p>}
+                  </div>
+                  <div className="flex-1 flex flex-col gap-2">
+                    <label htmlFor="reg-firstname" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
+                      <span className="text-black">Tên</span><span className="text-[#e9252f]">*</span>
+                    </label>
+                    <div className="relative w-full h-[38px] rounded-[10px] border border-solid border-[#ebeaea] bg-white transition-colors focus-within:border-[#0052d0]">
+                      <input
+                        id="reg-firstname"
+                        type="text"
+                        placeholder="Nhut"
+                        value={firstName}
+                        onChange={(e) => { setFirstName(e.target.value); clearError("first_name"); }}
+                        className={`absolute inset-0 w-full h-full px-[19px] text-sm font-normal text-black tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif] ${errors.first_name ? "border-[#e9252f]" : ""}`}
+                      />
+                    </div>
+                    {errors.first_name && <p className="text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.first_name}</p>}
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="reg-email" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
+                    <span className="text-black">Địa chỉ email</span><span className="text-[#e9252f]">*</span>
+                  </label>
+                  <div className="relative w-full h-[38px] rounded-[10px] border border-solid border-[#ebeaea] bg-white transition-colors focus-within:border-[#0052d0]">
+                    <input
+                      id="reg-email"
+                      type="email"
+                      placeholder="Email"
+                      value={email}
+                      onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
+                      className={`absolute inset-0 w-full h-full px-[19px] text-sm font-normal text-black tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif] ${errors.email ? "border-[#e9252f]" : ""}`}
+                    />
+                  </div>
+                  {errors.email && <p className="text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.email}</p>}
+                </div>
+
+                {/* Mật khẩu */}
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="reg-password" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
+                    <span className="text-black">Mật khẩu</span><span className="text-[#e9252f]">*</span>
+                  </label>
+                  <div className={`relative w-full flex items-center h-[38px] rounded-[10px] border border-solid bg-white transition-colors focus-within:border-[#0052d0] ${errors.password ? "border-[#e9252f]" : "border-[#ebeaea]"}`}>
+                    <input
+                      id="reg-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••••••"
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); clearError("password"); }}
+                      className="h-full flex-1 pl-[19px] pr-10 text-sm font-normal text-black placeholder:text-[#cdcdcd] tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-[11px] flex items-center justify-center w-4 h-4 text-stone-300 hover:text-stone-500 transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {errors.password && <p className="text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.password}</p>}
+                </div>
+
+                {/* Xác nhận mật khẩu */}
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="reg-confirm" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
+                    <span className="text-black">Xác nhận mật khẩu</span><span className="text-[#e9252f]">*</span>
+                  </label>
+                  <div className={`relative w-full flex items-center h-[38px] rounded-[10px] border border-solid bg-white transition-colors focus-within:border-[#0052d0] ${errors.confirm ? "border-[#e9252f]" : "border-[#ebeaea]"}`}>
+                    <input
+                      id="reg-confirm"
+                      type={showConfirm ? "text" : "password"}
+                      placeholder="••••••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => { setConfirmPassword(e.target.value); clearError("confirm"); }}
+                      className="h-full flex-1 pl-[19px] pr-10 text-sm font-normal text-black placeholder:text-[#cdcdcd] tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm(!showConfirm)}
+                      className="absolute right-4 top-[11px] flex items-center justify-center w-4 h-4 text-stone-300 hover:text-stone-500 transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {errors.confirm && <p className="text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.confirm}</p>}
+                </div>
+
+                {/* Submit */}
+                <div className="flex flex-col w-full items-center mt-4">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="relative self-stretch w-full h-[38px] bg-[#0052d0] rounded-[10px] disabled:opacity-70 disabled:cursor-not-allowed hover:bg-[#0047b3] transition-all"
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center justify-center gap-2 text-white">
+                        <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        Đang đăng ký…
+                      </span>
+                    ) : (
+                      <span className="flex items-center justify-center font-normal text-white text-sm text-center tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
+                        Đăng ký
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </form>
+
+              {/* Terms */}
+              <div className="flex gap-[9px] mt-4">
+                <div className="relative mt-0.5 w-3.5 h-3.5">
+                  <input
+                    id="reg-terms"
+                    type="checkbox"
+                    checked={agreedTerms}
+                    onChange={(e) => { setAgreedTerms(e.target.checked); clearError("terms"); }}
+                    className="peer absolute inset-0 w-3.5 h-3.5 rounded-[3px] border border-solid border-[#ebeaea] bg-white checked:bg-[#0052d0] checked:border-[#0052d0] cursor-pointer appearance-none focus:outline-none"
+                  />
+                  <svg className="pointer-events-none absolute left-0 top-[0px] hidden h-3.5 w-3.5 p-[2px] text-white peer-checked:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <label htmlFor="reg-terms" className="flex flex-wrap font-normal text-[#8f8f8f] text-xs tracking-[0] leading-4 cursor-pointer font-['SF_Pro',_sans-serif]">
+                  <span>Bằng việc đăng ký, bạn đã xác nhận đồng ý với các </span>
+                  <span className="underline hover:text-neutral-600 transition-colors mx-1">Điều khoản</span>
+                  <span> và </span>
+                  <span className="underline hover:text-neutral-600 transition-colors ml-1">Chính sách của công ty.</span>
+                </label>
               </div>
-              {errors.email && <p className="text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.email}</p>}
+              {errors.terms && <p className="mt-1 text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.terms}</p>}
             </div>
-
-            {/* Mật khẩu */}
-            <div className="flex flex-col gap-2">
-              <label htmlFor="reg-password" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
-                <span className="text-black">Mật khẩu</span><span className="text-[#e9252f]">*</span>
-              </label>
-              <div className={`relative w-full flex items-center h-[38px] rounded-[10px] border border-solid bg-white transition-colors focus-within:border-[#0052d0] ${errors.password ? "border-[#e9252f]" : "border-[#ebeaea]"}`}>
-                <input
-                  id="reg-password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••••••"
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); clearError("password"); }}
-                  className="h-full flex-1 pl-[19px] pr-10 text-sm font-normal text-black placeholder:text-[#cdcdcd] tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif]"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-[11px] flex items-center justify-center w-4 h-4 text-stone-300 hover:text-stone-500 transition-colors"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {errors.password && <p className="text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.password}</p>}
-            </div>
-
-            {/* Xác nhận mật khẩu */}
-            <div className="flex flex-col gap-2">
-              <label htmlFor="reg-confirm" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
-                <span className="text-black">Xác nhận mật khẩu</span><span className="text-[#e9252f]">*</span>
-              </label>
-              <div className={`relative w-full flex items-center h-[38px] rounded-[10px] border border-solid bg-white transition-colors focus-within:border-[#0052d0] ${errors.confirm ? "border-[#e9252f]" : "border-[#ebeaea]"}`}>
-                <input
-                  id="reg-confirm"
-                  type={showConfirm ? "text" : "password"}
-                  placeholder="••••••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => { setConfirmPassword(e.target.value); clearError("confirm"); }}
-                  className="h-full flex-1 pl-[19px] pr-10 text-sm font-normal text-black placeholder:text-[#cdcdcd] tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif]"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute right-4 top-[11px] flex items-center justify-center w-4 h-4 text-stone-300 hover:text-stone-500 transition-colors"
-                  tabIndex={-1}
-                >
-                  {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {errors.confirm && <p className="text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.confirm}</p>}
-            </div>
-
-            {/* Submit */}
-            <div className="flex flex-col w-full items-center mt-4">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="relative self-stretch w-full h-[38px] bg-[#0052d0] rounded-[10px] disabled:opacity-70 disabled:cursor-not-allowed hover:bg-[#0047b3] transition-all"
-              >
-                {isSubmitting ? (
-                <span className="flex items-center justify-center gap-2 text-white">
-                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Đang đăng ký…
-                </span>
-                ) : (
-                  <span className="flex items-center justify-center font-normal text-white text-sm text-center tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
-                    Đăng ký
-                  </span>
-                )}
-              </button>
-            </div>
-          </form>
-
-          {/* Terms */}
-          <div className="flex gap-[9px] mt-4">
-            <div className="relative mt-0.5 w-3.5 h-3.5">
-              <input
-                id="reg-terms"
-                type="checkbox"
-                checked={agreedTerms}
-                onChange={(e) => { setAgreedTerms(e.target.checked); clearError("terms"); }}
-                className="peer absolute inset-0 w-3.5 h-3.5 rounded-[3px] border border-solid border-[#ebeaea] bg-white checked:bg-[#0052d0] checked:border-[#0052d0] cursor-pointer appearance-none focus:outline-none"
-              />
-              <svg className="pointer-events-none absolute left-0 top-[0px] hidden h-3.5 w-3.5 p-[2px] text-white peer-checked:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            </div>
-            <label htmlFor="reg-terms" className="flex flex-wrap font-normal text-[#8f8f8f] text-xs tracking-[0] leading-4 cursor-pointer font-['SF_Pro',_sans-serif]">
-              <span>Bằng việc đăng ký, bạn đã xác nhận đồng ý với các </span>
-              <span className="underline hover:text-neutral-600 transition-colors mx-1">Điều khoản</span>
-              <span> và </span>
-              <span className="underline hover:text-neutral-600 transition-colors ml-1">Chính sách của công ty.</span>
-            </label>
           </div>
-          {errors.terms && <p className="mt-1 text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.terms}</p>}
         </div>
       </div>
     </div>
-  </div>
-  </div>
   );
 }
 

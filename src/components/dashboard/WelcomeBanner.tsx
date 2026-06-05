@@ -48,7 +48,7 @@ interface WelcomeBannerProps {
 
 export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
   const { colorStyle } = useThemeStore();
-  const userName = useAuthStore((s) => s.user?.name || "Learner");
+  const userName = useAuthStore((s) => s.user?.fullName || s.user?.username || "Học viên");
   const { chartData, todayMinutes, weeklyAvgMinutes, comparisonPercent } = useStudyTimeTracker();
 
   // Format minutes thành text dễ đọc
@@ -117,7 +117,7 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
             className="mb-3 inline-flex w-fit whitespace-nowrap items-center justify-center h-[23px] rounded-[41px] px-3 py-1 text-[10px] font-bold uppercase tracking-widest font-['SF_Pro',_sans-serif]"
             style={{ backgroundColor: "#43FDD7", color: "#000" }}
           >
-            Welcome back, {userName.split(" ")[0]}
+            Welcome back, {userName}
           </div>
 
           {/* Main Heading */}

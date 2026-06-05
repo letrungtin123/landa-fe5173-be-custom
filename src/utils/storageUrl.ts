@@ -23,10 +23,22 @@ import { config } from '@/config/env';
  */
 export function storageUrl(path: string | null | undefined): string {
   if (!path) return '';
-  // Backward compat: nếu đã là full URL (data cũ) → trả nguyên
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  
+  let cleanPath = path;
+  
+  // Nếu là full Supabase URL cũ lưu trong DB, trích xuất path
+  // Ví dụ: http://127.0.0.1:54321/storage/v1/object/public/landa-storage/abc/xyz.png
+  const marker = '/object/public/landa-storage/';
+  const idx = path.indexOf(marker);
+  if (idx !== -1) {
+    cleanPath = decodeURIComponent(path.substring(idx + marker.length));
+  } else if (path.startsWith('http://') || path.startsWith('https://')) {
+    // Nếu là full URL khác (VD: AWS S3, Cloudinary) → trả nguyên
+    return path;
+  }
+  
   // Loại bỏ leading slash nếu có
-  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  cleanPath = cleanPath.startsWith('/') ? cleanPath.slice(1) : cleanPath;
   return `${config.apiBaseUrl}/api/storage/${cleanPath}`;
 }
 

@@ -33,7 +33,7 @@ export function UserProfileCard() {
     };
   }, [showPwModal]);
 
-  const displayName = user?.fullName || user?.username || "Learner";
+  const displayName = user?.fullName || user?.username || "Học viên";
 
   const handleLogout = () => {
     logout();

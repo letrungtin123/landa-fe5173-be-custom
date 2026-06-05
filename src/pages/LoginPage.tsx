@@ -245,7 +245,7 @@ export function LoginPage() {
 
                   <div className="flex flex-col items-start gap-[3px]">
                     <h2 className="text-3xl font-semibold leading-9 text-black whitespace-nowrap font-['SF_Pro',_sans-serif]">
-                      Đăng nhập vào L&A E-learning
+                      Đăng nhập vào E-learning
                     </h2>
                     <p className="text-[14px] font-normal leading-[20px] text-neutral-400 font-['SF_Pro',_sans-serif]">
                       Vui lòng đăng nhập vào tài khoản đã được cung cấp để tiếp tục.
@@ -266,7 +266,7 @@ export function LoginPage() {
                       <input
                         id="login-email"
                         type="text"
-                        placeholder="nhut.tran@hcm.nesso.vn"
+                        placeholder="Email"
                         value={email}
                         onChange={(e) => {
                           setEmail(e.target.value);

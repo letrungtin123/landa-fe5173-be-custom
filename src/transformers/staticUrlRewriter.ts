@@ -108,5 +108,13 @@ export function rewriteStaticUrls(html: string, courseId: string): string {
     }
   );
 
+  // 3. Pattern: match raw Supabase storage paths (VD: UUID/courses/...)
+  // Chuyển thành URL đi qua Backend Proxy: {apiBaseUrl}/api/storage/{path}
+  const storageRegex = /(['"(\s])([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/(courses|library|avatars|branding)\/[^'")\s]+)/gi;
+  updatedHtml = updatedHtml.replace(storageRegex, (_, prefix, path) => {
+    const baseUrl = config.apiBaseUrl ? config.apiBaseUrl.replace(/\/$/, '') : '';
+    return `${prefix}${baseUrl}/api/storage/${path}`;
+  });
+
   return updatedHtml;
 }

@@ -87,10 +87,9 @@ async function fetchBrandingByDomain(domain: string): Promise<BrandingImages> {
     if (!data?.tenant_id) return DEFAULT_BRANDING;
 
     // storageUrl() converts storage path → BE proxy URL (e.g., /api/storage/tenant/branding/key.png)
-    // Thêm ?t=timestamp để bust browser cache — admin upload ảnh mới, F5 bình thường thấy ngay
-    const bustCache = `?t=${Date.now()}`;
+    // Backend đã thêm timestamp vào path khi upload nên path luôn unique, không cần bustCache ở đây nữa
     const resolve = (path: string | null | undefined, fallback: string): string =>
-      path ? (storageUrl(path) + bustCache) || fallback : fallback;
+      path ? storageUrl(path) || fallback : fallback;
 
     return {
       leftPanelBg: resolve(data.images.left_panel_bg, DEFAULT_BRANDING.leftPanelBg),
@@ -104,7 +103,7 @@ async function fetchBrandingByDomain(domain: string): Promise<BrandingImages> {
       person3: resolve(data.images.person_3, DEFAULT_BRANDING.person3),
       person4: resolve(data.images.person_4, DEFAULT_BRANDING.person4),
       carousels: data.carousels.length > 0
-        ? data.carousels.map((p) => storageUrl(p) + bustCache).filter(Boolean)
+        ? data.carousels.map((p) => storageUrl(p)).filter(Boolean)
         : DEFAULT_BRANDING.carousels,
     };
   } catch {
@@ -126,7 +125,7 @@ export function useBranding() {
   const { data: branding, isLoading } = useQuery({
     queryKey: ['branding', domain],
     queryFn: () => fetchBrandingByDomain(domain),
-    staleTime: 0, // Luôn fetch mới khi reload — admin thay ảnh cần thấy ngay
+    staleTime: 5 * 60 * 1000, // 5 phút
     gcTime: 10 * 60 * 1000,
     retry: 1,
     refetchOnWindowFocus: false,
