@@ -1,6 +1,7 @@
 // ============================================================
 // Axios API Client — Kết nối Custom Backend (Express/PostgreSQL)
 // Xử lý Bearer auth (JWT), tự động refresh token, retry khi 401
+// Concurrency limiter + 429 retry cho Tunnelto rate limit
 // KHÔNG LOG DỮ LIỆU NHẠY CẢM
 // ============================================================
 
@@ -15,6 +16,62 @@ export const apiClient = axios.create({
   },
   timeout: config.apiTimeoutMs,
 });
+
+// ── Concurrency limiter — giới hạn request đồng thời ──
+// Tunnelto free rate-limit: mỗi API call = 2 HTTP requests (OPTIONS preflight + actual)
+// MAX_CONCURRENT=2 → tối đa 4 HTTP requests qua tunnel cùng lúc
+const MAX_CONCURRENT = 2;
+const REQUEST_DELAY_MS = 300; // Delay giữa các request để tránh burst
+let activeRequests = 0;
+const requestQueue: Array<() => void> = [];
+
+function dequeue() {
+  if (requestQueue.length > 0 && activeRequests < MAX_CONCURRENT) {
+    activeRequests++;
+    const resolve = requestQueue.shift()!;
+    // Delay nhỏ giữa các request để spread load
+    setTimeout(resolve, REQUEST_DELAY_MS);
+  }
+}
+
+apiClient.interceptors.request.use(async (req) => {
+  if (activeRequests >= MAX_CONCURRENT) {
+    await new Promise<void>((resolve) => {
+      requestQueue.push(resolve);
+    });
+  } else {
+    activeRequests++;
+  }
+  return req;
+});
+
+apiClient.interceptors.response.use(
+  (res) => {
+    activeRequests = Math.max(0, activeRequests - 1);
+    dequeue();
+    return res;
+  },
+  (error) => {
+    activeRequests = Math.max(0, activeRequests - 1);
+    dequeue();
+    return Promise.reject(error);
+  }
+);
+
+// ── 429 Retry — exponential backoff khi bị rate limit ──
+apiClient.interceptors.response.use(
+  (res) => res,
+  async (error: AxiosError) => {
+    const req = error.config as InternalAxiosRequestConfig & { _retryCount429?: number };
+    if (error.response?.status === 429 && req && (req._retryCount429 ?? 0) < 3) {
+      req._retryCount429 = (req._retryCount429 ?? 0) + 1;
+      const delay = req._retryCount429 * 2000; // 2s, 4s, 6s — aggressive backoff
+      await new Promise((r) => setTimeout(r, delay));
+      return apiClient(req);
+    }
+    return Promise.reject(error);
+  }
+);
 
 // ── Flag ngăn refresh đồng thời ──
 let isRefreshing = false;

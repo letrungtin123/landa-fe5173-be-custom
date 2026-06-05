@@ -34,9 +34,6 @@ export function UserProfileCard() {
   }, [showPwModal]);
 
   const displayName = user?.fullName || user?.username || "Learner";
-  const joinDate = user?.dateJoined
-    ? new Date(user.dateJoined).toLocaleDateString("vi-VN", { month: "2-digit", year: "numeric" })
-    : "";
 
   const handleLogout = () => {
     logout();
@@ -120,9 +117,6 @@ export function UserProfileCard() {
           {/* User Info */}
           <h3 className="text-[14px] font-bold leading-[24px] text-foreground">{displayName}</h3>
           <p className="mt-1 text-[10px] leading-[14px] font-medium text-foreground/80">{user?.email || ""}</p>
-          <p className="mt-0.5 text-[10px] leading-[14px] font-medium text-foreground/80">
-            {joinDate && `Ngày tham gia: ${joinDate}`}
-          </p>
 
           {/* Links */}
           <div className="w-full space-y-3 mt-8">

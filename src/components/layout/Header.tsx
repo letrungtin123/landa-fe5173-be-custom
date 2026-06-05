@@ -33,7 +33,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotifications, useUnreadNotificationCount, useMarkAllRead } from "@/hooks/useNotifications";
 import type { Notification } from "@/data/types";
 import { cn } from "@/lib/utils";
-import logoImg from "@/assets/leandassociate.webp";
+import { useBranding } from "@/hooks/useBranding";
 import { NotificationModal } from "@/components/dashboard/NotificationModal";
 import { TenantSwitchModal } from "@/components/layout/TenantSwitchModal";
 
@@ -64,6 +64,8 @@ export function Header() {
   const markAllRead = useMarkAllRead();
   const [notifModalOpen, setNotifModalOpen] = useState(false);
   const [tenantModalOpen, setTenantModalOpen] = useState(false);
+  const { branding } = useBranding();
+  const currentHeaderLogo = colorMode === 'dark' ? branding.headerLogoDark : branding.headerLogo;
 
   const currentTenantName = useMemo(() => {
     if (!user?.tenantId) return null;
@@ -100,8 +102,8 @@ export function Header() {
         {/* Logo */}
         <Link to="/dashboard" className="flex shrink-0 items-center gap-2 -translate-x-[2px]">
           <img
-            src={logoImg}
-            alt="Le & Associates"
+            src={currentHeaderLogo}
+            alt="Logo"
             className="h-10 w-auto object-contain"
           />
         </Link>

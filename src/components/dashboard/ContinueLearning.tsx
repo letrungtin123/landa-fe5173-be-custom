@@ -10,7 +10,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyEnrollments, useCourses } from "@/hooks/useCourses";
-import { useCourseCompletion, useBatchCourseProgress } from "@/hooks/useProgress";
+import { useBatchCourseProgress } from "@/hooks/useProgress";
 
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
@@ -20,8 +20,7 @@ import { CourseFilterBar, type CourseFilter } from "@/components/CourseFilterBar
 import type { CourseCategoryInfo } from "@/api/types";
 
 /** Card hiển thị 1 khóa học đang học kèm progress bar */
-function CourseCard({ course, index }: { course: ContinueCourse; index: number }) {
-  const { completionPercent } = useCourseCompletion(course.id);
+function CourseCard({ course, index, completionPercent }: { course: ContinueCourse; index: number; completionPercent: number }) {
   const { colorStyle } = useThemeStore();
 
   return (
@@ -368,7 +367,7 @@ export function ContinueLearning() {
           >
             <AnimatePresence mode="wait">
               {paginatedCourses.map((course, index) => (
-                <CourseCard key={course.id} course={course} index={index} />
+                <CourseCard key={course.id} course={course} index={index} completionPercent={progressMap?.get(course.id) || 0} />
               ))}
             </AnimatePresence>
           </motion.div>

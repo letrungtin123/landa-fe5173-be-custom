@@ -77,7 +77,7 @@ function buildStudentViewData(cb: CourseBlock): Record<string, unknown> {
         ? safeJsonParse((data as any).faq_data) : (data as any)?.faq_data)) as Record<string, unknown> || {};
       return {
         display_name: cb.display_name,
-        items: fd.items || [],
+        items: fd.items || (meta?.items as any[]) || [],
       };
     }
 

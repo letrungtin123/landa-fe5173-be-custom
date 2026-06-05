@@ -6,10 +6,11 @@
 // KHÔNG trả về UI data — WelcomeBanner đọc từ store.
 // ============================================================
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useStudyTimeStore } from '@/stores/useStudyTimeStore';
 import { syncStudyTime, getWeeklyStudyTime } from '@/api/studyTime';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useQuery } from '@tanstack/react-query';
 import { config } from '@/config/env';
 
 const TICK_INTERVAL = 60000; // 1 phút
@@ -19,19 +20,22 @@ export function useStudyTimeEngine() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const addMinutesToToday = useStudyTimeStore((s) => s.addMinutesToToday);
   const mergeServerData = useStudyTimeStore((s) => s.mergeServerData);
-  const serverSyncedRef = useRef(false);
 
-  // ── Server fetch on mount (1 lần duy nhất) ──
+  // ── Fetch weekly data bằng useQuery — đáng tin cậy, có cache + dedup ──
+  const { data: serverEntries } = useQuery({
+    queryKey: ['weekly-study-time'],
+    queryFn: getWeeklyStudyTime,
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Merge server data vào store khi fetch xong
   useEffect(() => {
-    if (!isAuthenticated || serverSyncedRef.current) return;
-    serverSyncedRef.current = true;
-
-    getWeeklyStudyTime().then(serverEntries => {
-      if (serverEntries.length > 0) {
-        mergeServerData(serverEntries);
-      }
-    });
-  }, [isAuthenticated, mergeServerData]);
+    if (serverEntries && serverEntries.length > 0) {
+      mergeServerData(serverEntries);
+    }
+  }, [serverEntries, mergeServerData]);
 
   // ── Sync to server mỗi 5 phút + beforeunload + ngay khi có data ──
   useEffect(() => {
@@ -48,8 +52,8 @@ export function useStudyTimeEngine() {
       }
     };
 
-    // Sync ngay lập tức lần đầu (đẩy data localStorage lên server)
-    const initialTimer = setTimeout(syncToServer, 3000);
+    // Sync lần đầu sau 15s — tránh tranh bandwidth với dashboard API calls lúc init
+    const initialTimer = setTimeout(syncToServer, 15000);
 
     const syncInterval = setInterval(syncToServer, SYNC_INTERVAL);
 

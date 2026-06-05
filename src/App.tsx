@@ -1,9 +1,3 @@
-// ============================================================
-// App — Root Application Component
-// Tất cả role (learner, mentor, admin) đều vào FE học tập
-// Staff/Admin có thể truy cập Studio/Admin qua link riêng
-// ============================================================
-
 import React, { Suspense } from "react";
 import {
   BrowserRouter,
@@ -22,37 +16,17 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import { config } from "@/config/env";
 
-// ── Lazy-load pages — giảm initial bundle size ──
-const DashboardPage = React.lazy(() =>
-  import("@/pages/DashboardPage").then((m) => ({ default: m.DashboardPage }))
-);
-const CoursesPage = React.lazy(() =>
-  import("@/pages/CoursesPage").then((m) => ({ default: m.CoursesPage }))
-);
-const ExplorePage = React.lazy(() =>
-  import("@/pages/ExplorePage").then((m) => ({ default: m.ExplorePage }))
-);
-const LibraryPage = React.lazy(() =>
-  import("@/pages/LibraryPage").then((m) => ({ default: m.LibraryPage }))
-);
-const LessonDetailPage = React.lazy(() =>
-  import("@/pages/LessonDetailPage").then((m) => ({
-    default: m.LessonDetailPage,
-  }))
-);
-const BadgesPage = React.lazy(() =>
-  import("@/pages/BadgesPage").then((m) => ({ default: m.BadgesPage }))
-);
-const ProfilePage = React.lazy(() =>
-  import("@/pages/ProfilePage").then((m) => ({ default: m.ProfilePage }))
-);
-const LoginPage = React.lazy(() =>
-  import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage }))
-);
-const RegisterPage = React.lazy(() =>
-  import("@/pages/RegisterPage").then((m) => ({ default: m.RegisterPage }))
-);
-
+// ── Static imports — gom tất cả pages vào main bundle ──
+// Tunnelto free rate-limit → cần giảm số file JS tải đồng thời
+import { DashboardPage } from "@/pages/DashboardPage";
+import { CoursesPage } from "@/pages/CoursesPage";
+import { ExplorePage } from "@/pages/ExplorePage";
+import { LibraryPage } from "@/pages/LibraryPage";
+import { LessonDetailPage } from "@/pages/LessonDetailPage";
+import { BadgesPage } from "@/pages/BadgesPage";
+import { ProfilePage } from "@/pages/ProfilePage";
+import { LoginPage } from "@/pages/LoginPage";
+import { RegisterPage } from "@/pages/RegisterPage";
 
 // ── React Query config ──
 const queryClient = new QueryClient({

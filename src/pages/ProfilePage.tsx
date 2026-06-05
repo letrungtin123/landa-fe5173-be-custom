@@ -216,7 +216,7 @@ export function ProfilePage() {
         >
           {/* Gradient Banner */}
           <div className="h-40 md:h-48 w-full bg-gradient-to-br from-primary/90 via-primary to-primary/50 relative">
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay"></div>
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-60 mix-blend-overlay"></div>
           </div>
           
           <div className="relative px-6 pb-10 md:px-12">

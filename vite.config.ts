@@ -68,6 +68,34 @@ export default defineConfig(({ mode }) => {
         } : {}),
       },
     },
+
+    // ── Production build — giảm số file/request cho Tunnelto ──
+    build: {
+      sourcemap: false,
+      // Inline ảnh/icon < 200KB thành base64 → giảm request riêng lẻ
+      assetsInlineLimit: 200 * 1024,
+      // Gom CSS vào 1 file duy nhất
+      cssCodeSplit: false,
+      rollupOptions: {
+        output: {
+          // Gom vendor libs vào ít chunk — giảm request đồng thời
+          // Vite 8 / Rolldown: manualChunks phải là function
+          manualChunks(id: string) {
+            if (id.includes('node_modules/react-dom') ||
+                id.includes('node_modules/react/') ||
+                id.includes('node_modules/react-router') ||
+                id.includes('node_modules/@tanstack/react-query')) {
+              return 'vendor';
+            }
+            if (id.includes('node_modules/framer-motion') ||
+                id.includes('node_modules/lucide-react')) {
+              return 'ui';
+            }
+          },
+        },
+      },
+    },
+
     preview: {
       host: '0.0.0.0',
       port: previewPort,

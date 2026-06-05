@@ -33,23 +33,15 @@ export function useCourseCompletion(courseId?: string) {
  * Lấy phần trăm hoàn thành trung bình cho nhiều khóa học.
  */
 export function useAverageCourseCompletion(courseIds: string[]) {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  // Reuse batch query — không tạo thêm API calls
+  const { data: progressMap, isLoading, error } = useBatchCourseProgress(courseIds);
 
-  const { data: averagePercent, isLoading, error } = useQuery({
-    queryKey: ["average-course-completion", courseIds.join(',')],
-    queryFn: async () => {
-      if (!courseIds || courseIds.length === 0) return 0;
-      const progressPromises = courseIds.map((id) => getMyCourseProgress(id));
-      const progressList = await Promise.all(progressPromises);
-      const total = progressList.reduce((acc, curr) => acc + curr, 0);
-      return total / courseIds.length;
-    },
-    enabled: isAuthenticated && courseIds.length > 0,
-    staleTime: 5 * 60 * 1000,
-  });
+  const averagePercent = progressMap && courseIds.length > 0
+    ? Array.from(progressMap.values()).reduce((a, b) => a + b, 0) / courseIds.length
+    : 0;
 
   return {
-    data: averagePercent || 0,
+    data: averagePercent,
     isLoading,
     error,
   };
@@ -96,13 +88,13 @@ export function useBatchCourseProgress(courseIds: string[]) {
     queryKey: ["batch-course-progress", stableKey],
     queryFn: async (): Promise<Map<string, number>> => {
       if (!courseIds || courseIds.length === 0) return new Map();
-      const results = await Promise.all(
-        courseIds.map(async (id) => {
-          const p = await getMyCourseProgress(id);
-          return [id, p] as [string, number];
-        })
-      );
-      return new Map(results);
+      // Gọi tuần tự — tránh burst requests qua Tunnelto
+      const map = new Map<string, number>();
+      for (const id of courseIds) {
+        const p = await getMyCourseProgress(id);
+        map.set(id, p);
+      }
+      return map;
     },
     enabled: isAuthenticated && courseIds.length > 0,
     staleTime: 5 * 60 * 1000,

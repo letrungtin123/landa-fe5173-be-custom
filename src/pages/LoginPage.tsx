@@ -9,23 +9,12 @@ import { keycloakLogin, KeycloakAuthError } from "@/api/keycloakAuth";
 import { microsoftPopupLogin } from "@/config/msalConfig";
 import { keycloakPopupLogin, getKeycloakRedirectUri } from "@/config/keycloakConfig";
 import { config } from "@/config/env";
-import whiteLogo from "@/assets/LoginPage/WhiteLogoLeftPanel.png";
-import squareIcon from "@/assets/LoginPage/SquareIcon.png";
-import leftPanelBg from "@/assets/LoginPage/LeftPanelLogin.jpg";
-import person1 from "@/assets/LoginPage/Person1.jpg";
-import person2 from "@/assets/LoginPage/Person2.jpg";
-import person3 from "@/assets/LoginPage/Person3.jpg";
-import person4 from "@/assets/LoginPage/Person4.jpg";
-import carousel1 from "@/assets/LoginPage/Carousel1.png";
-import carousel2 from "@/assets/LoginPage/Carousel2.png";
-import carousel3 from "@/assets/LoginPage/Carousel3.png";
-import carousel4 from "@/assets/LoginPage/Carousel4.png";
-import carousel5 from "@/assets/LoginPage/Carousel5.png";
-import carousel6 from "@/assets/LoginPage/Carousel6.png";
+import { useBranding } from "@/hooks/useBranding";
 
 export function LoginPage() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
+  const { branding, isLoading: brandingLoading } = useBranding();
   // SSO methods removed from custom BE auth store — stub to no-op
   const loginWithGoogle = async (_tokens: any) => { /* noop */ };
   const loginWithMicrosoft = async (_tokens: any) => { /* noop */ };
@@ -154,17 +143,17 @@ export function LoginPage() {
       <div className="flex h-screen w-full max-w-[1440px] overflow-hidden bg-white">
         {/* ─── Left Panel ─── */}
         <div className="hidden w-[48%] lg:flex p-8 pr-0 h-full">
-          <div className="relative flex w-full h-full flex-col justify-between overflow-hidden rounded-[24px] p-10 select-none">
+          <div className={`relative flex w-full h-full flex-col justify-between overflow-hidden rounded-[24px] p-10 select-none transition-opacity duration-300 ${brandingLoading ? 'opacity-0' : 'opacity-100'}`}>
             {/* Background image */}
             <div
               className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-              style={{ backgroundImage: `url(${leftPanelBg})` }}
+              style={{ backgroundImage: `url(${branding.leftPanelBg})` }}
             />
 
             {/* Logo */}
             <div className="relative z-10 pt-2 pl-2">
               <img
-                src={whiteLogo}
+                src={branding.whiteLogo}
                 alt="Le & Associates"
                 className="h-9 w-auto object-contain"
               />
@@ -174,10 +163,10 @@ export function LoginPage() {
             <div className="relative z-10 flex flex-col justify-end mt-auto pl-2 mb-6">
               <div className="mb-6 inline-flex w-fit items-center gap-2 rounded-[30px] border border-white/30 bg-white/5 backdrop-blur-md p-1 pr-4">
                 <div className="flex -space-x-2 pl-0.5">
-                  <img src={person1} alt="User 1" className="relative z-[4] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
-                  <img src={person2} alt="User 2" className="relative z-[3] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
-                  <img src={person3} alt="User 3" className="relative z-[2] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
-                  <img src={person4} alt="User 4" className="relative z-[1] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
+                  <img src={branding.person1} alt="User 1" className="relative z-[4] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
+                  <img src={branding.person2} alt="User 2" className="relative z-[3] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
+                  <img src={branding.person3} alt="User 3" className="relative z-[2] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
+                  <img src={branding.person4} alt="User 4" className="relative z-[1] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
                 </div>
                 <span className="text-[11px] font-normal text-white">
                   Trusted by 100+ companies
@@ -202,21 +191,15 @@ export function LoginPage() {
               <div className="flex w-[200%] animate-marquee gap-8 items-center">
                 {/* Original set */}
                 <div className="flex min-w-[50%] justify-around items-center gap-8">
-                  <img src={carousel1} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 1" />
-                  <img src={carousel2} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 2" />
-                  <img src={carousel3} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 3" />
-                  <img src={carousel4} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 4" />
-                  <img src={carousel5} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 5" />
-                  <img src={carousel6} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 6" />
+                  {branding.carousels.map((src, i) => (
+                    <img key={`c1-${i}`} src={src} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt={`Partner ${i + 1}`} />
+                  ))}
                 </div>
                 {/* Duplicated set for seamless loop */}
                 <div className="flex min-w-[50%] justify-around items-center gap-8">
-                  <img src={carousel1} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 1" />
-                  <img src={carousel2} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 2" />
-                  <img src={carousel3} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 3" />
-                  <img src={carousel4} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 4" />
-                  <img src={carousel5} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 5" />
-                  <img src={carousel6} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt="Partner 6" />
+                  {branding.carousels.map((src, i) => (
+                    <img key={`c2-${i}`} src={src} className="h-7 w-auto object-contain brightness-0 invert opacity-80" alt={`Partner ${i + 1}`} />
+                  ))}
                 </div>
               </div>
             </div>
@@ -252,11 +235,11 @@ export function LoginPage() {
                 {/* Header (Logo + Title) */}
                 <div className="flex flex-col items-start gap-2.5">
                   {/* Logo mark */}
-                  <div className="size-14 relative bg-sky-950 rounded-xl flex items-center justify-center mb-0">
+                  <div className="size-15 relative rounded-xl flex items-center justify-center mb-0">
                     <img
-                      src={squareIcon}
+                      src={branding.squareIcon}
                       alt="L&A E-learning"
-                      className="w-10 h-10 object-contain"
+                      className="w-12 h-12 object-contain"
                     />
                   </div>
 

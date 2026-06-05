@@ -2,16 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { registerAccount } from "@/api/register";
-import whiteLogo from "@/assets/LoginPage/WhiteLogoLeftPanel.png";
-import squareIcon from "@/assets/LoginPage/SquareIcon.png";
-import registerBg from "@/assets/LoginPage/Register.png";
-import person1 from "@/assets/LoginPage/Person1.jpg";
-import person2 from "@/assets/LoginPage/Person2.jpg";
-import person3 from "@/assets/LoginPage/Person3.jpg";
-import person4 from "@/assets/LoginPage/Person4.jpg";
+import { useBranding, type BrandingImages } from "@/hooks/useBranding";
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const { branding, isLoading: brandingLoading } = useBranding();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -84,7 +79,7 @@ export function RegisterPage() {
       <div className="min-h-screen w-full bg-white text-black flex items-center justify-center">
         <div className="flex h-screen w-full max-w-[1440px] overflow-hidden bg-white">
           {/* Left Panel */}
-        <LeftPanel />
+      <LeftPanel branding={branding} isLoading={brandingLoading} />
 
         {/* Right Panel — Success */}
         <div className="flex flex-1 flex-col overflow-y-auto items-center justify-center bg-white px-6 py-12 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -117,7 +112,7 @@ export function RegisterPage() {
     <div className="min-h-screen w-full bg-white text-black flex items-center justify-center">
       <div className="flex h-screen w-full max-w-[1440px] overflow-hidden bg-white">
         {/* Left Panel */}
-      <LeftPanel />
+      <LeftPanel branding={branding} isLoading={brandingLoading} />
 
       {/* Right Panel — Form */}
       <div className="flex flex-1 h-full flex-col items-center justify-center bg-white px-6 relative overflow-hidden">
@@ -138,7 +133,7 @@ export function RegisterPage() {
             <div className="flex flex-col items-start mb-4">
               <div className="w-14 h-14 bg-[#011b54] rounded-xl flex items-center justify-center mb-3">
                 <img
-                  src={squareIcon}
+                  src={branding.squareIcon}
                   alt="E-learning"
                   className="w-[39px] object-contain"
                 />
@@ -321,19 +316,19 @@ export function RegisterPage() {
 }
 
 // ── Left Panel Component (tái sử dụng layout từ LoginPage) ──
-function LeftPanel() {
+function LeftPanel({ branding, isLoading }: { branding: BrandingImages; isLoading: boolean }) {
   return (
     <div className="hidden w-[48%] lg:flex p-8 pr-0 h-full">
-      <div className="relative flex w-full h-full flex-col justify-between overflow-hidden rounded-[24px] p-10 select-none">
+      <div className={`relative flex w-full h-full flex-col justify-between overflow-hidden rounded-[24px] p-10 select-none transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
         {/* Background image */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${registerBg})` }}
+          style={{ backgroundImage: `url(${branding.registerBg})` }}
         />
 
         {/* Logo */}
         <div className="relative z-10 pt-2 pl-2">
-          <img src={whiteLogo} alt="Le & Associates" className="h-9 w-auto object-contain" />
+          <img src={branding.whiteLogo} alt="Le & Associates" className="h-9 w-auto object-contain" />
         </div>
 
         {/* Bottom content */}
@@ -341,10 +336,10 @@ function LeftPanel() {
           {/* Trust badge */}
           <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-[30px] border border-blue-200/30 bg-white/10 p-1 pr-4">
             <div className="flex -space-x-2 pl-0.5">
-              <img src={person1} alt="User 1" className="relative z-[4] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
-              <img src={person2} alt="User 2" className="relative z-[3] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
-              <img src={person3} alt="User 3" className="relative z-[2] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
-              <img src={person4} alt="User 4" className="relative z-[1] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
+              <img src={branding.person1} alt="User 1" className="relative z-[4] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
+              <img src={branding.person2} alt="User 2" className="relative z-[3] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
+              <img src={branding.person3} alt="User 3" className="relative z-[2] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
+              <img src={branding.person4} alt="User 4" className="relative z-[1] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
             </div>
             <span className="text-[11px] font-normal text-white">
               Trusted by 100+ companies
