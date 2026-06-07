@@ -14,6 +14,7 @@ import { useMyCertificates } from "@/hooks/useCertificates";
 import { useBatchCourseProgress } from "@/hooks/useProgress";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useBranding } from "@/hooks/useBranding";
 
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,6 +27,7 @@ export function CoursesPage() {
   const role = useAuthStore((s) => s.user?.role);
   const isStaff = role === 'staff' || role === 'superuser' || role === 'superadmin';
   const { data: courseList, isLoading } = useCourses();
+  const { branding } = useBranding();
   const { data: enrollments } = useMyEnrollments();
   const { data: certificates } = useMyCertificates();
   const enrollMutation = useEnrollCourse();
@@ -88,7 +90,7 @@ export function CoursesPage() {
         {/* Staff/Admin có link truy cập admin dashboard */}
         {isStaff && (
           <a
-            href={import.meta.env.VITE_ADMIN_URL || '/admin'}
+            href={branding.adminUrl || import.meta.env.VITE_ADMIN_URL || '/admin'}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"

@@ -289,12 +289,12 @@ export function Header() {
                       const { apiClient } = await import("@/api/client");
                       const { data } = await apiClient.post("/api/auth/ott/generate");
                       const ott = data?.data?.ott;
-                      const adminUrl = import.meta.env.VITE_ADMIN_URL || '/admin';
+                      const adminUrl = branding.adminUrl || import.meta.env.VITE_ADMIN_URL || '/admin';
                       const separator = adminUrl.includes('?') ? '&' : '?';
                       window.open(`${adminUrl}${separator}ott=${ott}`, '_blank');
                     } catch {
                       // Fallback: mở admin mà không có OTT
-                      window.open(import.meta.env.VITE_ADMIN_URL || '/admin', '_blank');
+                      window.open(branding.adminUrl || import.meta.env.VITE_ADMIN_URL || '/admin', '_blank');
                     }
                   }} 
                   className="cursor-pointer text-primary focus:text-primary"

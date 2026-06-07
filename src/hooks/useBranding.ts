@@ -38,6 +38,7 @@ export interface BrandingImages {
   person3: string;
   person4: string;
   carousels: string[];
+  adminUrl: string | null;
 }
 
 interface ApiBrandingResponse {
@@ -45,6 +46,7 @@ interface ApiBrandingResponse {
   data: {
     tenant_id: string | null;
     tenant_name: string | null;
+    domain_admin: string | null;
     images: Record<string, string | null>;
     carousels: string[];
     size_hints: Record<string, string>;
@@ -59,7 +61,7 @@ const DEFAULT_BRANDING: BrandingImages = {
   whiteLogo: fallbackWhiteLogo,
   squareIcon: fallbackSquareIcon,
   headerLogo: fallbackHeaderLogo,
-  headerLogoDark: fallbackHeaderLogo, // Fallback dùng cùng ảnh
+  headerLogoDark: fallbackHeaderLogo,
   person1: fallbackPerson1,
   person2: fallbackPerson2,
   person3: fallbackPerson3,
@@ -68,6 +70,7 @@ const DEFAULT_BRANDING: BrandingImages = {
     fallbackCarousel1, fallbackCarousel2, fallbackCarousel3,
     fallbackCarousel4, fallbackCarousel5, fallbackCarousel6,
   ],
+  adminUrl: null,
 };
 
 // ── Xóa cache cũ nếu còn tồn tại ──
@@ -105,6 +108,7 @@ async function fetchBrandingByDomain(domain: string): Promise<BrandingImages> {
       carousels: data.carousels.length > 0
         ? data.carousels.map((p) => storageUrl(p)).filter(Boolean)
         : DEFAULT_BRANDING.carousels,
+      adminUrl: data.domain_admin || null,
     };
   } catch {
     return DEFAULT_BRANDING;
