@@ -3,6 +3,7 @@
 // FE 5173 gọi public API trước khi user login
 // ═══════════════════════════════════════════════════════════════
 
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { config } from '@/config/env';
 import { storageUrl } from '@/utils/storageUrl';
@@ -39,6 +40,7 @@ export interface BrandingImages {
   person4: string;
   carousels: string[];
   adminUrl: string | null;
+  tenantName: string | null;
 }
 
 interface ApiBrandingResponse {
@@ -71,6 +73,7 @@ const DEFAULT_BRANDING: BrandingImages = {
     fallbackCarousel4, fallbackCarousel5, fallbackCarousel6,
   ],
   adminUrl: null,
+  tenantName: null,
 };
 
 // ── Xóa cache cũ nếu còn tồn tại ──
@@ -108,7 +111,10 @@ async function fetchBrandingByDomain(domain: string): Promise<BrandingImages> {
       carousels: data.carousels.length > 0
         ? data.carousels.map((p) => storageUrl(p)).filter(Boolean)
         : DEFAULT_BRANDING.carousels,
-      adminUrl: data.domain_admin || null,
+      adminUrl: data.domain_admin
+        ? `${data.domain_admin}/admin`
+        : null,
+      tenantName: data.tenant_name || null,
     };
   } catch {
     return DEFAULT_BRANDING;
@@ -123,6 +129,9 @@ async function fetchBrandingByDomain(domain: string): Promise<BrandingImages> {
  * - React-query in-memory cache (không dùng localStorage)
  * - Fallback về ảnh static nếu API fail hoặc domain không match
  */
+/** Default title from index.html — dùng làm fallback */
+const DEFAULT_TITLE = 'L&A Onboarding 2026';
+
 export function useBranding() {
   const domain = window.location.hostname;
 
@@ -134,6 +143,23 @@ export function useBranding() {
     retry: 1,
     refetchOnWindowFocus: false,
   });
+
+  // Cập nhật document.title + favicon theo tenant từ API
+  useEffect(() => {
+    // Title
+    if (branding?.tenantName) {
+      document.title = branding.tenantName;
+    } else {
+      document.title = DEFAULT_TITLE;
+    }
+
+    // Favicon — dùng square_icon của tenant
+    const link = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
+    if (link && branding?.squareIcon && branding.squareIcon !== fallbackSquareIcon) {
+      link.type = 'image/png';
+      link.href = branding.squareIcon;
+    }
+  }, [branding?.tenantName, branding?.squareIcon]);
 
   return {
     branding: branding || DEFAULT_BRANDING,

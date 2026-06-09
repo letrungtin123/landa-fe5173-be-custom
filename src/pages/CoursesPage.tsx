@@ -90,7 +90,7 @@ export function CoursesPage() {
         {/* Staff/Admin có link truy cập admin dashboard */}
         {isStaff && (
           <a
-            href={branding.adminUrl || import.meta.env.VITE_ADMIN_URL || '/admin'}
+            href={branding.adminUrl || '/admin'}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"

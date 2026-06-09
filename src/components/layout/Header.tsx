@@ -64,7 +64,7 @@ export function Header() {
   const markAllRead = useMarkAllRead();
   const [notifModalOpen, setNotifModalOpen] = useState(false);
   const [tenantModalOpen, setTenantModalOpen] = useState(false);
-  const { branding } = useBranding();
+  const { branding, isLoading: brandingLoading } = useBranding();
   const currentHeaderLogo = colorMode === 'dark' ? branding.headerLogoDark : branding.headerLogo;
 
   const currentTenantName = useMemo(() => {
@@ -104,7 +104,7 @@ export function Header() {
           <img
             src={currentHeaderLogo}
             alt="Logo"
-            className="h-10 w-auto object-contain"
+            className={`h-10 w-auto object-contain transition-opacity duration-300 ${brandingLoading ? 'opacity-0' : 'opacity-100'}`}
           />
         </Link>
 
@@ -289,12 +289,12 @@ export function Header() {
                       const { apiClient } = await import("@/api/client");
                       const { data } = await apiClient.post("/api/auth/ott/generate");
                       const ott = data?.data?.ott;
-                      const adminUrl = branding.adminUrl || import.meta.env.VITE_ADMIN_URL || '/admin';
+                      const adminUrl = branding.adminUrl || '/admin';
                       const separator = adminUrl.includes('?') ? '&' : '?';
                       window.open(`${adminUrl}${separator}ott=${ott}`, '_blank');
                     } catch {
                       // Fallback: mở admin mà không có OTT
-                      window.open(branding.adminUrl || import.meta.env.VITE_ADMIN_URL || '/admin', '_blank');
+                      window.open(branding.adminUrl || '/admin', '_blank');
                     }
                   }} 
                   className="cursor-pointer text-primary focus:text-primary"

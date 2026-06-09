@@ -1,4 +1,4 @@
-import React, { Suspense } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -15,6 +15,64 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import { config } from "@/config/env";
+import ChatWidget from "@/components/chat-widget/chat-widget";
+import { exchangeOttApi } from "@/api/auth";
+import { avatarUrl } from "@/utils/storageUrl";
+
+// ── OTT Handler: Check trước khi React mount ──
+// Nếu URL có ?ott= (từ Admin Dashboard → FE Learner SSO),
+// exchange OTT → login ngay, rồi xóa OTT khỏi URL.
+let pendingOttExchange: Promise<void> | null = null;
+
+(function checkOttOnLoad() {
+  const params = new URLSearchParams(window.location.search);
+  const ott = params.get('ott');
+  if (!ott) return;
+
+  // Xóa OTT khỏi URL ngay lập tức
+  const cleanUrl = window.location.pathname + window.location.hash;
+  window.history.replaceState(null, '', cleanUrl);
+
+  pendingOttExchange = exchangeOttApi(ott)
+    .then((result) => {
+      let activeTenantId = result.user.tenant_id;
+      let activeTenantName = result.user.tenant_name;
+      if (!activeTenantId && result.managed_tenants?.length > 0) {
+        activeTenantId = result.managed_tenants[0].id;
+        activeTenantName = result.managed_tenants[0].name;
+      }
+
+      useAuthStore.setState({
+        isAuthenticated: true,
+        accessToken: result.access_token,
+        refreshToken: result.refresh_token,
+        tokenType: "Bearer",
+        tokenExpiresAt: Date.now() + result.expires_in * 1000,
+        user: {
+          id: result.user.id,
+          username: result.user.username,
+          email: result.user.email,
+          fullName: result.user.full_name,
+          phone: result.user.phone,
+          avatar: avatarUrl(result.user.avatar_url),
+          role: result.user.role,
+          tenantId: activeTenantId,
+          tenantName: activeTenantName,
+        },
+        permissions: result.permissions,
+        tenantModules: result.tenant_modules,
+        managedTenants: result.managed_tenants,
+      });
+
+      useAuthStore.getState().scheduleTokenRefresh();
+    })
+    .catch(() => {
+      // OTT invalid/expired → ignore, user sẽ thấy login page
+    })
+    .finally(() => {
+      pendingOttExchange = null;
+    });
+})();
 
 // ── Static imports — gom tất cả pages vào main bundle ──
 // Tunnelto free rate-limit → cần giảm số file JS tải đồng thời
@@ -68,9 +126,27 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       <GlobalBadgeWatcher />
       {/* Global study time tracker — đếm giờ học ngay khi login, mọi route */}
       <StudyTimeTracker />
+      {/* AI Chat Widget — hiện FAB chat trên mọi trang */}
+      <ChatWidget />
       {children}
     </>
   );
+}
+/**
+ * Gate chặn render routes cho đến khi OTT exchange hoàn tất.
+ * Nếu không có OTT pending → render ngay.
+ */
+function OttGate({ children }: { children: React.ReactNode }) {
+  const [ready, setReady] = useState(!pendingOttExchange);
+
+  useEffect(() => {
+    if (pendingOttExchange) {
+      pendingOttExchange.finally(() => setReady(true));
+    }
+  }, []);
+
+  if (!ready) return <PageLoader />;
+  return <>{children}</>;
 }
 
 function App() {
@@ -79,6 +155,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         {/* GoogleOAuthProvider removed — SSO tạm không dùng */}
           <ThemeProvider>
+            <OttGate>
             <BrowserRouter>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
@@ -122,6 +199,7 @@ function App() {
               </Routes>
             </Suspense>
           </BrowserRouter>
+            </OttGate>
         </ThemeProvider>
 
       </QueryClientProvider>

@@ -95,3 +95,21 @@ export async function updateProfile(
   );
   return data.data;
 }
+
+/**
+ * Exchange One-Time Token → full auth session.
+ * Dùng cho cross-app SSO (Admin Dashboard → FE Learner).
+ * KHÔNG cần auth header — OTT tự nó là proof of identity.
+ */
+export async function exchangeOttApi(ott: string): Promise<LoginResponse> {
+  const axios = (await import("axios")).default;
+  const { config: envConfig } = await import("@/config/env");
+  const baseURL = envConfig.apiBaseUrl || "";
+
+  const { data } = await axios.post<ApiResponse<LoginResponse>>(
+    `${baseURL}/api/auth/ott/exchange`,
+    { ott },
+    { headers: { "Content-Type": "application/json" }, timeout: 10_000 }
+  );
+  return data.data;
+}
