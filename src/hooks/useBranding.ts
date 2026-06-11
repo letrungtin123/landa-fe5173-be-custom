@@ -144,20 +144,24 @@ export function useBranding() {
     refetchOnWindowFocus: false,
   });
 
-  // Cập nhật document.title + favicon theo tenant từ API
+  // Cập nhật document.title + favicon theo tenant từ API + cache vào sessionStorage
   useEffect(() => {
     // Title
-    if (branding?.tenantName) {
-      document.title = branding.tenantName;
-    } else {
-      document.title = DEFAULT_TITLE;
-    }
+    const title = branding?.tenantName || '';
+    if (title) document.title = title;
 
     // Favicon — dùng square_icon của tenant
+    const faviconUrl = branding?.squareIcon && branding.squareIcon !== fallbackSquareIcon
+      ? branding.squareIcon : '';
     const link = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
-    if (link && branding?.squareIcon && branding.squareIcon !== fallbackSquareIcon) {
+    if (link && faviconUrl) {
       link.type = 'image/png';
-      link.href = branding.squareIcon;
+      link.href = faviconUrl;
+    }
+
+    // Cache vào sessionStorage để index.html restore ngay khi F5
+    if (title || faviconUrl) {
+      try { sessionStorage.setItem('__branding', JSON.stringify({ t: title, f: faviconUrl })); } catch {}
     }
   }, [branding?.tenantName, branding?.squareIcon]);
 

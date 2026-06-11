@@ -135,7 +135,7 @@ export function RegisterPage() {
                   <img
                     src={branding.squareIcon}
                     alt="E-learning"
-                    className="w-[39px] object-contain"
+                    className={`w-[39px] object-contain transition-opacity duration-200 ${brandingLoading ? 'opacity-0' : 'opacity-100'}`}
                   />
                 </div>
 

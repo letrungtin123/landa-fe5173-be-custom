@@ -10,7 +10,21 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet" />
-  <title>L&A Onboarding 2026</title>
+  <title></title>
+  <script>
+    // Restore cached branding trước khi React mount — tránh flash default
+    try {
+      var b = sessionStorage.getItem('__branding');
+      if (b) {
+        var d = JSON.parse(b);
+        if (d.t) document.title = d.t;
+        if (d.f) {
+          var link = document.querySelector("link[rel*='icon']");
+          if (link) { link.type = 'image/png'; link.href = d.f; }
+        }
+      }
+    } catch(e) {}
+  </script>
 </head>
 
 <body>

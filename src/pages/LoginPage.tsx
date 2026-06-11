@@ -239,7 +239,7 @@ export function LoginPage() {
                     <img
                       src={branding.squareIcon}
                       alt="L&A E-learning"
-                      className="w-12 h-12 object-contain"
+                      className={`w-12 h-12 object-contain transition-opacity duration-200 ${brandingLoading ? 'opacity-0' : 'opacity-100'}`}
                     />
                   </div>
 
