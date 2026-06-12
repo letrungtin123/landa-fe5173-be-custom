@@ -9,6 +9,7 @@ import { BADGE_CARD_IMAGES } from "@/data/badgeImages";
 
 interface BadgeGridProps {
   earnedBadges: EarnedBadge[];
+  activeBadgeIds?: string[];
   className?: string;
 }
 
@@ -23,7 +24,7 @@ const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: "innovation", label: CATEGORY_LABELS.innovation },
 ];
 
-export function BadgeGrid({ earnedBadges, className }: BadgeGridProps) {
+export function BadgeGrid({ earnedBadges, activeBadgeIds, className }: BadgeGridProps) {
   const [filter, setFilter] = useState<FilterType>("all");
   const [selectedBadge, setSelectedBadge] = useState<{ badge: BadgeDefinition; earned: EarnedBadge } | null>(null);
 
@@ -35,8 +36,14 @@ export function BadgeGrid({ earnedBadges, className }: BadgeGridProps) {
     return map;
   }, [earnedBadges]);
 
+  const activeBadgesDef = useMemo(() => {
+    if (!activeBadgeIds) return [];
+    const activeSet = new Set(activeBadgeIds);
+    return BADGE_DEFINITIONS.filter(b => activeSet.has(b.id));
+  }, [activeBadgeIds]);
+
   const filteredBadges = useMemo(() => {
-    let badges = [...BADGE_DEFINITIONS];
+    let badges = [...activeBadgesDef];
 
     if (filter === "earned") {
       badges = badges.filter(b => earnedMap.has(b.id));
@@ -54,7 +61,7 @@ export function BadgeGrid({ earnedBadges, className }: BadgeGridProps) {
     });
 
     return badges;
-  }, [filter, earnedMap]);
+  }, [filter, earnedMap, activeBadgesDef]);
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -73,7 +80,7 @@ export function BadgeGrid({ earnedBadges, className }: BadgeGridProps) {
           >
             {opt.label}
             {opt.value === "earned" && ` (${earnedBadges.length})`}
-            {opt.value === "locked" && ` (${BADGE_DEFINITIONS.length - earnedBadges.length})`}
+            {opt.value === "locked" && ` (${activeBadgesDef.length - earnedBadges.length})`}
           </button>
         ))}
       </div>

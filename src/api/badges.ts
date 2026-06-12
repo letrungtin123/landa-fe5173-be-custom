@@ -18,6 +18,19 @@ export async function getUserBadges(): Promise<UserBadge[]> {
 }
 
 /**
+ * Lấy danh sách ID các huy hiệu đang được kích hoạt cho tenant hiện tại.
+ */
+export async function getActiveBadges(): Promise<string[]> {
+  try {
+    const { data } = await apiClient.get<ApiResponse<string[]>>("/api/learner/badges/active");
+    return data.data;
+  } catch {
+    // Nếu lỗi (ví dụ chưa login), trả về rỗng để an toàn
+    return [];
+  }
+}
+
+/**
  * Lưu huy hiệu mới.
  */
 export async function saveUserBadge(badgeId: string, markAsShown: boolean = false): Promise<void> {

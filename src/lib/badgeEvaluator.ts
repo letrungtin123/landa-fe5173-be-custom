@@ -114,7 +114,7 @@ export function syncBadgesToLocalStorage(beBadges: Array<{badge_id: string, is_s
  * Core evaluation function — kiểm tra từng badge definition
  * dựa trên dữ liệu real-time từ API.
  */
-export function evaluateBadges(data: EvaluationData, username?: string): EarnedBadge[] {
+export function evaluateBadges(data: EvaluationData, username?: string, activeBadgeIds?: string[]): EarnedBadge[] {
   const earned: EarnedBadge[] = [];
 
   // ── HACK: Force unlock badges via localStorage ──
@@ -141,8 +141,21 @@ export function evaluateBadges(data: EvaluationData, username?: string): EarnedB
     }
   } catch { /* silent */ }
 
+  const activeSet = activeBadgeIds ? new Set(activeBadgeIds) : null;
+
   for (const badge of BADGE_DEFINITIONS) {
+    if (activeSet && !activeSet.has(badge.id)) continue;
     if (badge.id === "perfect_profile") continue;
+
+    // Nếu đã đạt được từ trước (hoặc backend trả về), luôn luôn tính là đã đạt
+    const existingTimestamp = getTimestamp(badge.id, username);
+    if (existingTimestamp) {
+      earned.push({
+        badge,
+        earnedAt: existingTimestamp,
+      });
+      continue;
+    }
 
     const result = checkBadge(badge, data, username);
     if (result) {
@@ -151,10 +164,10 @@ export function evaluateBadges(data: EvaluationData, username?: string): EarnedB
         localStorage.removeItem("la_profile_updated");
       }
       
-      const timestamp = getTimestamp(badge.id, username) || persistTimestamp(badge.id, username);
+      const newTimestamp = persistTimestamp(badge.id, username);
       earned.push({
         badge,
-        earnedAt: timestamp,
+        earnedAt: newTimestamp,
         courseId: result.courseId,
         courseName: result.courseName,
       });
@@ -162,41 +175,47 @@ export function evaluateBadges(data: EvaluationData, username?: string): EarnedB
   }
 
   // Kiểm tra "Mảnh ghép hoàn hảo"
-  const profileUpdatedKey = username ? `la_profile_updated_${username}` : "la_profile_updated";
-  const hasProfileUpdateInStorage = localStorage.getItem(profileUpdatedKey) === "true";
-  
-  // Kiểm tra trên object profile thực tế từ API (phòng khi mất localStorage)
-  let hasProfileData = false;
-  if (data.profile) {
-    const p = data.profile;
-    // Profile được coi là đã update nếu có bất kỳ trường thông tin nào ngoài mặc định
-    if (
-      p.year_of_birth || 
-      p.gender || 
-      p.level_of_education || 
-      p.country || 
-      p.goals || 
-      p.bio || 
-      (p.language_proficiencies && p.language_proficiencies.length > 0) ||
-      (p.profile_image && p.profile_image.has_image)
-    ) {
-      hasProfileData = true;
-    }
-  }
-
-  if (hasProfileUpdateInStorage || hasProfileData) {
-    const badge = BADGE_DEFINITIONS.find((b) => b.id === "perfect_profile");
-    if (badge) {
-      // Khôi phục lại cờ trong localStorage nếu API xác nhận đã update nhưng localStorage trống
-      if (hasProfileData && !hasProfileUpdateInStorage) {
-        localStorage.setItem(profileUpdatedKey, "true");
-      }
-      
-      const timestamp = getTimestamp(badge.id, username) || persistTimestamp(badge.id, username);
+  const ppBadge = BADGE_DEFINITIONS.find((b) => b.id === "perfect_profile");
+  if (ppBadge && (!activeSet || activeSet.has(ppBadge.id))) {
+    const ppTimestamp = getTimestamp(ppBadge.id, username);
+    if (ppTimestamp) {
       earned.push({
-        badge,
-        earnedAt: timestamp,
+        badge: ppBadge,
+        earnedAt: ppTimestamp,
       });
+    } else {
+      const profileUpdatedKey = username ? `la_profile_updated_${username}` : "la_profile_updated";
+      const hasProfileUpdateInStorage = localStorage.getItem(profileUpdatedKey) === "true";
+      
+      // Kiểm tra trên object profile thực tế từ API (phòng khi mất localStorage)
+      let hasProfileData = false;
+      if (data.profile) {
+        const p = data.profile;
+        if (
+          p.year_of_birth || 
+          p.gender || 
+          p.level_of_education || 
+          p.country || 
+          p.goals || 
+          p.bio || 
+          (p.language_proficiencies && p.language_proficiencies.length > 0) ||
+          (p.profile_image && p.profile_image.has_image)
+        ) {
+          hasProfileData = true;
+        }
+      }
+
+      if (hasProfileUpdateInStorage || hasProfileData) {
+        if (hasProfileData && !hasProfileUpdateInStorage) {
+          localStorage.setItem(profileUpdatedKey, "true");
+        }
+        
+        const newTs = persistTimestamp(ppBadge.id, username);
+        earned.push({
+          badge: ppBadge,
+          earnedAt: newTs,
+        });
+      }
     }
   }
 

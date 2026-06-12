@@ -334,17 +334,19 @@ function LeftPanel({ branding, isLoading }: { branding: BrandingImages; isLoadin
         {/* Bottom content */}
         <div className="relative z-10 flex flex-col justify-end mt-auto pl-2 mb-0">
           {/* Trust badge */}
+          {(branding.person1 || branding.person2 || branding.person3 || branding.person4) && (
           <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-[30px] border border-blue-200/30 bg-white/10 p-1 pr-4">
             <div className="flex -space-x-2 pl-0.5">
-              <img src={branding.person1} alt="User 1" className="relative z-[4] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
-              <img src={branding.person2} alt="User 2" className="relative z-[3] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
-              <img src={branding.person3} alt="User 3" className="relative z-[2] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
-              <img src={branding.person4} alt="User 4" className="relative z-[1] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />
+              {branding.person1 && <img src={branding.person1} alt="User 1" className="relative z-[4] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />}
+              {branding.person2 && <img src={branding.person2} alt="User 2" className="relative z-[3] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />}
+              {branding.person3 && <img src={branding.person3} alt="User 3" className="relative z-[2] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />}
+              {branding.person4 && <img src={branding.person4} alt="User 4" className="relative z-[1] h-6 w-6 rounded-full border-[1.5px] border-white object-cover" />}
             </div>
             <span className="text-[11px] font-normal text-white">
               Trusted by 100+ companies
             </span>
           </div>
+          )}
 
           <h1 className="text-[65px] font-bold leading-[60px] text-white uppercase font-['SF_Pro',_sans-serif]">
             READY TO

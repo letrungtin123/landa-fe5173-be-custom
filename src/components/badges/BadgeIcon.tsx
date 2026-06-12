@@ -11,7 +11,7 @@ import NguoiDanDauCongNgheIcon from "@/assets/badges/NguoiDanDauCongNghe.png";
 import DaiSuLAIcon from "@/assets/badges/DaiSuL&A.png";
 import NhaThamHiemHeThongIcon from "@/assets/badges/NhaThamHiemHeThong.png";
 import BacThayTuyenDungIcon from "@/assets/badges/BacThayTuyenDung.png";
-import ChuyenGiaOTIFIcon from "@/assets/badges/BacThayTuyenDung2.png";
+import ChuyenGiaOTIFIcon from "@/assets/badges/ChuyenGiaOTIF.png";
 import DaiSuTinCayIcon from "@/assets/badges/DaiSuTinCay.png";
 
 interface BadgeIconProps {

@@ -11,7 +11,7 @@ import { useMyEnrollments } from "./useCourses";
 import { useMyCertificates } from "./useCertificates";
 import { getCourseBlocks } from "@/api/courses";
 import { getMyCourseProgress } from "@/api/progress";
-import { getUserBadges, saveUserBadge, updateBadgeShown } from "@/api/badges";
+import { getUserBadges, saveUserBadge, updateBadgeShown, getActiveBadges } from "@/api/badges";
 import { transformBlocksToCourse } from "@/transformers/blockTransformer";
 import { evaluateBadges, getShownBadgeIds, markBadgeShown, syncBadgesToLocalStorage, type EarnedBadge } from "@/lib/badgeEvaluator";
 import { BADGE_DEFINITIONS, type BadgeDefinition } from "@/data/badgeConfig";
@@ -40,6 +40,7 @@ export interface UseBadgesResult {
   isLoading: boolean;
   newlyEarned: EarnedBadge | null;
   dismissNewBadge: () => void;
+  activeBadgeIds?: string[];
 }
 
 /**
@@ -76,6 +77,14 @@ export function useBadges(): UseBadgesResult {
     queryFn: getUserBadges,
     enabled: isAuthenticated && !!username,
     staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch active badges (cấu hình bật/tắt từ tenant)
+  const { data: activeBadgeIds, isSuccess: isActiveBadgesLoaded } = useQuery({
+    queryKey: ["active-badges", username],
+    queryFn: getActiveBadges,
+    enabled: isAuthenticated && !!username,
+    staleTime: 10 * 60 * 1000,
   });
 
   // Sync BE badges về localStorage để giữ lại flow hiển thị hiện tại
@@ -179,21 +188,23 @@ export function useBadges(): UseBadgesResult {
 
   // Evaluate badges
   const earnedBadges = useMemo(() => {
-    if (!enrollments || !isBeBadgesLoaded) return []; // Phải đợi BE load xong để localStorage có date đúng, tránh ghi đè
+    if (!enrollments || !isBeBadgesLoaded || !isActiveBadgesLoaded) return []; // Phải đợi BE load xong để localStorage có date đúng, tránh ghi đè
     return evaluateBadges({
       enrollments,
       certificates: certificates || [],
       courseCompletions,
       courseGrades,
       profile,
-    }, username);
+    }, username, activeBadgeIds);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enrollments, certificates, courseCompletions, courseGrades, profile, profileUpdateTrigger, username, isBeBadgesLoaded]);
+  }, [enrollments, certificates, courseCompletions, courseGrades, profile, profileUpdateTrigger, username, isBeBadgesLoaded, isActiveBadgesLoaded, activeBadgeIds]);
 
   const unearnedBadges = useMemo(() => {
+    if (!activeBadgeIds) return [];
     const earnedIds = new Set(earnedBadges.map((b) => b.badge.id));
-    return BADGE_DEFINITIONS.filter((b) => !earnedIds.has(b.id));
-  }, [earnedBadges]);
+    const activeSet = new Set(activeBadgeIds);
+    return BADGE_DEFINITIONS.filter((b) => !earnedIds.has(b.id) && activeSet.has(b.id));
+  }, [earnedBadges, activeBadgeIds]);
 
   // Mutation to save badge lên BE
   const { mutate: saveBadge } = useMutation({
@@ -313,10 +324,11 @@ export function useBadges(): UseBadgesResult {
   return {
     earnedBadges,
     unearnedBadges,
-    totalBadges: BADGE_DEFINITIONS.length,
+    totalBadges: activeBadgeIds ? activeBadgeIds.length : BADGE_DEFINITIONS.length,
     earnedCount: earnedBadges.length,
     isLoading,
     newlyEarned: currentBadge,
     dismissNewBadge,
+    activeBadgeIds,
   };
 }

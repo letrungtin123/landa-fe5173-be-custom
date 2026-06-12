@@ -21,6 +21,7 @@ export function BadgesPage() {
     totalBadges,
     earnedCount,
     isLoading,
+    activeBadgeIds,
   } = useBadges();
 
   const progressPercent = totalBadges ? Math.round((earnedCount / totalBadges) * 100) : 0;
@@ -137,7 +138,7 @@ export function BadgesPage() {
           transition={{ duration: 0.4, delay: 0.2 }}
           className="mb-10"
         >
-          <BadgeGrid earnedBadges={earnedBadges} />
+          <BadgeGrid earnedBadges={earnedBadges} activeBadgeIds={activeBadgeIds} />
         </motion.div>
 
         {/* "Coming Soon" section — badges sắp đạt */}

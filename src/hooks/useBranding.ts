@@ -13,16 +13,6 @@ import fallbackLeftPanelBg from '@/assets/LoginPage/LeftPanelLogin.jpg';
 import fallbackRegisterBg from '@/assets/LoginPage/Register.png';
 import fallbackWhiteLogo from '@/assets/LoginPage/WhiteLogoLeftPanel.png';
 import fallbackSquareIcon from '@/assets/LoginPage/SquareIcon.png';
-import fallbackPerson1 from '@/assets/LoginPage/Person1.jpg';
-import fallbackPerson2 from '@/assets/LoginPage/Person2.jpg';
-import fallbackPerson3 from '@/assets/LoginPage/Person3.jpg';
-import fallbackPerson4 from '@/assets/LoginPage/Person4.jpg';
-import fallbackCarousel1 from '@/assets/LoginPage/Carousel1.png';
-import fallbackCarousel2 from '@/assets/LoginPage/Carousel2.png';
-import fallbackCarousel3 from '@/assets/LoginPage/Carousel3.png';
-import fallbackCarousel4 from '@/assets/LoginPage/Carousel4.png';
-import fallbackCarousel5 from '@/assets/LoginPage/Carousel5.png';
-import fallbackCarousel6 from '@/assets/LoginPage/Carousel6.png';
 import fallbackHeaderLogo from '@/assets/leandassociate.webp';
 
 // ── Types ──
@@ -34,10 +24,10 @@ export interface BrandingImages {
   squareIcon: string;
   headerLogo: string;
   headerLogoDark: string;
-  person1: string;
-  person2: string;
-  person3: string;
-  person4: string;
+  person1: string | null;
+  person2: string | null;
+  person3: string | null;
+  person4: string | null;
   carousels: string[];
   adminUrl: string | null;
   tenantName: string | null;
@@ -64,14 +54,11 @@ const DEFAULT_BRANDING: BrandingImages = {
   squareIcon: fallbackSquareIcon,
   headerLogo: fallbackHeaderLogo,
   headerLogoDark: fallbackHeaderLogo,
-  person1: fallbackPerson1,
-  person2: fallbackPerson2,
-  person3: fallbackPerson3,
-  person4: fallbackPerson4,
-  carousels: [
-    fallbackCarousel1, fallbackCarousel2, fallbackCarousel3,
-    fallbackCarousel4, fallbackCarousel5, fallbackCarousel6,
-  ],
+  person1: null,
+  person2: null,
+  person3: null,
+  person4: null,
+  carousels: [],
   adminUrl: null,
   tenantName: null,
 };
@@ -97,6 +84,9 @@ async function fetchBrandingByDomain(domain: string): Promise<BrandingImages> {
     const resolve = (path: string | null | undefined, fallback: string): string =>
       path ? storageUrl(path) || fallback : fallback;
 
+    const resolveNullable = (path: string | null | undefined): string | null =>
+      path ? storageUrl(path) || null : null;
+
     return {
       leftPanelBg: resolve(data.images.left_panel_bg, DEFAULT_BRANDING.leftPanelBg),
       registerBg: resolve(data.images.register_bg, DEFAULT_BRANDING.registerBg),
@@ -104,13 +94,13 @@ async function fetchBrandingByDomain(domain: string): Promise<BrandingImages> {
       squareIcon: resolve(data.images.square_icon, DEFAULT_BRANDING.squareIcon),
       headerLogo: resolve(data.images.header_logo, DEFAULT_BRANDING.headerLogo),
       headerLogoDark: resolve(data.images.header_logo_dark, DEFAULT_BRANDING.headerLogoDark),
-      person1: resolve(data.images.person_1, DEFAULT_BRANDING.person1),
-      person2: resolve(data.images.person_2, DEFAULT_BRANDING.person2),
-      person3: resolve(data.images.person_3, DEFAULT_BRANDING.person3),
-      person4: resolve(data.images.person_4, DEFAULT_BRANDING.person4),
+      person1: resolveNullable(data.images.person_1),
+      person2: resolveNullable(data.images.person_2),
+      person3: resolveNullable(data.images.person_3),
+      person4: resolveNullable(data.images.person_4),
       carousels: data.carousels.length > 0
         ? data.carousels.map((p) => storageUrl(p)).filter(Boolean)
-        : DEFAULT_BRANDING.carousels,
+        : [],
       adminUrl: data.domain_admin
         ? `${data.domain_admin}/admin`
         : null,
