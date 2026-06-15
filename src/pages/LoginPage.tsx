@@ -1,37 +1,70 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { Eye, EyeOff, ArrowLeft, Info } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Eye, EyeOff, ArrowLeft, Info, ShieldCheck } from "lucide-react";
 // import { useGoogleLogin } from "@react-oauth/google"; // SSO tạm disable
 import { useAuthStore } from "@/stores/useAuthStore";
-import { googleLoginOrRegister, GoogleAuthError } from "@/api/googleAuth";
-import { microsoftLoginOrRegister, MicrosoftAuthError } from "@/api/microsoftAuth";
-import { keycloakLogin, KeycloakAuthError } from "@/api/keycloakAuth";
-import { microsoftPopupLogin } from "@/config/msalConfig";
-import { keycloakPopupLogin, getKeycloakRedirectUri } from "@/config/keycloakConfig";
-import { config } from "@/config/env";
 import { useBranding } from "@/hooks/useBranding";
+import { exchangeSsoCode, fetchPublicSsoConfigByDomain, type PublicSsoProvider, type SsoProvider } from "@/api/sso";
+import { openSsoPopup } from "@/utils/ssoPopup";
 
 export function LoginPage() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
+  const setSession = useAuthStore((s) => s.setSession);
   const { branding, isLoading: brandingLoading } = useBranding();
   // SSO methods removed from custom BE auth store — stub to no-op
-  const loginWithGoogle = async (_tokens: any) => { /* noop */ };
-  const loginWithMicrosoft = async (_tokens: any) => { /* noop */ };
-  const loginWithKeycloak = async (_tokens: any) => { /* noop */ };
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; google?: string; microsoft?: string }>(
+  const [errors, setErrors] = useState<{ email?: string; password?: string; sso?: string }>(
     {}
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isMicrosoftLoading, setIsMicrosoftLoading] = useState(false);
-  const [isKeycloakLoading, setIsKeycloakLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<SsoProvider | null>(null);
   const [searchParams] = useSearchParams();
+  const currentDomain = window.location.hostname;
+  const { data: ssoConfig } = useQuery({
+    queryKey: ["public-sso", currentDomain],
+    queryFn: () => fetchPublicSsoConfigByDomain(currentDomain),
+    staleTime: 60_000,
+    retry: 1,
+  });
+  const ssoProviders = ssoConfig?.providers ?? [];
+
+  const getSsoIcon = (providerId: string, className = "h-5 w-5 shrink-0") => {
+    switch (providerId) {
+      case 'google':
+        return (
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+          </svg>
+        );
+      case 'microsoft365':
+        return (
+          <svg viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+            <rect x="1" y="1" width="9" height="9" fill="#F25022" />
+            <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
+            <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
+            <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
+          </svg>
+        );
+      case 'keycloak':
+        return (
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+            <path fill="#007EAF" d="M16 2.221L2.158 9.387v12.27L16 28.823l13.842-7.166V9.387L16 2.221zm10.748 18.064L16 25.845 5.252 20.285V10.748L16 5.188l10.748 5.56v9.537z"/>
+            <path fill="#007EAF" d="M16 9.608c-3.136 0-5.68 2.544-5.68 5.68s2.544 5.68 5.68 5.68c.552 0 1.085-.084 1.59-.234l-1.637-2.637h-1.666v-1.665h1.162c.15-.36.234-.754.234-1.162 0-1.763-1.432-3.194-3.194-3.194S9.294 13.508 9.294 15.271c0 1.763 1.432 3.194 3.194 3.194.524 0 1.018-.127 1.46-.347L15.353 20.3h2.385l.89-1.434h2.518l.89-1.433h2.46l.89-1.434h-8.033v-1.666h-1.077c-.452-.224-1.155-.387-1.782-.442l-.504-.002z"/>
+          </svg>
+        );
+      default:
+        return <ShieldCheck className={className} />;
+    }
+  };
 
   useEffect(() => {
     if (searchParams.get("error") === "account_disabled") {
@@ -80,7 +113,32 @@ export function LoginPage() {
     }
   };
   // Google SSO tạm disable — không có GoogleOAuthProvider
-  const googleLogin = () => { /* noop */ };
+  const handleSsoLogin = async (provider: PublicSsoProvider) => {
+    if (!ssoConfig?.tenant_id) return;
+
+    setLoadingProvider(provider.provider);
+    setErrors({});
+    try {
+      const result = await openSsoPopup(provider);
+      const session = await exchangeSsoCode(provider.provider, {
+        tenant_id: ssoConfig.tenant_id,
+        code: result.code,
+        redirect_uri: result.redirectUri,
+        code_verifier: result.codeVerifier,
+      });
+      await setSession(session);
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Đăng nhập SSO thất bại.";
+      if (!msg.includes("huy")) {
+        setErrors({ sso: msg });
+      }
+    } finally {
+      setLoadingProvider(null);
+    }
+  };
+
+  /*
 
   // ── Microsoft Login handler ──
   // Flow giống Google: popup thủ công → access_token → exchange → edX tokens
@@ -137,6 +195,8 @@ export function LoginPage() {
 
   // Kiểm tra xem có SSO nào đang loading không — disable tất cả nút
   const isSsoLoading = isGoogleLoading || isMicrosoftLoading || isKeycloakLoading;
+
+  */
 
   return (
     <div className="min-h-screen w-full bg-white text-black flex items-center justify-center">
@@ -375,7 +435,7 @@ export function LoginPage() {
               </div>
 
               {/* ─── Divider ─── */}
-              <div className="w-full h-3.5 relative mt-[15px] mb-[25px]">
+              <div className={`w-full h-3.5 relative mt-[15px] mb-[25px] ${ssoProviders.length === 0 ? "hidden" : ""}`}>
                 <div className="absolute inset-0 top-[7px] w-full flex items-center justify-between">
                   <div className="w-[45%] h-px bg-[#e5e5e5]" />
                   <div className="w-[45%] h-px bg-[#e5e5e5]" />
@@ -388,7 +448,7 @@ export function LoginPage() {
               </div>
 
               {/* ─── SSO Buttons ─── */}
-              <div className="flex flex-col gap-2 w-full">
+              <div className={`flex flex-col gap-2 w-full ${ssoProviders.length === 0 ? "hidden" : ""}`}>
                 {/* ─── Google Login Button ─── */}
                 {/* <button
               id="google-login-btn"
@@ -439,12 +499,31 @@ export function LoginPage() {
               )}
               <span>{isGoogleLoading ? "Đang đăng nhập…" : <>Đăng nhập bằng <span>Google</span></>}</span>
             </button> */}
-                {errors.google && (
-                  <p className="text-center text-[12px] text-[#dc2626] mt-1">{errors.google}</p>
+                {ssoProviders.map((provider) => (
+                  <button
+                    key={provider.provider}
+                    type="button"
+                    onClick={() => handleSsoLogin(provider)}
+                    disabled={loadingProvider !== null || isSubmitting}
+                    className="w-full flex items-center justify-center gap-2.5 bg-white rounded-[10px] border border-gray-200 py-[10px] px-4 text-[14px] font-medium leading-[16px] text-[#1a1a1a] shadow-sm transition-all hover:bg-gray-50 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {loadingProvider === provider.provider ? (
+                      <svg className="h-[18px] w-[18px] animate-spin text-[#1d4ed8]" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      getSsoIcon(provider.provider, "h-[18px] w-[18px] shrink-0")
+                    )}
+                    <span>{loadingProvider === provider.provider ? "Đang kết nối..." : `Đăng nhập bằng ${provider.label}`}</span>
+                  </button>
+                ))}
+                {errors.sso && (
+                  <p className="text-center text-[12px] text-[#dc2626] mt-1">{errors.sso}</p>
                 )}
 
                 {/* ─── Microsoft 365 Login Button ─── */}
-                {config.microsoftClientId && (
+                {false && (
                   <>
                     {/* <button
                       id="microsoft-login-btn"
@@ -524,7 +603,7 @@ export function LoginPage() {
               </div>
 
               {/* ─── Keycloak SSO Button ─── */}
-              {config.keycloakClientId && (
+              {/* config.keycloakClientId && (
                 <div className="flex flex-col gap-2 w-full">
                   <button
                     id="keycloak-login-btn"
@@ -561,7 +640,7 @@ export function LoginPage() {
                     <span>{isKeycloakLoading ? "Đang đăng nhập…" : <>Đăng nhập bằng <span>SSO</span></>}</span>
                   </button>
                 </div>
-              )}
+              )} */}
 
               <div className="w-full flex justify-center mt-[13px]">
                 <p className="max-w-[320px] text-center text-[12px] font-normal leading-[16px] text-neutral-400 font-['SF_Pro',_sans-serif]">

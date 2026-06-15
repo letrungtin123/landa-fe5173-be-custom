@@ -10,7 +10,7 @@ import { loginApi, refreshTokenApi, logoutApi, getUserMe } from "@/api/auth";
 import { queryClient } from "@/App";
 import { useStudyTimeStore } from "@/stores/useStudyTimeStore";
 import { avatarUrl } from "@/utils/storageUrl";
-import type { TenantBasic, PermissionsMap } from "@/api/types";
+import type { TenantBasic, PermissionsMap, LoginResponse } from "@/api/types";
 
 // ── Mã hóa/giải mã đơn giản cho token trong storage ──
 const STORAGE_KEY = "la-auth-v2";
@@ -78,6 +78,9 @@ interface AuthState {
 
   /** Đăng nhập bằng username/email + password. */
   login: (username: string, password: string) => Promise<void>;
+
+  /** Gan session da duoc backend cap sau SSO/OTT. */
+  setSession: (result: LoginResponse) => Promise<void>;
 
   /** Đăng xuất — revoke token + xóa state. */
   logout: () => Promise<void>;
@@ -153,6 +156,40 @@ export const useAuthStore = create<AuthState>()(
         });
 
         // Lên lịch tự động refresh
+        get().scheduleTokenRefresh();
+      },
+
+      setSession: async (result: LoginResponse) => {
+        let activeTenantId = result.user.tenant_id;
+        let activeTenantName = result.user.tenant_name;
+        if (!activeTenantId && result.managed_tenants?.length > 0) {
+          activeTenantId = result.managed_tenants[0].id;
+          activeTenantName = result.managed_tenants[0].name;
+        }
+
+        const expiresAt = Date.now() + result.expires_in * 1000;
+        set({
+          isAuthenticated: true,
+          accessToken: result.access_token,
+          refreshToken: result.refresh_token,
+          tokenType: "Bearer",
+          tokenExpiresAt: expiresAt,
+          user: {
+            id: result.user.id,
+            username: result.user.username,
+            email: result.user.email,
+            fullName: result.user.full_name,
+            phone: result.user.phone,
+            avatar: avatarUrl(result.user.avatar_url),
+            role: result.user.role,
+            tenantId: activeTenantId,
+            tenantName: activeTenantName,
+          },
+          permissions: result.permissions,
+          tenantModules: result.tenant_modules,
+          managedTenants: result.managed_tenants,
+        });
+
         get().scheduleTokenRefresh();
       },
 
