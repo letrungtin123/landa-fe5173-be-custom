@@ -4,6 +4,7 @@
 
 import { apiClient } from "./client";
 import type { Block } from "./types";
+import { normalizeProblemMedia } from "@/lib/problemMedia";
 
 /**
  * Lấy chi tiết block đơn lẻ.
@@ -153,9 +154,9 @@ function buildBlockStudentViewData(
       // DB: data = "<problem>XML</problem>" (string)
       // QuizContent uses getXBlockHtml → needs raw data string
       if (typeof rawData === 'string') {
-        return { data: rawData, html: rawData };
+        return { data: rawData, html: rawData, problem_media: normalizeProblemMedia(meta?.problem_media) };
       }
-      return rawData as Record<string, unknown>;
+      return { ...(rawData as Record<string, unknown>), problem_media: normalizeProblemMedia(meta?.problem_media) };
     }
 
     default:

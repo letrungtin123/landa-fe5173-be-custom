@@ -376,6 +376,8 @@ export function LessonDetailPage() {
                       <QuizContent
                         key={comp.id}
                         problemUsageKey={comp.problemUsageKey}
+                        problemMedia={comp.problemMedia}
+                        onImageClick={(src) => setLightboxSrc(src)}
                       />
                     );
                   }

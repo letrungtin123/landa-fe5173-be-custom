@@ -14,6 +14,7 @@ import {
 import { transformBlocksToCourse } from "@/transformers/blockTransformer";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { CourseBlocksResponse, CourseBlock, BlocksResponse, Block } from "@/api/types";
+import { normalizeProblemMedia } from "@/lib/problemMedia";
 
 /**
  * Adapter: chuyển CourseBlocksResponse (flat array) → BlocksResponse (map format).
@@ -110,9 +111,9 @@ function buildStudentViewData(cb: CourseBlock): Record<string, unknown> {
 
     case 'problem': {
       if (typeof data === 'string') {
-        return { data: data, html: data };
+        return { data: data, html: data, problem_media: normalizeProblemMedia(meta?.problem_media) };
       }
-      return data as Record<string, unknown>;
+      return { ...(data as Record<string, unknown>), problem_media: normalizeProblemMedia(meta?.problem_media) };
     }
 
     default:

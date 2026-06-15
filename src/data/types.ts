@@ -3,6 +3,8 @@
 // (Extracted from mock.ts — used across all components)
 // ============================================================
 
+import type { ProblemMedia } from "@/lib/problemMedia";
+
 export interface User {
   name: string;
   role: string;
@@ -52,6 +54,7 @@ export interface UnitComponent {
   videoDuration?: string;
   htmlContent?: string | null;
   problemUsageKey?: string | null;
+  problemMedia?: ProblemMedia | null;
   crosswordUsageKey?: string | null;
   sortableUsageKey?: string | null;
   faqUsageKey?: string | null;

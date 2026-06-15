@@ -9,6 +9,7 @@ import { useCourseBlocksRaw } from "@/hooks/useCourses";
 import type { LessonDetail, UnitDetail, UnitComponent } from "@/data/types";
 import type { Block, VideoBlockData } from "@/api/types";
 import { rewriteStaticUrls, sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
+import { normalizeProblemMedia } from "@/lib/problemMedia";
 
 /**
  * Hook lấy chi tiết bài học từ cấu trúc blocks của course.
@@ -143,6 +144,8 @@ function buildComponent(
 
   if (block.type === "problem") {
     comp.problemUsageKey = block.id;
+    const svd = block.student_view_data as Record<string, unknown> | undefined;
+    comp.problemMedia = normalizeProblemMedia(svd?.problem_media);
   }
 
   if (block.type === "la_crossword") {

@@ -19,6 +19,13 @@ import { markBlockComplete } from "@/api/progress";
 import { refetchProgressWithRetry } from "@/lib/progressRefetch";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
+import { LessonImageCarousel } from "./LessonImageCarousel";
+import {
+  hasProblemMedia,
+  normalizeProblemMedia,
+  resolveProblemMediaImageUrl,
+  type ProblemMedia,
+} from "@/lib/problemMedia";
 
 // ── Custom Dropdown cho Problem Type: Dropdown ──
 function CustomDropdown({
@@ -99,9 +106,63 @@ function CustomDropdown({
 interface QuizContentProps {
   /** Usage key của problem block cụ thể */
   problemUsageKey: string;
+  problemMedia?: ProblemMedia | null;
+  onImageClick?: (src: string) => void;
 }
 
-export function QuizContent({ problemUsageKey }: QuizContentProps) {
+function ProblemMediaBlock({
+  media,
+  onImageClick,
+}: {
+  media?: ProblemMedia | null;
+  onImageClick?: (src: string) => void;
+}) {
+  const normalized = normalizeProblemMedia(media);
+  if (!hasProblemMedia(normalized)) return null;
+
+  const images = normalized.images.map((img) => ({
+    ...img,
+    src: resolveProblemMediaImageUrl(img.src),
+  }));
+
+  return (
+    <div className="mb-8 space-y-5">
+      {normalized.youtube_id && (
+        <div className="relative overflow-hidden rounded-2xl bg-[#0d1117] aspect-video shadow-lg">
+          <iframe
+            src={`https://www.youtube.com/embed/${normalized.youtube_id}?rel=0&modestbranding=1&showinfo=0`}
+            className="h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+            title="Problem video"
+          />
+        </div>
+      )}
+
+      {images.length === 1 && (
+        <div
+          className="relative w-full rounded-2xl overflow-hidden bg-muted/20 flex items-center justify-center border border-border shadow-sm p-4 cursor-zoom-in"
+          onClick={() => onImageClick?.(images[0].src)}
+        >
+          <img
+            src={images[0].src}
+            alt={images[0].alt || "Problem image"}
+            className="max-h-[450px] w-full object-contain"
+          />
+        </div>
+      )}
+
+      {images.length >= 2 && (
+        <LessonImageCarousel
+          images={images}
+          onImageClick={(src) => onImageClick?.(src)}
+        />
+      )}
+    </div>
+  );
+}
+
+export function QuizContent({ problemUsageKey, problemMedia, onImageClick }: QuizContentProps) {
   const [parsedProblems, setParsedProblems] = useState<ParsedProblem[]>([]);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
 
@@ -291,6 +352,7 @@ export function QuizContent({ problemUsageKey }: QuizContentProps) {
   return (
     <div className="w-full">
       <div className="rounded-2xl border border-border bg-card p-6 md:p-8 shadow-sm">
+        <ProblemMediaBlock media={problemMedia} onImageClick={onImageClick} />
         {parsedProblems.map((prob) => (
           <div key={prob.id} className="mb-10 last:mb-0">
 
