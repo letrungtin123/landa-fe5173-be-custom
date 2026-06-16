@@ -5,6 +5,7 @@
 // ============================================================
 
 import { config } from "@/config/env";
+import { generateRandomToken } from "@/utils/pkce";
 
 /**
  * Scopes yêu cầu từ Microsoft.
@@ -18,7 +19,7 @@ const MICROSOFT_SCOPES = ["openid", "profile", "email"];
  * social_core.backends.azuread.AzureADOAuth2 decode id_token để lấy user info.
  */
 function buildMicrosoftAuthUrl(): string {
-  const nonce = crypto.randomUUID();
+  const nonce = generateRandomToken();
 
   // Lưu nonce để verify sau (chống replay attack)
   sessionStorage.setItem("ms_auth_nonce", nonce);

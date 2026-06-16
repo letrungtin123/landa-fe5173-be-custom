@@ -125,6 +125,7 @@ export function LoginPage() {
         code: result.code,
         redirect_uri: result.redirectUri,
         code_verifier: result.codeVerifier,
+        client_app: "learner",
       });
       await setSession(session);
       navigate("/dashboard", { replace: true });
