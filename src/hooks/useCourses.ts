@@ -14,6 +14,7 @@ import {
 import { transformBlocksToCourse } from "@/transformers/blockTransformer";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { CourseBlocksResponse, CourseBlock, BlocksResponse, Block } from "@/api/types";
+import { normalizeHtmlMediaImages } from "@/lib/htmlMedia";
 import { normalizeProblemMedia } from "@/lib/problemMedia";
 
 /**
@@ -38,13 +39,16 @@ function buildStudentViewData(cb: CourseBlock): Record<string, unknown> {
 
   switch (cb.block_type) {
     case 'html': {
+      const htmlMedia = {
+        images: normalizeHtmlMediaImages((meta?.html_media as any)?.images),
+      };
       if (typeof data === 'string') {
-        return { data: data };
+        return { data: data, html_media: htmlMedia };
       }
       if (data && typeof data === 'object' && !('data' in data) && !('html' in data)) {
-        return { data: JSON.stringify(data) };
+        return { data: JSON.stringify(data), html_media: htmlMedia };
       }
-      return data as Record<string, unknown>;
+      return { ...(data as Record<string, unknown>), html_media: htmlMedia };
     }
 
     case 'video': {

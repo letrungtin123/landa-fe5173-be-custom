@@ -4,6 +4,7 @@
 // ============================================================
 
 import type { ProblemMedia } from "@/lib/problemMedia";
+import type { HtmlMediaImage } from "@/lib/htmlMedia";
 
 export interface User {
   name: string;
@@ -53,6 +54,7 @@ export interface UnitComponent {
   videoUrl?: string | null;
   videoDuration?: string;
   htmlContent?: string | null;
+  htmlMediaImages?: HtmlMediaImage[];
   problemUsageKey?: string | null;
   problemMedia?: ProblemMedia | null;
   crosswordUsageKey?: string | null;

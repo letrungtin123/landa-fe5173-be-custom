@@ -9,6 +9,7 @@ import { useCourseBlocksRaw } from "@/hooks/useCourses";
 import type { LessonDetail, UnitDetail, UnitComponent } from "@/data/types";
 import type { Block, VideoBlockData } from "@/api/types";
 import { rewriteStaticUrls, sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
+import { normalizeHtmlMediaImages } from "@/lib/htmlMedia";
 import { normalizeProblemMedia } from "@/lib/problemMedia";
 
 /**
@@ -140,6 +141,8 @@ function buildComponent(
     const rawHtml = (svd?.data as string) || (svd?.html as string) || null;
     // Rewrite /static/xxx URLs → LMS asset URLs (student_view_data trả raw HTML chưa rewrite)
     comp.htmlContent = rawHtml ? rewriteStaticUrls(rawHtml, courseId) : null;
+    const htmlMedia = svd?.html_media as { images?: unknown } | undefined;
+    comp.htmlMediaImages = normalizeHtmlMediaImages(htmlMedia?.images);
   }
 
   if (block.type === "problem") {

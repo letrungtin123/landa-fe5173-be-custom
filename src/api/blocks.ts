@@ -4,6 +4,7 @@
 
 import { apiClient } from "./client";
 import type { Block } from "./types";
+import { normalizeHtmlMediaImages } from "@/lib/htmlMedia";
 import { normalizeProblemMedia } from "@/lib/problemMedia";
 
 /**
@@ -133,10 +134,11 @@ function buildBlockStudentViewData(
     case 'html': {
       // DB: data = "<p>HTML content</p>" (string)
       // Component (getXBlockHtml) expects: svd.data = HTML string
+      const htmlMedia = { images: normalizeHtmlMediaImages(meta?.html_media?.images) };
       if (typeof rawData === 'string') {
-        return { data: rawData };
+        return { data: rawData, html_media: htmlMedia };
       }
-      return rawData as Record<string, unknown>;
+      return { ...(rawData as Record<string, unknown>), html_media: htmlMedia };
     }
 
     case 'video': {

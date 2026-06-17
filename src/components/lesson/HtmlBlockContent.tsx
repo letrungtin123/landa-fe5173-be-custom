@@ -5,6 +5,8 @@
 import { useMemo } from "react";
 import DOMPurify from "dompurify";
 import { LessonImageCarousel } from "./LessonImageCarousel";
+import { htmlMediaCarouselImages, type HtmlMediaImage } from "@/lib/htmlMedia";
+import { htmlImageDisplaySrc, isUploadedStorageImageSrc, isTransientHtmlImageSrc } from "@/utils/storageUrl";
 
 function BadgeCyan({ children }: { children: React.ReactNode }) {
   return (
@@ -19,48 +21,65 @@ function BadgeCyan({ children }: { children: React.ReactNode }) {
 
 interface HtmlBlockContentProps {
   htmlContent: string;
+  uploadedImages?: HtmlMediaImage[];
   displayName?: string;
   onImageClick?: (src: string) => void;
 }
 
-export function HtmlBlockContent({ htmlContent, displayName, onImageClick }: HtmlBlockContentProps) {
+export function HtmlBlockContent({ htmlContent, uploadedImages = [], displayName, onImageClick }: HtmlBlockContentProps) {
   const { finalHtml, images, hasImage } = useMemo(() => {
-    if (!htmlContent) return { finalHtml: "", images: [], hasImage: false };
+    const mediaImages = htmlMediaCarouselImages(uploadedImages);
+    if (!htmlContent && mediaImages.length === 0) return { finalHtml: "", images: [], hasImage: false };
 
     const cleanHtml = DOMPurify.sanitize(htmlContent, {
       FORBID_TAGS: ["script", "style"],
       FORBID_ATTR: ["onerror", "onload", "onclick"],
     });
 
-    let imgs: { src: string; alt: string }[] = [];
+    let imgs: { src: string; alt: string }[] = mediaImages;
     let html = cleanHtml;
-    let hasImg = false;
+    let hasImg = mediaImages.length > 0;
 
     try {
       const parser = new DOMParser();
       const doc = parser.parseFromString(cleanHtml, "text/html");
-      const imgEls = doc.querySelectorAll("img");
-      hasImg = imgEls.length > 0;
+      const imgEls = Array.from(doc.querySelectorAll("img"));
+      imgEls.forEach((img) => {
+        const src = img.getAttribute("src") || "";
+        if (isTransientHtmlImageSrc(src)) {
+          img.remove();
+          return;
+        }
+        img.setAttribute("src", htmlImageDisplaySrc(src));
+      });
 
-      if (imgEls.length >= 2) {
-        imgs = Array.from(imgEls).map((img) => ({
+      const validImgEls = Array.from(doc.querySelectorAll("img"));
+      hasImg = hasImg || validImgEls.length > 0;
+      const uploadedImgEls = validImgEls.filter((img) => isUploadedStorageImageSrc(img.getAttribute("src")));
+
+      if (uploadedImgEls.length >= 2) {
+        imgs = [
+          ...mediaImages,
+          ...uploadedImgEls.map((img) => ({
           src: img.getAttribute("src") || "",
           alt: img.getAttribute("alt") || "",
-        }));
-        imgEls.forEach((img) => img.remove());
+          })),
+        ];
+        uploadedImgEls.forEach((img) => img.remove());
         doc.querySelectorAll("p").forEach((p) => {
           if (!p.textContent?.trim() && p.children.length === 0) {
             p.remove();
           }
         });
-        html = doc.body.innerHTML;
       }
+
+      html = doc.body.innerHTML;
     } catch (e) {
       console.error("Failed to parse HTML for carousel", e);
     }
 
     return { finalHtml: html, images: imgs, hasImage: hasImg };
-  }, [htmlContent]);
+  }, [htmlContent, uploadedImages]);
 
   return (
     <div className="rounded-3xl border border-border px-8 py-7 shadow-sm bg-card">
@@ -76,6 +95,16 @@ export function HtmlBlockContent({ htmlContent, displayName, onImageClick }: Htm
           images={images}
           onImageClick={(src) => onImageClick?.(src)}
         />
+      )}
+      {images.length === 1 && (
+        <div className="mb-6 cursor-zoom-in rounded-2xl border border-border bg-muted/20 p-3">
+          <img
+            src={images[0].src}
+            alt={images[0].alt || "Uploaded image"}
+            className="max-h-[450px] w-full rounded-xl object-contain"
+            onClick={() => onImageClick?.(images[0].src)}
+          />
+        </div>
       )}
       {finalHtml.trim() && (
         <div

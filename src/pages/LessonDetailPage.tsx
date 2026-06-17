@@ -359,11 +359,12 @@ export function LessonDetailPage() {
                     );
                   }
 
-                  if (comp.type === "html" && comp.htmlContent) {
+                  if (comp.type === "html" && (comp.htmlContent || (comp.htmlMediaImages?.length || 0) > 0)) {
                     return (
                       <HtmlBlockContent
                         key={comp.id}
-                        htmlContent={comp.htmlContent}
+                        htmlContent={comp.htmlContent || ""}
+                        uploadedImages={comp.htmlMediaImages}
                         displayName={comp.displayName}
                         onImageClick={(src) => setLightboxSrc(src)}
                       />
