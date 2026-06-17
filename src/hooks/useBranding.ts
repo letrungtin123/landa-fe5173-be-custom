@@ -102,7 +102,7 @@ async function fetchBrandingByDomain(domain: string): Promise<BrandingImages> {
         ? data.carousels.map((p) => storageUrl(p)).filter(Boolean)
         : [],
       adminUrl: data.domain_admin
-        ? `${data.domain_admin}/admin`
+        ? `${data.domain_admin.replace(/\/+$/, '')}/admin/`
         : null,
       tenantName: data.tenant_name || null,
     };

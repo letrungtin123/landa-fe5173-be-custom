@@ -58,7 +58,7 @@ export function CoursesPage() {
   const categoryCounts = useMemo(() => {
     const m = new Map<number, number>();
     for (const cat of categories) {
-      m.set(cat.id, allCourses.filter(c => c.categories?.some(cc => cc.id === cat.id)).length);
+      m.set(Number(cat.id), allCourses.filter(c => c.categories?.some(cc => cc.id === Number(cat.id))).length);
     }
     return m;
   }, [categories, allCourses]);
@@ -69,7 +69,7 @@ export function CoursesPage() {
     if (activeFilter === 'completed') return allCourses.filter(c => (progressMap?.get(c.id) || 0) >= 100);
     if (activeFilter === 'in_progress') return allCourses.filter(c => enrolledIds.has(c.id) && (progressMap?.get(c.id) || 0) < 100);
     // category filter (number)
-    return allCourses.filter(c => c.categories?.some(cat => cat.id === activeFilter));
+    return allCourses.filter(c => c.categories?.some(cat => cat.id === Number(activeFilter)));
   }, [activeFilter, allCourses, progressMap, enrolledIds]);
 
   // Xử lý đăng ký khóa học
@@ -90,7 +90,7 @@ export function CoursesPage() {
         {/* Staff/Admin có link truy cập admin dashboard */}
         {isStaff && (
           <a
-            href={branding.adminUrl || '/admin'}
+            href={branding.adminUrl || '/admin/'}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
