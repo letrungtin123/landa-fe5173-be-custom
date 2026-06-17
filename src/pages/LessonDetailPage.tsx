@@ -499,9 +499,8 @@ export function LessonDetailPage() {
                         return (
                           <a
                             key={doc.id}
-                            href={doc.fullUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={doc.fullUrl.includes('?') ? `${doc.fullUrl}&download=1` : `${doc.fullUrl}?download=1`}
+                            download={doc.display_name}
                             className="flex items-center justify-between rounded-lg bg-white/10 px-3 py-2.5 text-[14px] font-normal leading-[18px] transition-colors hover:bg-white/20 gap-2"
                           >
                             <div className="flex items-center gap-2 min-w-0">
