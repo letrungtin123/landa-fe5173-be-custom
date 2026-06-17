@@ -23,13 +23,13 @@ export function LessonImageCarousel({ images, onImageClick }: LessonImageCarouse
 
   return (
     <div
-      className="relative w-full h-[350px] md:h-[450px] 2xl:h-[550px] group overflow-hidden cursor-zoom-in"
+      className="relative w-full h-[350px] md:h-[450px] 2xl:h-[550px] group overflow-hidden cursor-zoom-in flex items-center"
       onClick={() => onImageClick?.(images[currentIndex].src)}
     >
       <img
         src={images[currentIndex].src}
         alt={images[currentIndex].alt || `Image ${currentIndex + 1}`}
-        className="w-full h-full object-cover transition-opacity duration-300"
+        className="w-full max-h-full object-contain transition-opacity duration-300"
       />
 
       {/* Nút điều hướng */}
