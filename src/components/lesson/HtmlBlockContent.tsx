@@ -78,11 +78,20 @@ export function HtmlBlockContent({ htmlContent, uploadedImages = [], displayName
       console.error("Failed to parse HTML for carousel", e);
     }
 
-    return { finalHtml: html, images: imgs, hasImage: hasImg };
+    // Filter out non-HTML artefacts: khi block data rỗng, backend có thể trả "{}" hoặc "\"\""
+    const isEmptyContent = (s: string) => {
+      const t = s.trim();
+      return !t || t === '{}' || t === '""' || t === '&lt;p&gt;&lt;/p&gt;' || t === '<p></p>';
+    };
+
+    return { finalHtml: isEmptyContent(html) ? '' : html, images: imgs, hasImage: hasImg };
   }, [htmlContent, uploadedImages]);
 
+  const hasTextContent = !!finalHtml.trim();
+  const imageOnly = images.length > 0 && !hasTextContent;
+
   return (
-    <div className="rounded-3xl border border-border px-8 py-7 shadow-sm bg-card">
+    <div className={`rounded-3xl border border-border shadow-sm bg-card ${imageOnly ? 'overflow-hidden' : 'px-8 py-7'}`}>
       {displayName && !hasImage && (
         <div className="mb-4 inline-block">
           <BadgeCyan>
@@ -91,17 +100,19 @@ export function HtmlBlockContent({ htmlContent, uploadedImages = [], displayName
         </div>
       )}
       {images.length >= 2 && (
-        <LessonImageCarousel
-          images={images}
-          onImageClick={(src) => onImageClick?.(src)}
-        />
+        <div className={hasTextContent ? '-mx-8 -mt-7 mb-6 overflow-hidden rounded-t-3xl' : ''}>
+          <LessonImageCarousel
+            images={images}
+            onImageClick={(src) => onImageClick?.(src)}
+          />
+        </div>
       )}
       {images.length === 1 && (
-        <div className="mb-6 cursor-zoom-in rounded-2xl border border-border bg-muted/20 p-3">
+        <div className={hasTextContent ? '-mx-8 -mt-7 mb-6 cursor-zoom-in overflow-hidden rounded-t-3xl' : 'cursor-zoom-in'}>
           <img
             src={images[0].src}
             alt={images[0].alt || "Uploaded image"}
-            className="max-h-[450px] w-full rounded-xl object-contain"
+            className="w-full object-cover"
             onClick={() => onImageClick?.(images[0].src)}
           />
         </div>
