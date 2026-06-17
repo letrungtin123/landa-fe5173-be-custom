@@ -1,7 +1,7 @@
 /**
  * Production server for FE-5173
  * - Serves static files from dist/
- * - Proxies LMS API requests to internal LMS backend
+ * - Proxies /api/* requests to Node.js custom backend
  * - Handles SPA routing (fallback to index.html)
  */
 import { createServer } from "node:http";
@@ -11,24 +11,37 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const DIST_DIR = join(__dirname, "dist");
-const PORT = parseInt(process.env.PORT || "5173", 10);
 
-// LMS backend — Caddy internal HTTP (Tutor)
-const LMS_BACKEND = process.env.LMS_BACKEND || "http://192.168.0.226.nip.io";
+// ── Load .env.production (không cần dotenv) ──
+const envFile = join(__dirname, ".env.production");
+if (existsSync(envFile)) {
+  const lines = readFileSync(envFile, "utf-8").split("\n");
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIndex = trimmed.indexOf("=");
+    if (eqIndex === -1) continue;
+    const key = trimmed.slice(0, eqIndex).trim();
+    const value = trimmed.slice(eqIndex + 1).trim();
+    // Chỉ set nếu chưa có (env var từ CLI ưu tiên hơn file)
+    if (!process.env[key]) {
+      process.env[key] = value;
+    }
+  }
+}
 
-// Paths that should be proxied to LMS
-const LMS_PROXY_PATHS = [
-  "/oauth2/",
-  "/login_ajax",
-  "/logout",
-  "/csrf/",
+const PORT = parseInt(process.env.VITE_PREVIEW_PORT || process.env.PORT || "5173", 10);
+
+// Custom Node.js Backend — đọc từ .env.production
+const API_BACKEND = process.env.VITE_API_BASE_URL;
+if (!API_BACKEND) {
+  console.error("[FE-5173] ❌ Thiếu biến VITE_API_BASE_URL trong .env.production");
+  process.exit(1);
+}
+
+// Paths that should be proxied to backend
+const PROXY_PATHS = [
   "/api/",
-  "/user_api/",
-  "/xblock/",
-  "/courses/",
-  "/enrollment",
-  "/search/",
-  "/media/",
 ];
 
 const MIME_TYPES = {
@@ -50,17 +63,11 @@ const MIME_TYPES = {
 };
 
 function shouldProxy(pathname) {
-  // /courses/ URLs — chỉ proxy khi chứa /xblock/ (LMS API calls),
-  // các URL khác như /courses/{id}/lessons/... là SPA routes → không proxy.
-  // Logic giống với bypass trong vite.config.ts (dev mode).
-  if (pathname.startsWith("/courses/")) {
-    return pathname.includes("/xblock/");
-  }
-  return LMS_PROXY_PATHS.some((prefix) => pathname.startsWith(prefix));
+  return PROXY_PATHS.some((prefix) => pathname.startsWith(prefix));
 }
 
-async function proxyToLms(req, res) {
-  const targetUrl = `${LMS_BACKEND}${req.url}`;
+async function proxyToBackend(req, res) {
+  const targetUrl = `${API_BACKEND}${req.url}`;
 
   // Collect request body
   const chunks = [];
@@ -71,8 +78,8 @@ async function proxyToLms(req, res) {
 
   // Build headers — forward most, adjust host
   const headers = { ...req.headers };
-  const lmsHost = new URL(LMS_BACKEND).host;
-  headers.host = lmsHost;
+  const backendHost = new URL(API_BACKEND).host;
+  headers.host = backendHost;
   // Remove encoding to simplify response handling
   delete headers["accept-encoding"];
 
@@ -145,7 +152,7 @@ const server = createServer((req, res) => {
   const pathname = new URL(req.url, "http://localhost").pathname;
 
   if (shouldProxy(pathname)) {
-    proxyToLms(req, res);
+    proxyToBackend(req, res);
   } else {
     serveStatic(req, res);
   }
@@ -153,6 +160,6 @@ const server = createServer((req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`[FE-5173] Server listening on http://0.0.0.0:${PORT}`);
-  console.log(`[FE-5173] LMS backend: ${LMS_BACKEND}`);
-  console.log(`[FE-5173] Proxying: ${LMS_PROXY_PATHS.join(", ")}`);
+  console.log(`[FE-5173] API backend: ${API_BACKEND}`);
+  console.log(`[FE-5173] Proxying: ${PROXY_PATHS.join(", ")}`);
 });
