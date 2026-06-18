@@ -19,6 +19,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DOMPurify from "dompurify";
 import { cn } from "@/lib/utils";
 import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
+import { storageUrl } from "@/utils/storageUrl";
+import type { Mentor } from "@/data/types";
 
 import { markBlocksComplete } from "@/api/progress";
 import { refetchProgressWithRetry } from "@/lib/progressRefetch";
@@ -173,8 +175,28 @@ export function LessonDetailPage() {
 
   // ✅ Hooks phải gọi TRƯỚC mọi early return
   const mentors = useMemo(() => {
-    return [];
-  }, []);
+    const courseMentors = courseDetail?.mentors ?? [];
+    if (courseMentors.length > 0) {
+      return courseMentors.map((mentor): Mentor => {
+        const avatar = storageUrl(mentor.avatar || mentor.profile_image_url) || null;
+        return {
+          id: mentor.id,
+          username: mentor.username,
+          name: mentor.name || mentor.full_name || mentor.email || "Mentor",
+          full_name: mentor.full_name || undefined,
+          role: mentor.role || "staff",
+          company: mentor.company || "",
+          avatar,
+          email: mentor.email,
+          phone_number: mentor.phone_number || mentor.phone || undefined,
+          bio: mentor.bio || undefined,
+          profile_image_url: avatar,
+          profile_image_url_full: avatar,
+        };
+      });
+    }
+    return lesson?.mentors ?? [];
+  }, [courseDetail?.mentors, lesson?.mentors]);
 
   // Unit navigation handlers
   const totalUnits = lesson?.units.length || 0;

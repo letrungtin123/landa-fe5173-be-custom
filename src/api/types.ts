@@ -61,6 +61,23 @@ export interface CourseInfo {
   created_at: string;
   /** Categories — optional, chưa implement trên custom BE */
   categories?: Array<{ id: number; name: string; slug: string }>;
+  mentors?: CourseMentorInfo[];
+}
+
+export interface CourseMentorInfo {
+  id: string;
+  username?: string;
+  name: string;
+  full_name?: string | null;
+  role: string;
+  company: string;
+  avatar: string | null;
+  email?: string;
+  phone?: string | null;
+  phone_number?: string | null;
+  bio?: string | null;
+  profile_image_url?: string | null;
+  profile_image_url_full?: string | null;
 }
 
 export interface CourseCategoryInfo {
@@ -273,5 +290,4 @@ export interface XBlockViewResponse {
   content: string;
   resources: unknown[];
 }
-
 

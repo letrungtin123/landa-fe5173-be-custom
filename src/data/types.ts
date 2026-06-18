@@ -95,7 +95,7 @@ export interface LessonDetail {
 }
 
 export interface Mentor {
-  id?: number;
+  id?: string | number;
   username?: string;
   name: string;
   full_name?: string;
