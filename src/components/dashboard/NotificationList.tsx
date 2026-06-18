@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import { motion } from "framer-motion";
 import { Shield, BookOpen, Info, Bell, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -104,7 +105,7 @@ export function NotificationList() {
                     className="text-[13px] text-muted-foreground leading-snug line-clamp-2
                                [&>p]:m-0 [&>p>strong]:text-foreground [&>p>strong]:font-semibold
                                [&_table]:hidden"
-                    dangerouslySetInnerHTML={{ __html: notification.message }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(notification.message) }}
                   />
                   <p className="mt-1.5 text-[11px] font-medium text-muted-foreground">
                     {notification.time}

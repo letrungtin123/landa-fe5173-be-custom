@@ -21,10 +21,10 @@ export async function getBlockDetail(usageKey: string, _username?: string): Prom
     const rawData = raw.data || {};
     const meta = raw.metadata || {};
 
-    console.log(`[getBlockDetail] ${blockType} "${raw.display_name}" rawData type:`, typeof rawData, 'meta keys:', meta ? Object.keys(meta) : 'null');
+
 
     const svd = buildBlockStudentViewData(blockType, rawData, meta, raw.display_name);
-    console.log(`[getBlockDetail] ${blockType} student_view_data keys:`, Object.keys(svd));
+
 
     return {
       id: raw.id,

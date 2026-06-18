@@ -1,11 +1,14 @@
 /**
  * Production server for FE-5173
- * - Serves static files from dist/
+ * - Serves static files from dist/ (async I/O, no event loop blocking)
  * - Proxies /api/* requests to Node.js custom backend
  * - Handles SPA routing (fallback to index.html)
+ * - Security headers (CSP, X-Frame-Options, etc.)
+ * - Pre-compressed file serving (.br, .gz)
  */
 import { createServer } from "node:http";
-import { readFileSync, existsSync, statSync } from "node:fs";
+import { readFileSync, existsSync, statSync, createReadStream } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -62,6 +65,35 @@ const MIME_TYPES = {
   ".map": "application/json",
 };
 
+// ── Security headers ──
+const SECURITY_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  "Content-Security-Policy": [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",     // Tailwind cần inline styles
+    "img-src 'self' data: blob: https:",    // Ảnh từ CDN/storage
+    "connect-src 'self' https:",            // API calls
+    "font-src 'self'",
+    "frame-ancestors 'none'",
+  ].join("; "),
+};
+
+// ── Cache index.html vào memory (nhỏ ~5KB, tránh đọc disk mỗi request) ──
+let indexHtmlCache = null;
+async function getIndexHtml() {
+  if (!indexHtmlCache) {
+    const indexPath = join(DIST_DIR, "index.html");
+    if (existsSync(indexPath)) {
+      indexHtmlCache = await readFile(indexPath);
+    }
+  }
+  return indexHtmlCache;
+}
+
 function shouldProxy(pathname) {
   return PROXY_PATHS.some((prefix) => pathname.startsWith(prefix));
 }
@@ -92,7 +124,7 @@ async function proxyToBackend(req, res) {
     });
 
     // Forward status and headers
-    const resHeaders = {};
+    const resHeaders = { ...SECURITY_HEADERS };
     proxyRes.headers.forEach((value, key) => {
       // Skip transfer-encoding since we send complete body
       if (key.toLowerCase() === "transfer-encoding") return;
@@ -109,7 +141,23 @@ async function proxyToBackend(req, res) {
   }
 }
 
-function serveStatic(req, res) {
+/**
+ * Resolve pre-compressed file if browser supports it.
+ * Priority: .br (brotli) → .gz (gzip) → original
+ */
+function resolveCompressed(filePath, acceptEncoding = "") {
+  if (acceptEncoding.includes("br")) {
+    const brPath = filePath + ".br";
+    if (existsSync(brPath)) return { path: brPath, encoding: "br" };
+  }
+  if (acceptEncoding.includes("gzip")) {
+    const gzPath = filePath + ".gz";
+    if (existsSync(gzPath)) return { path: gzPath, encoding: "gzip" };
+  }
+  return { path: filePath, encoding: null };
+}
+
+async function serveStatic(req, res) {
   let pathname = new URL(req.url, "http://localhost").pathname;
 
   // Try exact file first
@@ -118,30 +166,42 @@ function serveStatic(req, res) {
   if (existsSync(filePath) && statSync(filePath).isFile()) {
     const ext = extname(filePath);
     const mime = MIME_TYPES[ext] || "application/octet-stream";
-    const content = readFileSync(filePath);
 
     const cacheControl =
       pathname.startsWith("/assets/") ? "public, max-age=31536000, immutable" : "no-cache";
 
-    res.writeHead(200, {
+    // Check for pre-compressed version
+    const acceptEncoding = req.headers["accept-encoding"] || "";
+    const { path: servePath, encoding } = resolveCompressed(filePath, acceptEncoding);
+
+    const stat = statSync(servePath);
+    const headers = {
+      ...SECURITY_HEADERS,
       "Content-Type": mime,
-      "Content-Length": content.length,
+      "Content-Length": stat.size,
       "Cache-Control": cacheControl,
-    });
-    res.end(content);
+      "Vary": "Accept-Encoding",
+    };
+    if (encoding) {
+      headers["Content-Encoding"] = encoding;
+    }
+
+    res.writeHead(200, headers);
+    // Stream file — non-blocking
+    createReadStream(servePath).pipe(res);
     return;
   }
 
-  // SPA fallback — serve index.html
-  const indexPath = join(DIST_DIR, "index.html");
-  if (existsSync(indexPath)) {
-    const content = readFileSync(indexPath);
+  // SPA fallback — serve cached index.html
+  const indexContent = await getIndexHtml();
+  if (indexContent) {
     res.writeHead(200, {
+      ...SECURITY_HEADERS,
       "Content-Type": "text/html; charset=utf-8",
-      "Content-Length": content.length,
+      "Content-Length": indexContent.length,
       "Cache-Control": "no-cache",
     });
-    res.end(content);
+    res.end(indexContent);
   } else {
     res.writeHead(404);
     res.end("Not Found");

@@ -57,32 +57,38 @@ export function useStudyTimeEngine() {
 
     const syncInterval = setInterval(syncToServer, SYNC_INTERVAL);
 
-    // Sync khi user rời trang — dùng sendBeacon để browser không kill request
+    // Sync khi user rời trang — dùng fetch keepalive (thay sendBeacon)
+    // sendBeacon không hỗ trợ custom headers → trước đây gắn token vào URL query string
+    // → lộ token trong logs + BE authenticate chỉ đọc header → request bị 401 silently
     const handleBeforeUnload = () => {
       const current = useStudyTimeStore.getState().weeklyData;
       const entries = current
         .filter(d => d.minutes > 0)
-        .map(d => ({ date: d.fullDate, minutes: d.minutes }));
+        .map(d => ({
+          date: d.fullDate,
+          minutes: d.minutes,
+        }));
 
-      if (entries.length > 0) {
-        const { accessToken, tokenType } = useAuthStore.getState();
-        const baseUrl = config.apiBaseUrl;
+      if (entries.length === 0) return;
 
-        // Gửi từng entry qua sendBeacon (reliable, browser không kill)
-        for (const entry of entries) {
-          const blob = new Blob(
-            [JSON.stringify({
-              duration_minutes: entry.minutes,
-              started_at: new Date(`${entry.date}T00:00:00`).toISOString(),
-            })],
-            { type: 'application/json' }
-          );
-          // sendBeacon không hỗ trợ custom headers → dùng query param fallback
-          navigator.sendBeacon(
-            `${baseUrl}/api/enrollments/study-session?_token=${encodeURIComponent(`${tokenType} ${accessToken}`)}`,
-            blob
-          );
-        }
+      const { accessToken, tokenType } = useAuthStore.getState();
+      const baseUrl = config.apiBaseUrl;
+
+      // fetch keepalive đảm bảo request hoàn thành khi tab đóng (giống sendBeacon)
+      // nhưng hỗ trợ custom Authorization header → token không lộ trong URL
+      for (const entry of entries) {
+        fetch(`${baseUrl}/api/enrollments/study-session`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `${tokenType} ${accessToken}`,
+          },
+          body: JSON.stringify({
+            duration_minutes: entry.minutes,
+            started_at: new Date(`${entry.date}T00:00:00`).toISOString(),
+          }),
+          keepalive: true,
+        }).catch(() => {}); // Fire-and-forget
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);

@@ -61,7 +61,7 @@ export function parseProblemHtml(html: string): ParsedProblem[] {
       // Decode HTML entities (DOMParser tự decode khi parse)
       const contentDoc = parser.parseFromString(encodedContent, "text/html");
       searchDoc = contentDoc;
-      console.log("[problemParser] ✅ Decoded data-content, searching inside it");
+
     }
   }
 
@@ -69,10 +69,7 @@ export function parseProblemHtml(html: string): ParsedProblem[] {
   const responseWrappers = searchDoc.querySelectorAll(".wrapper-problem-response");
 
   responseWrappers.forEach((wrapper) => {
-    // DEBUG: dump wrapper and its surroundings 
-    console.log('[problemParser] wrapper innerHTML:', wrapper.innerHTML.substring(0, 500));
-    console.log('[problemParser] wrapper prevSibling:', wrapper.previousElementSibling?.outerHTML?.substring(0, 300));
-    console.log('[problemParser] has problem-group-label:', wrapper.querySelector('label.problem-group-label')?.textContent);
+
 
     // 1. Phân loại input type
     let type: ProblemType = "text-input";

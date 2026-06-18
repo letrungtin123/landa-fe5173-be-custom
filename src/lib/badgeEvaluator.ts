@@ -116,31 +116,6 @@ export function syncBadgesToLocalStorage(beBadges: Array<{badge_id: string, is_s
  */
 export function evaluateBadges(data: EvaluationData, username?: string, activeBadgeIds?: string[]): EarnedBadge[] {
   const earned: EarnedBadge[] = [];
-
-  // ── HACK: Force unlock badges via localStorage ──
-  // Cách dùng (trong Console):
-  //   localStorage.setItem('la_badge_hack', JSON.stringify(['first_step','la_expert']))
-  //   localStorage.setItem('la_badge_hack', '"all"')  ← unlock tất cả
-  //   localStorage.removeItem('la_badge_hack')         ← tắt hack
-  try {
-    const hackRaw = localStorage.getItem('la_badge_hack');
-    if (hackRaw) {
-      const hackValue = JSON.parse(hackRaw);
-      const hackIds: string[] = hackValue === 'all'
-        ? BADGE_DEFINITIONS.map(b => b.id)
-        : Array.isArray(hackValue) ? hackValue : [];
-
-      for (const id of hackIds) {
-        const badge = BADGE_DEFINITIONS.find(b => b.id === id);
-        if (badge) {
-          const timestamp = getTimestamp(badge.id, username) || persistTimestamp(badge.id, username);
-          earned.push({ badge, earnedAt: timestamp, courseName: '🔓 Hacked' });
-        }
-      }
-      if (earned.length > 0) return earned;
-    }
-  } catch { /* silent */ }
-
   const activeSet = activeBadgeIds ? new Set(activeBadgeIds) : null;
 
   for (const badge of BADGE_DEFINITIONS) {

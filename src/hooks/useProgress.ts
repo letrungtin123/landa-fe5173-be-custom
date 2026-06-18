@@ -4,7 +4,7 @@
 // ============================================================
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { markBlockComplete, markBlocksComplete, getMyCourseProgress } from "@/api/progress";
+import { markBlockComplete, markBlocksComplete, getMyCourseProgress, getBatchCourseProgress } from "@/api/progress";
 import { refetchProgressWithRetry } from "@/lib/progressRefetch";
 import { useAuthStore } from "@/stores/useAuthStore";
 
@@ -88,11 +88,11 @@ export function useBatchCourseProgress(courseIds: string[]) {
     queryKey: ["batch-course-progress", stableKey],
     queryFn: async (): Promise<Map<string, number>> => {
       if (!courseIds || courseIds.length === 0) return new Map();
-      // Gọi tuần tự — tránh burst requests qua Tunnelto
+      // 1 API call cho tất cả courses (thay vì N calls tuần tự)
+      const batchResult = await getBatchCourseProgress(courseIds);
       const map = new Map<string, number>();
       for (const id of courseIds) {
-        const p = await getMyCourseProgress(id);
-        map.set(id, p);
+        map.set(id, batchResult[id]?.progress ?? 0);
       }
       return map;
     },

@@ -1,7 +1,7 @@
 // ============================================================
 // Axios API Client — Kết nối Custom Backend (Express/PostgreSQL)
 // Xử lý Bearer auth (JWT), tự động refresh token, retry khi 401
-// Concurrency limiter + 429 retry cho Tunnelto rate limit
+// Concurrency limiter + 429 retry
 // KHÔNG LOG DỮ LIỆU NHẠY CẢM
 // ============================================================
 
@@ -18,10 +18,9 @@ export const apiClient = axios.create({
 });
 
 // ── Concurrency limiter — giới hạn request đồng thời ──
-// Tunnelto free rate-limit: mỗi API call = 2 HTTP requests (OPTIONS preflight + actual)
-// MAX_CONCURRENT=2 → tối đa 4 HTTP requests qua tunnel cùng lúc
-const MAX_CONCURRENT = 2;
-const REQUEST_DELAY_MS = 300; // Delay giữa các request để tránh burst
+// Production: 6 concurrent (= browser per-domain limit), không delay
+const MAX_CONCURRENT = 6;
+const REQUEST_DELAY_MS = 0;
 let activeRequests = 0;
 const requestQueue: Array<() => void> = [];
 

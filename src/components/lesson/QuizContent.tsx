@@ -272,7 +272,7 @@ export function QuizContent({ problemUsageKey, problemMedia, onImageClick }: Qui
             setFetchedExplanation(explanationHtml);
           }
         } catch (e) {
-          console.log('[QuizContent] Explanation not available (likely quiz setting):', e);
+          // Explanation không khả dụng (quiz setting)
         }
       }
 

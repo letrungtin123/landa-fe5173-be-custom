@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shield, BookOpen, Info, Bell, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -151,7 +152,7 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
                                      [&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1.5 [&_th]:bg-muted/50 [&_th]:font-semibold
                                      [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1.5"
                           dangerouslySetInnerHTML={{
-                            __html: notification.message,
+                            __html: DOMPurify.sanitize(notification.message),
                           }}
                         />
                         <p className="mt-1.5 text-[10px] text-muted-foreground/70">

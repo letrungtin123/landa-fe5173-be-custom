@@ -2,35 +2,18 @@
 // useBadges Hook — React hook kết nối badge evaluation
 //
 // Hỗ trợ tất cả courses (không giới hạn 3).
-// Dùng useQueries để fetch N courses song song.
+// Dùng 1 batch progress API thay vì N×blocks requests.
 // ============================================================
 
 import { useMemo, useEffect, useRef, useState } from "react";
-import { useQueries, useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useMyEnrollments } from "./useCourses";
 import { useMyCertificates } from "./useCertificates";
-import { getCourseBlocks } from "@/api/courses";
-import { getMyCourseProgress } from "@/api/progress";
+import { getBatchCourseProgress } from "@/api/progress";
 import { getUserBadges, saveUserBadge, updateBadgeShown, getActiveBadges } from "@/api/badges";
-import { transformBlocksToCourse } from "@/transformers/blockTransformer";
 import { evaluateBadges, getShownBadgeIds, markBadgeShown, syncBadgesToLocalStorage, type EarnedBadge } from "@/lib/badgeEvaluator";
 import { BADGE_DEFINITIONS, type BadgeDefinition } from "@/data/badgeConfig";
 import { useAuthStore } from "@/stores/useAuthStore";
-import type { CourseBlocksResponse, BlocksResponse, Block } from "@/api/types";
-
-/** Adapter: CourseBlocksResponse (flat array) → BlocksResponse (map)
- * 
- * IMPORTANT: Dùng chung adaptBlocksResponse từ useCourses.ts
- * để đảm bảo cùng query key ["course-blocks", courseId] luôn trả
- * cùng data format. Nếu dùng adapter khác → cache bị ghi đè sai format
- * → student_view_data cho html block thành raw string thay vì {data: string}
- * → htmlContent = null → HTML text blocks biến mất.
- */
-import { adaptBlocksResponse } from "./useCourses";
-
-/* Legacy alias — badges chỉ cần completion data nên adapter nào cũng được,
-   miễn sao format thống nhất với useCourseBlocksRaw */
-const adaptBlocksForBadges = adaptBlocksResponse;
 
 export interface UseBadgesResult {
   earnedBadges: EarnedBadge[];
@@ -100,83 +83,45 @@ export function useBadges(): UseBadgesResult {
     return enrollments.map((e: any) => e.course_id);
   }, [enrollments]);
 
-  // ── useQueries: fetch blocks cho TẤT CẢ courses ──
-  // IMPORTANT: Dùng query key RIÊNG "badge-blocks" (không phải "course-blocks")
-  // để KHÔNG bị invalidate khi progressRefetch chạy cho course hiện tại.
-  // Badges chỉ cần completion data → staleTime cao (10 phút) để giảm requests.
-  const blockQueries = useQueries({
-    queries: courseIds.map((courseId) => ({
-      queryKey: ["badge-blocks", courseId],
-      queryFn: async () => {
-        const raw = await getCourseBlocks(courseId);
-        return adaptBlocksForBadges(raw);
-      },
-      enabled: isAuthenticated && !!courseId,
-      staleTime: 10 * 60 * 1000, // 10 phút — badges không cần real-time
-      gcTime: 30 * 60 * 1000,    // giữ cache 30 phút
-      select: transformBlocksToCourse,
-    })),
-  });
-
-  // Grades: dùng progress từ enrollments thay vì edX grading
-  const gradeQueries = useQueries({
-    queries: courseIds.map((courseId) => ({
-      queryKey: ["course-progress", courseId],
-      queryFn: () => getMyCourseProgress(courseId),
-      enabled: isAuthenticated && !!courseId,
-      staleTime: 10 * 60 * 1000, // 10 phút — đồng bộ với badge-blocks
-      gcTime: 30 * 60 * 1000,
-    })),
+  // ── 1 batch request thay vì N×blocks + N×progress ──
+  // Trước đây: useQueries gọi getCourseBlocks() cho MỖI course (N recursive CTE queries)
+  // Bây giờ: 1 getBatchCourseProgress() → 1 lightweight SQL query
+  const { data: batchProgress, isSuccess: isBatchLoaded } = useQuery({
+    queryKey: ["badge-progress-batch", ...courseIds],
+    queryFn: () => getBatchCourseProgress(courseIds),
+    enabled: isAuthenticated && courseIds.length > 0,
+    staleTime: 10 * 60 * 1000, // 10 phút — badges không cần real-time
+    gcTime: 30 * 60 * 1000,
   });
 
   const isLoading = enrollLoading || certLoading;
 
-  // Build completion map từ tất cả courses
+  // Build completion map từ batch progress result
   const courseCompletions = useMemo(() => {
     const map = new Map<string, number>();
+    if (!batchProgress) return map;
 
-    courseIds.forEach((id, idx) => {
-      const courseData = blockQueries[idx]?.data;
-      if (!courseData?.modules?.length) return;
-
-      const totalModules = courseData.modules.length;
-      let totalProgress = 0;
-
-      for (const m of courseData.modules) {
-        if (m.completed) {
-          totalProgress += 100;
-        } else {
-          const p = parseInt(m.progress || "0", 10);
-          totalProgress += isNaN(p) ? 0 : p;
-        }
-      }
-
-      map.set(id, Math.round(totalProgress / totalModules));
-    });
-
+    for (const [courseId, data] of Object.entries(batchProgress)) {
+      map.set(courseId, data.progress);
+    }
     return map;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [courseIds, blockQueries.map((q) => q.data)]);
+  }, [batchProgress]);
 
+  // courseGrades — giữ interface cho evaluator (dù hiện tại không badge nào dùng)
   const courseGrades = useMemo(() => {
     const map = new Map<string, any>();
+    if (!batchProgress) return map;
 
-    courseIds.forEach((id, idx) => {
-      const progress = gradeQueries[idx]?.data;
-      if (progress !== undefined) {
-        // Adapter: map custom progress (0-100) to grade-like structure
-        map.set(id, {
-          percent: (progress as number) / 100,
-          passed: (progress as number) >= 100,
-          letter_grade: null,
-          section_breakdown: [],
-        });
-      }
-    });
-
+    for (const [courseId, data] of Object.entries(batchProgress)) {
+      map.set(courseId, {
+        percent: data.progress / 100,
+        passed: data.is_completed,
+        letter_grade: null,
+        section_breakdown: [],
+      });
+    }
     return map;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [courseIds, gradeQueries.map((q) => q.data)]);
+  }, [batchProgress]);
 
   // Lắng nghe event khi user update profile
   const [profileUpdateTrigger, setProfileUpdateTrigger] = useState(0);
@@ -215,8 +160,7 @@ export function useBadges(): UseBadgesResult {
   const isFullyLoaded = 
     !!enrollments && 
     isBeBadgesLoaded && 
-    blockQueries.every(q => q.isSuccess || q.isError) && 
-    gradeQueries.every(q => q.isSuccess || q.isError);
+    isBatchLoaded;
 
   const [allowPopups, setAllowPopups] = useState(false);
 

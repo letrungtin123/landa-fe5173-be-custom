@@ -19,8 +19,48 @@ export default defineConfig(({ mode }) => {
   // Preview port
   const previewPort = Number(env.VITE_PREVIEW_PORT) || 5173
 
+  // Strip console.log/debug in production builds
+  // Vite 8 dùng oxc transpiler (không phải esbuild) nên esbuild.pure không hoạt động
+  // → Dùng Rollup transform plugin thay thế
+  const stripConsolePlugin = mode === 'production' ? {
+    name: 'strip-console',
+    transform(code: string, id: string) {
+      if (id.includes('node_modules')) return null;
+      if (!code.includes('console.log') && !code.includes('console.debug')) return null;
+
+      // Match console.log/debug with balanced parentheses
+      let result = code;
+      for (const method of ['console.log', 'console.debug']) {
+        let idx = result.indexOf(method);
+        while (idx !== -1) {
+          const parenStart = result.indexOf('(', idx);
+          if (parenStart === -1) break;
+          // Find matching closing paren
+          let depth = 1;
+          let j = parenStart + 1;
+          while (j < result.length && depth > 0) {
+            if (result[j] === '(') depth++;
+            else if (result[j] === ')') depth--;
+            j++;
+          }
+          if (depth === 0) {
+            // Remove the entire statement including trailing semicolon
+            const end = result[j] === ';' ? j + 1 : j;
+            result = result.slice(0, idx) + result.slice(end);
+          } else {
+            break;
+          }
+          idx = result.indexOf(method, idx);
+        }
+      }
+
+      if (result === code) return null;
+      return { code: result, map: null };
+    },
+  } : null;
+
   return {
-    plugins: [react()],
+    plugins: [react(), stripConsolePlugin].filter(Boolean),
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
@@ -69,27 +109,40 @@ export default defineConfig(({ mode }) => {
       },
     },
 
-    // ── Production build — giảm số file/request cho Tunnelto ──
+    // ── Production build ──
     build: {
       sourcemap: false,
-      // Inline ảnh/icon < 200KB thành base64 → giảm request riêng lẻ
-      assetsInlineLimit: 200 * 1024,
-      // Gom CSS vào 1 file duy nhất
+      // Chỉ inline ảnh/icon nhỏ ≤ 8KB, ảnh lớn hơn → file riêng trên CDN
+      assetsInlineLimit: 8 * 1024,
       cssCodeSplit: false,
       rollupOptions: {
         output: {
-          // Gom vendor libs vào ít chunk — giảm request đồng thời
-          // Vite 8 / Rolldown: manualChunks phải là function
+          // Tách vendor chunks — update app code chỉ bust cache app chunk
           manualChunks(id: string) {
+            // Core React runtime — hiếm khi thay đổi, cache lâu
             if (id.includes('node_modules/react-dom') ||
                 id.includes('node_modules/react/') ||
-                id.includes('node_modules/react-router') ||
-                id.includes('node_modules/@tanstack/react-query')) {
-              return 'vendor';
+                id.includes('node_modules/scheduler')) {
+              return 'vendor-react';
             }
+            // Data layer — router + query
+            if (id.includes('node_modules/react-router') ||
+                id.includes('node_modules/@tanstack/react-query')) {
+              return 'vendor-data';
+            }
+            // UI libs — animation + icons
             if (id.includes('node_modules/framer-motion') ||
                 id.includes('node_modules/lucide-react')) {
-              return 'ui';
+              return 'vendor-ui';
+            }
+            // Security — DOMPurify
+            if (id.includes('node_modules/dompurify')) {
+              return 'vendor-security';
+            }
+            // Utils — nhỏ, gom chung
+            if (id.includes('node_modules/zustand') ||
+                id.includes('node_modules/date-fns')) {
+              return 'vendor-utils';
             }
           },
         },

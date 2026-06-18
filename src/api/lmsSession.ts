@@ -45,7 +45,6 @@ export async function establishLmsSessionFromToken(): Promise<void> {
     });
 
     if (res.ok || res.status === 204) {
-      console.log("[lms-session] ✅ LMS session established via access token");
     } else {
       console.warn("[lms-session] ⚠️ /oauth2/login/ returned", res.status);
     }
@@ -97,7 +96,6 @@ export async function establishLmsSession(
     });
 
     if (res.ok) {
-      console.log("[lms-session] ✅ LMS session established via login_ajax");
     } else {
       console.warn("[lms-session] ⚠️ /login_ajax returned", res.status, "— trying token-based");
       // Fallback to token-based session

@@ -52,7 +52,6 @@ export function useAutoEnroll() {
     );
 
     Promise.all(enrollPromises).then(() => {
-      console.log(`[AutoEnroll] Enrolled in ${missingCourses.length} courses`);
       // Refresh enrollment data
       qc.invalidateQueries({ queryKey: ["enrollments"] });
     });

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Eye, EyeOff, ArrowLeft, Info, ShieldCheck } from "lucide-react";
@@ -24,6 +24,33 @@ export function LoginPage() {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<SsoProvider | null>(null);
+
+  // ── Login throttle — chống brute force phía client ──
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const cooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startCooldown = useCallback((seconds: number) => {
+    setCooldownSeconds(seconds);
+    if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+    cooldownTimerRef.current = setInterval(() => {
+      setCooldownSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownTimerRef.current!);
+          cooldownTimerRef.current = null;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  // Cleanup timer khi unmount
+  useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+    };
+  }, []);
   const [searchParams] = useSearchParams();
   const currentDomain = window.location.hostname;
   const { data: ssoConfig } = useQuery({
@@ -92,6 +119,7 @@ export function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    if (cooldownSeconds > 0) return;
 
     setIsSubmitting(true);
     setErrors({});
@@ -99,12 +127,25 @@ export function LoginPage() {
     try {
       // FE này dành cho learner — luôn vào dashboard sau khi đăng nhập
       await login(email, password);
+      // Reset throttle khi login thành công
+      setFailedAttempts(0);
+      setCooldownSeconds(0);
+      if (cooldownTimerRef.current) { clearInterval(cooldownTimerRef.current); cooldownTimerRef.current = null; }
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       console.error("[LoginPage] login() threw:", err);
       const axiosErr = err as { response?: { status?: number } };
       if (axiosErr.response?.status === 401 || axiosErr.response?.status === 400) {
-        setErrors({ email: "Tên đăng nhập hoặc mật khẩu không đúng" });
+        const newFailed = failedAttempts + 1;
+        setFailedAttempts(newFailed);
+        // Sau 3 lần → cooldown tăng dần: 5s → 15s → 30s
+        if (newFailed >= 3) {
+          const cooldown = newFailed >= 5 ? 30 : newFailed >= 4 ? 15 : 5;
+          startCooldown(cooldown);
+          setErrors({ email: `Quá nhiều lần thử sai. Vui lòng đợi ${cooldown} giây.` });
+        } else {
+          setErrors({ email: "Tên đăng nhập hoặc mật khẩu không đúng" });
+        }
       } else {
         setErrors({ email: "Lỗi kết nối máy chủ. Vui lòng thử lại sau." });
       }
@@ -401,10 +442,12 @@ export function LoginPage() {
                   <div className="flex flex-col items-center gap-2.5">
                     <button
                       type="submit"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || cooldownSeconds > 0}
                       className="w-full h-9 rounded-[29px] bg-[#1d4ed8] text-[14px] font-normal leading-[16px] text-white transition-all font-['SF_Pro',_sans-serif] hover:bg-[#1e40af] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                      {isSubmitting ? (
+                      {cooldownSeconds > 0 ? (
+                        `Đợi ${cooldownSeconds}s`
+                      ) : isSubmitting ? (
                         <span className="flex items-center justify-center gap-2">
                           <svg
                             className="h-4 w-4 animate-spin"

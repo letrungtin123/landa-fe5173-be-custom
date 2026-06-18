@@ -77,3 +77,22 @@ export async function getCourseProgressDetail(courseId: string): Promise<CourseP
   );
   return data.data;
 }
+
+/**
+ * Lấy progress cho nhiều courses cùng lúc — 1 API call thay vì N calls tuần tự.
+ */
+export async function getBatchCourseProgress(
+  courseIds: string[]
+): Promise<Record<string, { progress: number; is_completed: boolean; completed_at: string | null }>> {
+  if (courseIds.length === 0) return {};
+  try {
+    const { data } = await apiClient.get<ApiResponse<{
+      progress: Record<string, { progress: number; is_completed: boolean; completed_at: string | null }>;
+    }>>('/api/learner/progress-batch', {
+      params: { courseIds: courseIds.join(',') },
+    });
+    return data.data.progress;
+  } catch {
+    return {};
+  }
+}

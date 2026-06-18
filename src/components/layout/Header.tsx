@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import DOMPurify from "dompurify";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Sun,
@@ -240,7 +241,7 @@ export function Header() {
                             </p>
                             <div 
                               className="text-[12px] text-muted-foreground leading-snug line-clamp-2 [&>p]:inline [&>table]:hidden"
-                              dangerouslySetInnerHTML={{ __html: notification.message }}
+                              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(notification.message) }}
                             />
                             <p className="mt-1 text-[10px] text-muted-foreground/80">{notification.time}</p>
                           </div>
