@@ -25,7 +25,7 @@ import type { CourseCategoryInfo } from "@/api/types";
 export function CoursesPage() {
   const { colorStyle } = useThemeStore();
   const role = useAuthStore((s) => s.user?.role);
-  const isStaff = role === 'staff' || role === 'superuser' || role === 'superadmin';
+  const isStaff = role === 'staff' || role === 'superuser' || role === 'superadmin' || role === 'learner_plus';
   const { data: courseList, isLoading } = useCourses();
   const { branding } = useBranding();
   const { data: enrollments } = useMyEnrollments();

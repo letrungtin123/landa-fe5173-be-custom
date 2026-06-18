@@ -29,7 +29,7 @@ export interface AuthUserInfo {
   full_name: string;
   phone: string | null;
   avatar_url: string | null;
-  role: 'learner' | 'staff' | 'superuser' | 'superadmin';
+  role: 'learner' | 'learner_plus' | 'staff' | 'superuser' | 'superadmin';
   tenant_id: string | null;
   tenant_name: string | null;
 }

@@ -282,7 +282,7 @@ export function Header() {
                 <User className="mr-2 h-4 w-4" />
                 Hồ sơ cá nhân
               </DropdownMenuItem>
-              {(user?.role === 'staff' || user?.role === 'superuser' || user?.role === 'superadmin') && (
+              {(user?.role === 'staff' || user?.role === 'superuser' || user?.role === 'superadmin' || user?.role === 'learner_plus') && (
                 <DropdownMenuItem 
                   onClick={async () => {
                     try {

@@ -60,7 +60,7 @@ export interface AuthUser {
   fullName: string;
   phone: string | null;
   avatar: string | null;
-  role: 'learner' | 'staff' | 'superuser' | 'superadmin';
+  role: 'learner' | 'learner_plus' | 'staff' | 'superuser' | 'superadmin';
   tenantId: string | null;
   tenantName: string | null;
 }
