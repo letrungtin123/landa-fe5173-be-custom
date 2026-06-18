@@ -2,10 +2,10 @@ import { useState } from "react";
 import { User, Mail, Phone, FileText, Shield, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Mentor } from "@/data/types";
-import LogoLanda from "@/assets/leandassociate.webp";
 
 interface MentorSidebarProps {
   mentors: Mentor[];
+  companyLogo?: string | null;
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -13,7 +13,7 @@ const ROLE_LABEL: Record<string, string> = {
   staff: "Trợ giảng",
 };
 
-export function MentorSidebar({ mentors }: MentorSidebarProps) {
+export function MentorSidebar({ mentors, companyLogo }: MentorSidebarProps) {
   const [selected, setSelected] = useState<Mentor | null>(null);
 
   if (mentors.length === 0) {
@@ -55,11 +55,13 @@ export function MentorSidebar({ mentors }: MentorSidebarProps) {
               </div>
               {/* Info */}
               <div className="min-w-0 flex-1 flex flex-col justify-center pt-0.5">
-                <img
-                  src={LogoLanda}
-                  alt="Le & Associates"
-                  className="h-[22px] w-auto object-contain object-left mb-1 opacity-100 -translate-x-1"
-                />
+                {companyLogo && (
+                  <img
+                    src={companyLogo}
+                    alt=""
+                    className="h-[22px] w-auto object-contain object-left mb-1 opacity-100 -translate-x-1"
+                  />
+                )}
                 <p className="text-[16px] font-bold leading-[20px] text-foreground truncate group-hover:text-primary transition-colors">
                   {mentor.name || mentor.full_name}
                 </p>

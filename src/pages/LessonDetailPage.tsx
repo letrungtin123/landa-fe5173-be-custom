@@ -5,6 +5,7 @@ import { UnitNavButtons } from "@/components/lesson/UnitNavButtons";
 import { usePageLoading } from "@/hooks/usePageLoading";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useThemeStore } from "@/stores/useThemeStore";
 import { useLessonDetail } from "@/hooks/useLessonDetail";
 import { useCourse, useCourseStructure } from "@/hooks/useCourses";
 import { useCourseFiles } from "@/hooks/useCourseFiles";
@@ -36,7 +37,6 @@ import { WelcomeCourseModal } from "@/components/lesson/WelcomeCourseModal";
 import { SectionCompleteModal } from "@/components/lesson/SectionCompleteModal";
 import { useCourseCompletion } from "@/hooks/useProgress";
 import { useCourseModalConfig } from "@/hooks/useModalConfig";
-import LogoLanda from "@/assets/leandassociate.webp";
 
 // ── Badge component (declared outside render to satisfy React Compiler) ──
 const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
@@ -63,6 +63,7 @@ export function LessonDetailPage() {
   const prevUnit = useAppStore((s) => s.prevUnit);
   const setCurrentLesson = useAppStore((s) => s.setCurrentLesson);
   const user = useAuthStore((s) => s.user);
+  const colorMode = useThemeStore((s) => s.colorMode);
   const qc = useQueryClient();
   const { isLoading: pageLoading } = usePageLoading(800, currentLessonId);
   const { lesson, isLoading: dataLoading } = useLessonDetail(currentLessonId);
@@ -197,6 +198,21 @@ export function LessonDetailPage() {
     }
     return lesson?.mentors ?? [];
   }, [courseDetail?.mentors, lesson?.mentors]);
+
+  const mentorSectionDescription = courseDetail?.mentor_section?.description?.trim() || "";
+  const mentorSectionLogo = useMemo(() => {
+    const section = courseDetail?.mentor_section;
+    if (!section) return null;
+    const path = colorMode === "dark"
+      ? section.logo_dark || section.logo_light
+      : section.logo_light || section.logo_dark;
+    return storageUrl(path || "") || null;
+  }, [
+    colorMode,
+    courseDetail?.mentor_section?.logo_dark,
+    courseDetail?.mentor_section?.logo_light,
+  ]);
+  const hasMentorSectionInfo = Boolean(mentorSectionDescription || mentorSectionLogo);
 
   // Unit navigation handlers
   const totalUnits = lesson?.units.length || 0;
@@ -489,23 +505,37 @@ export function LessonDetailPage() {
                       Người hướng dẫn
                     </h3>
                   </div>
-                  <MentorSidebar mentors={mentors} />
+                  <MentorSidebar mentors={mentors} companyLogo={mentorSectionLogo} />
 
                   {/* Divider */}
                   <div className="mx-8 border-t border-border/60" />
 
                   {/* Bottom: Company section */}
                   <div className="px-8 py-4">
-                    <img
-                      src={LogoLanda}
-                      alt="Le & Associates"
-                      className="h-6 w-auto object-contain object-left mb-4"
-                    />
-                    <p className="text-[14px] font-normal leading-[18px] text-muted-foreground">
-                      Le & Associates (L&A), thành viên của L&A Holdings, hiện là
-                      một trong những công ty hàng đầu tại Việt Nam trong dịch vụ nhân
-                      lực và thuê ngoài.
-                    </p>
+                    {hasMentorSectionInfo ? (
+                      <>
+                        {mentorSectionLogo && (
+                          <img
+                            src={mentorSectionLogo}
+                            alt=""
+                            className="h-6 w-auto object-contain object-left mb-4"
+                          />
+                        )}
+                        {mentorSectionDescription ? (
+                          <p className="text-[14px] font-normal leading-[18px] text-muted-foreground whitespace-pre-line">
+                            {mentorSectionDescription}
+                          </p>
+                        ) : (
+                          <p className="text-[14px] font-normal leading-[18px] text-muted-foreground italic">
+                            Chưa có thông tin
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-[14px] font-normal leading-[18px] text-muted-foreground italic">
+                        Chưa có thông tin
+                      </p>
+                    )}
                   </div>
                 </div>
 
