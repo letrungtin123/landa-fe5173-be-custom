@@ -17,7 +17,7 @@ export async function loginApi(
 ): Promise<LoginResponse> {
   const { data } = await apiClient.post<ApiResponse<LoginResponse>>(
     "/api/auth/login",
-    { username, password, client_app: "learner" }
+    { username, password, client_app: "learner", origin: window.location.origin }
   );
   return data.data;
 }

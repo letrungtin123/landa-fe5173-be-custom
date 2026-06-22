@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ReactFlow, MiniMap, Controls, Background, useNodesState, useEdgesState, ConnectionMode } from '@xyflow/react';
+import { ReactFlow, Controls, Background, useNodesState, useEdgesState, ConnectionMode } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Button } from '@/components/ui/button';
@@ -72,7 +72,7 @@ export default function DiagramContent({ data, onComplete }: DiagramContentProps
   }
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full">
       <DiagramRenderer
         activeDiagram={activeDiagram}
         displayName={data.display_name}
@@ -117,7 +117,33 @@ function DiagramRenderer({
   }, [activeDiagram, setNodes, setEdges]);
 
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const measureRef = React.useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Measure actual pixel width of the wrapper div using ResizeObserver
+  // This gives ReactFlow an explicit pixel width instead of relying on CSS % 
+  // which breaks when parent chain has flex-1 min-w-0 + framer-motion transforms
+  const [measuredWidth, setMeasuredWidth] = useState<number>(0);
+
+  React.useEffect(() => {
+    const el = measureRef.current;
+    if (!el) return;
+
+    // Initial measurement
+    setMeasuredWidth(el.getBoundingClientRect().width);
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const w = Math.floor(entry.contentRect.width);
+      if (w > 0) {
+        setMeasuredWidth(w);
+      }
+    });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   React.useEffect(() => {
     const handleFullscreenChange = () => {
@@ -137,8 +163,12 @@ function DiagramRenderer({
     }
   }, []);
 
+  // Explicit pixel dimensions for ReactFlow — avoids CSS % inheritance issues
+  const flowWidth = isFullscreen ? '100%' : (measuredWidth > 0 ? `${measuredWidth}px` : '100%');
+  const flowHeight = isFullscreen ? 'calc(100vh - 52px)' : '600px';
+
   return (
-    <div ref={containerRef} className="w-full h-full min-h-[500px] flex flex-col border border-border rounded-xl overflow-hidden bg-background">
+    <div ref={containerRef} className="w-full min-h-[500px] flex flex-col border border-border rounded-xl overflow-hidden bg-background">
       <div className="flex items-center justify-between p-3 border-b border-border bg-muted/20">
         <div className="flex items-center gap-3">
           {history.length > 1 && (
@@ -157,29 +187,37 @@ function DiagramRenderer({
           {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
         </Button>
       </div>
-      <div style={{ width: '100%', height: '600px' }} className="flex-1 relative">
-        <ReactFlow
-          style={{ width: '100%', height: '100%' }}
-          colorMode={colorMode === 'dark' ? 'dark' : 'light'}
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          connectionMode={ConnectionMode.Loose}
-          onNodeClick={onNodeClick}
-          onPaneClick={toggleFullscreen}
-          fitView
-          nodesDraggable={false}
-          nodesConnectable={false}
-          elementsSelectable={false}
-          zoomOnScroll={false}
-          panOnDrag={true}
-        >
-          <Controls showInteractive={false} />
-          <Background gap={12} size={1} />
-        </ReactFlow>
+      {/* Measure wrapper — always full width via CSS, provides pixel measurement */}
+      <div ref={measureRef} className="w-full flex-1 relative" style={{ minHeight: '600px' }}>
+        {/* Only render ReactFlow when we have a valid measured width */}
+        {measuredWidth > 0 && (
+          <div style={{ width: flowWidth, height: flowHeight, position: 'absolute', top: 0, left: 0 }}>
+            <ReactFlow
+              key={`diagram-${activeDiagram.id}-${measuredWidth}`}
+              style={{ width: '100%', height: '100%' }}
+              colorMode={colorMode === 'dark' ? 'dark' : 'light'}
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              connectionMode={ConnectionMode.Loose}
+              onNodeClick={onNodeClick}
+              onPaneClick={toggleFullscreen}
+              fitView
+              fitViewOptions={{ padding: 0.15 }}
+              nodesDraggable={false}
+              nodesConnectable={false}
+              elementsSelectable={false}
+              zoomOnScroll={false}
+              panOnDrag={true}
+            >
+              <Controls showInteractive={false} />
+              <Background gap={12} size={1} />
+            </ReactFlow>
+          </div>
+        )}
       </div>
     </div>
   );
