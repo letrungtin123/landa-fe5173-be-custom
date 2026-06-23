@@ -14,6 +14,16 @@ import { getUserBadges, saveUserBadge, updateBadgeShown, getActiveBadges } from 
 import { evaluateBadges, getShownBadgeIds, markBadgeShown, syncBadgesToLocalStorage, type EarnedBadge } from "@/lib/badgeEvaluator";
 import { BADGE_DEFINITIONS, type BadgeDefinition } from "@/data/badgeConfig";
 import { useAuthStore } from "@/stores/useAuthStore";
+import type { BadgeDefinitionFromAPI } from "@/api/types";
+import { storageUrl } from "@/utils/storageUrl";
+
+/** Badge image URLs map — badge_id → { cardUrl, iconUrl } */
+export interface BadgeImageMap {
+  [badgeId: string]: {
+    cardUrl: string | null;
+    iconUrl: string | null;
+  };
+}
 
 export interface UseBadgesResult {
   earnedBadges: EarnedBadge[];
@@ -24,6 +34,8 @@ export interface UseBadgesResult {
   newlyEarned: EarnedBadge | null;
   dismissNewBadge: () => void;
   activeBadgeIds?: string[];
+  /** Map badge_id → { cardUrl, iconUrl } — dynamic images from API */
+  badgeImageMap: BadgeImageMap;
 }
 
 /**
@@ -62,13 +74,32 @@ export function useBadges(): UseBadgesResult {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch active badges (cấu hình bật/tắt từ tenant)
-  const { data: activeBadgeIds, isSuccess: isActiveBadgesLoaded } = useQuery({
+  // Fetch active badges (cấu hình bật/tắt từ tenant) — bây giờ trả full definition objects kèm image URLs
+  const { data: activeBadgeDefs, isSuccess: isActiveBadgesLoaded } = useQuery({
     queryKey: ["active-badges", username],
     queryFn: getActiveBadges,
     enabled: isAuthenticated && !!username,
     staleTime: 10 * 60 * 1000,
   });
+
+  // Tính activeBadgeIds từ activeBadgeDefs (backward compat)
+  const activeBadgeIds = useMemo(() => {
+    if (!activeBadgeDefs) return undefined;
+    return activeBadgeDefs.map((b: BadgeDefinitionFromAPI) => b.id);
+  }, [activeBadgeDefs]);
+
+  // Build badge image map — memoized, chỉ tính lại khi activeBadgeDefs thay đổi
+  const badgeImageMap = useMemo<BadgeImageMap>(() => {
+    const map: BadgeImageMap = {};
+    if (!activeBadgeDefs) return map;
+    for (const b of activeBadgeDefs) {
+      map[b.id] = {
+        cardUrl: b.card_image_url ? storageUrl(b.card_image_url) : null,
+        iconUrl: b.icon_image_url ? storageUrl(b.icon_image_url) : null,
+      };
+    }
+    return map;
+  }, [activeBadgeDefs]);
 
   // Sync BE badges về localStorage để giữ lại flow hiển thị hiện tại
   useEffect(() => {
@@ -274,5 +305,6 @@ export function useBadges(): UseBadgesResult {
     newlyEarned: currentBadge,
     dismissNewBadge,
     activeBadgeIds,
+    badgeImageMap,
   };
 }

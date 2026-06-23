@@ -20,8 +20,11 @@ interface BadgeIconProps {
   earned: boolean;
   size?: number;
   className?: string;
+  /** Dynamic icon image URL from API — takes priority over hardcoded */
+  iconImageUrl?: string | null;
 }
 
+// Fallback static icon map (deprecated — used as fallback only)
 const BADGE_IMAGE_MAP: Record<string, { src: string; alt: string }> = {
   perfect_profile: { src: ManhGhepHoanHaoIcon, alt: "Mảnh Ghép Hoàn Hảo" },
   onboarding_warrior: { src: ChienBinhOnboardingIcon, alt: "Chiến Binh Onboarding" },
@@ -37,11 +40,15 @@ const BADGE_IMAGE_MAP: Record<string, { src: string; alt: string }> = {
   trusted_ambassador: { src: DaiSuTinCayIcon, alt: "Đại Sứ Tin Cậy" },
 };
 
-export function BadgeIcon({ badgeId, tier, earned, size = 64, className }: BadgeIconProps) {
-  const imageInfo = BADGE_IMAGE_MAP[badgeId];
+export function BadgeIcon({ badgeId, tier, earned, size = 64, className, iconImageUrl }: BadgeIconProps) {
+  const fallbackInfo = BADGE_IMAGE_MAP[badgeId];
+  
+  // Use dynamic URL from API, or fallback to static import
+  const imgSrc = iconImageUrl || fallbackInfo?.src;
+  const imgAlt = fallbackInfo?.alt || badgeId;
   
   // omnipotent_master không dùng BadgeIcon (nó dùng full-card background)
-  if (!imageInfo) return null;
+  if (!imgSrc) return null;
 
   return (
     <motion.div
@@ -51,8 +58,10 @@ export function BadgeIcon({ badgeId, tier, earned, size = 64, className }: Badge
       transition={{ type: "spring", stiffness: 400, damping: 15 }}
     >
       <img
-        src={imageInfo.src}
-        alt={imageInfo.alt}
+        src={imgSrc}
+        alt={imgAlt}
+        loading="lazy"
+        decoding="async"
         className={cn("w-full h-full object-contain drop-shadow-xl", !earned && "grayscale opacity-50")}
       />
       
@@ -61,11 +70,11 @@ export function BadgeIcon({ badgeId, tier, earned, size = 64, className }: Badge
         <div
           className="absolute inset-0 z-10 pointer-events-none"
           style={{
-            WebkitMaskImage: `url(${imageInfo.src})`,
+            WebkitMaskImage: `url(${imgSrc})`,
             WebkitMaskSize: "contain",
             WebkitMaskRepeat: "no-repeat",
             WebkitMaskPosition: "center",
-            maskImage: `url(${imageInfo.src})`,
+            maskImage: `url(${imgSrc})`,
             maskSize: "contain",
             maskRepeat: "no-repeat",
             maskPosition: "center",

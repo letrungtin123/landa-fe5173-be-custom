@@ -11,9 +11,13 @@ interface BadgeCardProps {
   earned?: EarnedBadge;
   compact?: boolean;
   onClick?: () => void;
+  /** Dynamic card image URL from API — takes priority over hardcoded */
+  cardImageUrl?: string | null;
+  /** Dynamic icon image URL from API — takes priority over hardcoded */
+  iconImageUrl?: string | null;
 }
 
-export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCardProps) {
+export function BadgeCard({ badge, earned, compact = false, onClick, cardImageUrl, iconImageUrl }: BadgeCardProps) {
   const isEarned = !!earned;
   const tierStyle = TIER_CONFIG[badge.tier];
 
@@ -35,6 +39,7 @@ export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCard
           tier={badge.tier}
           earned={isEarned}
           size={40}
+          iconImageUrl={iconImageUrl}
         />
         <div className="flex-1 min-w-0">
           <p className={cn(
@@ -54,7 +59,8 @@ export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCard
     );
   }
 
-  const imgSrc = BADGE_CARD_IMAGES[badge.id] || BADGE_CARD_IMAGES["onboarding_warrior"];
+  // Dynamic image URL from API, fallback to hardcoded
+  const imgSrc = cardImageUrl || BADGE_CARD_IMAGES[badge.id] || BADGE_CARD_IMAGES["onboarding_warrior"];
 
   return (
     <motion.div
@@ -70,7 +76,9 @@ export function BadgeCard({ badge, earned, compact = false, onClick }: BadgeCard
     >
       <img 
         src={imgSrc} 
-        alt={badge.name} 
+        alt={badge.name}
+        loading="lazy"
+        decoding="async"
         className={cn(
           "w-full h-full object-cover",
           // Bậc thầy toàn năng có viền trong ảnh gốc, cần scale lên một chút để che

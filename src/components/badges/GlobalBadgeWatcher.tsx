@@ -12,7 +12,7 @@ import { useBadges } from "@/hooks/useBadges";
 import { useAppStore } from "@/stores/useAppStore";
 
 export function GlobalBadgeWatcher() {
-  const { newlyEarned, dismissNewBadge } = useBadges();
+  const { newlyEarned, dismissNewBadge, badgeImageMap } = useBadges();
   const isCourseModalActive = useAppStore((s) => s.isCourseModalActive);
   const [debouncedActive, setDebouncedActive] = useState(isCourseModalActive);
 
@@ -28,5 +28,7 @@ export function GlobalBadgeWatcher() {
   // Nếu đang có course modal, chặn hoàn toàn không cho render badge modal
   if (debouncedActive) return null;
 
-  return <BadgeUnlockModal badge={newlyEarned} onDismiss={dismissNewBadge} />;
+  const cardUrl = newlyEarned ? badgeImageMap[newlyEarned.badge.id]?.cardUrl : null;
+
+  return <BadgeUnlockModal badge={newlyEarned} onDismiss={dismissNewBadge} cardImageUrl={cardUrl} />;
 }

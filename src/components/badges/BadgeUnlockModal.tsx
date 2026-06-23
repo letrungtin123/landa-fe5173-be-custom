@@ -7,9 +7,11 @@ import { X } from "lucide-react";
 interface BadgeUnlockModalProps {
   badge: EarnedBadge | null;
   onDismiss: () => void;
+  /** Dynamic card image URL from API */
+  cardImageUrl?: string | null;
 }
 
-export function BadgeUnlockModal({ badge, onDismiss }: BadgeUnlockModalProps) {
+export function BadgeUnlockModal({ badge, onDismiss, cardImageUrl }: BadgeUnlockModalProps) {
   useEffect(() => {
     if (!badge) return;
     const timer = setTimeout(onDismiss, 8000);
@@ -26,7 +28,10 @@ export function BadgeUnlockModal({ badge, onDismiss }: BadgeUnlockModalProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [badge, handleKeyDown]);
 
-  const imgSrc = badge ? (BADGE_CARD_IMAGES[badge.badge.id] || BADGE_CARD_IMAGES["onboarding_warrior"]) : "";
+  // Dynamic image from API, fallback to hardcoded
+  const imgSrc = badge
+    ? (cardImageUrl || BADGE_CARD_IMAGES[badge.badge.id] || BADGE_CARD_IMAGES["onboarding_warrior"])
+    : "";
 
   return (
     <AnimatePresence>

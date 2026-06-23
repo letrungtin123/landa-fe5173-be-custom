@@ -3,7 +3,7 @@
 // ============================================================
 
 import { apiClient } from "./client";
-import type { ApiResponse, UserBadge } from "./types";
+import type { ApiResponse, UserBadge, BadgeDefinitionFromAPI } from "./types";
 
 /**
  * Lấy danh sách huy hiệu của user.
@@ -18,11 +18,12 @@ export async function getUserBadges(): Promise<UserBadge[]> {
 }
 
 /**
- * Lấy danh sách ID các huy hiệu đang được kích hoạt cho tenant hiện tại.
+ * Lấy danh sách badge definitions đang active cho tenant hiện tại.
+ * Trả về full badge definitions kèm image URLs.
  */
-export async function getActiveBadges(): Promise<string[]> {
+export async function getActiveBadges(): Promise<BadgeDefinitionFromAPI[]> {
   try {
-    const { data } = await apiClient.get<ApiResponse<string[]>>("/api/learner/badges/active");
+    const { data } = await apiClient.get<ApiResponse<BadgeDefinitionFromAPI[]>>("/api/learner/badges/active");
     return data.data;
   } catch {
     // Nếu lỗi (ví dụ chưa login), trả về rỗng để an toàn

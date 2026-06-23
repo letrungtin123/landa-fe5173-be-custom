@@ -15,7 +15,7 @@ import { BadgeIcon } from "./BadgeIcon";
 import { BADGE_DEFINITIONS } from "@/data/badgeConfig";
 
 export function BadgeShowcase() {
-  const { earnedBadges, totalBadges, earnedCount, isLoading } = useBadges();
+  const { earnedBadges, totalBadges, earnedCount, isLoading, badgeImageMap } = useBadges();
 
   if (isLoading) {
     return (
@@ -82,6 +82,8 @@ export function BadgeShowcase() {
               badge={eb.badge}
               earned={eb}
               compact
+              cardImageUrl={badgeImageMap[eb.badge.id]?.cardUrl}
+              iconImageUrl={badgeImageMap[eb.badge.id]?.iconUrl}
             />
           ))
         ) : (
@@ -94,6 +96,7 @@ export function BadgeShowcase() {
                   tier={nextBadge.tier}
                   earned={false}
                   size={48}
+                  iconImageUrl={badgeImageMap[nextBadge.id]?.iconUrl}
                 />
                 <p className="mt-2 text-xs text-muted-foreground">
                   Tiếp theo: <span className="font-medium text-foreground">{nextBadge.name}</span>

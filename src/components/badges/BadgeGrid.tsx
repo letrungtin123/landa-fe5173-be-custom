@@ -6,11 +6,14 @@ import { BADGE_DEFINITIONS, CATEGORY_LABELS, type BadgeCategory, type BadgeDefin
 import type { EarnedBadge } from "@/lib/badgeEvaluator";
 import { cn } from "@/lib/utils";
 import { BADGE_CARD_IMAGES } from "@/data/badgeImages";
+import type { BadgeImageMap } from "@/hooks/useBadges";
 
 interface BadgeGridProps {
   earnedBadges: EarnedBadge[];
   activeBadgeIds?: string[];
   className?: string;
+  /** Dynamic badge image map from API */
+  badgeImageMap?: BadgeImageMap;
 }
 
 type FilterType = "all" | "earned" | "locked" | BadgeCategory;
@@ -24,7 +27,7 @@ const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: "innovation", label: CATEGORY_LABELS.innovation },
 ];
 
-export function BadgeGrid({ earnedBadges, activeBadgeIds, className }: BadgeGridProps) {
+export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageMap }: BadgeGridProps) {
   const [filter, setFilter] = useState<FilterType>("all");
   const [selectedBadge, setSelectedBadge] = useState<{ badge: BadgeDefinition; earned: EarnedBadge } | null>(null);
 
@@ -62,6 +65,15 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className }: BadgeGrid
 
     return badges;
   }, [filter, earnedMap, activeBadgesDef]);
+
+  // Resolve image URL for a badge (dynamic from API, fallback to hardcoded)
+  const getCardUrl = (badgeId: string) => badgeImageMap?.[badgeId]?.cardUrl || null;
+  const getIconUrl = (badgeId: string) => badgeImageMap?.[badgeId]?.iconUrl || null;
+
+  // Selected badge card image — for detail modal
+  const selectedImgSrc = selectedBadge
+    ? (getCardUrl(selectedBadge.badge.id) || BADGE_CARD_IMAGES[selectedBadge.badge.id] || BADGE_CARD_IMAGES["onboarding_warrior"])
+    : "";
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -112,6 +124,8 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className }: BadgeGrid
                   <BadgeCard
                     badge={badge}
                     earned={earnedMap.get(badge.id)}
+                    cardImageUrl={getCardUrl(badge.id)}
+                    iconImageUrl={getIconUrl(badge.id)}
                     onClick={() => {
                       const earned = earnedMap.get(badge.id);
                       if (earned) setSelectedBadge({ badge, earned });
@@ -162,7 +176,7 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className }: BadgeGrid
                   </button>
 
                   <img 
-                    src={BADGE_CARD_IMAGES[selectedBadge.badge.id] || BADGE_CARD_IMAGES["onboarding_warrior"]} 
+                    src={selectedImgSrc} 
                     alt={selectedBadge.badge.name} 
                     className="w-full h-full object-cover"
                   />

@@ -22,6 +22,7 @@ export function BadgesPage() {
     earnedCount,
     isLoading,
     activeBadgeIds,
+    badgeImageMap,
   } = useBadges();
 
   const progressPercent = totalBadges ? Math.round((earnedCount / totalBadges) * 100) : 0;
@@ -138,7 +139,7 @@ export function BadgesPage() {
           transition={{ duration: 0.4, delay: 0.2 }}
           className="mb-10"
         >
-          <BadgeGrid earnedBadges={earnedBadges} activeBadgeIds={activeBadgeIds} />
+          <BadgeGrid earnedBadges={earnedBadges} activeBadgeIds={activeBadgeIds} badgeImageMap={badgeImageMap} />
         </motion.div>
 
         {/* "Coming Soon" section — badges sắp đạt */}
@@ -161,6 +162,8 @@ export function BadgesPage() {
                   key={badge.id}
                   badge={badge}
                   compact
+                  cardImageUrl={badgeImageMap[badge.id]?.cardUrl}
+                  iconImageUrl={badgeImageMap[badge.id]?.iconUrl}
                 />
               ))}
             </div>

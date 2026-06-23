@@ -152,6 +152,16 @@ export interface UserBadge {
   earned_at: string;
 }
 
+/** Badge definition trả về từ API — kèm image URLs */
+export interface BadgeDefinitionFromAPI {
+  id: string;
+  name: string;
+  description: string;
+  image_key: string;
+  card_image_url: string | null;
+  icon_image_url: string | null;
+}
+
 // ── Thông báo ──
 
 export interface Notification {
