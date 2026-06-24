@@ -70,6 +70,15 @@ export default function ChatWidget() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  const scrollChatToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
+    requestAnimationFrame(() => {
+      const el = scrollRef.current;
+      if (!el) return;
+      el.scrollTo({ top: el.scrollHeight, behavior });
+      window.setTimeout(() => el.scrollTo({ top: el.scrollHeight, behavior }), 0);
+    });
+  }, []);
+
   // ── FAB drag ref ──
   const fabRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef({ sx: 0, sy: 0, sl: 0, st: 0, active: false, moved: false });
@@ -190,6 +199,7 @@ export default function ChatWidget() {
       setNextCursor(result.next_cursor);
     } catch { showToast('Không tải được tin nhắn'); }
     setLoadingMessages(false);
+    scrollChatToBottom('auto');
   };
 
   // ── Load more messages ──
