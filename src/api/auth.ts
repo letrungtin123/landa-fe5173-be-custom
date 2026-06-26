@@ -5,7 +5,7 @@
 // ============================================================
 
 import { apiClient } from "./client";
-import type { ApiResponse, LoginResponse, AuthUserInfo, PermissionsMap, TenantBasic } from "./types";
+import type { ApiResponse, LoginResponse, AuthUserInfo, PermissionsMap, TenantBasic, RoleLabelMap } from "./types";
 
 /**
  * Đăng nhập bằng username/email + password.
@@ -30,7 +30,8 @@ export async function loginApi(
  * apiClient interceptor sẽ gắn expired Bearer token → BE reject 401.
  */
 export async function refreshTokenApi(
-  refreshToken: string
+  refreshToken: string,
+  tenantId?: string | null
 ): Promise<LoginResponse> {
   const axios = (await import("axios")).default;
   const { config } = await import("@/config/env");
@@ -38,7 +39,7 @@ export async function refreshTokenApi(
 
   const { data } = await axios.post<ApiResponse<LoginResponse>>(
     `${baseURL}/api/auth/refresh`,
-    { refresh_token: refreshToken },
+    { refresh_token: refreshToken, ...(tenantId ? { tenant_id: tenantId } : {}) },
     { headers: { "Content-Type": "application/json" }, timeout: 10_000 }
   );
   return data.data;
@@ -52,14 +53,21 @@ export async function getUserMe(): Promise<{
   permissions: PermissionsMap;
   tenant_modules: string[];
   managed_tenants: TenantBasic[];
+  role_labels?: RoleLabelMap;
 }> {
   const { data } = await apiClient.get<ApiResponse<{
     user: AuthUserInfo;
     permissions: PermissionsMap;
     tenant_modules: string[];
     managed_tenants: TenantBasic[];
+    role_labels?: RoleLabelMap;
   }>>("/api/auth/me");
   return data.data;
+}
+
+export async function getRoleLabelsApi(): Promise<RoleLabelMap> {
+  const { data } = await apiClient.get<ApiResponse<{ role_labels: RoleLabelMap }>>("/api/auth/role-labels");
+  return data.data.role_labels || {};
 }
 
 /**

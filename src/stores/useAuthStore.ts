@@ -6,11 +6,12 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { loginApi, refreshTokenApi, logoutApi, getUserMe } from "@/api/auth";
+import { loginApi, refreshTokenApi, logoutApi, getUserMe, getRoleLabelsApi } from "@/api/auth";
 import { queryClient } from "@/App";
 import { useStudyTimeStore } from "@/stores/useStudyTimeStore";
 import { avatarUrl } from "@/utils/storageUrl";
-import type { TenantBasic, PermissionsMap, LoginResponse } from "@/api/types";
+import type { TenantBasic, PermissionsMap, LoginResponse, RoleLabelMap } from "@/api/types";
+import { normalizeRoleLabels } from "@/utils/roleLabels";
 
 // ── Mã hóa/giải mã đơn giản cho token trong storage ──
 const STORAGE_KEY = "la-auth-v2";
@@ -75,6 +76,7 @@ interface AuthState {
   permissions: PermissionsMap;
   tenantModules: string[];
   managedTenants: TenantBasic[];
+  roleLabels: RoleLabelMap;
 
   /** Đăng nhập bằng username/email + password. */
   login: (username: string, password: string) => Promise<void>;
@@ -93,9 +95,11 @@ interface AuthState {
 
   /** Cập nhật thông tin user trong store. */
   updateUser: (updates: Partial<AuthUser>) => void;
+  setRoleLabels: (labels: RoleLabelMap) => void;
+  refreshRoleLabels: () => Promise<void>;
 
   /** Chuyển tenant (superuser/superadmin). */
-  switchTenant: (tenantId: string) => void;
+  switchTenant: (tenantId: string) => Promise<void>;
 }
 
 // ── Timer ID cho auto-refresh ──
@@ -132,6 +136,7 @@ export const useAuthStore = create<AuthState>()(
       permissions: {},
       tenantModules: [],
       managedTenants: [],
+      roleLabels: {},
 
       login: async (username: string, password: string) => {
         const result = await loginApi(username, password);
@@ -165,6 +170,7 @@ export const useAuthStore = create<AuthState>()(
           permissions: result.permissions,
           tenantModules: result.tenant_modules,
           managedTenants: result.managed_tenants,
+          roleLabels: normalizeRoleLabels(result.role_labels),
         });
 
         // Lên lịch tự động refresh
@@ -200,6 +206,7 @@ export const useAuthStore = create<AuthState>()(
           permissions: result.permissions,
           tenantModules: result.tenant_modules,
           managedTenants: result.managed_tenants,
+          roleLabels: normalizeRoleLabels(result.role_labels),
         });
 
         get().scheduleTokenRefresh();
@@ -220,6 +227,7 @@ export const useAuthStore = create<AuthState>()(
           permissions: {},
           tenantModules: [],
           managedTenants: [],
+          roleLabels: {},
         });
 
         // 2. Xóa cache React Query — GIỮ LẠI branding (public, không phải user-specific)
@@ -267,7 +275,7 @@ export const useAuthStore = create<AuthState>()(
 
         refreshMutex = (async () => {
           try {
-            const result = await refreshTokenApi(currentRefreshToken);
+            const result = await refreshTokenApi(currentRefreshToken, get().user?.tenantId);
 
             // Giữ tenant đang chọn (nếu superadmin/superuser đã switchTenant)
             const currentUser = get().user;
@@ -298,6 +306,7 @@ export const useAuthStore = create<AuthState>()(
               permissions: result.permissions,
               tenantModules: result.tenant_modules,
               managedTenants: result.managed_tenants,
+              roleLabels: normalizeRoleLabels(result.role_labels),
             });
 
             lastRefreshSuccessAt = Date.now();
@@ -342,7 +351,20 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      switchTenant: (tenantId: string) => {
+      setRoleLabels: (labels) => {
+        set({ roleLabels: normalizeRoleLabels(labels) });
+      },
+
+      refreshRoleLabels: async () => {
+        try {
+          const labels = await getRoleLabelsApi();
+          set({ roleLabels: normalizeRoleLabels(labels) });
+        } catch {
+          set({ roleLabels: {} });
+        }
+      },
+
+      switchTenant: async (tenantId: string) => {
         const { user, managedTenants } = get();
         if (!user) return;
 
@@ -360,6 +382,7 @@ export const useAuthStore = create<AuthState>()(
         });
 
         // Invalidate tất cả queries để refetch data theo tenant mới
+        await get().refreshRoleLabels();
         try { queryClient.invalidateQueries(); } catch { /* ignore */ }
       },
     }),
@@ -376,6 +399,7 @@ export const useAuthStore = create<AuthState>()(
         permissions: state.permissions,
         tenantModules: state.tenantModules,
         managedTenants: state.managedTenants,
+        roleLabels: state.roleLabels,
       }),
       onRehydrateStorage: () => {
         return (state) => {

@@ -18,6 +18,7 @@ import { config } from "@/config/env";
 import ChatWidget from "@/components/chat-widget/chat-widget";
 import { exchangeOttApi } from "@/api/auth";
 import { avatarUrl } from "@/utils/storageUrl";
+import { normalizeRoleLabels } from "@/utils/roleLabels";
 
 // ── OTT Handler: Check trước khi React mount ──
 // Nếu URL có ?ott= (từ Admin Dashboard → FE Learner SSO),
@@ -62,6 +63,7 @@ let pendingOttExchange: Promise<void> | null = null;
         permissions: result.permissions,
         tenantModules: result.tenant_modules,
         managedTenants: result.managed_tenants,
+        roleLabels: normalizeRoleLabels(result.role_labels),
       });
 
       useAuthStore.getState().scheduleTokenRefresh();

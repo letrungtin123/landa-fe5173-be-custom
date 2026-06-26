@@ -44,8 +44,8 @@ export function TenantSwitchModal({ open, onOpenChange }: TenantSwitchModalProps
   }, [filtered, page]);
 
   const handleSwitch = useCallback(
-    (tenantId: string) => {
-      switchTenant(tenantId);
+    async (tenantId: string) => {
+      await switchTenant(tenantId);
       handleClose();
     },
     [switchTenant, handleClose]

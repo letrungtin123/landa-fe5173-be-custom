@@ -10,6 +10,9 @@ export interface ApiResponse<T = unknown> {
   message?: string;
 }
 
+export type UserRole = 'learner' | 'learner_plus' | 'staff' | 'superuser' | 'superadmin';
+export type RoleLabelMap = Partial<Record<UserRole, string>>;
+
 // ── Xác thực ──
 
 export interface LoginResponse {
@@ -20,6 +23,7 @@ export interface LoginResponse {
   permissions: PermissionsMap;
   tenant_modules: string[];
   managed_tenants: TenantBasic[];
+  role_labels?: RoleLabelMap;
 }
 
 export interface AuthUserInfo {
@@ -29,7 +33,7 @@ export interface AuthUserInfo {
   full_name: string;
   phone: string | null;
   avatar_url: string | null;
-  role: 'learner' | 'learner_plus' | 'staff' | 'superuser' | 'superadmin';
+  role: UserRole;
   tenant_id: string | null;
   tenant_name: string | null;
 }

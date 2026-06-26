@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCourseCompletion } from "@/hooks/useProgress";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { User } from "@/data/types";
+import { getRoleLabel } from "@/utils/roleLabels";
 
 /**
  * Hook to get the current user's profile, transformed to the FE User type.
@@ -13,6 +14,7 @@ import type { User } from "@/data/types";
  */
 export function useUser(courseId?: string) {
   const storeUser = useAuthStore((s) => s.user);
+  const roleLabels = useAuthStore((s) => s.roleLabels);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const { completionPercent } = useCourseCompletion(courseId);
@@ -26,7 +28,7 @@ export function useUser(courseId?: string) {
         email: storeUser.email,
         avatar: storeUser.avatar || "",
         bio: "",
-        role: storeUser.role === 'learner' ? 'Học viên' : storeUser.role,
+        role: getRoleLabel(storeUser.role, roleLabels, storeUser.role === 'learner' ? 'Học viên' : storeUser.role),
         company: storeUser.tenantName || "",
         streak,
         overallProgress: completionPercent || 0,

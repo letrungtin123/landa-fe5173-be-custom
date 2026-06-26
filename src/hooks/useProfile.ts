@@ -24,6 +24,7 @@ export function useProfile() {
       if (stripQuery(freshAvatar) !== stripQuery(currentAvatar)) {
         useAuthStore.getState().updateUser({ avatar: freshAvatar });
       }
+      useAuthStore.getState().setRoleLabels(me.role_labels || {});
       return me.user;
     },
     enabled: !!username,
