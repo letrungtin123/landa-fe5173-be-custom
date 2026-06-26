@@ -14,6 +14,7 @@ import {
   resolveProblemMediaImageUrl,
   type ProblemMedia,
 } from "@/lib/problemMedia";
+import { storageUrl } from "@/utils/storageUrl";
 import { LessonImageCarousel } from "./LessonImageCarousel";
 
 import {
@@ -417,7 +418,20 @@ function SortableMediaBlock({ media, onImageClick }: { media?: ProblemMedia | nu
 
   return (
     <div className="-mx-6 md:-mx-10 -mt-6 md:-mt-10 mb-8 overflow-hidden rounded-t-[1.35rem] bg-muted/10 border-b-2 border-primary/10 flex flex-col gap-1">
-      {normalized.youtube_id && (
+      {/* Uploaded video (takes priority over YouTube) */}
+      {normalized.video_storage_path && (
+        <div className="relative overflow-hidden w-full aspect-video">
+          <video
+            src={storageUrl(normalized.video_storage_path)}
+            controls
+            className="h-full w-full object-contain"
+            preload="metadata"
+          />
+        </div>
+      )}
+
+      {/* YouTube embed (only if no uploaded video) */}
+      {normalized.youtube_id && !normalized.video_storage_path && (
         <div className="relative overflow-hidden w-full aspect-video">
           <iframe
             src={`https://www.youtube.com/embed/${normalized.youtube_id}?rel=0&modestbranding=1&showinfo=0`}

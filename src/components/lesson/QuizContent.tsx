@@ -26,6 +26,7 @@ import {
   resolveProblemMediaImageUrl,
   type ProblemMedia,
 } from "@/lib/problemMedia";
+import { storageUrl } from "@/utils/storageUrl";
 
 // ── Custom Dropdown cho Problem Type: Dropdown ──
 function CustomDropdown({
@@ -127,7 +128,20 @@ function ProblemMediaBlock({
 
   return (
     <div className="mb-8 space-y-5">
-      {normalized.youtube_id && (
+      {/* Uploaded video (takes priority over YouTube) */}
+      {normalized.video_storage_path && (
+        <div className="relative overflow-hidden rounded-2xl bg-[#0d1117] aspect-video shadow-lg">
+          <video
+            src={storageUrl(normalized.video_storage_path)}
+            controls
+            className="h-full w-full object-contain"
+            preload="metadata"
+          />
+        </div>
+      )}
+
+      {/* YouTube embed (only if no uploaded video) */}
+      {normalized.youtube_id && !normalized.video_storage_path && (
         <div className="relative overflow-hidden rounded-2xl bg-[#0d1117] aspect-video shadow-lg">
           <iframe
             src={`https://www.youtube.com/embed/${normalized.youtube_id}?rel=0&modestbranding=1&showinfo=0`}

@@ -11,6 +11,7 @@ import type { Block, VideoBlockData } from "@/api/types";
 import { rewriteStaticUrls, sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 import { normalizeHtmlMediaImages } from "@/lib/htmlMedia";
 import { normalizeProblemMedia } from "@/lib/problemMedia";
+import { storageUrl } from "@/utils/storageUrl";
 
 /**
  * Hook lấy chi tiết bài học từ cấu trúc blocks của course.
@@ -131,6 +132,10 @@ function buildComponent(
     }
     if (!videoUrl && block.student_view_url) {
       videoUrl = block.student_view_url;
+    }
+    // Storage path (uploaded video) → resolve via storage proxy
+    if (videoUrl && !videoUrl.startsWith('http') && !videoUrl.startsWith('/')) {
+      videoUrl = storageUrl(videoUrl);
     }
     comp.videoUrl = sanitizeUrlToRelative(videoUrl);
     comp.videoDuration = videoData?.duration ? formatDuration(videoData.duration) : "";
