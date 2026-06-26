@@ -18,6 +18,7 @@ import type {
  */
 export async function getCourses(params?: {
   search?: string;
+  category_id?: string;
   page?: number;
   page_size?: number;
 }): Promise<CourseListResponse> {

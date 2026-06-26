@@ -5,13 +5,13 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { storageUrl } from "@/utils/storageUrl";
-import { Search, Loader2, BookOpen, ArrowRight, Check, ChevronDown } from "lucide-react";
+import { Search, Loader2, BookOpen, ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
-import { useCourses, useMyEnrollments } from "@/hooks/useCourses";
+import { useCourses, useMyEnrollments, useCoursesByCategory } from "@/hooks/useCourses";
 import { useCourseCompletion, useBatchCourseProgress } from "@/hooks/useProgress";
 
 import heroIllustration from "@/assets/ExplorePage/KhamPhaHanhTrinhHocTapCuaToi.png.png";
@@ -31,6 +31,17 @@ export function ExplorePage() {
 
   // State cho bộ filter trạng thái học (hiển thị mặc định)
   const [detailFilter, setDetailFilter] = useState<DetailFilter>('all');
+
+  // State cho category detail view
+  const [selectedCategoryDetail, setSelectedCategoryDetail] = useState<{ id: string; name: string } | null>(null);
+  const [categoryDetailPage, setCategoryDetailPage] = useState(1);
+  const CATEGORY_DETAIL_PAGE_SIZE = 12;
+
+  // Fetch courses cho category detail view
+  const { data: categoryDetailData, isLoading: categoryDetailLoading } = useCoursesByCategory(
+    selectedCategoryDetail?.id,
+    { search: debouncedSearch || undefined, page: categoryDetailPage, page_size: CATEGORY_DETAIL_PAGE_SIZE },
+  );
 
   // State cho right panel filter danh mục (multi-select)
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
@@ -147,7 +158,7 @@ export function ExplorePage() {
     >
       <div className="flex flex-col lg:flex-row w-full">
         {/* Left Sidebar */}
-        <div className="w-full lg:w-[280px] shrink-0 lg:border-r lg:border-border lg:pr-8 pt-4 lg:pt-8 mb-6 lg:mb-0">
+        <div className="hidden lg:block w-full lg:w-[280px] shrink-0 lg:border-r lg:border-border lg:pr-8 pt-4 lg:pt-8 mb-6 lg:mb-0">
           <div className="sticky top-24 space-y-10 max-h-[calc(100vh-120px)] overflow-y-auto hide-scrollbar pb-8">
             <UserProfileCard />
             <BadgeShowcase />
@@ -169,13 +180,13 @@ export function ExplorePage() {
               <div className="mb-8 flex flex-col lg:flex-row gap-6 w-full items-stretch">
                 {/* Left Panel — Hero */}
                 <div
-                  className="relative flex-1 rounded-[32px] p-6 flex flex-col justify-between min-h-[250px] lg:h-[270px] overflow-hidden"
+                  className="relative flex-1 rounded-[32px] p-5 pb-3 md:p-6 flex flex-col justify-between min-h-[240px] md:min-h-[250px] lg:h-[270px] overflow-hidden"
                   style={{
                     border: '1.5px solid hsl(var(--primary))',
-                    backgroundColor: 'hsl(var(--primary) / 0.08)',
+                    backgroundColor: 'hsl(var(--primary) / 0.04)',
                   }}
                 >
-                  <div className="relative z-10 flex flex-col h-full justify-between">
+                  <div className="relative z-10 flex flex-col flex-1 w-full justify-between">
                     <div>
                       {/* Badge COURSE */}
                       <div
@@ -425,8 +436,8 @@ export function ExplorePage() {
                   </div>
                 )}
 
-              {/* Category sections — hiển thị tất cả courses */}
-              {!isLoading && allCourses.length > 0 && (
+              {/* Category sections — giới hạn số card, có nút Xem tất cả */}
+              {!isLoading && allCourses.length > 0 && !selectedCategoryDetail && (
                 <div className="space-y-10">
                   {visibleCategories.map(([catId, { name, courses: catCourses }]) => {
                     const displayCourses = applyStatusFilter(catCourses);
@@ -434,34 +445,263 @@ export function ExplorePage() {
                     // Ẩn category nếu filter ra 0 kết quả
                     if (displayCourses.length === 0) return null;
 
+                    // Mobile: 4 cards, PC: 6 cards
+                    const mobileLimit = 4;
+                    const pcLimit = 6;
+                    const hasMoreMobile = displayCourses.length > mobileLimit;
+                    const hasMorePC = displayCourses.length > pcLimit;
+                    // PC lấy 6, mobile lấy 4 (dùng CSS ẩn/hiện)
+                    const pcCourses = displayCourses.slice(0, pcLimit);
+                    const mobileCourses = displayCourses.slice(0, mobileLimit);
+
                     return (
                       <section key={catId} id={`category-section-${catId}`} className="scroll-mt-6">
                         {/* Category header */}
-                        <div className="flex items-baseline gap-2 mb-5">
-                          <h2 className="text-[22px] font-bold leading-[28px] text-foreground">
-                            {name}
-                          </h2>
-                          <span className="text-[13px] text-muted-foreground">
-                            ({displayCourses.length} khóa học)
-                          </span>
+                        <div className="flex items-center justify-between mb-5">
+                          <div className="flex items-baseline gap-2">
+                            <h2 className="text-[22px] font-bold leading-[28px] text-foreground">
+                              {name}
+                            </h2>
+                            <span className="text-[13px] text-muted-foreground">
+                              ({displayCourses.length} khóa học)
+                            </span>
+                          </div>
+                          {/* Nút Xem tất cả — mobile */}
+                          {hasMoreMobile && (
+                            <button
+                              onClick={() => {
+                                setSelectedCategoryDetail({ id: catId, name });
+                                setCategoryDetailPage(1);
+                              }}
+                              className="md:hidden flex items-center gap-1 text-[13px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                            >
+                              Xem tất cả
+                              <ArrowRight className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                          {/* Nút Xem tất cả — PC */}
+                          {hasMorePC && (
+                            <button
+                              onClick={() => {
+                                setSelectedCategoryDetail({ id: catId, name });
+                                setCategoryDetailPage(1);
+                              }}
+                              className="hidden md:flex items-center gap-1 text-[14px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                            >
+                              Xem tất cả
+                              <ArrowRight className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
 
-                        {/* Course grid — hiển thị tất cả */}
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                          {displayCourses.map((course) => (
-                            <ExploreCourseCard
-                              key={course.id}
-                              course={course}
-                              isEnrolled={enrolledIds.has(course.id)}
-                              colorStyle={colorStyle}
-                              categoryName={name}
-                            />
+                        {/* Mobile carousel — 4 cards */}
+                        <div className="flex items-stretch overflow-x-auto snap-x snap-mandatory gap-4 pb-4 pl-2 -mr-4 md:hidden hide-scrollbar">
+                          {mobileCourses.map((course) => (
+                            <div key={course.id} className="w-[85vw] max-w-[300px] shrink-0 snap-start flex">
+                              <ExploreCourseCard
+                                course={course}
+                                isEnrolled={enrolledIds.has(course.id)}
+                                colorStyle={colorStyle}
+                                categoryName={name}
+                              />
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* PC grid — 6 cards */}
+                        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-x-6 md:gap-y-10">
+                          {pcCourses.map((course) => (
+                            <div key={course.id} className="flex">
+                              <ExploreCourseCard
+                                course={course}
+                                isEnrolled={enrolledIds.has(course.id)}
+                                colorStyle={colorStyle}
+                                categoryName={name}
+                              />
+                            </div>
                           ))}
                         </div>
 
                       </section>
                     );
                   })}
+                </div>
+              )}
+
+              {/* ══════════════ CATEGORY DETAIL VIEW ══════════════ */}
+              {selectedCategoryDetail && (
+                <div>
+                  {/* Back button */}
+                  <button
+                    onClick={() => {
+                      setSelectedCategoryDetail(null);
+                      setCategoryDetailPage(1);
+                    }}
+                    className="flex items-center gap-2 mb-6 text-[14px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Quay lại
+                  </button>
+
+                  {/* Category title */}
+                  <div className="flex items-baseline gap-2 mb-6">
+                    <h2 className="text-[24px] font-bold leading-[30px] text-foreground">
+                      {selectedCategoryDetail.name}
+                    </h2>
+                    {categoryDetailData && (
+                      <span className="text-[13px] text-muted-foreground">
+                        ({categoryDetailData.total} khóa học)
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Loading */}
+                  {categoryDetailLoading && (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <Card key={i} className="h-[400px] flex flex-col overflow-hidden rounded-[28px] border-border shadow-sm">
+                          <Skeleton className="h-48 w-full rounded-none" />
+                          <div className="p-5 flex flex-col flex-1">
+                            <Skeleton className="h-4 w-20 mb-3 rounded-full" />
+                            <Skeleton className="h-6 w-3/4 mb-3" />
+                            <Skeleton className="h-4 w-full mb-2" />
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Course grid */}
+                  {!categoryDetailLoading && categoryDetailData && (
+                    <>
+                      {/* Mobile — danh sách dọc, card ngang giống dashboard PC */}
+                      <div className="flex flex-col gap-4 md:hidden px-2">
+                        {(categoryDetailData.data || []).map((course: any) => {
+                          const imageUrl = course.image_url
+                            ? storageUrl(course.image_url)
+                            : null;
+                          const isEnrolled = enrolledIds.has(course.id);
+                          const completionPercent = isEnrolled ? (progressMap?.get(course.id) ?? 0) : 0;
+                          const displayPercent = Math.floor(Math.round(completionPercent * 100) / 10 + 0.4) / 10;
+
+                          return (
+                            <Link key={course.id} to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`} className="flex w-full">
+                              <div className="group flex flex-row flex-1 w-full h-[150px] overflow-hidden rounded-2xl border border-primary shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-card transition-all duration-200 hover:shadow-md hover:scale-[1.02]">
+                                {/* Thumbnail */}
+                                <div className="w-[38%] h-full shrink-0 relative flex items-center justify-center overflow-hidden p-1.5">
+                                  {imageUrl ? (
+                                    <>
+                                      <img
+                                        src={imageUrl}
+                                        alt={course.display_name}
+                                        className="z-10 h-full w-full object-cover rounded-[14px]"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = "none";
+                                          e.currentTarget.nextElementSibling?.classList.replace("hidden", "flex");
+                                        }}
+                                      />
+                                      <div className={cn("hidden h-full w-full items-center justify-center rounded-[14px]", colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent")}>
+                                        <BookOpen className="h-10 w-10 text-white/50" />
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <div className={cn("flex h-full w-full items-center justify-center rounded-[14px]", colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent")}>
+                                      <BookOpen className="h-10 w-10 text-white/50" />
+                                    </div>
+                                  )}
+                                </div>
+                                {/* Content */}
+                                <div className="flex flex-col flex-1 p-3 w-[62%]">
+                                  <div className="mb-1 text-[10px] font-semibold leading-[16px] tracking-[-0.05px] text-primary truncate">
+                                    {selectedCategoryDetail.name}
+                                  </div>
+                                  <h3 className="mb-0 text-[14px] font-semibold leading-[18px] text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                                    {course.display_name}
+                                  </h3>
+                                  <div className="mt-auto">
+                                    {isEnrolled && completionPercent < 100 && (
+                                      <div className="mb-1.5">
+                                        <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+                                          <div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${completionPercent}%` }} />
+                                        </div>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center justify-between w-full">
+                                      <div className="flex items-center gap-1 text-[12px] font-bold leading-normal text-primary">
+                                        {isEnrolled ? (
+                                          completionPercent === 100 ? (
+                                            <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                                              <Check className="h-3.5 w-3.5 stroke-[3]" />
+                                              <span className="text-[12px] font-bold">Đã hoàn thành</span>
+                                            </div>
+                                          ) : (
+                                            <>Tiếp tục học <ArrowRight className="h-3 w-3" /></>
+                                          )
+                                        ) : (
+                                          <span className="inline-block rounded-full bg-primary px-4 py-1 text-[11px] font-bold text-white">Bắt đầu học</span>
+                                        )}
+                                      </div>
+                                      {isEnrolled && completionPercent < 100 && (
+                                        <span className="text-[10px] font-bold text-primary">{displayPercent}%</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+
+                      {/* PC grid */}
+                      <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-x-6 md:gap-y-10">
+                        {(categoryDetailData.data || []).map((course: any) => (
+                          <div key={course.id} className="flex">
+                            <ExploreCourseCard
+                              course={course}
+                              isEnrolled={enrolledIds.has(course.id)}
+                              colorStyle={colorStyle}
+                              categoryName={selectedCategoryDetail.name}
+                            />
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Pagination */}
+                      {categoryDetailData.total_pages > 1 && (
+                        <div className="flex items-center justify-center gap-2 pt-6">
+                          <button
+                            onClick={() => setCategoryDetailPage(p => Math.max(1, p - 1))}
+                            disabled={categoryDetailPage <= 1}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                          {Array.from({ length: categoryDetailData.total_pages }, (_, i) => (
+                            <button
+                              key={i + 1}
+                              onClick={() => setCategoryDetailPage(i + 1)}
+                              className={cn(
+                                "inline-flex h-9 w-9 items-center justify-center rounded-lg text-[14px] font-semibold transition-all",
+                                categoryDetailPage === i + 1
+                                  ? "bg-primary text-primary-foreground shadow-sm"
+                                  : "border border-border bg-card hover:bg-accent/10"
+                              )}
+                            >
+                              {i + 1}
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => setCategoryDetailPage(p => Math.min(categoryDetailData.total_pages, p + 1))}
+                            disabled={categoryDetailPage >= categoryDetailData.total_pages}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </motion.div>
@@ -490,14 +730,15 @@ function ExploreCourseCard({
   const { completionPercent } = useCourseCompletion(
     isEnrolled ? course.id : undefined
   );
+  const displayPercent = typeof completionPercent === "number" ? Math.floor(Math.round(completionPercent * 100) / 10 + 0.4) / 10 : 0;
 
   return (
-    <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`}>
-      <Card className="group h-full flex flex-col p-2 pb-4 rounded-[28px] border-border bg-card shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
+    <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`} className="flex flex-1 w-full">
+      <Card className="group h-[330px] md:h-[420px] flex flex-col flex-1 w-full p-2 pb-4 md:pb-6 rounded-[28px] border-border bg-card shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
         {/* Ảnh bìa khóa học */}
         <div
           className={cn(
-            "flex h-48 items-center justify-center relative overflow-hidden shrink-0 rounded-[20px]",
+            "flex h-40 md:h-48 items-center justify-center relative overflow-hidden shrink-0 rounded-[20px]",
             colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent"
           )}
         >
@@ -520,30 +761,22 @@ function ExploreCourseCard({
           />
         </div>
 
-        <div className="pt-4 px-2 flex flex-col flex-1">
+        <div className="pt-3 md:pt-4 px-2 flex flex-col flex-1">
           {/* Category label nhỏ màu xanh */}
           {categoryName && (
-            <p className="mb-1.5 text-[13px] font-medium leading-[16px] text-primary">
+            <p className="mb-1.5 text-[12px] md:text-[13px] font-medium leading-[16px] text-primary">
               {categoryName}
             </p>
           )}
 
-          <h3 className="mb-5 text-[20px] font-bold leading-[26px] text-foreground group-hover:text-accent transition-colors line-clamp-2">
+          <h3 className="mb-4 md:mb-5 text-[16px] md:text-[20px] font-bold leading-[22px] md:leading-[26px] text-foreground group-hover:text-accent transition-colors line-clamp-2">
             {course.display_name}
           </h3>
 
-          <div className="mt-auto pt-5">
+          <div className="mt-auto pt-3 md:pt-5">
             {/* Thanh tiến độ — chỉ hiển thị khi đã enroll và chưa hoàn thành */}
             {isEnrolled && typeof completionPercent === "number" && completionPercent < 100 && (
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[13px] font-medium leading-[16px] text-muted-foreground">
-                    Tiến độ
-                  </span>
-                  <span className="text-[13px] font-bold leading-[16px] text-foreground">
-                    {completionPercent}%
-                  </span>
-                </div>
+              <div className="mb-3 md:mb-4">
                 <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
                   <div
                     className="h-full rounded-full bg-primary transition-[width] duration-500"
@@ -554,27 +787,34 @@ function ExploreCourseCard({
             )}
 
             {/* CTA button / link */}
-            {isEnrolled ? (
-              <div className="flex items-center gap-1.5 text-[15px] font-bold leading-[20px] text-primary">
-                {completionPercent === 100 ? (
-                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                    <Check className="h-5 w-5 stroke-[3]" />
-                    <span className="text-[16px] font-bold text-green-600 dark:text-green-400">Đã hoàn thành</span>
-                  </div>
-                ) : (
-                  <>
-                    Tiếp tục học
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
-              </div>
-            ) : (
-              <button
-                className="w-fit rounded-full bg-primary px-8 py-3 text-[15px] font-bold leading-[18px] text-white transition-colors hover:bg-primary/90"
-              >
-                Bắt đầu học
-              </button>
-            )}
+            <div className="flex items-center justify-between w-full">
+              {isEnrolled ? (
+                <div className="flex items-center gap-1.5 text-[14px] md:text-[15px] font-bold leading-[20px] text-primary">
+                  {completionPercent === 100 ? (
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                      <Check className="h-4 w-4 md:h-5 md:w-5 stroke-[3]" />
+                      <span className="text-[14px] md:text-[16px] font-bold text-green-600 dark:text-green-400">Đã hoàn thành</span>
+                    </div>
+                  ) : (
+                    <>
+                      Tiếp tục học
+                      <ArrowRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                    </>
+                  )}
+                </div>
+              ) : (
+                <button
+                  className="w-fit rounded-full bg-primary px-6 md:px-8 py-2 md:py-3 text-[14px] md:text-[15px] font-bold leading-[18px] text-white transition-colors hover:bg-primary/90"
+                >
+                  Bắt đầu học
+                </button>
+              )}
+              {isEnrolled && typeof completionPercent === "number" && completionPercent < 100 && (
+                <span className="text-[12px] md:text-[13px] font-bold leading-[16px] text-foreground">
+                  {displayPercent}%
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </Card>

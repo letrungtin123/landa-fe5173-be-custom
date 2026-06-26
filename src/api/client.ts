@@ -72,10 +72,6 @@ apiClient.interceptors.response.use(
   }
 );
 
-// ── Flag ngăn refresh đồng thời ──
-let isRefreshing = false;
-let refreshPromise: Promise<boolean> | null = null;
-
 // ── Request Interceptor — gắn Bearer token + Tenant ID ──
 apiClient.interceptors.request.use(
   (req) => {
@@ -97,6 +93,8 @@ apiClient.interceptors.request.use(
 );
 
 // ── Response Interceptor — xử lý 401 → refresh → retry ──
+// KHÔNG có mutex riêng ở đây — dùng duy nhất refreshMutex trong useAuthStore.
+// Tránh race condition giữa 2 lớp mutex riêng biệt.
 apiClient.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
@@ -106,11 +104,6 @@ apiClient.interceptors.response.use(
 
     // Chỉ xử lý 401 và chưa retry
     if (error.response?.status !== 401 || originalRequest._retried) {
-      // Nếu 401 lần 2 sau retry → cũng phải logout
-      if (error.response?.status === 401 && originalRequest._retried) {
-        useAuthStore.getState().logout();
-        window.location.href = "/login?error=account_disabled";
-      }
       return Promise.reject(error);
     }
 
@@ -125,29 +118,8 @@ apiClient.interceptors.response.use(
     // Đánh dấu đã retry để tránh vòng lặp vô hạn
     originalRequest._retried = true;
 
-    // Nếu đang refresh → chờ kết quả rồi retry
-    if (isRefreshing && refreshPromise) {
-      const success = await refreshPromise;
-      if (success) {
-        // Gắn token mới vào request gốc
-        const { accessToken, tokenType } = useAuthStore.getState();
-        originalRequest.headers.Authorization = `${tokenType} ${accessToken}`;
-        return apiClient(originalRequest);
-      }
-      return Promise.reject(error);
-    }
-
-    // Thử refresh token
-    isRefreshing = true;
-    refreshPromise = useAuthStore
-      .getState()
-      .performTokenRefresh()
-      .finally(() => {
-        isRefreshing = false;
-        refreshPromise = null;
-      });
-
-    const success = await refreshPromise;
+    // Single source of truth: store.performTokenRefresh() có mutex + cooldown
+    const success = await useAuthStore.getState().performTokenRefresh();
 
     if (success) {
       // Retry request gốc với token mới
@@ -158,6 +130,7 @@ apiClient.interceptors.response.use(
 
     // Refresh thất bại → logout
     useAuthStore.getState().logout();
+    window.location.href = "/login?session=expired";
     return Promise.reject(error);
   }
 );

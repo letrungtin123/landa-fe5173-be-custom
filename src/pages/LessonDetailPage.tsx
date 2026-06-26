@@ -7,7 +7,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useLessonDetail } from "@/hooks/useLessonDetail";
-import { useCourse, useCourseStructure } from "@/hooks/useCourses";
+import { useCourse, useCourseStructure, useCourseBlocksRaw } from "@/hooks/useCourses";
 import { useCourseFiles } from "@/hooks/useCourseFiles";
 import type { CourseFile } from "@/hooks/useCourseFiles";
 import { BookOpen, Download, FileText, FileSpreadsheet, Presentation, MessageCircle, CheckCircle2, ChevronUp } from "lucide-react";
@@ -21,7 +21,7 @@ import DOMPurify from "dompurify";
 import { cn } from "@/lib/utils";
 import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 import { storageUrl } from "@/utils/storageUrl";
-import type { Mentor } from "@/data/types";
+import type { Mentor, UnitDetail } from "@/data/types";
 
 import { markBlocksComplete } from "@/api/progress";
 import { refetchProgressWithRetry } from "@/lib/progressRefetch";
@@ -52,6 +52,10 @@ const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
 const PASSIVE_BLOCK_TYPES = ["html", "video", "la_diagram", "la_faq", "la_pdf"];
 const INTERACTIVE_BLOCK_TYPES = ["problem", "la_crossword", "la_sortable"];
 
+const isStaticOnlyUnit = (unit: UnitDetail) =>
+  unit.components.length > 0 &&
+  unit.components.every((c) => PASSIVE_BLOCK_TYPES.includes(c.type));
+
 export function LessonDetailPage() {
   const { courseId } = useParams();
   const navigate = useNavigate();
@@ -70,6 +74,7 @@ export function LessonDetailPage() {
   const { data: courseDetail } = useCourse(courseId || "");
   const { data: courseTree } = useCourseStructure(courseId || "");
   const { data: refDocs = [] } = useCourseFiles(courseId || "");
+  const { data: blocksData } = useCourseBlocksRaw(courseId || "");
 
   // Auto-select first lesson if none is selected or not in current course
   useEffect(() => {
@@ -221,25 +226,6 @@ export function LessonDetailPage() {
   const currentUnit = lesson?.units[safeUnitIndex] || null;
   const isLastUnit = safeUnitIndex >= totalUnits - 1;
 
-  // ── Auto-mark passive blocks khi user vào unit ──
-  // Các block dạng xem (html, video, faq, pdf, diagram) → auto-complete ngay khi navigate đến.
-  // Giống edX: passive blocks complete khi user mở, không cần tương tác.
-  useEffect(() => {
-    if (!currentUnit || !user?.username || !courseId) return;
-
-    const passiveIds = currentUnit.components
-      .filter((c) => PASSIVE_BLOCK_TYPES.includes(c.type))
-      .map((c) => c.id);
-
-    if (passiveIds.length === 0) return;
-
-    markBlocksComplete(courseId, passiveIds)
-      .then(() => {
-        refetchProgressWithRetry(qc, courseId);
-      })
-      .catch((e) => console.error("Failed to auto-mark passive blocks:", e));
-  }, [currentUnit?.id, user?.username, courseId]);
-
   // Xác định next lesson & module trong toàn bộ course structure
   const { nextLessonId, nextModuleId } = useMemo(() => {
     let nLessonId: string | null = null;
@@ -262,6 +248,55 @@ export function LessonDetailPage() {
     }
     return { nextLessonId: nLessonId, nextModuleId: nModuleId };
   }, [courseTree, currentLessonId]);
+
+  // Derived states cho logic hiển thị nút Hoàn thành và Auto-Complete
+  const isLastSection = !nextLessonId; // Không còn lesson tiếp
+
+  // Case A: 1 unit, toàn static
+  const isCaseA = totalUnits === 1 && currentUnit && isStaticOnlyUnit(currentUnit);
+
+  // Case C: nhiều unit, unit cuối toàn static
+  const isCaseC = isLastUnit && totalUnits > 1 && currentUnit && isStaticOnlyUnit(currentUnit);
+
+  // Nút "Hoàn thành" chỉ hiện khi (Case A hoặc C) VÀ section cuối
+  const showManualComplete = (isCaseA || isCaseC) && isLastSection;
+
+  // Kiểm tra unit trước đã hoàn thành chưa (chỉ dùng cho Case C)
+  const allPreviousUnitsCompleted = useMemo(() => {
+    if (!blocksData?.blocks || !lesson || safeUnitIndex === 0) return true;
+    const prevUnits = lesson.units.slice(0, safeUnitIndex);
+    for (const unit of prevUnits) {
+      for (const comp of unit.components) {
+        const block = blocksData.blocks[comp.id];
+        // Open edX blocks trả completion = 1.0 khi hoàn thành.
+        if (block && (block.completion ?? 0) < 1) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }, [blocksData, lesson, safeUnitIndex]);
+
+  // ── Auto-mark passive blocks khi user vào unit ──
+  // Các block dạng xem (html, video, faq, pdf, diagram) → auto-complete ngay khi navigate đến (ngoại trừ Case A/C ở section cuối).
+  useEffect(() => {
+    if (!currentUnit || !user?.username || !courseId) return;
+
+    // Nếu cần hiện nút "Hoàn thành" thủ công → KHÔNG auto-complete
+    if (showManualComplete) return;
+
+    const passiveIds = currentUnit.components
+      .filter((c) => PASSIVE_BLOCK_TYPES.includes(c.type))
+      .map((c) => c.id);
+
+    if (passiveIds.length === 0) return;
+
+    markBlocksComplete(courseId, passiveIds)
+      .then(() => {
+        refetchProgressWithRetry(qc, courseId);
+      })
+      .catch((e) => console.error("Failed to auto-mark passive blocks:", e));
+  }, [currentUnit?.id, user?.username, courseId, showManualComplete]);
 
   const handleNextLesson = useCallback(() => {
     if (nextModuleId && nextLessonId) {
@@ -426,6 +461,8 @@ export function LessonDetailPage() {
                       <CrosswordContent
                         key={comp.id}
                         usageKey={comp.crosswordUsageKey}
+                        problemMedia={comp.problemMedia}
+                        onImageClick={(src) => setLightboxSrc(src)}
                       />
                     );
                   }
@@ -435,6 +472,8 @@ export function LessonDetailPage() {
                       <SortableContent
                         key={comp.id}
                         usageKey={comp.sortableUsageKey}
+                        problemMedia={comp.problemMedia}
+                        onImageClick={(src) => setLightboxSrc(src)}
                       />
                     );
                   }
@@ -487,7 +526,8 @@ export function LessonDetailPage() {
                   isCompleting={completeMutation.isPending}
                   isCompleted={isCompleted}
                   isLastUnit={isLastUnit}
-                  hideCompleteButton={currentUnit?.components.some((c) => ["problem", "la_crossword", "la_sortable"].includes(c.type)) || false}
+                  hideCompleteButton={!showManualComplete}
+                  disableCompleteButton={isCaseC && isLastSection && !allPreviousUnitsCompleted}
                   onNextLesson={handleNextLesson}
                   hasNextLesson={!!nextLessonId}
                 />

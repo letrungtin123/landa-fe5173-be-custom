@@ -153,10 +153,14 @@ function buildComponent(
 
   if (block.type === "la_crossword") {
     comp.crosswordUsageKey = block.id;
+    const svd = block.student_view_data as Record<string, unknown> | undefined;
+    comp.problemMedia = normalizeProblemMedia(svd?.problem_media);
   }
 
   if (block.type === "la_sortable") {
     comp.sortableUsageKey = block.id;
+    const svd = block.student_view_data as Record<string, unknown> | undefined;
+    comp.problemMedia = normalizeProblemMedia(svd?.problem_media);
   }
 
   if (block.type === "la_faq") {

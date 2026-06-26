@@ -108,6 +108,18 @@ function clearRefreshTimer(): void {
   }
 }
 
+// ── Mutex — đảm bảo chỉ có 1 refresh request tại 1 thời điểm ──
+// Chống race condition khi visibilitychange, scheduleTokenRefresh, hoặc 401 interceptor
+// cùng trigger refresh đồng thời → token rotation revoke ALL tokens → forced logout.
+let refreshMutex: Promise<boolean> | null = null;
+
+// ── Cooldown — chống serial refresh sau khi mutex đã resolve ──
+// Khi refresh thành công, các caller (visibilitychange, timer, 401 interceptor)
+// fire tuần tự trong vài giây → mỗi caller tạo 1 request mới vì mutex đã clear.
+// Cooldown đảm bảo chỉ refresh 1 lần, caller tiếp theo dùng token đã refresh.
+let lastRefreshSuccessAt = 0;
+const REFRESH_COOLDOWN_MS = 5_000; // 5 giây
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -210,8 +222,12 @@ export const useAuthStore = create<AuthState>()(
           managedTenants: [],
         });
 
-        // 2. Xóa toàn bộ cache React Query
-        try { queryClient.clear(); } catch { /* App chưa mount */ }
+        // 2. Xóa cache React Query — GIỮ LẠI branding (public, không phải user-specific)
+        try {
+          queryClient.removeQueries({
+            predicate: (q) => q.queryKey[0] !== 'branding',
+          });
+        } catch { /* App chưa mount */ }
 
         // 3. Xóa dữ liệu per-user trong localStorage
         Object.keys(localStorage).forEach((key) => {
@@ -237,48 +253,62 @@ export const useAuthStore = create<AuthState>()(
       },
 
       performTokenRefresh: async (): Promise<boolean> => {
+        // Mutex: nếu đang có refresh in-flight → trả về promise hiện tại
+        if (refreshMutex) return refreshMutex;
+
+        // Cooldown: nếu vừa refresh thành công trong 5s qua → skip
+        // Chống serial refresh khi nhiều caller fire tuần tự sau khi mutex clear.
+        if (Date.now() - lastRefreshSuccessAt < REFRESH_COOLDOWN_MS) {
+          return true;
+        }
+
         const { refreshToken: currentRefreshToken } = get();
         if (!currentRefreshToken) return false;
 
-        try {
-          const result = await refreshTokenApi(currentRefreshToken);
+        refreshMutex = (async () => {
+          try {
+            const result = await refreshTokenApi(currentRefreshToken);
 
-          // Giữ tenant đang chọn (nếu superadmin/superuser đã switchTenant)
-          const currentUser = get().user;
-          let activeTenantId = result.user.tenant_id || currentUser?.tenantId || null;
-          let activeTenantName = result.user.tenant_name || currentUser?.tenantName || null;
-          if (!activeTenantId && result.managed_tenants?.length > 0) {
-            activeTenantId = result.managed_tenants[0].id;
-            activeTenantName = result.managed_tenants[0].name;
+            // Giữ tenant đang chọn (nếu superadmin/superuser đã switchTenant)
+            const currentUser = get().user;
+            let activeTenantId = result.user.tenant_id || currentUser?.tenantId || null;
+            let activeTenantName = result.user.tenant_name || currentUser?.tenantName || null;
+            if (!activeTenantId && result.managed_tenants?.length > 0) {
+              activeTenantId = result.managed_tenants[0].id;
+              activeTenantName = result.managed_tenants[0].name;
+            }
+
+            const expiresAt = Date.now() + result.expires_in * 1000;
+            set({
+              accessToken: result.access_token,
+              refreshToken: result.refresh_token,
+              tokenType: "Bearer",
+              tokenExpiresAt: expiresAt,
+              user: {
+                id: result.user.id,
+                username: result.user.username,
+                email: result.user.email,
+                fullName: result.user.full_name,
+                phone: result.user.phone,
+                avatar: avatarUrl(result.user.avatar_url),
+                role: result.user.role,
+                tenantId: activeTenantId,
+                tenantName: activeTenantName,
+              },
+              permissions: result.permissions,
+              tenantModules: result.tenant_modules,
+              managedTenants: result.managed_tenants,
+            });
+
+            lastRefreshSuccessAt = Date.now();
+            get().scheduleTokenRefresh();
+            return true;
+          } catch {
+            return false;
           }
+        })().finally(() => { refreshMutex = null; });
 
-          const expiresAt = Date.now() + result.expires_in * 1000;
-          set({
-            accessToken: result.access_token,
-            refreshToken: result.refresh_token,
-            tokenType: "Bearer",
-            tokenExpiresAt: expiresAt,
-            user: {
-              id: result.user.id,
-              username: result.user.username,
-              email: result.user.email,
-              fullName: result.user.full_name,
-              phone: result.user.phone,
-              avatar: avatarUrl(result.user.avatar_url),
-              role: result.user.role,
-              tenantId: activeTenantId,
-              tenantName: activeTenantName,
-            },
-            permissions: result.permissions,
-            tenantModules: result.tenant_modules,
-            managedTenants: result.managed_tenants,
-          });
-
-          get().scheduleTokenRefresh();
-          return true;
-        } catch {
-          return false;
-        }
+        return refreshMutex;
       },
 
       scheduleTokenRefresh: () => {
@@ -367,28 +397,33 @@ export const useAuthStore = create<AuthState>()(
 // ── Wake-up refresh: khi user quay lại tab sau sleep/hibernate ──
 // setTimeout bị đóng băng khi máy sleep → token hết hạn mà không được refresh.
 // Listener này check và refresh proactively khi tab trở lại visible.
-let isRefreshingOnWake = false;
+//
+// CHỈ dùng visibilitychange (không dùng focus) vì cả 2 events fire gần như
+// đồng thời khi user quay lại tab → race condition → token rotation revoke ALL.
+// Debounce 300ms để chống duplicate nếu visibilitychange fire nhiều lần.
+let wakeUpTimer: ReturnType<typeof setTimeout> | null = null;
 
 function handleWakeUp() {
-  if (isRefreshingOnWake) return;
-  const state = useAuthStore.getState();
-  if (!state.isAuthenticated || !state.tokenExpiresAt) return;
+  if (wakeUpTimer) clearTimeout(wakeUpTimer);
+  wakeUpTimer = setTimeout(() => {
+    wakeUpTimer = null;
+    const state = useAuthStore.getState();
+    if (!state.isAuthenticated || !state.tokenExpiresAt) return;
 
-  const now = Date.now();
-  const buffer = 300_000; // 5 phút
+    const now = Date.now();
+    const buffer = 300_000; // 5 phút
 
-  // Token đã hết hạn hoặc sắp hết hạn → refresh ngay
-  if (now >= state.tokenExpiresAt - buffer) {
-    isRefreshingOnWake = true;
-    state.performTokenRefresh()
-      .then((success) => {
-        if (!success) state.logout();
-      })
-      .finally(() => { isRefreshingOnWake = false; });
-  } else {
-    // Token còn hạn → re-schedule timer (timer cũ có thể đã bị kill)
-    state.scheduleTokenRefresh();
-  }
+    // Token đã hết hạn hoặc sắp hết hạn → refresh ngay (qua mutex)
+    if (now >= state.tokenExpiresAt - buffer) {
+      state.performTokenRefresh()
+        .then((success) => {
+          if (!success) state.logout();
+        });
+    } else {
+      // Token còn hạn → re-schedule timer (timer cũ có thể đã bị kill)
+      state.scheduleTokenRefresh();
+    }
+  }, 300);
 }
 
 // visibilitychange: khi user switch tab hoặc mở lại từ taskbar
@@ -397,6 +432,3 @@ document.addEventListener('visibilitychange', () => {
     handleWakeUp();
   }
 });
-
-// focus: backup — khi browser window nhận focus (bao gồm wake from sleep)
-window.addEventListener('focus', handleWakeUp);

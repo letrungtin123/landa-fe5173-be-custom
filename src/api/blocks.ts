@@ -81,6 +81,7 @@ function buildBlockStudentViewData(
         })),
         keyword_coordinates: cd?.keyword_coordinates || meta?.keyword_coordinates || [],
         grid_size: cd?.grid_size || meta?.grid_size || 10,
+        problem_media: normalizeProblemMedia(meta?.problem_media),
       };
     }
 
@@ -107,6 +108,7 @@ function buildBlockStudentViewData(
         completed: false,
         items: sd?.items || meta?.items || rawData?.items || [],
         question_text: meta?.question_text || rawData?.question_text || sd?.question_text || '',
+        problem_media: normalizeProblemMedia(meta?.problem_media),
       };
     }
 

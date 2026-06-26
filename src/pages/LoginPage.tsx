@@ -339,7 +339,7 @@ export function LoginPage() {
             <div className="w-full max-w-[384px] mt-auto mb-auto">
               <div className="flex flex-col gap-7 w-full">
                 {/* Header (Logo + Title) */}
-                <div className="flex flex-col items-start gap-2.5">
+                <div className="flex flex-col items-center lg:items-start gap-2.5">
                   {/* Logo mark */}
                   <div className="size-15 relative rounded-xl flex items-center justify-center mb-0">
                     <img
@@ -349,11 +349,11 @@ export function LoginPage() {
                     />
                   </div>
 
-                  <div className="flex flex-col items-start gap-[3px]">
+                  <div className="flex flex-col items-center lg:items-start gap-[3px] text-center lg:text-left">
                     <h2 className="text-3xl font-semibold leading-9 text-black whitespace-nowrap font-['SF_Pro',_sans-serif]">
                       Đăng nhập vào E-learning
                     </h2>
-                    <p className="text-[14px] font-normal leading-[20px] text-neutral-400 font-['SF_Pro',_sans-serif]">
+                    <p className="hidden lg:block text-[14px] font-normal leading-[20px] text-neutral-400 font-['SF_Pro',_sans-serif]">
                       Vui lòng đăng nhập vào tài khoản đã được cung cấp để tiếp tục.
                     </p>
                   </div>

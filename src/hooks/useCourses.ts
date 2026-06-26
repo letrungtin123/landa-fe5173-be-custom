@@ -74,6 +74,7 @@ function buildStudentViewData(cb: CourseBlock): Record<string, unknown> {
           length: w.length || (w.answer ? w.answer.length : 0),
         })),
         keyword_coordinates: cd.keyword_coordinates || [],
+        problem_media: normalizeProblemMedia(meta?.problem_media),
       };
     }
 
@@ -94,6 +95,7 @@ function buildStudentViewData(cb: CourseBlock): Record<string, unknown> {
         completed: false,
         items: sd.items || [],
         question_text: (meta?.question_text as string) || (data as any)?.question_text || '',
+        problem_media: normalizeProblemMedia(meta?.problem_media),
       };
     }
 
@@ -191,9 +193,31 @@ export function useCourses(searchTerm?: string) {
     queryKey: ["courses", searchTerm],
     queryFn: () => getCourses({
       search: searchTerm || undefined,
-      page_size: 20,
+      page_size: 200,
     }),
     enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Lấy danh sách khóa học theo category (có phân trang).
+ */
+export function useCoursesByCategory(
+  categoryId: string | undefined,
+  opts?: { search?: string; page?: number; page_size?: number },
+) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  return useQuery({
+    queryKey: ["courses", "category", categoryId, opts?.search, opts?.page, opts?.page_size],
+    queryFn: () => getCourses({
+      category_id: categoryId,
+      search: opts?.search || undefined,
+      page: opts?.page,
+      page_size: opts?.page_size || 20,
+    }),
+    enabled: isAuthenticated && !!categoryId,
     staleTime: 5 * 60 * 1000,
   });
 }

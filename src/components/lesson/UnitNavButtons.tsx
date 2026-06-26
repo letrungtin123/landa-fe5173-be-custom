@@ -15,6 +15,7 @@ interface UnitNavButtonsProps {
   isCompleted?: boolean;
   isLastUnit: boolean;
   hideCompleteButton?: boolean;
+  disableCompleteButton?: boolean;
   onNextLesson?: () => void;
   hasNextLesson?: boolean;
 }
@@ -29,6 +30,7 @@ export function UnitNavButtons({
   isCompleted = false,
   isLastUnit,
   hideCompleteButton = false,
+  disableCompleteButton = false,
   onNextLesson,
   hasNextLesson = false,
 }: UnitNavButtonsProps) {
@@ -70,8 +72,10 @@ export function UnitNavButtons({
               ) : (
                 <button
                   onClick={onComplete}
-                  disabled={isCompleting || hideCompleteButton}
-                  className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-primary px-3 sm:px-6 py-2 sm:py-2.5 text-[11px] sm:text-[14px] font-semibold leading-[18px] text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97] disabled:opacity-50 whitespace-nowrap"
+                  disabled={isCompleting || hideCompleteButton || disableCompleteButton}
+                  className={`flex items-center gap-1.5 sm:gap-2 rounded-full px-3 sm:px-6 py-2 sm:py-2.5 text-[11px] sm:text-[14px] font-semibold leading-[18px] text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97] whitespace-nowrap bg-primary ${
+                    disableCompleteButton ? 'opacity-50 cursor-not-allowed' : 'disabled:opacity-50'
+                  }`}
                 >
                   {isCompleting ? (
                     <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />

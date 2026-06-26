@@ -15,7 +15,16 @@ import fallbackWhiteLogo from '@/assets/LoginPage/WhiteLogoLeftPanel.png';
 import fallbackSquareIcon from '@/assets/LoginPage/SquareIcon.png';
 import fallbackHeaderLogo from '@/assets/leandassociate.webp';
 
-// ── Types ──
+export interface DashboardContentTip {
+  title: string;
+  desc: string;
+}
+
+export interface DashboardContent {
+  hero_badge: string | null;
+  hero_title: string | null;
+  tips: DashboardContentTip[] | null;
+}
 
 export interface BrandingImages {
   leftPanelBg: string;
@@ -31,6 +40,7 @@ export interface BrandingImages {
   carousels: string[];
   adminUrl: string | null;
   tenantName: string | null;
+  dashboardContent: DashboardContent | null;
 }
 
 interface ApiBrandingResponse {
@@ -42,6 +52,16 @@ interface ApiBrandingResponse {
     images: Record<string, string | null>;
     carousels: string[];
     size_hints: Record<string, string>;
+  };
+}
+
+interface ApiDashboardContentResponse {
+  success: boolean;
+  data: {
+    tenant_id: string | null;
+    hero_badge: string | null;
+    hero_title: string | null;
+    tips: Array<{ title: string; desc: string }> | null;
   };
 }
 
@@ -61,6 +81,7 @@ const DEFAULT_BRANDING: BrandingImages = {
   carousels: [],
   adminUrl: null,
   tenantName: null,
+  dashboardContent: null,
 };
 
 // ── Xóa cache cũ nếu còn tồn tại ──
@@ -71,16 +92,39 @@ try { localStorage.removeItem('landa-branding-cache'); } catch { /* ignore */ }
 async function fetchBrandingByDomain(domain: string): Promise<BrandingImages> {
   try {
     const baseUrl = config.apiBaseUrl;
-    const response = await fetch(`${baseUrl}/api/branding/by-domain/${encodeURIComponent(domain)}`);
-    if (!response.ok) return DEFAULT_BRANDING;
 
-    const json: ApiBrandingResponse = await response.json();
-    const data = json.data;
+    // Fetch branding + dashboard content in parallel
+    const [brandingResponse, dashboardContentResponse] = await Promise.allSettled([
+      fetch(`${baseUrl}/api/branding/by-domain/${encodeURIComponent(domain)}`),
+      fetch(`${baseUrl}/api/dashboard-content/by-domain/${encodeURIComponent(domain)}`),
+    ]);
 
-    if (!data?.tenant_id) return DEFAULT_BRANDING;
+    // Parse branding
+    let brandingData: ApiBrandingResponse['data'] | null = null;
+    if (brandingResponse.status === 'fulfilled' && brandingResponse.value.ok) {
+      const json: ApiBrandingResponse = await brandingResponse.value.json();
+      brandingData = json.data?.tenant_id ? json.data : null;
+    }
 
-    // storageUrl() converts storage path → BE proxy URL (e.g., /api/storage/tenant/branding/key.png)
-    // Backend đã thêm timestamp vào path khi upload nên path luôn unique, không cần bustCache ở đây nữa
+    // Parse dashboard content
+    let dashboardContent: DashboardContent | null = null;
+    if (dashboardContentResponse.status === 'fulfilled' && dashboardContentResponse.value.ok) {
+      const json: ApiDashboardContentResponse = await dashboardContentResponse.value.json();
+      const d = json.data;
+      if (d?.tenant_id && (d.hero_badge || d.hero_title || d.tips)) {
+        dashboardContent = {
+          hero_badge: d.hero_badge,
+          hero_title: d.hero_title,
+          tips: d.tips,
+        };
+      }
+    }
+
+    if (!brandingData) {
+      return { ...DEFAULT_BRANDING, dashboardContent };
+    }
+
+    // storageUrl() converts storage path → BE proxy URL
     const resolve = (path: string | null | undefined, fallback: string): string =>
       path ? storageUrl(path) || fallback : fallback;
 
@@ -88,23 +132,24 @@ async function fetchBrandingByDomain(domain: string): Promise<BrandingImages> {
       path ? storageUrl(path) || null : null;
 
     return {
-      leftPanelBg: resolve(data.images.left_panel_bg, DEFAULT_BRANDING.leftPanelBg),
-      registerBg: resolve(data.images.register_bg, DEFAULT_BRANDING.registerBg),
-      whiteLogo: resolve(data.images.white_logo, DEFAULT_BRANDING.whiteLogo),
-      squareIcon: resolve(data.images.square_icon, DEFAULT_BRANDING.squareIcon),
-      headerLogo: resolve(data.images.header_logo, DEFAULT_BRANDING.headerLogo),
-      headerLogoDark: resolve(data.images.header_logo_dark, DEFAULT_BRANDING.headerLogoDark),
-      person1: resolveNullable(data.images.person_1),
-      person2: resolveNullable(data.images.person_2),
-      person3: resolveNullable(data.images.person_3),
-      person4: resolveNullable(data.images.person_4),
-      carousels: data.carousels.length > 0
-        ? data.carousels.map((p) => storageUrl(p)).filter(Boolean)
+      leftPanelBg: resolve(brandingData.images.left_panel_bg, DEFAULT_BRANDING.leftPanelBg),
+      registerBg: resolve(brandingData.images.register_bg, DEFAULT_BRANDING.registerBg),
+      whiteLogo: resolve(brandingData.images.white_logo, DEFAULT_BRANDING.whiteLogo),
+      squareIcon: resolve(brandingData.images.square_icon, DEFAULT_BRANDING.squareIcon),
+      headerLogo: resolve(brandingData.images.header_logo, DEFAULT_BRANDING.headerLogo),
+      headerLogoDark: resolve(brandingData.images.header_logo_dark, DEFAULT_BRANDING.headerLogoDark),
+      person1: resolveNullable(brandingData.images.person_1),
+      person2: resolveNullable(brandingData.images.person_2),
+      person3: resolveNullable(brandingData.images.person_3),
+      person4: resolveNullable(brandingData.images.person_4),
+      carousels: brandingData.carousels.length > 0
+        ? brandingData.carousels.map((p) => storageUrl(p)).filter(Boolean)
         : [],
-      adminUrl: data.domain_admin
-        ? `${data.domain_admin.replace(/\/+$/, '')}/admin/`
+      adminUrl: brandingData.domain_admin
+        ? `${brandingData.domain_admin.replace(/\/+$/, '')}/admin/`
         : null,
-      tenantName: data.tenant_name || null,
+      tenantName: brandingData.tenant_name || null,
+      dashboardContent,
     };
   } catch {
     return DEFAULT_BRANDING;

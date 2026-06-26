@@ -48,6 +48,15 @@ const getDocumentIconSrc = (ext: string) => {
   return IconPDF;
 };
 
+const removeVietnameseTones = (str: string) => {
+  if (!str) return "";
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D");
+};
+
 const EXTENSION_COLORS: Record<string, string> = {
   pdf: "#ea4335",
   docx: "#2b579a",
@@ -98,6 +107,8 @@ export function LibraryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [previewDoc, setPreviewDoc] = useState<LibraryDocument | null>(null);
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [mobileCatSearch, setMobileCatSearch] = useState("");
   const categoryCarouselRef = useRef<HTMLDivElement>(null);
 
   // Debounce search 300ms — tránh spam API mỗi keystroke
@@ -110,6 +121,7 @@ export function LibraryPage() {
 
   const handleCategoryClick = useCallback((catId: string) => {
     setActiveCategory((prev) => (prev === catId ? "" : catId));
+    setSearchTerm("");
     setCurrentPage(1);
   }, []);
 
@@ -133,7 +145,7 @@ export function LibraryPage() {
 
   const categories = (categoriesData?.categories || []).filter(cat => {
     if (!debouncedSearch) return true;
-    return cat.name.toLowerCase().includes(debouncedSearch.toLowerCase());
+    return removeVietnameseTones(cat.name.toLowerCase()).includes(removeVietnameseTones(debouncedSearch.toLowerCase()));
   });
   const totalDocuments = (categoriesData?.categories || []).reduce((sum, c) => sum + (c.count || 0), 0);
   const documents = documentsData?.results || [];
@@ -230,9 +242,82 @@ export function LibraryPage() {
       transition={{ duration: 0.3 }}
       className="mx-auto w-full max-w-[1440px] px-4 pb-8 md:px-8 xl:px-10"
     >
+      {/* Mobile "View All Categories" Modal */}
+      <AnimatePresence>
+        {showAllCategories && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed inset-0 z-50 bg-background flex flex-col lg:hidden"
+          >
+            <div className="flex items-center gap-3 p-4 border-b border-border bg-card shrink-0">
+              <button onClick={() => { setShowAllCategories(false); setMobileCatSearch(""); }} className="h-10 w-10 flex items-center justify-center rounded-full bg-accent/10 text-foreground">
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <h2 className="text-[18px] font-bold text-foreground">Tất cả danh mục</h2>
+            </div>
+            <div className="p-4 border-b border-border bg-card shadow-sm shrink-0">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm danh mục..."
+                  value={mobileCatSearch}
+                  onChange={(e) => setMobileCatSearch(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-accent/5 border border-border rounded-xl outline-none focus:border-primary transition-colors text-[14px]"
+                />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24">
+              {categories
+                .filter(c => 
+                  removeVietnameseTones(c.name.toLowerCase()).includes(removeVietnameseTones(mobileCatSearch.toLowerCase()))
+                )
+                .map((cat: DocumentCategory, catIndex: number) => {
+                  const bgColor = getCategoryColor(catIndex);
+                  const isActive = activeCategory === cat.id;
+                  return (
+                    <Card
+                      key={cat.id}
+                      onClick={() => {
+                        handleCategoryClick(cat.id);
+                        setShowAllCategories(false);
+                        setMobileCatSearch("");
+                      }}
+                      className={`group/card cursor-pointer overflow-hidden border-2 transition-all duration-300 w-full h-[200px] rounded-[28px] flex-col ${
+                        isActive
+                          ? "ring-2 ring-offset-2 ring-primary border-primary shadow-md"
+                          : "border-transparent hover:shadow-md hover:-translate-y-1"
+                      }`}
+                      style={{ backgroundColor: bgColor }}
+                    >
+                      <CardContent className="flex flex-col justify-between h-full p-6 text-white w-full">
+                        <div className="flex justify-between items-start">
+                          <div className="h-10 w-10 bg-white/90 rounded-lg flex items-center justify-center shadow-sm">
+                            <FolderOpen className="h-6 w-6" style={{ color: bgColor }} />
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="text-[14px] font-bold leading-[18px] uppercase tracking-wide mb-2">
+                            {cat.name}
+                          </h3>
+                          <div className="text-[10px] font-semibold leading-[14px] opacity-90">
+                            {cat.count} tài liệu
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex flex-col lg:flex-row w-full">
         {/* Left Sidebar */}
-        <div className="w-full lg:w-[280px] shrink-0 lg:border-r lg:border-border lg:pr-8 pt-4 lg:pt-8 mb-6 lg:mb-0">
+        <div className="hidden lg:block w-full lg:w-[280px] shrink-0 lg:border-r lg:border-border lg:pr-8 pt-4 lg:pt-8 mb-6 lg:mb-0">
           <div className="sticky top-24 space-y-10 max-h-[calc(100vh-120px)] overflow-y-auto hide-scrollbar pb-8">
             <UserProfileCard />
             <BadgeShowcase />
@@ -423,16 +508,26 @@ export function LibraryPage() {
             </div>
           </div>
 
-          {/* Categories Carousel */}
+          {/* Categories */}
           <div className="space-y-4">
-            <h2 className="text-[20px] font-bold leading-[24px] text-foreground">
-              Danh mục tài liệu
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-[20px] font-bold leading-[24px] text-foreground">
+                Danh mục tài liệu
+              </h2>
+              {categories.length > 4 && (
+                <button
+                  onClick={() => setShowAllCategories(true)}
+                  className="text-[14px] font-semibold leading-[18px] text-primary hover:underline lg:hidden"
+                >
+                  Xem tất cả
+                </button>
+              )}
+            </div>
 
             {catLoading ? (
               <div className="flex gap-4 overflow-hidden">
                 {[1, 2, 3, 4].map((k) => (
-                  <div key={k} className="h-[160px] w-[85vw] sm:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] rounded-xl bg-accent/10 animate-pulse shrink-0" />
+                  <div key={k} className="h-[200px] w-[220px] sm:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] rounded-[28px] bg-accent/10 animate-pulse shrink-0" />
                 ))}
               </div>
             ) : categories.length > 0 ? (
@@ -444,19 +539,20 @@ export function LibraryPage() {
                   {categories.map((cat: DocumentCategory, catIndex: number) => {
                     const bgColor = getCategoryColor(catIndex);
                     const isActive = activeCategory === cat.id;
+                    const displayClass = catIndex >= 4 ? "hidden lg:flex" : "flex";
 
                     return (
                       <Card
                         key={cat.id}
                         onClick={() => handleCategoryClick(cat.id)}
-                        className={`group/card cursor-pointer overflow-hidden border-2 transition-all duration-300 shrink-0 snap-start w-[85vw] sm:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] ${
+                        className={`group/card cursor-pointer overflow-hidden border-2 transition-all duration-300 shrink-0 snap-start w-[220px] sm:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] h-[200px] rounded-[28px] ${displayClass} flex-col ${
                           isActive
                             ? "ring-2 ring-offset-2 ring-primary border-primary shadow-md"
                             : "border-transparent hover:shadow-md hover:-translate-y-1"
                         }`}
                         style={{ backgroundColor: bgColor }}
                       >
-                        <CardContent className="flex flex-col justify-between h-full p-5 min-h-[160px] text-white">
+                        <CardContent className="flex flex-col justify-between h-full p-6 text-white w-full">
                           <div className="flex justify-between items-start">
                             <div className="h-10 w-10 bg-white/90 rounded-lg flex items-center justify-center shadow-sm">
                               <FolderOpen className="h-6 w-6" style={{ color: bgColor }} />
@@ -476,29 +572,29 @@ export function LibraryPage() {
                   })}
                 </div>
 
-                {/* Left Arrow */}
+                {/* Left Arrow (PC only) */}
                 <button
                   onClick={() => {
                     if (categoryCarouselRef.current) {
-                      const scrollAmount = categoryCarouselRef.current.clientWidth;
+                      const scrollAmount = categoryCarouselRef.current.clientWidth + 16;
                       categoryCarouselRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
                     }
                   }}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-background border shadow-md hover:scale-105 text-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200"
+                  className="hidden absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 lg:flex h-10 w-10 items-center justify-center rounded-full bg-background border shadow-md hover:scale-105 text-foreground opacity-0 group-hover:opacity-100 transition-all duration-200"
                   aria-label="Trước"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
 
-                {/* Right Arrow */}
+                {/* Right Arrow (PC only) */}
                 <button
                   onClick={() => {
                     if (categoryCarouselRef.current) {
-                      const scrollAmount = categoryCarouselRef.current.clientWidth;
+                      const scrollAmount = categoryCarouselRef.current.clientWidth + 16;
                       categoryCarouselRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                     }
                   }}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-background border shadow-md hover:scale-105 text-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200"
+                  className="hidden absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 lg:flex h-10 w-10 items-center justify-center rounded-full bg-background border shadow-md hover:scale-105 text-foreground opacity-0 group-hover:opacity-100 transition-all duration-200"
                   aria-label="Sau"
                 >
                   <ChevronRight className="h-5 w-5" />
@@ -541,7 +637,7 @@ export function LibraryPage() {
                         <th className="px-4 xl:px-6 py-4 w-[18%]">
                           Danh mục
                         </th>
-                        <th className="px-4 xl:px-6 py-4 w-[10%]">
+                        <th className="hidden md:table-cell px-4 xl:px-6 py-4 w-[10%]">
                           Loại
                         </th>
                         <th className="px-4 xl:px-6 py-4 w-[12%]">
@@ -566,7 +662,7 @@ export function LibraryPage() {
                             <td className="px-4 xl:px-6 py-4">
                               <div className="h-4 w-20 bg-accent/30 rounded"></div>
                             </td>
-                            <td className="px-4 xl:px-6 py-4">
+                            <td className="hidden md:table-cell px-4 xl:px-6 py-4">
                               <div className="h-5 w-12 bg-accent/30 rounded"></div>
                             </td>
                             <td className="px-4 xl:px-6 py-4">
@@ -612,7 +708,7 @@ export function LibraryPage() {
                                 {doc.category_name || "—"}
                               </span>
                             </td>
-                            <td className="px-4 xl:px-6 py-4">
+                            <td className="hidden md:table-cell px-4 xl:px-6 py-4">
                               <span
                                 className="inline-block text-white text-[10px] font-bold leading-[14px] px-2 py-0.5 rounded uppercase truncate max-w-full"
                                 style={{ backgroundColor: extColor }}
@@ -704,7 +800,7 @@ export function LibraryPage() {
                             </p>
                             <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold leading-[14px] text-muted-foreground">
                               <span
-                                className="inline-block text-white text-[10px] font-bold leading-[14px] px-2 py-0.5 rounded uppercase"
+                                className="hidden text-white text-[10px] font-bold leading-[14px] px-2 py-0.5 rounded uppercase"
                                 style={{ backgroundColor: extColor }}
                               >
                                 {doc.extension}

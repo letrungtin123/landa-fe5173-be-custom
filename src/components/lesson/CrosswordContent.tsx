@@ -10,6 +10,13 @@ import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
 import { markBlockComplete } from "@/api/progress";
 import { refetchProgressWithRetry } from "@/lib/progressRefetch";
 import { useParams } from "react-router-dom";
+import {
+  hasProblemMedia,
+  normalizeProblemMedia,
+  resolveProblemMediaImageUrl,
+  type ProblemMedia,
+} from "@/lib/problemMedia";
+import { LessonImageCarousel } from "./LessonImageCarousel";
 
 interface CrosswordWord {
   id: number;
@@ -29,7 +36,13 @@ interface CrosswordData {
   keyword_coordinates: { row: number; col: number }[];
 }
 
-export function CrosswordContent({ usageKey }: { usageKey: string }) {
+interface CrosswordContentProps {
+  usageKey: string;
+  problemMedia?: ProblemMedia | null;
+  onImageClick?: (src: string) => void;
+}
+
+export function CrosswordContent({ usageKey, problemMedia, onImageClick }: CrosswordContentProps) {
   const { courseId } = useParams();
   const qc = useQueryClient();
   const [started, setStarted] = useState(false);
@@ -50,6 +63,12 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
   });
 
   const svd = blockData?.student_view_data as unknown as CrosswordData | undefined;
+
+  // Prefer block's SVD media (fresh from getBlockDetail), fallback to prop (from course outline)
+  const svdMedia = normalizeProblemMedia((svd as any)?.problem_media);
+  const effectiveMedia = hasProblemMedia(svdMedia)
+    ? svdMedia
+    : normalizeProblemMedia(problemMedia);
 
   // Set active answer clue logic + khôi phục từ cache
   useEffect(() => {
@@ -327,7 +346,7 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
   // --- Màn hình Chơi Game ---
   return (
     <div className="rounded-3xl border-2 border-primary/20 bg-[#F4F9FF] dark:bg-slate-900/50 p-6 md:p-10 shadow-sm relative">
-
+      <CrosswordMediaBlock media={effectiveMedia} onImageClick={onImageClick} />
       {/* Khung gợi ý câu hỏi nổi bật */}
       <div className="mb-10 rounded-2xl border-2 border-primary/30 bg-white dark:bg-slate-800 p-6 shadow-sm text-center relative z-10 transition-all duration-300 transform">
         <h4 className="text-lg md:text-xl font-bold text-foreground">
@@ -476,6 +495,52 @@ export function CrosswordContent({ usageKey }: { usageKey: string }) {
       </div>
 
       {/* End game section */}
+    </div>
+  );
+}
+
+function CrosswordMediaBlock({ media, onImageClick }: { media?: ProblemMedia | null; onImageClick?: (src: string) => void }) {
+  const normalized = normalizeProblemMedia(media);
+  if (!hasProblemMedia(normalized)) return null;
+
+  const images = normalized.images.map((img) => ({
+    ...img,
+    src: resolveProblemMediaImageUrl(img.src),
+  }));
+
+  return (
+    <div className="-mx-6 md:-mx-10 -mt-6 md:-mt-10 mb-8 overflow-hidden rounded-t-[1.35rem] bg-muted/10 border-b-2 border-primary/10 flex flex-col gap-1">
+      {normalized.youtube_id && (
+        <div className="relative overflow-hidden w-full aspect-video">
+          <iframe
+            src={`https://www.youtube.com/embed/${normalized.youtube_id}?rel=0&modestbranding=1&showinfo=0`}
+            className="h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+            title="Crossword media video"
+          />
+        </div>
+      )}
+
+      {images.length === 1 && (
+        <div
+          className="relative w-full overflow-hidden flex items-center justify-center cursor-zoom-in"
+          onClick={() => onImageClick?.(images[0].src)}
+        >
+          <img
+            src={images[0].src}
+            alt={images[0].alt || "Crossword image"}
+            className="w-full object-cover max-h-[500px]"
+          />
+        </div>
+      )}
+
+      {images.length >= 2 && (
+        <LessonImageCarousel
+          images={images}
+          onImageClick={onImageClick}
+        />
+      )}
     </div>
   );
 }

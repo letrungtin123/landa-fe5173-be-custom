@@ -130,20 +130,20 @@ export function RegisterPage() {
 
             <div className="w-full">
               {/* Logo mark */}
-              <div className="flex flex-col items-start mb-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3">
+              <div className="flex flex-col items-center lg:items-start mb-4">
+                <div className="size-15 relative rounded-xl flex items-center justify-center mb-3">
                   <img
                     src={branding.squareIcon}
                     alt="E-learning"
-                    className={`w-[39px] object-contain transition-opacity duration-200 ${brandingLoading ? 'opacity-0' : 'opacity-100'}`}
+                    className={`w-12 h-12 object-contain transition-opacity duration-200 ${brandingLoading ? 'opacity-0' : 'opacity-100'}`}
                   />
                 </div>
 
-                <div className="flex flex-col items-start gap-1 mb-6">
+                <div className="flex flex-col items-center lg:items-start text-center lg:text-left gap-1 mb-6">
                   <h2 className="text-[28px] font-semibold text-black tracking-[0] leading-[35px] font-['SF_Pro',_sans-serif]">
                     Đăng ký tài khoản
                   </h2>
-                  <p className="text-sm font-normal text-[#8f8f8f] tracking-[0] leading-5 font-['SF_Pro',_sans-serif]">
+                  <p className="hidden lg:block text-sm font-normal text-[#8f8f8f] tracking-[0] leading-5 font-['SF_Pro',_sans-serif]">
                     Đăng ký ngay để bắt đầu hành trình học tập của bạn.
                   </p>
                 </div>

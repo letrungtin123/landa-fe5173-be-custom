@@ -7,6 +7,7 @@ import { UserProfileCard } from "@/components/dashboard/UserProfileCard";
 import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
 import { ProgressRing } from "@/components/dashboard/ProgressRing";
 import { ContinueLearning } from "@/components/dashboard/ContinueLearning";
+import { RecommendedSection } from "@/components/dashboard/RecommendedSection";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { BadgeShowcase } from "@/components/badges/BadgeShowcase";
 import { usePageLoading } from "@/hooks/usePageLoading";
@@ -42,7 +43,7 @@ export function DashboardPage() {
       >
         <div className="flex flex-col lg:flex-row">
           {/* Thanh bên trái */}
-          <div className="w-full lg:w-[280px] shrink-0 lg:border-r lg:border-border lg:pr-12 pt-8">
+          <div className="hidden lg:block w-full lg:w-[280px] shrink-0 lg:border-r lg:border-border lg:pr-12 pt-8">
             <div className="sticky top-24 space-y-10 max-h-[calc(100vh-120px)] overflow-y-auto hide-scrollbar pb-8">
               <UserProfileCard />
               <BadgeShowcase />
@@ -50,7 +51,7 @@ export function DashboardPage() {
           </div>
 
           {/* Nội dung chính */}
-          <div className="flex-1 min-w-0 lg:pl-12 mt-8 lg:mt-0 pt-8 space-y-10">
+          <div className="flex-1 min-w-0 lg:pl-12 mt-2 lg:mt-0 pt-2 lg:pt-8 space-y-10">
             {/* Phần trên */}
             <div className="flex flex-col gap-6 lg:flex-row">
               {/* Banner chào mừng */}
@@ -70,17 +71,22 @@ export function DashboardPage() {
               </div>
             </div>
 
-            <div className="lg:hidden">
+            {/* <div className="hidden">
               <ProgressRing
                 progress={averagePercent}
                 courseTitle="Tất cả khóa học"
                 courseLink="/explore"
               />
-            </div>
+            </div> */}
 
             {/* Phần tiếp tục học */}
             <div className="w-full">
               <ContinueLearning />
+            </div>
+
+            {/* Đề xuất dành cho bạn */}
+            <div className="w-full pb-8">
+              <RecommendedSection />
             </div>
           </div>
         </div>

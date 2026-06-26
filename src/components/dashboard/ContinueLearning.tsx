@@ -20,8 +20,9 @@ import { CourseFilterBar, type CourseFilter } from "@/components/CourseFilterBar
 import type { CourseCategoryInfo } from "@/api/types";
 
 /** Card hiển thị 1 khóa học đang học kèm progress bar */
-function CourseCard({ course, index, completionPercent }: { course: ContinueCourse; index: number; completionPercent: number }) {
+function CourseCard({ course, index, isLast, completionPercent }: { course: ContinueCourse; index: number; isLast: boolean; completionPercent: number }) {
   const { colorStyle } = useThemeStore();
+  const displayPercent = Math.floor(Math.round(completionPercent * 100) / 10 + 0.4) / 10;
 
   return (
     <motion.div
@@ -29,17 +30,18 @@ function CourseCard({ course, index, completionPercent }: { course: ContinueCour
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3 }}
+      className="w-[85vw] max-w-[300px] shrink-0 snap-start md:w-auto md:max-w-none md:shrink flex"
     >
-      <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`}>
-        <div className="group flex h-[180px] overflow-hidden rounded-3xl border border-primary shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-card transition-all duration-200 hover:shadow-md hover:scale-[1.02]">
+      <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`} className="flex flex-1 w-full">
+        <div className="group flex flex-col md:flex-row flex-1 w-full h-[330px] md:h-[180px] overflow-hidden rounded-[28px] md:rounded-3xl border border-border md:border-primary shadow-sm md:shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-card transition-all duration-200 hover:shadow-md hover:scale-[1.02] p-2 pb-4 md:p-0 md:pb-0">
           {/* Thumbnail */}
-          <div className="w-[40%] shrink-0 relative flex items-center justify-center overflow-hidden p-1.5">
+          <div className="w-full md:w-[40%] h-40 md:h-full shrink-0 relative flex items-center justify-center overflow-hidden md:p-1.5 rounded-[20px] md:rounded-none">
             {course.thumbnail ? (
               <>
                 <img
                   src={course.thumbnail}
                   alt={course.title}
-                  className="z-10 h-full w-full object-cover rounded-[18px]"
+                  className="z-10 h-full w-full object-cover rounded-[20px] md:rounded-[18px]"
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
                     e.currentTarget.nextElementSibling?.classList.replace("hidden", "flex");
@@ -47,28 +49,28 @@ function CourseCard({ course, index, completionPercent }: { course: ContinueCour
                 />
                 <div 
                   className={cn(
-                     "hidden h-full w-full items-center justify-center rounded-[18px]",
+                     "hidden h-full w-full items-center justify-center rounded-[20px] md:rounded-[18px]",
                      colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent"
                   )}
                 >
-                  <BookOpen className="h-10 w-10 text-white/50" />
+                  <BookOpen className="h-10 w-10 md:h-12 md:w-12 text-white/50" />
                 </div>
               </>
             ) : (
               <div 
                 className={cn(
-                  "flex h-full w-full items-center justify-center rounded-[18px]",
+                  "flex h-full w-full items-center justify-center rounded-[20px] md:rounded-[18px]",
                   colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent"
                 )}
               >
-                <BookOpen className="h-10 w-10 text-white/50" />
+                <BookOpen className="h-12 w-12 md:h-10 md:w-10 text-white/50" />
               </div>
             )}
           </div>
 
           {/* Nội dung */}
-          <div className="flex flex-col p-5 w-[60%]">
-            <div className="mb-2 w-full flex items-center gap-1.5 text-[10px] font-semibold leading-[20px] tracking-[-0.05px] text-primary">
+          <div className="flex flex-col flex-1 pt-3 px-2 md:p-5 md:w-[60%]">
+            <div className="mb-1 md:mb-2 w-full flex items-center gap-1.5 text-[12px] md:text-[10px] font-medium md:font-semibold leading-[16px] md:leading-[20px] tracking-normal md:tracking-[-0.05px] text-primary">
               <span className="truncate">
                 {course.categories && course.categories.length > 0
                   ? course.categories.map((c) => c.name).join(" • ")
@@ -76,38 +78,14 @@ function CourseCard({ course, index, completionPercent }: { course: ContinueCour
               </span>
             </div>
 
-            <h3 className="text-[20px] font-semibold leading-[24px] tracking-normal text-foreground group-hover:text-primary transition-colors line-clamp-2">
+            <h3 className="mb-4 md:mb-0 text-[16px] md:text-[20px] font-bold md:font-semibold leading-[22px] md:leading-[24px] tracking-normal text-foreground group-hover:text-accent md:group-hover:text-primary transition-colors line-clamp-2">
               {course.title}
             </h3>
 
-            {/* Category badges — tạm ẩn theo yêu cầu
-            {course.categories && course.categories.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1.5">
-                {course.categories.map(cat => (
-                  <Badge
-                    key={cat.id}
-                    variant="outline"
-                    className="border-accent/30 bg-accent/10 text-accent text-[9px] px-1.5 py-0 h-[18px] font-medium"
-                  >
-                    {cat.name}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            */}
-
-            <div className="mt-auto">
+            <div className="mt-auto pt-3 md:pt-0">
               {/* Thanh tiến độ thật */}
               {completionPercent < 100 && (
-                <div className="mb-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-medium text-muted-foreground">
-                      Tiến độ
-                    </span>
-                    <span className="text-[11px] font-bold text-primary">
-                      {completionPercent}%
-                    </span>
-                  </div>
+                <div className="mb-3 md:mb-2">
                   <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
                     <div
                       className="h-full rounded-full bg-primary transition-[width] duration-500"
@@ -116,17 +94,28 @@ function CourseCard({ course, index, completionPercent }: { course: ContinueCour
                   </div>
                 </div>
               )}
-              {completionPercent === 100 ? (
-                <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
-                  <Check className="h-4 w-4 stroke-[3]" />
-                  <span className="text-[13px] font-bold">Đã hoàn thành</span>
+              
+              {/* Button text */}
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-1.5 md:gap-1 text-[14px] md:text-[13px] font-bold leading-[20px] md:leading-normal text-primary">
+                  {completionPercent === 100 ? (
+                    <div className="flex items-center gap-2 md:gap-1.5 text-green-600 dark:text-green-400">
+                      <Check className="h-4 w-4 md:h-4 md:w-4 stroke-[3]" />
+                      <span className="text-[14px] md:text-[13px] font-bold text-green-600 dark:text-green-400">Đã hoàn thành</span>
+                    </div>
+                  ) : (
+                    <>
+                      Tiếp tục học
+                      <ArrowRight className="h-3.5 w-3.5 md:h-3.5 md:w-3.5" />
+                    </>
+                  )}
                 </div>
-              ) : (
-                <span className="flex items-center gap-1 text-[13px] font-bold text-primary">
-                  Tiếp tục học
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </span>
-              )}
+                {completionPercent < 100 && (
+                  <span className="text-[12px] md:text-[11px] font-bold text-foreground md:text-primary">
+                    {displayPercent}%
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -219,7 +208,7 @@ export function ContinueLearning() {
   const categoryCounts = useMemo(() => {
     const m = new Map<string, number>();
     for (const cat of categories) {
-      m.set(cat.id, allCourses.filter(c => c.categories?.some(cc => cc.id === cat.id)).length);
+      m.set(cat.id, allCourses.filter(c => c.categories?.some(cc => String(cc.id) === String(cat.id))).length);
     }
     return m;
   }, [categories, allCourses]);
@@ -234,7 +223,7 @@ export function ContinueLearning() {
     } else if (activeFilter === 'in_progress') {
       filtered = allCourses.filter(c => (progressMap?.get(c.id) || 0) < 100);
     } else if (activeFilter !== 'all') {
-      filtered = allCourses.filter(c => c.categories?.some(cat => cat.id === activeFilter));
+      filtered = allCourses.filter(c => c.categories?.some(cat => String(cat.id) === String(activeFilter)));
     }
     
     // Filter by search term (bỏ dấu tiếng Việt khi so sánh)
@@ -276,6 +265,7 @@ export function ContinueLearning() {
         )}
 
         <Link
+          onClick={() => window.scrollTo(0, 0)}
           to="/explore"
           className="flex items-center gap-1 text-sm font-medium text-accent transition-colors hover:text-accent/80 whitespace-nowrap shrink-0 ml-auto"
         >
@@ -360,17 +350,13 @@ export function ContinueLearning() {
       {/* Danh sách khóa học với progress bar thật */}
       {courses.length > 0 && (
         <div className="space-y-8">
-          <motion.div
-            layout="size"
-            className="grid gap-6 sm:grid-cols-2"
-            transition={{ duration: 0.3 }}
+          <div
+            className="flex items-stretch overflow-x-auto snap-x snap-mandatory gap-4 pb-4 pl-2 -mr-4 md:pl-0 md:mr-0 md:grid md:grid-cols-2 md:gap-6 md:pb-0 md:overflow-visible hide-scrollbar"
           >
-            <AnimatePresence mode="wait">
-              {paginatedCourses.map((course, index) => (
-                <CourseCard key={course.id} course={course} index={index} completionPercent={progressMap?.get(course.id) || 0} />
-              ))}
-            </AnimatePresence>
-          </motion.div>
+            {paginatedCourses.map((course, index) => (
+              <CourseCard key={course.id} course={course} index={index} isLast={index === paginatedCourses.length - 1} completionPercent={progressMap?.get(course.id) || 0} />
+            ))}
+          </div>
 
           {/* Phân trang — luôn hiện khi có data để user thấy page size selector */}
           {courses.length > 0 && (
