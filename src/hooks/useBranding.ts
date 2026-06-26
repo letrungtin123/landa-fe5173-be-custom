@@ -24,6 +24,8 @@ export interface DashboardContent {
   hero_badge: string | null;
   hero_title: string | null;
   tips: DashboardContentTip[] | null;
+  explore_hero_badge: string | null;
+  explore_hero_title: string | null;
 }
 
 export interface BrandingImages {
@@ -62,6 +64,8 @@ interface ApiDashboardContentResponse {
     hero_badge: string | null;
     hero_title: string | null;
     tips: Array<{ title: string; desc: string }> | null;
+    explore_hero_badge: string | null;
+    explore_hero_title: string | null;
   };
 }
 
@@ -111,11 +115,13 @@ async function fetchBrandingByDomain(domain: string): Promise<BrandingImages> {
     if (dashboardContentResponse.status === 'fulfilled' && dashboardContentResponse.value.ok) {
       const json: ApiDashboardContentResponse = await dashboardContentResponse.value.json();
       const d = json.data;
-      if (d?.tenant_id && (d.hero_badge || d.hero_title || d.tips)) {
+      if (d?.tenant_id && (d.hero_badge || d.hero_title || d.tips || d.explore_hero_badge || d.explore_hero_title)) {
         dashboardContent = {
           hero_badge: d.hero_badge,
           hero_title: d.hero_title,
           tips: d.tips,
+          explore_hero_badge: d.explore_hero_badge,
+          explore_hero_title: d.explore_hero_title,
         };
       }
     }

@@ -18,6 +18,7 @@ import heroIllustration from "@/assets/ExplorePage/KhamPhaHanhTrinhHocTapCuaToi.
 import { motion, AnimatePresence } from "framer-motion";
 import { UserProfileCard } from "@/components/dashboard/UserProfileCard";
 import { BadgeShowcase } from "@/components/badges/BadgeShowcase";
+import { useBranding } from "@/hooks/useBranding";
 
 // Filter types cho detail view
 type DetailFilter = 'all' | 'in_progress' | 'completed' | 'not_enrolled';
@@ -28,6 +29,11 @@ export function ExplorePage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const { data: courseData, isLoading } = useCourses(debouncedSearch || undefined);
   const { data: enrollments } = useMyEnrollments();
+
+  // Dynamic explore hero card content
+  const { branding } = useBranding();
+  const exploreBadge = branding.dashboardContent?.explore_hero_badge || 'COURSE';
+  const exploreTitle = branding.dashboardContent?.explore_hero_title || 'Khám phá hành trình học tập của tôi';
 
   // State cho bộ filter trạng thái học (hiển thị mặc định)
   const [detailFilter, setDetailFilter] = useState<DetailFilter>('all');
@@ -193,12 +199,12 @@ export function ExplorePage() {
                         className="mb-3 inline-flex w-fit whitespace-nowrap items-center justify-center h-[23px] rounded-[41px] px-3 py-1 text-[10px] font-bold uppercase tracking-widest font-['SF_Pro',_sans-serif]"
                         style={{ backgroundColor: "#43FDD7", color: "#000" }}
                       >
-                        COURSE
+                        {exploreBadge}
                       </div>
 
                       {/* Title */}
                       <h1 className="mb-4 max-w-[320px] text-[24px] lg:text-[26px] font-bold leading-[32px] text-foreground">
-                        Khám phá hành trình học tập của tôi
+                        {exploreTitle}
                       </h1>
                     </div>
 

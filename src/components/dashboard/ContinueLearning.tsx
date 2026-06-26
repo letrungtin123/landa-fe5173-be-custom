@@ -248,7 +248,7 @@ export function ContinueLearning() {
     <div id="continue-learning-section" className="scroll-mt-24">
       {/* Tiêu đề + Search + Xem tất cả */}
       <div className="mb-6 flex items-center gap-4">
-        <h2 className="text-lg font-bold text-foreground whitespace-nowrap shrink-0">Tiếp tục học</h2>
+        <h2 className="text-xl md:text-2xl font-bold tracking-tight text-foreground whitespace-nowrap shrink-0">Tiếp tục học</h2>
 
         {/* Search bar — giữa */}
         {allCourses.length > 0 && (
