@@ -14,6 +14,8 @@ import {
   Info,
   Settings,
   Building2,
+  Lock,
+  BadgeCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +39,9 @@ import { cn } from "@/lib/utils";
 import { useBranding } from "@/hooks/useBranding";
 import { NotificationModal } from "@/components/dashboard/NotificationModal";
 import { TenantSwitchModal } from "@/components/layout/TenantSwitchModal";
+import { useMyEnrollments, useCourses } from "@/hooks/useCourses";
+import { useAverageCourseCompletion } from "@/hooks/useProgress";
+import { ChangePasswordModal } from "@/components/layout/ChangePasswordModal";
 
 const ICON_MAP: Record<Notification["icon"], React.ElementType> = {
   badge: Shield,
@@ -65,8 +70,20 @@ export function Header() {
   const markAllRead = useMarkAllRead();
   const [notifModalOpen, setNotifModalOpen] = useState(false);
   const [tenantModalOpen, setTenantModalOpen] = useState(false);
+  const [pwModalOpen, setPwModalOpen] = useState(false);
   const { branding, isLoading: brandingLoading } = useBranding();
   const currentHeaderLogo = colorMode === 'dark' ? branding.headerLogoDark : branding.headerLogo;
+
+  const { data: enrollments } = useMyEnrollments();
+  const { data: courseList } = useCourses();
+  
+  const publicCourseIds = new Set((courseList?.data || []).map((c: any) => c.id));
+  const visibleEnrollments = (enrollments || []).filter(
+    (e: any) => publicCourseIds.has(e.course_id)
+  );
+  
+  const enrolledCourseIds = visibleEnrollments.map((e: any) => e.course_id);
+  const { data: averagePercent = 0 } = useAverageCourseCompletion(enrolledCourseIds);
 
   const currentTenantName = useMemo(() => {
     if (!user?.tenantId) return null;
@@ -140,52 +157,54 @@ export function Header() {
         <div className="flex items-center gap-1 translate-x-[2px] ml-auto">
 
 
-          {/* Theme Preset Picker */}
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Theme preset">
-                <Palette className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuLabel className="text-xs text-muted-foreground">
-                Bảng màu
-              </DropdownMenuLabel>
-              {THEME_PRESETS.map((p) => (
-                <DropdownMenuItem
-                  key={p.id}
-                  onClick={() => setPreset(p.id)}
-                  className={cn(
-                    "gap-2",
-                    preset === p.id && "bg-accent/10 text-accent font-medium"
-                  )}
-                >
-                  <span
-                    className="h-3.5 w-3.5 rounded-full shrink-0 border border-border"
-                    style={{ backgroundColor: p.color }}
-                  />
-                  {p.name}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="hidden sm:flex items-center gap-1">
+            {/* Theme Preset Picker */}
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Theme preset">
+                  <Palette className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  Bảng màu
+                </DropdownMenuLabel>
+                {THEME_PRESETS.map((p) => (
+                  <DropdownMenuItem
+                    key={p.id}
+                    onClick={() => setPreset(p.id)}
+                    className={cn(
+                      "gap-2",
+                      preset === p.id && "bg-accent/10 text-accent font-medium"
+                    )}
+                  >
+                    <span
+                      className="h-3.5 w-3.5 rounded-full shrink-0 border border-border"
+                      style={{ backgroundColor: p.color }}
+                    />
+                    {p.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          {/* Light/Dark Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9"
-            onClick={toggleColorMode}
-            aria-label="Toggle dark mode"
-          >
-            {colorMode === "light" ? (
-              <Moon className="h-4 w-4" />
-            ) : (
-              <Sun className="h-4 w-4" />
-            )}
-          </Button>
+            {/* Light/Dark Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              onClick={toggleColorMode}
+              aria-label="Toggle dark mode"
+            >
+              {colorMode === "light" ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Sun className="h-4 w-4" />
+              )}
+            </Button>
 
-          <DropdownMenuSeparator className="mx-1 h-6 w-px bg-border" />
+            <DropdownMenuSeparator className="mx-1 h-6 w-px bg-border" />
+          </div>
 
           {/* Notifications Dropdown */}
           <DropdownMenu modal={false}>
@@ -263,78 +282,235 @@ export function Header() {
           {/* Notification Modal */}
           <NotificationModal open={notifModalOpen} onOpenChange={setNotifModalOpen} />
 
-          {/* User Avatar */}
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
-                aria-label="User menu"
-              >
-                <User className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel className="text-xs text-muted-foreground truncate">
-              {user?.fullName || user?.username || "Tài khoản"}
-              </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
-                Hồ sơ cá nhân
-              </DropdownMenuItem>
-              {(user?.role === 'staff' || user?.role === 'superuser' || user?.role === 'superadmin' || user?.role === 'learner_plus') && (
-                <DropdownMenuItem 
-                  onClick={async () => {
-                    try {
-                      const { apiClient } = await import("@/api/client");
-                      const { data } = await apiClient.post("/api/auth/ott/generate");
-                      const ott = data?.data?.ott;
-                      const adminUrl = branding.adminUrl || '/admin/';
-                      const separator = adminUrl.includes('?') ? '&' : '?';
-                      window.open(`${adminUrl}${separator}ott=${ott}`, '_blank');
-                    } catch {
-                      // Fallback: mở admin mà không có OTT
-                      window.open(branding.adminUrl || '/admin/', '_blank');
-                    }
-                  }} 
-                  className="cursor-pointer text-primary focus:text-primary"
+          {/* User Avatar (Mobile) */}
+          <div className="sm:hidden">
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  aria-label="User menu"
                 >
-                  <Settings className="mr-2 h-4 w-4" />
-                  Quản trị hệ thống
-                </DropdownMenuItem>
-              )}
-              {/* Tenant Switcher — CHỈ cho superadmin */}
-              {user?.role === 'superadmin' && managedTenants.length > 1 && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => setTenantModalOpen(true)}
-                    className="cursor-pointer gap-2"
-                  >
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm">Chuyển tổ chức</span>
-                      {currentTenantName && (
-                        <p className="text-[11px] text-muted-foreground truncate">{currentTenantName}</p>
+                  <div className="h-7 w-7 rounded-full bg-primary/10 overflow-hidden flex items-center justify-center">
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt="Avatar" className="h-full w-full object-cover" />
+                    ) : (
+                      <User className="h-4 w-4 text-primary" />
+                    )}
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[320px] p-0 overflow-hidden rounded-2xl border-border/50 shadow-xl pb-2">
+                {/* Top Banner & Avatar area */}
+                <div className="relative bg-gradient-to-br from-primary/90 via-primary to-primary/50 h-24 mb-14 rounded-t-xl">
+                  {/* Pattern overlay */}
+                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-60 mix-blend-overlay rounded-t-xl pointer-events-none"></div>
+                  
+                  {/* Theme controls in top right matching the image */}
+                  <div className="absolute top-3 right-3 flex items-center bg-background/80 backdrop-blur-md rounded-lg shadow-sm p-0.5 border border-border/20 z-10">
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted" aria-label="Theme preset">
+                          <Palette className="h-3.5 w-3.5 text-foreground" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuLabel className="text-xs text-muted-foreground">Bảng màu</DropdownMenuLabel>
+                        {THEME_PRESETS.map((p) => (
+                          <DropdownMenuItem
+                            key={p.id}
+                            onClick={() => setPreset(p.id)}
+                            className={cn("gap-2", preset === p.id && "bg-accent/10 text-accent font-medium")}
+                          >
+                            <span className="h-3.5 w-3.5 rounded-full shrink-0 border border-border" style={{ backgroundColor: p.color }} />
+                            {p.name}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted" onClick={toggleColorMode}>
+                      {colorMode === "light" ? <Moon className="h-3.5 w-3.5 text-foreground" /> : <Sun className="h-3.5 w-3.5 text-foreground" />}
+                    </Button>
+                  </div>
+                  
+                  {/* Avatar */}
+                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 p-1 bg-background rounded-full z-10">
+                    <div className="h-20 w-20 rounded-full bg-primary text-primary-foreground overflow-hidden flex items-center justify-center border border-border/10 shadow-sm relative">
+                      {user?.avatar ? (
+                        <img src={user.avatar} alt="Avatar" className="h-full w-full object-cover relative z-10" />
+                      ) : (
+                        <span className="text-3xl font-bold relative z-10">{user?.fullName?.charAt(0) || user?.username?.charAt(0) || "U"}</span>
                       )}
                     </div>
+                  </div>
+                </div>
+
+                {/* User Info */}
+                <div className="text-center px-6">
+                  <h4 className="text-[17px] font-bold text-foreground flex items-center justify-center gap-1.5">
+                    {user?.fullName || user?.username || "Tài khoản"}
+                    <BadgeCheck className="h-4 w-4 text-blue-500 shrink-0" />
+                  </h4>
+                  <p className="text-[13px] text-muted-foreground mt-0.5">{user?.email || ""}</p>
+                  
+                  {/* Progress */}
+                  <div className="mt-5 mb-5 text-left">
+                    <p className="text-[14px] text-foreground mb-3 text-center">
+                      Bạn đã hoàn thành <span className="text-primary font-medium">{averagePercent.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}%</span> tất cả khóa học
+                    </p>
+                    <div className="h-1 w-full bg-muted overflow-hidden rounded-full relative">
+                      <div className="absolute top-0 left-0 h-full bg-primary rounded-r-full" style={{ width: `${averagePercent}%` }} />
+                    </div>
+                  </div>
+                </div>
+
+                <DropdownMenuSeparator className="mx-4 my-2 bg-border/50" />
+
+                {/* Menu Items */}
+                <div className="px-2 space-y-1">
+                  <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90 focus:text-primary-foreground py-3 transition-colors">
+                    <User className="mr-3 h-5 w-5" />
+                    <span className="font-medium text-[15px]">Hồ sơ cá nhân</span>
                   </DropdownMenuItem>
-                </>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
-                <LogOut className="mr-2 h-4 w-4" />
-                Đăng xuất
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  
+                  <DropdownMenuItem onClick={() => setPwModalOpen(true)} className="cursor-pointer rounded-lg py-3 focus:bg-muted transition-colors">
+                    <Lock className="mr-3 h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium text-[15px]">Đổi mật khẩu</span>
+                  </DropdownMenuItem>
+
+                  {(user?.role === 'staff' || user?.role === 'superuser' || user?.role === 'superadmin' || user?.role === 'learner_plus') && (
+                    <DropdownMenuItem 
+                      onClick={async () => {
+                        try {
+                          const { apiClient } = await import("@/api/client");
+                          const { data } = await apiClient.post("/api/auth/ott/generate");
+                          const ott = data?.data?.ott;
+                          const adminUrl = branding.adminUrl || '/admin/';
+                          const separator = adminUrl.includes('?') ? '&' : '?';
+                          window.open(`${adminUrl}${separator}ott=${ott}`, '_blank');
+                        } catch {
+                          window.open(branding.adminUrl || '/admin/', '_blank');
+                        }
+                      }} 
+                      className="cursor-pointer rounded-lg py-3 focus:bg-muted transition-colors"
+                    >
+                      <Settings className="mr-3 h-5 w-5 text-muted-foreground" />
+                      <span className="font-medium text-[15px]">Quản trị hệ thống</span>
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {user?.role === 'superadmin' && managedTenants.length > 1 && (
+                    <DropdownMenuItem
+                      onClick={() => setTenantModalOpen(true)}
+                      className="cursor-pointer rounded-lg py-3 focus:bg-muted transition-colors"
+                    >
+                      <Building2 className="mr-3 h-5 w-5 text-muted-foreground" />
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-[15px]">Chuyển tổ chức</span>
+                        {currentTenantName && (
+                          <p className="text-[12px] text-muted-foreground truncate">{currentTenantName}</p>
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  )}
+
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer rounded-lg py-3 text-destructive focus:text-destructive focus:bg-destructive/10 transition-colors mt-1">
+                    <LogOut className="mr-3 h-5 w-5" />
+                    <span className="font-medium text-[15px]">Đăng xuất</span>
+                  </DropdownMenuItem>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* User Avatar (Desktop) */}
+          <div className="hidden sm:block">
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  aria-label="User menu"
+                >
+                  <div className="h-7 w-7 rounded-full bg-primary/10 overflow-hidden flex items-center justify-center">
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt="Avatar" className="h-full w-full object-cover" />
+                    ) : (
+                      <User className="h-4 w-4 text-primary" />
+                    )}
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel className="text-xs text-muted-foreground truncate">
+                {user?.fullName || user?.username || "Tài khoản"}
+                </DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  Hồ sơ cá nhân
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPwModalOpen(true)} className="cursor-pointer">
+                  <Lock className="mr-2 h-4 w-4" />
+                  Đổi mật khẩu
+                </DropdownMenuItem>
+                {(user?.role === 'staff' || user?.role === 'superuser' || user?.role === 'superadmin' || user?.role === 'learner_plus') && (
+                  <DropdownMenuItem 
+                    onClick={async () => {
+                      try {
+                        const { apiClient } = await import("@/api/client");
+                        const { data } = await apiClient.post("/api/auth/ott/generate");
+                        const ott = data?.data?.ott;
+                        const adminUrl = branding.adminUrl || '/admin/';
+                        const separator = adminUrl.includes('?') ? '&' : '?';
+                        window.open(`${adminUrl}${separator}ott=${ott}`, '_blank');
+                      } catch {
+                        // Fallback: mở admin mà không có OTT
+                        window.open(branding.adminUrl || '/admin/', '_blank');
+                      }
+                    }} 
+                    className="cursor-pointer text-primary focus:text-primary"
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Quản trị hệ thống
+                  </DropdownMenuItem>
+                )}
+                {/* Tenant Switcher — CHỈ cho superadmin */}
+                {user?.role === 'superadmin' && managedTenants.length > 1 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => setTenantModalOpen(true)}
+                      className="cursor-pointer"
+                    >
+                      <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm">Chuyển tổ chức</span>
+                        {currentTenantName && (
+                          <p className="text-[11px] text-muted-foreground truncate">{currentTenantName}</p>
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  </>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Đăng xuất
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
     </header>
 
     {/* Tenant Switch Modal */}
     <TenantSwitchModal open={tenantModalOpen} onOpenChange={setTenantModalOpen} />
+    
+    {/* Change Password Modal */}
+    <ChangePasswordModal open={pwModalOpen} onOpenChange={setPwModalOpen} />
     </>
   );
 }
