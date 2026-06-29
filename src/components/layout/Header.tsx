@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import DOMPurify from "dompurify";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -97,6 +97,14 @@ export function Header() {
   const isCourseRoute = location.pathname.includes("/courses/");
   const isSearchableRoute = ['/dashboard', '/explore', '/library'].includes(location.pathname);
   const { globalSearchTerm, setGlobalSearchTerm, isSearchOpen, setSearchOpen } = useSearchStore();
+
+  // Reset search term on mobile when route changes
+  useEffect(() => {
+    if (window.innerWidth < 1024) {
+      setGlobalSearchTerm("");
+      setSearchOpen(false);
+    }
+  }, [location.pathname, setGlobalSearchTerm, setSearchOpen]);
 
   const handleLogout = () => {
     logout();

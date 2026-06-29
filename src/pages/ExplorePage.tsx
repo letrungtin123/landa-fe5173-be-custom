@@ -5,7 +5,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { storageUrl } from "@/utils/storageUrl";
-import { Search, Loader2, BookOpen, ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Loader2, BookOpen, ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -55,11 +55,17 @@ export function ExplorePage() {
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const mobileFilterRef = useRef<HTMLDivElement>(null);
+
   // Click outside để đóng dropdown
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setCategoryDropdownOpen(false);
+      }
+      if (mobileFilterRef.current && !mobileFilterRef.current.contains(e.target as Node)) {
+        setMobileFilterOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -194,13 +200,19 @@ export function ExplorePage() {
               <div className="mb-8 flex flex-col lg:flex-row gap-6 w-full items-stretch">
                 {/* Left Panel — Hero */}
                 <div
-                  className="relative flex-1 rounded-[32px] p-5 pb-3 md:p-6 flex flex-col justify-between min-h-[240px] md:min-h-[250px] lg:h-[270px] overflow-hidden"
-                  style={{
-                    border: '1.5px solid hsl(var(--primary))',
-                    backgroundColor: 'hsl(var(--primary) / 0.04)',
-                  }}
+                  className="relative flex-1 rounded-[32px] p-5 pb-3 md:p-6 flex flex-col justify-between min-h-[240px] md:min-h-[250px] lg:h-[270px]"
                 >
-                  <div className="relative z-10 flex flex-col flex-1 w-full justify-between">
+                  {/* Background container that clips */}
+                  <div className="absolute inset-0 rounded-[32px] overflow-hidden z-0 pointer-events-none" style={{ border: '1.5px solid hsl(var(--primary))', backgroundColor: 'hsl(var(--primary) / 0.04)' }}>
+                    {/* Illustration */}
+                    <img
+                      src={heroIllustration}
+                      alt="Khám phá hành trình học tập"
+                      className="hidden md:block absolute right-0 bottom-0 h-full w-auto max-w-[400px] object-contain select-none pr-3 mr-20"
+                    />
+                  </div>
+
+                  <div className="relative z-10 flex flex-col flex-1 w-full justify-between pointer-events-auto">
                     <div>
                       {/* Badge COURSE */}
                       <div
@@ -216,28 +228,134 @@ export function ExplorePage() {
                       </h1>
                     </div>
 
-                    {/* Search bar */}
-                    <div className="mt-auto hidden md:flex w-full max-w-[340px] items-center gap-2.5 rounded-full border border-border bg-card px-5 py-2.5 shadow-sm">
-                      <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => handleSearchChange(e.target.value)}
-                        placeholder="Tìm khoá học..."
-                        className="flex-1 bg-transparent text-[14px] font-normal leading-[18px] text-foreground placeholder-muted-foreground/60 outline-none"
-                      />
-                      <div className="w-4 h-4 flex items-center justify-center shrink-0">
-                        {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                    <div className="mt-auto flex flex-col gap-3">
+                      {/* Search bar (PC) */}
+                      <div className="hidden md:flex w-full max-w-[340px] items-center gap-2.5 rounded-full border border-border bg-card px-5 py-2.5 shadow-sm">
+                        <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <input
+                          type="text"
+                          value={searchTerm}
+                          onChange={(e) => handleSearchChange(e.target.value)}
+                          placeholder="Tìm khoá học..."
+                          className="flex-1 bg-transparent text-[14px] font-normal leading-[18px] text-foreground placeholder-muted-foreground/60 outline-none"
+                        />
+                        <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                          {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                        </div>
+                      </div>
+
+                      {/* Mobile Filter Button */}
+                      <div className="md:hidden w-full relative z-50" ref={mobileFilterRef}>
+                        <button
+                          onClick={() => setMobileFilterOpen(prev => !prev)}
+                          className={cn(
+                            "flex items-center justify-center gap-2 w-fit px-4 py-2 rounded-full text-[13px] font-medium border transition-all shadow-sm",
+                            (selectedCategoryIds.size > 0 || detailFilter !== 'all')
+                              ? "border-primary text-primary bg-primary/5"
+                              : "border-border bg-card text-foreground hover:border-primary/40"
+                          )}
+                        >
+                          <Filter className="w-4 h-4" />
+                          Bộ lọc
+                          {(selectedCategoryIds.size > 0 || detailFilter !== 'all') && (
+                            <span className="flex items-center justify-center h-[18px] min-w-[18px] rounded-full bg-primary text-white text-[11px] font-bold px-1 ml-0.5">
+                              {(selectedCategoryIds.size > 0 ? 1 : 0) + (detailFilter !== 'all' ? 1 : 0)}
+                            </span>
+                          )}
+                          <ChevronDown className={cn("h-4 w-4 transition-transform ml-0.5", mobileFilterOpen && "rotate-180")} />
+                        </button>
+
+                        <AnimatePresence>
+                          {mobileFilterOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10, scale: 0.97 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: 10, scale: 0.97 }}
+                              transition={{ duration: 0.15 }}
+                              className="absolute left-0 top-[calc(100%+8px)] w-[280px] rounded-2xl border border-border bg-card p-4 shadow-xl flex flex-col gap-5 max-h-[60vh] overflow-y-auto scrollbar-thin"
+                            >
+                              {/* Trạng thái học */}
+                              <div className="flex flex-col gap-2.5">
+                                <h4 className="text-[14px] font-bold text-foreground">Trạng thái học</h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {([
+                                    { key: 'all' as DetailFilter, label: 'Tất cả' },
+                                    { key: 'in_progress' as DetailFilter, label: 'Đang học' },
+                                    { key: 'completed' as DetailFilter, label: 'Đã học' },
+                                    { key: 'not_enrolled' as DetailFilter, label: 'Chưa học' },
+                                  ]).map(pill => (
+                                    <button
+                                      key={pill.key}
+                                      onClick={() => setDetailFilter(pill.key)}
+                                      className={cn(
+                                        "px-3 py-1.5 rounded-full text-[12px] font-medium border transition-all",
+                                        detailFilter === pill.key
+                                          ? "bg-primary text-white border-primary"
+                                          : "bg-background text-muted-foreground border-border"
+                                      )}
+                                    >
+                                      {pill.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="h-px bg-border w-full" />
+
+                              {/* Danh mục */}
+                              <div className="flex flex-col gap-2">
+                                <h4 className="text-[14px] font-bold text-foreground mb-1">Danh mục</h4>
+                                <button
+                                  onClick={() => handleCategoryClick('all')}
+                                  className={cn(
+                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-colors text-left",
+                                    selectedCategoryIds.size === 0
+                                      ? "bg-primary/10 text-primary"
+                                      : "text-foreground hover:bg-muted/50"
+                                  )}
+                                >
+                                  <div className={cn(
+                                    "flex items-center justify-center h-4 w-4 rounded border-[1.5px] shrink-0 transition-colors",
+                                    selectedCategoryIds.size === 0
+                                      ? "border-primary bg-primary"
+                                      : "border-muted-foreground/40"
+                                  )}>
+                                    {selectedCategoryIds.size === 0 && <Check className="h-3 w-3 text-white stroke-[3]" />}
+                                  </div>
+                                  Tất cả danh mục
+                                </button>
+                                
+                                <div className="flex flex-col gap-0.5 mt-1">
+                                  {categories.map((cat) => (
+                                    <button
+                                      key={cat.id}
+                                      onClick={() => handleCategoryClick(cat.id)}
+                                      className={cn(
+                                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-colors text-left",
+                                        selectedCategoryIds.has(cat.id)
+                                          ? "bg-primary/10 text-primary"
+                                          : "text-foreground hover:bg-muted/50"
+                                      )}
+                                    >
+                                      <div className={cn(
+                                        "flex items-center justify-center h-4 w-4 rounded border-[1.5px] shrink-0 transition-colors",
+                                        selectedCategoryIds.has(cat.id)
+                                          ? "border-primary bg-primary"
+                                          : "border-muted-foreground/40"
+                                      )}>
+                                        {selectedCategoryIds.has(cat.id) && <Check className="h-3 w-3 text-white stroke-[3]" />}
+                                      </div>
+                                      {cat.name}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </div>
                   </div>
-
-                  {/* Illustration */}
-                  <img
-                    src={heroIllustration}
-                    alt="Khám phá hành trình học tập"
-                    className="hidden md:block absolute right-0 bottom-0 h-full w-auto max-w-[400px] object-contain pointer-events-none select-none z-0 pr-3 mr-20"
-                  />
                 </div>
 
                 {/* Right Panel — Bộ lọc khoá học (commented out, replaced by dropdown below) */}
@@ -283,8 +401,8 @@ export function ExplorePage() {
                   </div> */}
               </div>
 
-              {/* Bộ lọc trạng thái học + dropdown danh mục */}
-              <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+              {/* Bộ lọc trạng thái học + dropdown danh mục (Chỉ hiển thị trên PC) */}
+              <div className="hidden md:flex items-center justify-between gap-3 mb-6 flex-wrap">
                 {/* Left — Filter pills */}
                 <div className="flex flex-wrap gap-2">
                   {([
