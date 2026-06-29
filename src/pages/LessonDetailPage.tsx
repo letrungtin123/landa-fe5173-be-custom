@@ -634,7 +634,7 @@ export function LessonDetailPage() {
 
       {/* ── Floating buttons — Portal to body để thoát khỏi motion.div transform ── */}
       {createPortal(
-        <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-4">
+        <div className="fixed bottom-[85px] md:bottom-8 right-6 md:right-8 z-50 flex flex-col gap-4">
           {/* Nút Cuộn Lên Đầu Trang */}
           <button
             onClick={() => {

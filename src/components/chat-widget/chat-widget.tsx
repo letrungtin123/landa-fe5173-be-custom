@@ -169,7 +169,9 @@ export default function ChatWidget() {
       fab.style.left = '24px';
       fab.style.right = 'auto';
     }
-    const clampedTop = Math.max(24, Math.min(window.innerHeight - 80, r.top));
+    const isMobile = window.innerWidth < 768;
+    const maxTop = window.innerHeight - (isMobile ? 145 : 80);
+    const clampedTop = Math.max(24, Math.min(maxTop, r.top));
     fab.style.top = clampedTop + 'px';
     fab.style.bottom = 'auto';
   }, []);
@@ -331,8 +333,8 @@ export default function ChatWidget() {
           onPointerDown={onFabPointerDown}
           onPointerMove={onFabPointerMove}
           onPointerUp={onFabPointerUp}
-          style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, touchAction: 'none' }}
-          className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/25 flex items-center justify-center hover:shadow-xl hover:shadow-primary/30 cursor-grab active:cursor-grabbing select-none"
+          style={{ position: 'fixed', zIndex: 9999, touchAction: 'none' }}
+          className="bottom-[85px] md:bottom-6 right-6 h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/25 flex items-center justify-center hover:shadow-xl hover:shadow-primary/30 cursor-grab active:cursor-grabbing select-none"
           title="Chat với AI"
         >
           {botAvatarSrc ? (
