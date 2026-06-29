@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import ConfirmPicture from "@/assets/CompleteCourseModal/ConfirmPicture.png";
-import GraduationHat from "@/assets/CompleteCourseModal/GraduationHat.png";
 import { ArrowRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CourseModalConfigData } from "@/api/modalConfig";
@@ -45,7 +44,7 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
   });
 
   const { mutate: updateState } = useMutation({
-    mutationFn: (updates: { welcome_shown?: boolean; confirm_shown?: boolean; complete_shown?: boolean }) => 
+    mutationFn: (updates: { welcome_shown?: boolean; confirm_shown?: boolean; complete_shown?: boolean }) =>
       updateCourseModalState(courseId, updates),
     onSuccess: (data) => {
       queryClient.setQueryData(["courseModalState", courseId], data);
@@ -54,7 +53,7 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
 
   useEffect(() => {
     if (!courseId || isLoading || !config || isModalStateLoading || !modalState) return;
-    
+
     // Reset confirm_shown khi progress rớt dưới 100%, nhưng chỉ 1 lần
     if (completionPercent < 100) {
       if (modalState.confirm_shown && !hasResetRef.current) {
@@ -93,91 +92,90 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
 
   const [scale, setScale] = useState(1);
 
-  useEffect(() => {
-    if (!open) return;
-    const handleResize = () => {
-      const BASE_WIDTH = 720;
-      const BASE_HEIGHT = 580;
-      const padding = 32;
-      const scaleX = (window.innerWidth - padding) / BASE_WIDTH;
-      const scaleY = (window.innerHeight - padding) / BASE_HEIGHT;
-      setScale(Math.min(scaleX, scaleY, 1));
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [open]);
-
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent 
+    <Dialog open={open} onOpenChange={() => { }}>
+      <DialogContent
         className="w-auto max-w-none p-0 border-none overflow-visible bg-transparent shadow-none [&>button]:hidden outline-none flex items-center justify-center"
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <div 
-          style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
-          className="relative w-[720px] bg-background rounded-3xl shadow-2xl flex flex-col items-center overflow-visible"
+        <div
+          className="w-[88vw] md:w-[92vw] max-w-[640px] bg-background rounded-[32px] overflow-hidden shadow-2xl flex flex-col relative"
         >
-          {/* Nón tốt nghiệp */}
-          <div className="absolute -top-[45px] -left-[35px] z-50 pointer-events-none">
-            <img 
-              src={GraduationHat} 
-              alt="Hat" 
-              className="w-[140px] h-auto drop-shadow-xl" 
-            />
-          </div>
-          
-          {/* Header Image */}
-          <div className="w-full bg-[#E5EDFF] dark:bg-[#1a2d59] rounded-t-3xl pt-8 pb-0 flex justify-center items-end relative overflow-hidden h-[260px] shrink-0">
-            <img 
-              src={ConfirmPicture} 
-              alt="Confirm" 
-              className="w-[75%] max-w-[420px] h-auto object-contain object-bottom translate-y-[8%]" 
+          {/* Blue top background */}
+          <div className="absolute top-0 left-0 right-0 h-[160px] md:h-[260px] bg-primary z-0" />
+
+          {/* Image Overlay */}
+          <div className="absolute top-6 md:-top-1 left-0 right-0 md:left-auto w-full md:w-auto h-[170px] md:h-[320px] z-20 flex justify-center md:justify-end pointer-events-none md:right-4">
+            <img
+              src={ConfirmPicture}
+              alt="Confirm"
+              className="h-full w-auto object-contain object-bottom md:object-right-bottom"
             />
           </div>
 
-          {/* Content */}
-          <div className="px-12 pt-8 pb-10 flex flex-col items-center text-center w-full shrink-0">
-            <h2 className="text-[30px] font-bold text-foreground mb-3 tracking-tight">
-              {config?.confirm_title || 'Hoàn thành khóa học!'}
-            </h2>
-            <p className="text-muted-foreground text-[15px] leading-relaxed mb-6 max-w-[580px]">
-              {config?.confirm_description || 'Cảm ơn bạn đã nỗ lực hoàn thành chương trình đào tạo để cùng xây dựng những giá trị cốt lõi tại công ty.'}
-            </p>
+          {/* White Content Card */}
+          <div className="w-full bg-background rounded-t-[32px] relative z-10 flex flex-col px-5 py-6 md:px-10 mt-[120px] md:mt-[220px]">
+            {/* Text Content */}
+            <div className="pt-[70px] md:pt-0 md:w-[65%] flex flex-col">
+              <h2 className="text-[21px] md:text-[28px] font-medium text-primary mb-2 md:mb-3 text-left tracking-tight">
+                {config?.confirm_title || 'Hoàn thành khóa học!'}
+              </h2>
+              <p className="text-[13px] md:text-[15px] text-muted-foreground leading-relaxed mb-5 md:mb-8 text-left">
+                {config?.confirm_description || 'Cảm ơn bạn đã nỗ lực hoàn thành chương trình đào tạo để cùng xây dựng những giá trị cốt lõi tại công ty.'}
+              </p>
+            </div>
 
-            {/* Checkbox area */}
-            <label className="flex items-start gap-3 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 px-8 py-4 rounded-xl cursor-pointer hover:bg-red-100/80 dark:hover:bg-red-900/40 transition-colors mb-7 w-[550px]">
-              <div className="relative flex items-center justify-center shrink-0 mt-[2px]">
-                <input 
-                  type="checkbox" 
-                  className="peer sr-only"
-                  checked={checked}
-                  onChange={(e) => setChecked(e.target.checked)}
-                />
-                <div className="w-[18px] h-[18px] rounded-[4px] border-2 border-red-300 peer-checked:bg-red-500 peer-checked:border-red-500 flex items-center justify-center transition-colors bg-white dark:bg-transparent">
-                  {checked && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
-                </div>
+            {/* Dotted line */}
+            <div className="w-full border-t border-dashed border-border/80 mb-5 md:mb-6" />
+
+            {/* Checkbox and Button Row */}
+            <div className="flex flex-row items-center justify-between gap-3 md:gap-4 text-left">
+
+              {/* Checkbox & Text Container */}
+              <div className="flex flex-col flex-1 pr-1 md:pr-4">
+                <label className="flex items-center gap-2.5 cursor-pointer group w-fit">
+                  <div className="relative flex items-center justify-center shrink-0">
+                    <input
+                      type="checkbox"
+                      className="peer sr-only"
+                      checked={checked}
+                      onChange={(e) => setChecked(e.target.checked)}
+                    />
+                    <div className="w-5 h-5 rounded-[6px] border-2 border-muted-foreground/40 peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-all bg-background">
+                      {checked && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
+                    </div>
+                  </div>
+                  <span className="text-[14px] md:text-[14.5px] font-medium text-foreground select-none leading-snug">
+                    <span className="md:hidden">Xác nhận</span>
+                    <span className="hidden md:inline">
+                      {config?.confirm_checkbox_text || 'Xác nhận tôi đã hoàn thành khóa học và nắm vững các nội dung đào tạo.'}
+                    </span>
+                  </span>
+                </label>
+
+                {/* Mobile italic text placed BELOW the checkbox and ALIGNED LEFT */}
+                <span
+                  className="md:hidden text-[12.5px] text-muted-foreground italic leading-snug mt-1.5 pr-2 select-none cursor-pointer"
+                  onClick={() => setChecked(!checked)}
+                >
+                  {config?.confirm_checkbox_text || 'Tôi đã hoàn thành khóa học và nắm vững các nội dung đào tạo.'}
+                </span>
               </div>
-              <span className="text-[15px] font-medium select-none text-left leading-snug pt-[1px]">
-                {config?.confirm_checkbox_text || 'Tôi xác nhận đã hoàn thành khóa học và nắm vững các nội dung đào tạo'}
-              </span>
-            </label>
 
-            {/* Button */}
-            <Button
-              disabled={!checked}
-              onClick={handleContinue}
-              className={cn(
-                "rounded-full px-10 py-6 text-[16px] font-semibold gap-2 transition-all duration-300 w-auto min-w-[220px]",
-                checked 
-                  ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 hover:shadow-blue-600/40" 
-                  : "bg-muted text-muted-foreground cursor-not-allowed"
-              )}
-            >
-              Xác nhận & Hoàn thành <ArrowRight className="w-5 h-5 ml-1" />
-            </Button>
+              <Button
+                disabled={!checked}
+                onClick={handleContinue}
+                className={cn(
+                  "rounded-full px-5 py-5 md:px-6 md:py-5 text-[14px] md:text-[14.5px] font-semibold transition-all duration-300 shrink-0",
+                  checked
+                    ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
+                    : "bg-muted text-muted-foreground cursor-not-allowed"
+                )}
+              >
+                Tiếp tục <ArrowRight className="hidden md:inline-block w-4 h-4 ml-1.5" />
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

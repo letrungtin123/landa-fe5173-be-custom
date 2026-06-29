@@ -1,13 +1,18 @@
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import VideoCompleteFinal from "@/assets/CompleteCourseModal/VideoCompleteFinal.gif";
+import { Upload } from "lucide-react";
+import CompleteBGModalMobile from "@/assets/CompleteCourseModal/CompleteBGModalMobile.png";
+import CompleteBGModalPC from "@/assets/CompleteCourseModal/CompleteBGModalPC.png";
+import CompleteModalHat from "@/assets/CompleteCourseModal/CompleteModalHat.png";
+import CompleteModalPencil from "@/assets/CompleteCourseModal/CompleteModalPencil.png";
+import CompleteModalTrophy from "@/assets/CompleteCourseModal/CompleteModalTrophy.png";
+import FacebookIcon from "@/assets/SocialIcon/facebook.png";
+import ZaloIcon from "@/assets/SocialIcon/zalo.png";
+import InstagramIcon from "@/assets/SocialIcon/instagram.png";
 import { useNavigate } from "react-router-dom";
 import type { CourseModalConfigData } from "@/api/modalConfig";
 import { useAppStore } from "@/stores/useAppStore";
-import FacebookIcon from "@/assets/SocialIcon/facebook.png";
-import InstagramIcon from "@/assets/SocialIcon/instagram.png";
-import ZaloIcon from "@/assets/SocialIcon/zalo.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCourseModalState, updateCourseModalState } from "@/api/modalState";
 
@@ -77,21 +82,35 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
   const requiresConfirm = config?.confirm_enabled === true;
   const [isPending, setIsPending] = useState(false);
 
+  const socialIcon = useMemo(() => {
+    switch (config?.completion_social_type) {
+      case "facebook": return FacebookIcon;
+      case "zaloOA": return ZaloIcon;
+      case "instagram": return InstagramIcon;
+      default: return null;
+    }
+  }, [config?.completion_social_type]);
+
+  const [pcScale, setPcScale] = useState(1);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleResize = () => {
+      const scaleX = window.innerWidth / 1920;
+      const scaleY = window.innerHeight / 945;
+      // Use Math.min so the foreground elements always fit inside the screen uniformly without squeezing.
+      // The background image will be separated to object-fill the entire screen.
+      setPcScale(Math.min(scaleX, scaleY));
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [open]);
+
   useEffect(() => {
     setCourseModalActive(open || isPending);
     return () => setCourseModalActive(false);
   }, [open, isPending, setCourseModalActive]);
-
-  const getSocialIcon = () => {
-    switch (config?.completion_social_type) {
-      case "facebook": return FacebookIcon;
-      case "instagram": return InstagramIcon;
-      case "zaloOA": return ZaloIcon;
-      default: return null;
-    }
-  };
-
-  const socialIcon = getSocialIcon();
 
   const queryClient = useQueryClient();
 
@@ -151,77 +170,114 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent 
-        className="w-screen h-screen max-w-none m-0 p-0 border-none bg-background overflow-hidden rounded-none shadow-none [&>button]:hidden z-[100] flex flex-col"
+        className="w-screen h-screen max-w-none m-0 p-0 border-none bg-background md:bg-transparent overflow-hidden rounded-none shadow-none [&>button]:hidden z-[100] flex flex-col justify-center items-center"
       >
-        {/* Nửa trên nền xanh */}
-        <div className="relative w-full h-[55vh] min-h-[420px] bg-[#4F88FF] dark:bg-primary flex flex-col items-center justify-center pt-8 pb-20 overflow-hidden">
-          <Confetti />
-          
-          <h1 className="text-white text-[32px] sm:text-[42px] font-medium mb-3 z-10 tracking-wide mt-[-5vh]">
+        {/* Background Image (object-fill to cover screen without bars) */}
+        <div className="absolute inset-0 w-full h-full -z-20 bg-[#7cb0f7] overflow-hidden">
+          <img src={CompleteBGModalPC} className="hidden md:block absolute inset-0 w-full h-full object-fill" alt="bg-pc" />
+          <img src={CompleteBGModalMobile} className="block md:hidden absolute inset-0 w-full h-full object-fill" alt="bg-mobile" />
+        </div>
+
+        {/* Confetti Effect */}
+        <Confetti />
+
+        {/* PC Foreground Wrapper (Uniform scale to prevent squeezing) */}
+        <div className="hidden md:flex absolute inset-0 items-center justify-center pointer-events-none z-10 overflow-hidden">
+          <div 
+            className="relative flex-shrink-0 origin-center"
+            style={{ 
+              width: '1920px', 
+              height: '945px', 
+              transform: `scale(${pcScale})` 
+            }}
+          >
+            {/* PC 3D ICONS (Fixed px, anchored to center of 1920x945) */}
+            <div className="absolute top-1/2 left-1/2 mt-[-80px]">
+              <img src={CompleteModalTrophy} alt="Trophy PC" className="absolute w-[360px] max-w-none ml-[-40px] mt-[-100px] drop-shadow-2xl z-20" />
+              <img src={CompleteModalHat} alt="Hat PC" className="absolute w-[290px] max-w-none ml-[-320px] mt-[-320px] drop-shadow-xl z-10" />
+              <img src={CompleteModalPencil} alt="Pencil PC" className="absolute w-[150px] max-w-none ml-[-320px] mt-[65px] drop-shadow-xl z-30" />
+            </div>
+
+            {/* PC Text Area (Fixed px, anchored to center of 1920x945) */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 mt-[200px] w-full max-w-[800px] flex-col items-center justify-start z-20 flex pointer-events-auto">
+              <h1 className="text-foreground text-[42px] font-bold mb-3 tracking-tight">
+                {config?.completion_title || 'Congratulations!'}
+              </h1>
+              <p className="text-foreground/80 font-medium text-[16px] max-w-[600px] text-center leading-relaxed mb-8 px-4">
+                {config?.completion_description || 'Trở thành đối tác chiến lược giúp khách hàng tối ưu hiệu suất nhân lực để phát triển bền vững.'}
+              </p>
+
+              <div className="flex flex-row items-center justify-center gap-4">
+                <Button onClick={() => { setOpen(false); navigate("/dashboard"); }} className="bg-[#0057e7] hover:bg-[#0046b8] text-white rounded-full px-10 py-6 text-[15px] font-semibold shadow-md">
+                  Trang chủ
+                </Button>
+                <Button onClick={() => { setOpen(false); navigate("/explore"); }} variant="outline" className="rounded-full px-10 py-6 text-[15px] font-semibold bg-transparent border-muted-foreground/30 text-foreground hover:bg-black/5 dark:hover:bg-white/10 hover:text-foreground">
+                  Các khoá học khác
+                </Button>
+                {config?.completion_social_link && (
+                  <a
+                    href={config.completion_social_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group relative flex items-center justify-center gap-3 h-[48px] pl-1.5 pr-6 rounded-full bg-white shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-out shrink-0"
+                    aria-label="Social Link"
+                  >
+                    <div className="flex items-center justify-center w-9 h-9 rounded-full bg-slate-50 border border-slate-100 shadow-inner overflow-hidden">
+                      {config.completion_social_type === 'website' ? (
+                        <Upload className="w-4 h-4 text-sky-500 group-hover:scale-110 group-hover:text-sky-600 transition-all duration-300" />
+                      ) : socialIcon ? (
+                        <img src={socialIcon} alt="Social Icon" className="w-[18px] h-[18px] object-contain group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300" />
+                      ) : null}
+                    </div>
+                    <span className="font-bold text-[14px] text-slate-700 group-hover:text-blue-700 transition-colors">
+                      {config.completion_social_type === 'zaloOA' ? 'Zalo OA' :
+                       config.completion_social_type === 'facebook' ? 'Facebook' :
+                       config.completion_social_type === 'instagram' ? 'Instagram' : 'Website'}
+                    </span>
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* MOBILE 3D ICONS */}
+        <div className="md:hidden absolute top-1/2 left-1/2 z-30 pointer-events-none mt-[-100px]">
+          <img src={CompleteModalTrophy} alt="Trophy" className="absolute w-[220px] max-w-none ml-[-60px] mt-[-60px] drop-shadow-2xl z-20" />
+          <img src={CompleteModalHat} alt="Hat" className="absolute w-[180px] max-w-none ml-[-180px] mt-[-240px] drop-shadow-xl z-10" />
+          <img src={CompleteModalPencil} alt="Pencil" className="absolute w-[90px] max-w-none ml-[-160px] mt-[80px] drop-shadow-xl z-30" />
+        </div>
+
+        {/* Mobile White Card */}
+        <div className="md:hidden absolute top-1/2 left-1/2 -translate-x-1/2 mt-[60px] w-[90vw] max-w-[400px] bg-card rounded-[28px] p-6 z-20 shadow-2xl flex flex-col items-center text-center">
+          <h1 className="text-[#0062ff] dark:text-primary text-[24px] font-bold mb-2">
             {config?.completion_title || 'Congratulations!'}
           </h1>
-          <p className="text-white/90 text-center max-w-[500px] text-[13px] sm:text-[14px] px-6 mb-8 z-10 leading-relaxed font-light">
+          <p className="text-foreground text-[14px] leading-relaxed mb-6 font-medium px-2">
             {config?.completion_description || 'Trở thành đối tác chiến lược giúp khách hàng tối ưu hiệu suất nhân lực để phát triển bền vững.'}
           </p>
-          
-          <div className="flex flex-wrap items-center justify-center gap-4 z-10">
-            <Button 
-              onClick={() => { setOpen(false); navigate("/dashboard"); }} 
-              className="bg-[#0b57d0] hover:bg-[#0842a0] text-white rounded-full px-8 py-5 sm:py-6 text-[14px] font-medium border-none shadow-none transition-colors"
-            >
+          <div className="flex flex-row items-center justify-center gap-2 w-full">
+            <Button onClick={() => { setOpen(false); navigate("/dashboard"); }} className="bg-[#0062ff] dark:bg-primary hover:bg-[#0052cc] text-white rounded-full px-5 h-11 text-[13px] font-semibold flex-shrink-0">
               Trang chủ
             </Button>
-            <Button 
-              onClick={() => { setOpen(false); navigate("/explore"); }} 
-              variant="outline" 
-              className="bg-transparent border border-white/40 text-white hover:bg-white/10 hover:text-white rounded-full px-8 py-5 sm:py-6 text-[14px] font-medium transition-colors shadow-none"
-            >
+            <Button onClick={() => { setOpen(false); navigate("/explore"); }} variant="outline" className="rounded-full px-4 h-11 text-[13px] font-semibold flex-1 border-muted-foreground/30 text-foreground hover:bg-black/5 dark:hover:bg-white/10 hover:text-foreground">
               Các khoá học khác
             </Button>
-
-            {/* Social Link Button */}
             {config?.completion_social_link && (
               <a
                 href={config.completion_social_link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative flex items-center justify-center gap-3 h-[48px] sm:h-[52px] pl-1.5 pr-6 rounded-full bg-white shadow-[0_8px_20px_-4px_rgba(0,0,0,0.25)] hover:shadow-[0_16px_30px_-6px_rgba(0,0,0,0.35)] hover:-translate-y-1 transition-all duration-400 ease-out"
+                className="group relative flex items-center justify-center h-11 w-11 rounded-full bg-white shadow-md border border-slate-100 shrink-0 hover:bg-slate-50 transition-colors"
                 aria-label="Social Link"
               >
-                {/* Vòng tròn nhỏ bọc icon */}
-                <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-50 border border-slate-100 shadow-inner overflow-hidden">
-                  {config.completion_social_type === 'website' ? (
-                    <svg className="w-5 h-5 sm:w-5 sm:h-5 text-sky-500 group-hover:scale-110 group-hover:text-sky-600 group-hover:rotate-3 transition-all duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-                    </svg>
-                  ) : socialIcon ? (
-                    <img src={socialIcon} alt="Social Icon" className="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] object-contain group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300" />
-                  ) : null}
-                </div>
-                
-                {/* Tên Social */}
-                <span className="font-bold text-[13px] sm:text-[14px] text-slate-700 group-hover:text-blue-700 transition-colors">
-                  {config.completion_social_type === 'zaloOA' ? 'Zalo OA' :
-                   config.completion_social_type === 'facebook' ? 'Facebook' :
-                   config.completion_social_type === 'instagram' ? 'Instagram' : 'Website'}
-                </span>
+                {config.completion_social_type === 'website' ? (
+                  <Upload className="w-4 h-4 text-sky-500" />
+                ) : socialIcon ? (
+                  <img src={socialIcon} alt="Social Icon" className="w-[18px] h-[18px] object-contain" />
+                ) : null}
               </a>
             )}
-          </div>
-
-          {/* Đường cong trắng lồi lên từ đáy */}
-          <div className="absolute -bottom-[25vw] sm:-bottom-[18vw] left-[-20vw] w-[140vw] h-[35vw] sm:h-[25vw] bg-background rounded-t-[50%] z-0" />
-        </div>
-
-        {/* Nửa dưới màu nền trắng (hoặc đen dark mode) */}
-        <div className="relative flex-1 bg-background w-full">
-          {/* Video Box */}
-          <div className="absolute left-1/2 -translate-x-1/2 -top-[100px] sm:-top-[160px] w-[90%] max-w-[700px] z-20 flex items-center justify-center bg-transparent">
-            <img 
-              src={VideoCompleteFinal} 
-              alt="Course Complete"
-              className="w-full h-auto object-contain block"
-            />
           </div>
         </div>
       </DialogContent>
