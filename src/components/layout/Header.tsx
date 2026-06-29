@@ -16,6 +16,8 @@ import {
   Building2,
   Lock,
   BadgeCheck,
+  Search,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +34,7 @@ import {
   THEME_PRESETS,
 } from "@/stores/useThemeStore";
 import { useAppStore } from "@/stores/useAppStore";
+import { useSearchStore } from "@/stores/useSearchStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotifications, useUnreadNotificationCount, useMarkAllRead } from "@/hooks/useNotifications";
 import type { Notification } from "@/data/types";
@@ -92,6 +95,8 @@ export function Header() {
   }, [user?.tenantId, user?.tenantName, managedTenants]);
 
   const isCourseRoute = location.pathname.includes("/courses/");
+  const isSearchableRoute = ['/dashboard', '/explore', '/library'].includes(location.pathname);
+  const { globalSearchTerm, setGlobalSearchTerm, isSearchOpen, setSearchOpen } = useSearchStore();
 
   const handleLogout = () => {
     logout();
@@ -102,7 +107,27 @@ export function Header() {
     <>
       {/* Spacer for fixed header */}
       <div className="h-16 w-full shrink-0" />
-      <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-border bg-background !mr-0">
+
+      {/* MOBILE SEARCH OVERLAY */}
+      {isSearchOpen && isSearchableRoute && (
+        <header className="fixed top-0 left-0 right-0 z-[60] w-full border-b border-border bg-background lg:hidden">
+          <div className="mx-auto flex h-16 items-center gap-2 px-4">
+            <Search className="h-5 w-5 text-muted-foreground shrink-0" />
+            <input 
+              autoFocus
+              value={globalSearchTerm}
+              onChange={(e) => setGlobalSearchTerm(e.target.value)}
+              placeholder="Tìm kiếm..."
+              className="flex-1 bg-transparent border-none outline-none text-[15px] text-foreground placeholder:text-muted-foreground"
+            />
+            <Button variant="ghost" size="icon" onClick={() => setSearchOpen(false)} className="shrink-0 -mr-2">
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        </header>
+      )}
+
+      <header className={cn("fixed top-0 left-0 right-0 z-50 w-full border-b border-border bg-background !mr-0", isSearchOpen && isSearchableRoute ? "hidden lg:block" : "")}>
       <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-4 px-4 md:px-6">
         {/* Mobile menu toggle - ONLY SHOW IN COURSE ROUTE */}
         {isCourseRoute && (
@@ -156,6 +181,17 @@ export function Header() {
         {/* Right Actions */}
         <div className="flex items-center gap-1 translate-x-[2px] ml-auto">
 
+          {/* Nút Search Mobile */}
+          {isSearchableRoute && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden shrink-0"
+              onClick={() => setSearchOpen(true)}
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+          )}
 
           <div className="hidden sm:flex items-center gap-1">
             {/* Theme Preset Picker */}

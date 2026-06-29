@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useSearchStore } from "@/stores/useSearchStore";
 import { cn } from "@/lib/utils";
 import { useCourses, useMyEnrollments, useCoursesByCategory } from "@/hooks/useCourses";
 import { useCourseCompletion, useBatchCourseProgress } from "@/hooks/useProgress";
@@ -127,6 +128,13 @@ export function ExplorePage() {
     }, 500);
   };
 
+  const globalSearchTerm = useSearchStore(s => s.globalSearchTerm);
+  useEffect(() => {
+    if (globalSearchTerm !== searchTerm) {
+      handleSearchChange(globalSearchTerm);
+    }
+  }, [globalSearchTerm]);
+
 
 
   // Right panel click: toggle danh mục trong filter
@@ -209,7 +217,7 @@ export function ExplorePage() {
                     </div>
 
                     {/* Search bar */}
-                    <div className="mt-auto flex w-full max-w-[340px] items-center gap-2.5 rounded-full border border-border bg-card px-5 py-2.5 shadow-sm">
+                    <div className="mt-auto hidden md:flex w-full max-w-[340px] items-center gap-2.5 rounded-full border border-border bg-card px-5 py-2.5 shadow-sm">
                       <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <input
                         type="text"

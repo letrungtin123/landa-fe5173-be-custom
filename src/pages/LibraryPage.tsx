@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { motion, AnimatePresence } from "framer-motion";
 import { FilePreviewModal } from "@/components/library/FilePreviewModal";
@@ -6,7 +6,7 @@ import {
   Search,
   Download,
   FileText,
-  LayoutTemplate,
+  Filter,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -30,6 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useSearchStore } from "@/stores/useSearchStore";
 import { usePageLoading } from "@/hooks/usePageLoading";
 import { useLibraryCategories, useLibraryDocuments } from "@/hooks/useLibrary";
 import { type LibraryDocument, type DocumentCategory, handleSecureDownload } from "@/api/library";
@@ -118,6 +119,13 @@ export function LibraryPage() {
     setSearchTerm(value);
     setCurrentPage(1);
   }, []);
+
+  const globalSearchTerm = useSearchStore(s => s.globalSearchTerm);
+  useEffect(() => {
+    if (globalSearchTerm !== searchTerm) {
+      handleSearch(globalSearchTerm);
+    }
+  }, [globalSearchTerm]);
 
   const handleCategoryClick = useCallback((catId: string) => {
     setActiveCategory((prev) => (prev === catId ? "" : catId));
@@ -343,7 +351,7 @@ export function LibraryPage() {
               </h1>
 
               <div className="flex flex-col sm:flex-row gap-4 sm:items-center pt-2 pb-4">
-                <div className="relative flex-1 sm:max-w-md">
+                <div className="hidden md:block relative flex-1 sm:max-w-md">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <input
                     type="text"
@@ -357,8 +365,8 @@ export function LibraryPage() {
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="rounded-full bg-card h-10 px-6 border-border shadow-sm text-[14px] font-semibold leading-[18px]">
-                      <LayoutTemplate className="h-4 w-4 mr-2 text-muted-foreground" /> 
-                      {activeExtension ? activeExtension.toUpperCase() : "Filter"}
+                      <Filter className="h-4 w-4 mr-2 text-muted-foreground" /> 
+                      {activeExtension ? activeExtension.toUpperCase() : "Lọc"}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-40 rounded-xl">
@@ -468,7 +476,7 @@ export function LibraryPage() {
           {/* Search + Extension Filter */}
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-              <div className="relative flex-1">
+              <div className="hidden md:block relative flex-1">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <input
                   type="text"

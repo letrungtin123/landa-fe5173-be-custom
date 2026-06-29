@@ -8,6 +8,13 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { storageUrl } from "@/utils/storageUrl";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useSearchStore } from "@/stores/useSearchStore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyEnrollments, useCourses } from "@/hooks/useCourses";
 import { useBatchCourseProgress } from "@/hooks/useProgress";
@@ -167,8 +174,15 @@ export function ContinueLearning() {
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    setCurrentPage(1);
+    setCurrentPage(1); // Reset page on search
   };
+
+  const globalSearchTerm = useSearchStore(s => s.globalSearchTerm);
+  useEffect(() => {
+    if (globalSearchTerm !== searchTerm) {
+      handleSearch(globalSearchTerm);
+    }
+  }, [globalSearchTerm]);
 
   const isLoading = enrollLoading || coursesLoading;
   
@@ -252,7 +266,7 @@ export function ContinueLearning() {
 
         {/* Search bar — giữa */}
         {allCourses.length > 0 && (
-          <div className="relative flex-1 max-w-sm">
+          <div className="hidden md:block relative flex-1 max-w-sm">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
