@@ -98,7 +98,9 @@ export function MentorSidebar({ mentors, companyLogo }: MentorSidebarProps) {
               </button>
 
               {/* Header gradient */}
-              <div className="h-24 bg-gradient-to-br from-primary/70 via-primary/50 to-primary/20 dark:from-primary/30 dark:via-primary/15 dark:to-primary/5" />
+              <div className="h-32 w-full bg-gradient-to-br from-primary/90 via-primary to-primary/50 relative">
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-60 mix-blend-overlay"></div>
+              </div>
 
               {/* Avatar + Name */}
               <div className="relative px-6 pb-6">

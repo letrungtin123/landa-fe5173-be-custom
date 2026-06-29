@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { motion } from "framer-motion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
@@ -192,11 +193,27 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
             }}
           >
             {/* PC 3D ICONS (Fixed px, anchored to center of 1920x945) */}
-            <div className="absolute top-1/2 left-1/2 mt-[-80px]">
-              <img src={CompleteModalTrophy} alt="Trophy PC" className="absolute w-[360px] max-w-none ml-[-40px] mt-[-100px] drop-shadow-2xl z-20" />
-              <img src={CompleteModalHat} alt="Hat PC" className="absolute w-[290px] max-w-none ml-[-320px] mt-[-320px] drop-shadow-xl z-10" />
-              <img src={CompleteModalPencil} alt="Pencil PC" className="absolute w-[150px] max-w-none ml-[-320px] mt-[65px] drop-shadow-xl z-30" />
-            </div>
+            <motion.div 
+              className="absolute top-1/2 left-1/2 mt-[-80px]"
+              animate={{ y: [0, -12, 0] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <img 
+                src={CompleteModalTrophy} 
+                alt="Trophy PC" 
+                className="absolute w-[360px] max-w-none ml-[-40px] mt-[-100px] drop-shadow-2xl z-20"
+              />
+              <img 
+                src={CompleteModalHat} 
+                alt="Hat PC" 
+                className="absolute w-[290px] max-w-none ml-[-320px] mt-[-320px] drop-shadow-xl z-10"
+              />
+              <img 
+                src={CompleteModalPencil} 
+                alt="Pencil PC" 
+                className="absolute w-[150px] max-w-none ml-[-320px] mt-[65px] drop-shadow-xl z-30"
+              />
+            </motion.div>
 
             {/* PC Text Area (Fixed px, anchored to center of 1920x945) */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 mt-[200px] w-full max-w-[800px] flex-col items-center justify-start z-20 flex pointer-events-auto">
@@ -242,11 +259,27 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
         </div>
 
         {/* MOBILE 3D ICONS */}
-        <div className="md:hidden absolute top-1/2 left-1/2 z-30 pointer-events-none mt-[-100px]">
-          <img src={CompleteModalTrophy} alt="Trophy" className="absolute w-[220px] max-w-none ml-[-60px] mt-[-60px] drop-shadow-2xl z-20" />
-          <img src={CompleteModalHat} alt="Hat" className="absolute w-[180px] max-w-none ml-[-180px] mt-[-240px] drop-shadow-xl z-10" />
-          <img src={CompleteModalPencil} alt="Pencil" className="absolute w-[90px] max-w-none ml-[-160px] mt-[80px] drop-shadow-xl z-30" />
-        </div>
+        <motion.div 
+          className="md:hidden absolute top-1/2 left-1/2 z-30 pointer-events-none mt-[-100px]"
+          animate={{ y: [0, -10, 0] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <img 
+            src={CompleteModalTrophy} 
+            alt="Trophy" 
+            className="absolute w-[220px] max-w-none ml-[-60px] mt-[-60px] drop-shadow-2xl z-20"
+          />
+          <img 
+            src={CompleteModalHat} 
+            alt="Hat" 
+            className="absolute w-[180px] max-w-none ml-[-180px] mt-[-240px] drop-shadow-xl z-10"
+          />
+          <img 
+            src={CompleteModalPencil} 
+            alt="Pencil" 
+            className="absolute w-[90px] max-w-none ml-[-160px] mt-[80px] drop-shadow-xl z-30"
+          />
+        </motion.div>
 
         {/* Mobile White Card */}
         <div className="md:hidden absolute top-1/2 left-1/2 -translate-x-1/2 mt-[60px] w-[90vw] max-w-[400px] bg-card rounded-[28px] p-6 z-20 shadow-2xl flex flex-col items-center text-center">

@@ -223,22 +223,22 @@ export function CourseSidebar() {
               <div 
                 key={mentor.id} 
                 onClick={() => setSelectedMentor(mentor)}
-                className="rounded-xl border border-blue-200 bg-[#F4F8FF] p-6 flex flex-col items-center text-center shadow-sm cursor-pointer transition-colors hover:bg-blue-50/80 active:bg-blue-100/50"
+                className="rounded-xl border border-border bg-card p-6 flex flex-col items-center text-center shadow-sm cursor-pointer transition-colors hover:border-primary/50 hover:bg-accent/30 active:bg-accent/50"
               >
                 <div className="relative mb-3">
                   {avatarUrl ? (
                     <img 
                       src={avatarUrl} 
                       alt={mentor.name} 
-                      className="h-[76px] w-[76px] rounded-full bg-white p-0.5 border shadow-sm object-cover"
+                      className="h-[76px] w-[76px] rounded-full bg-background p-0.5 border border-border shadow-sm object-cover"
                     />
                   ) : (
-                    <div className="h-[76px] w-[76px] rounded-full bg-primary/10 border shadow-sm flex items-center justify-center">
+                    <div className="h-[76px] w-[76px] rounded-full bg-primary/10 border border-border shadow-sm flex items-center justify-center">
                       <User className="h-8 w-8 text-primary/60" />
                     </div>
                   )}
                 </div>
-                <div className="bg-[#42F5CE] text-black text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-3">
+                <div className="bg-primary/10 text-primary text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-3">
                   Mentor
                 </div>
                 <h3 className="text-[18px] font-bold text-foreground">{mentor.name}</h3>
@@ -262,7 +262,7 @@ export function CourseSidebar() {
             );
           })
         ) : (
-          <div className="rounded-xl border border-blue-200 bg-[#F4F8FF] p-6 flex flex-col items-center text-center shadow-sm">
+          <div className="rounded-xl border border-border bg-card p-6 flex flex-col items-center text-center shadow-sm">
             <p className="text-[13px] text-muted-foreground italic">Chưa có thông tin người hướng dẫn</p>
           </div>
         )}
@@ -379,7 +379,9 @@ export function CourseSidebar() {
               </button>
 
               {/* Header gradient */}
-              <div className="h-24 bg-gradient-to-br from-primary/70 via-primary/50 to-primary/20 dark:from-primary/30 dark:via-primary/15 dark:to-primary/5" />
+              <div className="h-32 w-full bg-gradient-to-br from-primary/90 via-primary to-primary/50 relative">
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-60 mix-blend-overlay"></div>
+              </div>
 
               {/* Avatar + Name */}
               <div className="relative px-6 pb-6">

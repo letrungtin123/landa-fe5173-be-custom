@@ -106,7 +106,7 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
           <div className="absolute top-0 left-0 right-0 h-[160px] md:h-[260px] bg-primary z-0" />
 
           {/* Image Overlay */}
-          <div className="absolute top-6 md:-top-1 left-0 right-0 md:left-auto w-full md:w-auto h-[170px] md:h-[320px] z-20 flex justify-center md:justify-end pointer-events-none md:right-4">
+          <div className="absolute top-0 md:-top-3 left-0 right-0 md:left-auto w-full md:w-auto h-[210px] md:h-[340px] z-20 flex justify-center md:justify-end pointer-events-none md:right-3">
             <img
               src={ConfirmPicture}
               alt="Confirm"
@@ -117,7 +117,7 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
           {/* White Content Card */}
           <div className="w-full bg-background rounded-t-[32px] relative z-10 flex flex-col px-5 py-6 md:px-10 mt-[120px] md:mt-[220px]">
             {/* Text Content */}
-            <div className="pt-[70px] md:pt-0 md:w-[65%] flex flex-col">
+            <div className="pt-[70px] md:pt-0 md:w-[55%] md:pr-4 flex flex-col">
               <h2 className="text-[21px] md:text-[28px] font-medium text-primary mb-2 md:mb-3 text-left tracking-tight">
                 {config?.confirm_title || 'Hoàn thành khóa học!'}
               </h2>

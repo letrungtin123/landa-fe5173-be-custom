@@ -326,14 +326,14 @@ export function Header() {
           {/* Notification Modal */}
           <NotificationModal open={notifModalOpen} onOpenChange={setNotifModalOpen} />
 
-          {/* User Avatar (Mobile) */}
-          <div className="sm:hidden">
+          {/* User Avatar (Universal) */}
+          <div>
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9"
+                  className="h-9 w-9 sm:ml-1 rounded-full"
                   aria-label="User menu"
                 >
                   <div className="h-7 w-7 rounded-full bg-primary/10 overflow-hidden flex items-center justify-center">
@@ -352,7 +352,7 @@ export function Header() {
                   <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-60 mix-blend-overlay rounded-xl pointer-events-none"></div>
                   
                   {/* Theme controls in top right matching the image */}
-                  <div className="absolute top-3 right-3 flex items-center bg-background/80 backdrop-blur-md rounded-lg shadow-sm p-0.5 border border-border/20 z-10">
+                  <div className="absolute top-3 right-3 sm:hidden flex items-center bg-background/80 backdrop-blur-md rounded-lg shadow-sm p-0.5 border border-border/20 z-10">
                     <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted" aria-label="Theme preset">
@@ -400,7 +400,7 @@ export function Header() {
                   
                   {/* Progress */}
                   <div className="mt-5 mb-5 text-left">
-                    <p className="text-[14px] text-foreground mb-3 text-center">
+                    <p className="text-[12.5px] text-foreground mb-3 text-center whitespace-nowrap overflow-hidden text-ellipsis">
                       Bạn đã hoàn thành <span className="text-primary font-medium">{averagePercent.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}%</span> tất cả khóa học
                     </p>
                     <div className="h-1 w-full bg-muted overflow-hidden rounded-full relative">
@@ -469,89 +469,6 @@ export function Header() {
                     <span className="font-medium text-[15px]">Đăng xuất</span>
                   </DropdownMenuItem>
                 </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {/* User Avatar (Desktop) */}
-          <div className="hidden sm:block">
-            <DropdownMenu modal={false}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9"
-                  aria-label="User menu"
-                >
-                  <div className="h-7 w-7 rounded-full bg-primary/10 overflow-hidden flex items-center justify-center">
-                    {user?.avatar ? (
-                      <img src={user.avatar} alt="Avatar" className="h-full w-full object-cover" />
-                    ) : (
-                      <User className="h-4 w-4 text-primary" />
-                    )}
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel className="text-xs text-muted-foreground truncate">
-                {user?.fullName || user?.username || "Tài khoản"}
-                </DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
-                  <User className="mr-2 h-4 w-4" />
-                  Hồ sơ cá nhân
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setPwModalOpen(true)} className="cursor-pointer">
-                  <Lock className="mr-2 h-4 w-4" />
-                  Đổi mật khẩu
-                </DropdownMenuItem>
-                {(user?.role === 'staff' || user?.role === 'superuser' || user?.role === 'superadmin' || user?.role === 'learner_plus') && (
-                  <DropdownMenuItem 
-                    onClick={async () => {
-                      const newWin = window.open('about:blank', '_blank');
-                      try {
-                        const { apiClient } = await import("@/api/client");
-                        const { data } = await apiClient.post("/api/auth/ott/generate");
-                        const ott = data?.data?.ott;
-                        const adminUrl = branding.adminUrl || '/admin/';
-                        const separator = adminUrl.includes('?') ? '&' : '?';
-                        const finalUrl = `${adminUrl}${separator}ott=${ott}`;
-                        if (newWin) newWin.location.href = finalUrl;
-                        else window.location.href = finalUrl;
-                      } catch {
-                        const fallbackUrl = branding.adminUrl || '/admin/';
-                        if (newWin) newWin.location.href = fallbackUrl;
-                        else window.location.href = fallbackUrl;
-                      }
-                    }} 
-                    className="cursor-pointer text-primary focus:text-primary"
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    Quản trị hệ thống
-                  </DropdownMenuItem>
-                )}
-                {/* Tenant Switcher — CHỈ cho superadmin */}
-                {user?.role === 'superadmin' && managedTenants.length > 1 && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => setTenantModalOpen(true)}
-                      className="cursor-pointer"
-                    >
-                      <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm">Chuyển tổ chức</span>
-                        {currentTenantName && (
-                          <p className="text-[11px] text-muted-foreground truncate">{currentTenantName}</p>
-                        )}
-                      </div>
-                    </DropdownMenuItem>
-                  </>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Đăng xuất
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

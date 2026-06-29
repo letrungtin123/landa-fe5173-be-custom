@@ -374,7 +374,7 @@ export function LessonDetailPage() {
         <div className="flex-1 min-w-0" ref={contentRef}>
           <div className="w-full px-6 py-6 md:px-7 md:py-8 2xl:px-8 2xl:py-12">
             {/* Header: Module + Tiêu đề + Progress */}
-            <div className="mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+            <div className="mb-2 md:mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <div className="flex-1">
                 {/* Module tag + Lesson counter */}
                 <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -397,12 +397,12 @@ export function LessonDetailPage() {
 
               {/* Progress Text (Right side) */}
               {totalUnits > 1 && (
-                <div className="flex flex-col items-start md:items-end md:text-right shrink-0">
-                  <div className="text-[28px] font-semibold leading-[32px] text-primary tracking-tight">
-                    {Math.min(currentUnitIndex + 1, totalUnits)}<span className="text-[20px] font-semibold leading-[24px]">/{totalUnits}</span>
-                  </div>
-                  <div className="mt-2 text-[14px] font-semibold leading-[18px] text-foreground">
+                <div className="w-full md:w-auto flex flex-row md:flex-col items-center md:items-end justify-between md:justify-end shrink-0 gap-2 md:gap-0 mt-2 md:mt-0">
+                  <div className="text-[14px] md:text-[14px] font-semibold leading-[18px] text-foreground order-1 md:order-2 md:mt-2">
                     Phần đã hoàn thành
+                  </div>
+                  <div className="text-[20px] md:text-[24px] font-semibold leading-[24px] md:leading-[28px] text-primary tracking-tight order-2 md:order-1">
+                    {Math.min(currentUnitIndex + 1, totalUnits)}/{totalUnits}
                   </div>
                 </div>
               )}
