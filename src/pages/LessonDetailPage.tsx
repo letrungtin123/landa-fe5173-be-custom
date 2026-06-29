@@ -398,7 +398,7 @@ export function LessonDetailPage() {
               {/* Progress Text (Right side) */}
               {totalUnits > 1 && (
                 <div className="flex flex-col items-start md:items-end md:text-right shrink-0">
-                  <div className="text-[36px] font-semibold leading-[40px] text-primary tracking-tight">
+                  <div className="text-[28px] font-semibold leading-[32px] text-primary tracking-tight">
                     {Math.min(currentUnitIndex + 1, totalUnits)}<span className="text-[20px] font-semibold leading-[24px]">/{totalUnits}</span>
                   </div>
                   <div className="mt-2 text-[14px] font-semibold leading-[18px] text-foreground">

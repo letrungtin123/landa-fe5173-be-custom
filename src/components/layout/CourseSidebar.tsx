@@ -1,12 +1,25 @@
+import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, X, BookOpen } from "lucide-react";
+import { CheckCircle2, X, BookOpen, FileText, File, FileSpreadsheet, Download, User, Mail, Phone, Shield } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
-import { useCourseStructure } from "@/hooks/useCourses";
+import { useCourseStructure, useCourse } from "@/hooks/useCourses";
+import { useCourseFiles, type CourseFile } from "@/hooks/useCourseFiles";
+import { storageUrl } from "@/utils/storageUrl";
+import type { Mentor } from "@/data/types";
+import { useThemeStore } from "@/stores/useThemeStore";
+import { MentorSidebar } from "@/components/lesson/MentorSidebar";
+
+function getDocIcon(ext: string) {
+  if (ext === 'pdf') return FileText;
+  if (['doc', 'docx'].includes(ext)) return File;
+  if (['xls', 'xlsx', 'csv'].includes(ext)) return FileSpreadsheet;
+  return File;
+}
 
 
 export function CourseSidebar() {
@@ -22,6 +35,51 @@ export function CourseSidebar() {
 
   // Use real course structure from API
   const { data: course, isLoading } = useCourseStructure(courseId || "");
+  const { data: courseDetail } = useCourse(courseId || "");
+  const { data: refDocs = [] } = useCourseFiles(courseId || "");
+  const colorMode = useThemeStore((s) => s.colorMode);
+
+  const mentors = useMemo(() => {
+    const courseMentors = courseDetail?.mentors ?? [];
+    if (courseMentors.length > 0) {
+      return courseMentors.map((mentor): Mentor => {
+        const avatar = storageUrl(mentor.avatar || mentor.profile_image_url) || null;
+        return {
+          id: mentor.id,
+          username: mentor.username,
+          name: mentor.name || mentor.full_name || mentor.email || "Mentor",
+          full_name: mentor.full_name || undefined,
+          role: mentor.role || "staff",
+          company: mentor.company || "",
+          avatar,
+          email: mentor.email,
+          phone_number: mentor.phone_number || mentor.phone || undefined,
+          bio: mentor.bio || undefined,
+          profile_image_url: avatar,
+          profile_image_url_full: avatar,
+        };
+      });
+    }
+    return [];
+  }, [courseDetail?.mentors]);
+
+  const mentorSectionDescription = courseDetail?.mentor_section?.description?.trim() || "";
+  const mentorSectionLogo = useMemo(() => {
+    const section = courseDetail?.mentor_section;
+    if (!section) return null;
+    const path = colorMode === "dark"
+      ? section.logo_dark || section.logo_light
+      : section.logo_light || section.logo_dark;
+    return storageUrl(path || "") || null;
+  }, [
+    colorMode,
+    courseDetail?.mentor_section?.logo_dark,
+    courseDetail?.mentor_section?.logo_light,
+  ]);
+  const hasMentorSectionInfo = Boolean(mentorSectionDescription || mentorSectionLogo);
+
+  const [activeTab, setActiveTab] = useState<'content' | 'info'>('content');
+  const [selectedMentor, setSelectedMentor] = useState<Mentor | null>(null);
 
   const handleLessonClick = (moduleId: string, lessonId: string) => {
     setCurrentLesson(moduleId, lessonId);
@@ -153,6 +211,93 @@ export function CourseSidebar() {
     </ScrollArea>
   );
 
+  const infoContent = (
+    <ScrollArea className="h-full">
+      <div className="p-4 space-y-4 pb-20">
+        {/* MENTORS */}
+        {mentors.length > 0 ? (
+          mentors.map((mentor) => {
+            const avatarUrl = mentor.profile_image_url_full || mentor.profile_image_url || mentor.avatar;
+            const role = mentor.role === 'instructor' ? 'Giảng viên' : mentor.role === 'staff' ? 'Trợ giảng' : (mentor.role || "Trợ giảng");
+            return (
+              <div 
+                key={mentor.id} 
+                onClick={() => setSelectedMentor(mentor)}
+                className="rounded-xl border border-blue-200 bg-[#F4F8FF] p-6 flex flex-col items-center text-center shadow-sm cursor-pointer transition-colors hover:bg-blue-50/80 active:bg-blue-100/50"
+              >
+                <div className="relative mb-3">
+                  {avatarUrl ? (
+                    <img 
+                      src={avatarUrl} 
+                      alt={mentor.name} 
+                      className="h-[76px] w-[76px] rounded-full bg-white p-0.5 border shadow-sm object-cover"
+                    />
+                  ) : (
+                    <div className="h-[76px] w-[76px] rounded-full bg-primary/10 border shadow-sm flex items-center justify-center">
+                      <User className="h-8 w-8 text-primary/60" />
+                    </div>
+                  )}
+                </div>
+                <div className="bg-[#42F5CE] text-black text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-3">
+                  Mentor
+                </div>
+                <h3 className="text-[18px] font-bold text-foreground">{mentor.name}</h3>
+                <p className="text-[13px] text-muted-foreground mb-4">{role}</p>
+                
+                <div className="w-full h-px bg-border/50 mb-4" />
+                
+                <div className="w-full text-left">
+                  {mentorSectionLogo && (
+                    <img
+                      src={mentorSectionLogo}
+                      alt=""
+                      className="h-6 w-auto object-contain object-left mb-3"
+                    />
+                  )}
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">
+                    {mentor.bio || mentorSectionDescription || "Chưa có thông tin chi tiết."}
+                  </p>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="rounded-xl border border-blue-200 bg-[#F4F8FF] p-6 flex flex-col items-center text-center shadow-sm">
+            <p className="text-[13px] text-muted-foreground italic">Chưa có thông tin người hướng dẫn</p>
+          </div>
+        )}
+
+        {/* Tài liệu tham khảo */}
+        <div className="rounded-xl bg-[#0F62FE] p-6 flex flex-col items-center text-center text-white shadow-sm">
+          <h3 className="text-[18px] font-bold mb-2">Tài liệu tham khảo</h3>
+          {refDocs.length > 0 ? (
+            <div className="flex flex-col gap-2 w-full mt-2">
+              {refDocs.slice(0, 8).map((doc: CourseFile) => {
+                const DocIcon = getDocIcon(doc.extension);
+                return (
+                  <a
+                    key={doc.id}
+                    href={doc.fullUrl.includes('?') ? `${doc.fullUrl}&download=1` : `${doc.fullUrl}?download=1`}
+                    download={doc.display_name}
+                    className="flex items-center justify-between rounded-lg bg-white/10 px-3 py-2.5 text-[13px] font-normal leading-[18px] transition-colors hover:bg-white/20 gap-2 w-full"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <DocIcon className="h-4 w-4 shrink-0 opacity-80" />
+                      <span className="truncate">{doc.display_name}</span>
+                    </div>
+                    <Download className="h-4 w-4 shrink-0 opacity-70" />
+                  </a>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-[13px] text-white/80">Chưa có tài liệu...</p>
+          )}
+        </div>
+      </div>
+    </ScrollArea>
+  );
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -176,26 +321,128 @@ export function CourseSidebar() {
               animate={{ x: 0 }}
               exit={{ x: -320 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed inset-y-0 left-0 z-50 flex w-[320px] flex-col border-r border-border bg-background shadow-xl lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 flex w-[320px] sm:w-[380px] flex-col border-r border-border bg-background shadow-xl lg:hidden"
             >
               <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-                <span className="text-sm font-semibold">Menu</span>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => setActiveTab('content')}
+                    className={cn("text-[15px] transition-colors", activeTab === 'content' ? "font-bold text-foreground" : "text-muted-foreground")}
+                  >
+                    Nội dung
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('info')}
+                    className={cn("text-[15px] transition-colors", activeTab === 'info' ? "font-bold text-foreground" : "text-muted-foreground")}
+                  >
+                    Thông tin và tài liệu
+                  </button>
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 ml-2 shrink-0"
                   onClick={() => setSidebarOpen(false)}
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
               <div className="flex-1 overflow-hidden">
-                {sidebarContent}
+                {activeTab === 'content' ? sidebarContent : infoContent}
               </div>
             </motion.aside>
           </>
         )}
       </AnimatePresence>
+
+      {/* ═══ MENTOR DETAIL MODAL (MOBILE) ═══ */}
+      <AnimatePresence>
+        {selectedMentor && (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 lg:hidden"
+            onClick={() => setSelectedMentor(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-card shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close */}
+              <button
+                onClick={() => setSelectedMentor(null)}
+                className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/80 border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              {/* Header gradient */}
+              <div className="h-24 bg-gradient-to-br from-primary/70 via-primary/50 to-primary/20 dark:from-primary/30 dark:via-primary/15 dark:to-primary/5" />
+
+              {/* Avatar + Name */}
+              <div className="relative px-6 pb-6">
+                <div className="flex flex-col items-center -mt-12 mb-4">
+                  <div className="h-24 w-24 rounded-full border-4 border-card bg-muted shadow-xl overflow-hidden mb-3">
+                    {selectedMentor.profile_image_url_full || selectedMentor.profile_image_url || selectedMentor.avatar ? (
+                      <img
+                        src={(selectedMentor.profile_image_url_full || selectedMentor.profile_image_url || selectedMentor.avatar)!}
+                        alt={selectedMentor.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-primary/10">
+                        <User className="h-10 w-10 text-primary/40" />
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-[20px] font-bold leading-[24px] text-foreground text-center">
+                    {selectedMentor.name || selectedMentor.full_name}
+                  </h3>
+                  <div className="mt-1.5 flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-semibold leading-[14px] text-primary">
+                    <Shield className="h-3 w-3" />
+                    {selectedMentor.role === 'instructor' ? 'Giảng viên' : selectedMentor.role === 'staff' ? 'Trợ giảng' : (selectedMentor.role || 'Trợ giảng')}
+                  </div>
+                </div>
+
+                {/* Info rows */}
+                <div className="space-y-3">
+                  {selectedMentor.email && (
+                    <InfoRow icon={Mail} label="Email" value={selectedMentor.email} />
+                  )}
+                  {selectedMentor.phone_number && (
+                    <InfoRow icon={Phone} label="Điện thoại" value={selectedMentor.phone_number} />
+                  )}
+                  {selectedMentor.bio && (
+                    <div className="rounded-2xl bg-muted/50 border border-border/50 p-4">
+                      <div className="flex items-center gap-1.5 text-[14px] font-semibold leading-[18px] text-muted-foreground mb-2">
+                        <FileText className="h-3.5 w-3.5" />
+                        Giới thiệu
+                      </div>
+                      <p className="text-[14px] font-normal leading-[18px] text-foreground whitespace-pre-line">
+                        {selectedMentor.bio}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
+  );
+}
+
+function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl bg-muted/40 border border-border/40 px-4 py-3">
+      <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+      <div className="min-w-0 flex-1">
+        <div className="text-[10px] font-semibold leading-[14px] text-muted-foreground">{label}</div>
+        <div className="text-[14px] font-semibold leading-[18px] text-foreground truncate">{value}</div>
+      </div>
+    </div>
   );
 }

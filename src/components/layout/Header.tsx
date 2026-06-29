@@ -303,9 +303,9 @@ export function Header() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[320px] p-0 overflow-hidden rounded-2xl border-border/50 shadow-xl pb-2">
                 {/* Top Banner & Avatar area */}
-                <div className="relative bg-gradient-to-br from-primary/90 via-primary to-primary/50 h-24 mb-14 rounded-t-xl">
+                <div className="relative bg-gradient-to-br from-primary/90 via-primary to-primary/50 h-28 mb-14 mx-1.5 mt-1.5 rounded-xl">
                   {/* Pattern overlay */}
-                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-60 mix-blend-overlay rounded-t-xl pointer-events-none"></div>
+                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-60 mix-blend-overlay rounded-xl pointer-events-none"></div>
                   
                   {/* Theme controls in top right matching the image */}
                   <div className="absolute top-3 right-3 flex items-center bg-background/80 backdrop-blur-md rounded-lg shadow-sm p-0.5 border border-border/20 z-10">
@@ -369,12 +369,12 @@ export function Header() {
 
                 {/* Menu Items */}
                 <div className="px-2 space-y-1">
-                  <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90 focus:text-primary-foreground py-3 transition-colors">
+                  <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90 focus:text-primary-foreground py-2 transition-colors">
                     <User className="mr-3 h-5 w-5" />
                     <span className="font-medium text-[15px]">Hồ sơ cá nhân</span>
                   </DropdownMenuItem>
                   
-                  <DropdownMenuItem onClick={() => setPwModalOpen(true)} className="cursor-pointer rounded-lg py-3 focus:bg-muted transition-colors">
+                  <DropdownMenuItem onClick={() => setPwModalOpen(true)} className="cursor-pointer rounded-lg py-2 focus:bg-muted transition-colors">
                     <Lock className="mr-3 h-5 w-5 text-muted-foreground" />
                     <span className="font-medium text-[15px]">Đổi mật khẩu</span>
                   </DropdownMenuItem>
@@ -382,18 +382,23 @@ export function Header() {
                   {(user?.role === 'staff' || user?.role === 'superuser' || user?.role === 'superadmin' || user?.role === 'learner_plus') && (
                     <DropdownMenuItem 
                       onClick={async () => {
+                        const newWin = window.open('about:blank', '_blank');
                         try {
                           const { apiClient } = await import("@/api/client");
                           const { data } = await apiClient.post("/api/auth/ott/generate");
                           const ott = data?.data?.ott;
                           const adminUrl = branding.adminUrl || '/admin/';
                           const separator = adminUrl.includes('?') ? '&' : '?';
-                          window.open(`${adminUrl}${separator}ott=${ott}`, '_blank');
+                          const finalUrl = `${adminUrl}${separator}ott=${ott}`;
+                          if (newWin) newWin.location.href = finalUrl;
+                          else window.location.href = finalUrl;
                         } catch {
-                          window.open(branding.adminUrl || '/admin/', '_blank');
+                          const fallbackUrl = branding.adminUrl || '/admin/';
+                          if (newWin) newWin.location.href = fallbackUrl;
+                          else window.location.href = fallbackUrl;
                         }
                       }} 
-                      className="cursor-pointer rounded-lg py-3 focus:bg-muted transition-colors"
+                      className="cursor-pointer rounded-lg py-2 focus:bg-muted transition-colors"
                     >
                       <Settings className="mr-3 h-5 w-5 text-muted-foreground" />
                       <span className="font-medium text-[15px]">Quản trị hệ thống</span>
@@ -403,7 +408,7 @@ export function Header() {
                   {user?.role === 'superadmin' && managedTenants.length > 1 && (
                     <DropdownMenuItem
                       onClick={() => setTenantModalOpen(true)}
-                      className="cursor-pointer rounded-lg py-3 focus:bg-muted transition-colors"
+                      className="cursor-pointer rounded-lg py-2 focus:bg-muted transition-colors"
                     >
                       <Building2 className="mr-3 h-5 w-5 text-muted-foreground" />
                       <div className="flex-1 min-w-0">
@@ -415,7 +420,7 @@ export function Header() {
                     </DropdownMenuItem>
                   )}
 
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer rounded-lg py-3 text-destructive focus:text-destructive focus:bg-destructive/10 transition-colors mt-1">
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer rounded-lg py-2 text-destructive focus:text-destructive focus:bg-destructive/10 transition-colors mt-1">
                     <LogOut className="mr-3 h-5 w-5" />
                     <span className="font-medium text-[15px]">Đăng xuất</span>
                   </DropdownMenuItem>
@@ -458,16 +463,20 @@ export function Header() {
                 {(user?.role === 'staff' || user?.role === 'superuser' || user?.role === 'superadmin' || user?.role === 'learner_plus') && (
                   <DropdownMenuItem 
                     onClick={async () => {
+                      const newWin = window.open('about:blank', '_blank');
                       try {
                         const { apiClient } = await import("@/api/client");
                         const { data } = await apiClient.post("/api/auth/ott/generate");
                         const ott = data?.data?.ott;
                         const adminUrl = branding.adminUrl || '/admin/';
                         const separator = adminUrl.includes('?') ? '&' : '?';
-                        window.open(`${adminUrl}${separator}ott=${ott}`, '_blank');
+                        const finalUrl = `${adminUrl}${separator}ott=${ott}`;
+                        if (newWin) newWin.location.href = finalUrl;
+                        else window.location.href = finalUrl;
                       } catch {
-                        // Fallback: mở admin mà không có OTT
-                        window.open(branding.adminUrl || '/admin/', '_blank');
+                        const fallbackUrl = branding.adminUrl || '/admin/';
+                        if (newWin) newWin.location.href = fallbackUrl;
+                        else window.location.href = fallbackUrl;
                       }
                     }} 
                     className="cursor-pointer text-primary focus:text-primary"
