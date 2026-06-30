@@ -345,9 +345,9 @@ export function Header() {
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[320px] p-0 overflow-hidden rounded-2xl border-border/50 shadow-xl pb-2">
+              <DropdownMenuContent align="end" className="w-[260px] p-0 overflow-hidden rounded-2xl border-border/50 shadow-xl pb-2">
                 {/* Top Banner & Avatar area */}
-                <div className="relative bg-gradient-to-br from-primary/90 via-primary to-primary/50 h-28 mb-14 mx-1.5 mt-1.5 rounded-xl">
+                <div className="relative bg-gradient-to-br from-primary/90 via-primary to-primary/50 h-20 mb-10 mx-1.5 mt-1.5 rounded-xl">
                   {/* Pattern overlay */}
                   <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-60 mix-blend-overlay rounded-xl pointer-events-none"></div>
                   
@@ -379,28 +379,28 @@ export function Header() {
                   </div>
                   
                   {/* Avatar */}
-                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 p-1 bg-background rounded-full z-10">
-                    <div className="h-20 w-20 rounded-full bg-primary text-primary-foreground overflow-hidden flex items-center justify-center border border-border/10 shadow-sm relative">
+                  <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 p-1 bg-background rounded-full z-10">
+                    <div className="h-16 w-16 rounded-full bg-primary text-primary-foreground overflow-hidden flex items-center justify-center border border-border/10 shadow-sm relative">
                       {user?.avatar ? (
                         <img src={user.avatar} alt="Avatar" className="h-full w-full object-cover relative z-10" />
                       ) : (
-                        <span className="text-3xl font-bold relative z-10">{user?.fullName?.charAt(0) || user?.username?.charAt(0) || "U"}</span>
+                        <span className="text-2xl font-bold relative z-10">{user?.fullName?.charAt(0) || user?.username?.charAt(0) || "U"}</span>
                       )}
                     </div>
                   </div>
                 </div>
 
                 {/* User Info */}
-                <div className="text-center px-6">
-                  <h4 className="text-[17px] font-bold text-foreground flex items-center justify-center gap-1.5">
+                <div className="text-center px-4">
+                  <h4 className="text-[15px] font-bold text-foreground flex items-center justify-center gap-1">
                     {user?.fullName || user?.username || "Tài khoản"}
-                    <BadgeCheck className="h-4 w-4 text-blue-500 shrink-0" />
+                    <BadgeCheck className="h-3.5 w-3.5 text-blue-500 shrink-0" />
                   </h4>
-                  <p className="text-[13px] text-muted-foreground mt-0.5">{user?.email || ""}</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5">{user?.email || ""}</p>
                   
                   {/* Progress */}
-                  <div className="mt-5 mb-5 text-left">
-                    <p className="text-[12.5px] text-foreground mb-3 text-center whitespace-nowrap overflow-hidden text-ellipsis">
+                  <div className="mt-4 mb-4 text-left">
+                    <p className="text-[11px] text-foreground mb-2 text-center whitespace-nowrap overflow-hidden text-ellipsis">
                       Bạn đã hoàn thành <span className="text-primary font-medium">{averagePercent.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}%</span> tất cả khóa học
                     </p>
                     <div className="h-1 w-full bg-muted overflow-hidden rounded-full relative">
@@ -413,14 +413,14 @@ export function Header() {
 
                 {/* Menu Items */}
                 <div className="px-2 space-y-1">
-                  <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90 focus:text-primary-foreground py-2 transition-colors">
-                    <User className="mr-3 h-5 w-5" />
-                    <span className="font-medium text-[15px]">Hồ sơ cá nhân</span>
+                  <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer rounded-lg hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground py-1.5 transition-colors group">
+                    <User className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary-foreground group-focus:text-primary-foreground" />
+                    <span className="font-medium text-[13px]">Hồ sơ cá nhân</span>
                   </DropdownMenuItem>
                   
-                  <DropdownMenuItem onClick={() => setPwModalOpen(true)} className="cursor-pointer rounded-lg py-2 focus:bg-muted transition-colors">
-                    <Lock className="mr-3 h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium text-[15px]">Đổi mật khẩu</span>
+                  <DropdownMenuItem onClick={() => setPwModalOpen(true)} className="cursor-pointer rounded-lg hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground py-1.5 transition-colors group">
+                    <Lock className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary-foreground group-focus:text-primary-foreground" />
+                    <span className="font-medium text-[13px]">Đổi mật khẩu</span>
                   </DropdownMenuItem>
 
                   {(user?.role === 'staff' || user?.role === 'superuser' || user?.role === 'superadmin' || user?.role === 'learner_plus') && (
@@ -442,31 +442,31 @@ export function Header() {
                           else window.location.href = fallbackUrl;
                         }
                       }} 
-                      className="cursor-pointer rounded-lg py-2 focus:bg-muted transition-colors"
+                      className="cursor-pointer rounded-lg hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground py-1.5 transition-colors group"
                     >
-                      <Settings className="mr-3 h-5 w-5 text-muted-foreground" />
-                      <span className="font-medium text-[15px]">Quản trị hệ thống</span>
+                      <Settings className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary-foreground group-focus:text-primary-foreground" />
+                      <span className="font-medium text-[13px]">Quản trị hệ thống</span>
                     </DropdownMenuItem>
                   )}
                   
                   {user?.role === 'superadmin' && managedTenants.length > 1 && (
                     <DropdownMenuItem
                       onClick={() => setTenantModalOpen(true)}
-                      className="cursor-pointer rounded-lg py-2 focus:bg-muted transition-colors"
+                      className="cursor-pointer rounded-lg hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground py-1.5 transition-colors group"
                     >
-                      <Building2 className="mr-3 h-5 w-5 text-muted-foreground" />
+                      <Building2 className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary-foreground group-focus:text-primary-foreground" />
                       <div className="flex-1 min-w-0">
-                        <span className="font-medium text-[15px]">Chuyển tổ chức</span>
+                        <span className="font-medium text-[13px]">Chuyển tổ chức</span>
                         {currentTenantName && (
-                          <p className="text-[12px] text-muted-foreground truncate">{currentTenantName}</p>
+                          <p className="text-[11px] text-muted-foreground group-hover:text-primary-foreground/80 group-focus:text-primary-foreground/80 truncate">{currentTenantName}</p>
                         )}
                       </div>
                     </DropdownMenuItem>
                   )}
 
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer rounded-lg py-2 text-destructive focus:text-destructive focus:bg-destructive/10 transition-colors mt-1">
-                    <LogOut className="mr-3 h-5 w-5" />
-                    <span className="font-medium text-[15px]">Đăng xuất</span>
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer rounded-lg py-1.5 text-destructive focus:text-destructive focus:bg-destructive/10 transition-colors mt-1">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span className="font-medium text-[13px]">Đăng xuất</span>
                   </DropdownMenuItem>
                 </div>
               </DropdownMenuContent>
