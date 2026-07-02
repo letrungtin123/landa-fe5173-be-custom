@@ -6,6 +6,7 @@ import { apiClient } from "./client";
 import type { Block } from "./types";
 import { normalizeHtmlMediaImages } from "@/lib/htmlMedia";
 import { normalizeProblemMedia } from "@/lib/problemMedia";
+import { normalizeMediaQuizData } from "@/lib/mediaQuiz";
 
 /**
  * Lấy chi tiết block đơn lẻ.
@@ -163,6 +164,12 @@ function buildBlockStudentViewData(
       return { ...(rawData as Record<string, unknown>), problem_media: normalizeProblemMedia(meta?.problem_media) };
     }
 
+    case 'la_media_quiz':
+      return {
+        display_name: displayName,
+        media_quiz_data: normalizeMediaQuizData(rawData),
+      };
+
     default:
       return { ...(rawData as Record<string, unknown>), ...meta };
   }
@@ -212,6 +219,22 @@ export async function submitProblemAnswer(
  * Submit đáp án Đố Vui Ô Chữ.
  * Custom BE: POST /api/learner/blocks/:blockId/submit
  */
+export async function submitMediaQuizAnswer(
+  usageKey: string,
+  questionId: string,
+  answer: string | string[]
+): Promise<Record<string, unknown>> {
+  try {
+    const { data } = await apiClient.post(
+      `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
+      { question_id: questionId, answer }
+    );
+    return (data as any).data || data;
+  } catch {
+    return { status: 'error', message: 'Chưa thể gửi câu trả lời' };
+  }
+}
+
 export async function submitCrosswordAnswer(
   usageKey: string,
   answers: Record<string, string>

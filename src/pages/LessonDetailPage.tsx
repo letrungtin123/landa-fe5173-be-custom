@@ -1,6 +1,7 @@
 import { VideoPlayer } from "@/components/lesson/VideoPlayer";
 import { LessonSkeleton } from "@/components/skeletons/LessonSkeleton";
 import { QuizContent } from "@/components/lesson/QuizContent";
+import { MediaQuizContent } from "@/components/lesson/MediaQuizContent";
 import { UnitNavButtons } from "@/components/lesson/UnitNavButtons";
 import { usePageLoading } from "@/hooks/usePageLoading";
 import { useAppStore } from "@/stores/useAppStore";
@@ -50,7 +51,7 @@ const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
 
 // Block types chỉ cần xem, không cần tương tác → auto-mark complete khi user navigate đến unit
 const PASSIVE_BLOCK_TYPES = ["html", "video", "la_diagram", "la_faq", "la_pdf"];
-const INTERACTIVE_BLOCK_TYPES = ["problem", "la_crossword", "la_sortable"];
+const INTERACTIVE_BLOCK_TYPES = ["problem", "la_media_quiz", "la_crossword", "la_sortable"];
 
 const isStaticOnlyUnit = (unit: UnitDetail) =>
   unit.components.length > 0 &&
@@ -451,6 +452,17 @@ export function LessonDetailPage() {
                         key={comp.id}
                         problemUsageKey={comp.problemUsageKey}
                         problemMedia={comp.problemMedia}
+                        onImageClick={(src) => setLightboxSrc(src)}
+                      />
+                    );
+                  }
+
+                  if (comp.type === "la_media_quiz" && comp.mediaQuizUsageKey && comp.mediaQuizData) {
+                    return (
+                      <MediaQuizContent
+                        key={comp.id}
+                        usageKey={comp.mediaQuizUsageKey}
+                        mediaQuizData={comp.mediaQuizData}
                         onImageClick={(src) => setLightboxSrc(src)}
                       />
                     );

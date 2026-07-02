@@ -25,6 +25,9 @@ interface BlockSubmitResult {
   // Fingerprint nội dung — dùng để phát hiện admin đã update content
   // Nếu fingerprint khác so với data server hiện tại → cache bị stale → xóa
   contentFingerprint?: string;
+  activeIndex?: number;
+  completedQuestionIds?: string[];
+  blockCompleted?: boolean;
 }
 
 interface BlockSubmitStore {

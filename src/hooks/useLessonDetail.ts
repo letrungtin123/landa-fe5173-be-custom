@@ -11,6 +11,7 @@ import type { Block, VideoBlockData } from "@/api/types";
 import { rewriteStaticUrls, sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 import { normalizeHtmlMediaImages } from "@/lib/htmlMedia";
 import { normalizeProblemMedia } from "@/lib/problemMedia";
+import { normalizeMediaQuizData } from "@/lib/mediaQuiz";
 import { storageUrl } from "@/utils/storageUrl";
 
 /**
@@ -156,6 +157,12 @@ function buildComponent(
     comp.problemMedia = normalizeProblemMedia(svd?.problem_media);
   }
 
+  if (block.type === "la_media_quiz") {
+    comp.mediaQuizUsageKey = block.id;
+    const svd = block.student_view_data as Record<string, unknown> | undefined;
+    comp.mediaQuizData = normalizeMediaQuizData(svd?.media_quiz_data || svd);
+  }
+
   if (block.type === "la_crossword") {
     comp.crosswordUsageKey = block.id;
     const svd = block.student_view_data as Record<string, unknown> | undefined;
@@ -233,6 +240,7 @@ function determineLessonType(
   for (const c of components) {
     if (c.type === "video") return "video";
     if (c.type === "problem") return "quiz";
+    if (c.type === "la_media_quiz") return "quiz";
     if (c.type === "la_crossword") return "quiz";
     if (c.type === "la_sortable") return "quiz";
     if (c.type === "la_diagram") return "quiz";

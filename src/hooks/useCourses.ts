@@ -16,6 +16,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import type { CourseBlocksResponse, CourseBlock, BlocksResponse, Block } from "@/api/types";
 import { normalizeHtmlMediaImages } from "@/lib/htmlMedia";
 import { normalizeProblemMedia } from "@/lib/problemMedia";
+import { normalizeMediaQuizData } from "@/lib/mediaQuiz";
 
 /**
  * Adapter: chuyển CourseBlocksResponse (flat array) → BlocksResponse (map format).
@@ -121,6 +122,12 @@ function buildStudentViewData(cb: CourseBlock): Record<string, unknown> {
       }
       return { ...(data as Record<string, unknown>), problem_media: normalizeProblemMedia(meta?.problem_media) };
     }
+
+    case 'la_media_quiz':
+      return {
+        display_name: cb.display_name,
+        media_quiz_data: normalizeMediaQuizData(data),
+      };
 
     default:
       return { ...data as Record<string, unknown>, ...meta };

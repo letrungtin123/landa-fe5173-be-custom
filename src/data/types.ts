@@ -5,6 +5,7 @@
 
 import type { ProblemMedia } from "@/lib/problemMedia";
 import type { HtmlMediaImage } from "@/lib/htmlMedia";
+import type { MediaQuizData } from "@/lib/mediaQuiz";
 
 export interface User {
   name: string;
@@ -57,6 +58,8 @@ export interface UnitComponent {
   htmlMediaImages?: HtmlMediaImage[];
   problemUsageKey?: string | null;
   problemMedia?: ProblemMedia | null;
+  mediaQuizUsageKey?: string | null;
+  mediaQuizData?: MediaQuizData | null;
   crosswordUsageKey?: string | null;
   sortableUsageKey?: string | null;
   faqUsageKey?: string | null;
