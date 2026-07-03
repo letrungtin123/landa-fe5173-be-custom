@@ -11,7 +11,8 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { CourseLayout } from "@/components/layout/CourseLayout";
 import { GlobalBadgeWatcher } from "@/components/badges/GlobalBadgeWatcher";
 import { StudyTimeTracker } from "@/components/global/StudyTimeTracker";
-import { useAuthStore } from "@/stores/useAuthStore";
+import { WelcomeInitModal } from "@/components/global/WelcomeInitModal";
+import { createLoginSessionId, useAuthStore } from "@/stores/useAuthStore";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import { config } from "@/config/env";
@@ -49,6 +50,7 @@ let pendingOttExchange: Promise<void> | null = null;
         refreshToken: result.refresh_token,
         tokenType: "Bearer",
         tokenExpiresAt: Date.now() + result.expires_in * 1000,
+        loginSessionId: createLoginSessionId(),
         user: {
           id: result.user.id,
           username: result.user.username,
@@ -104,6 +106,9 @@ const ProfilePage = React.lazy(() =>
 const RegisterPage = React.lazy(() =>
   import("@/pages/RegisterPage").then(m => ({ default: m.RegisterPage }))
 );
+const DemoQrLoginPage = React.lazy(() =>
+  import("@/pages/DemoQrLoginPage").then(m => ({ default: m.DemoQrLoginPage }))
+);
 
 // ── React Query config ──
 const queryClient = new QueryClient({
@@ -141,6 +146,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return (
     <>
+      <WelcomeInitModal />
       {/* Global badge watcher — hiện modal khi earn badge mới bất kể đang ở route nào */}
       <GlobalBadgeWatcher />
       {/* Global study time tracker — đếm giờ học ngay khi login, mọi route */}
@@ -181,6 +187,7 @@ function App() {
                 {/* Route công khai */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/demo-login" element={<DemoQrLoginPage />} />
 
 
                 {/* Routes bảo vệ — yêu cầu đăng nhập */}

@@ -17,6 +17,11 @@ import { normalizeRoleLabels } from "@/utils/roleLabels";
 const STORAGE_KEY = "la-auth-v2";
 const OBFUSCATION_KEY = 42;
 
+export function createLoginSessionId(): string {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 function obfuscate(text: string): string {
   const bytes = new TextEncoder().encode(text);
   const xored = bytes.map((b) => b ^ OBFUSCATION_KEY);
@@ -72,6 +77,7 @@ interface AuthState {
   refreshToken: string | null;
   tokenType: string;
   tokenExpiresAt: number | null;
+  loginSessionId: string | null;
   user: AuthUser | null;
   permissions: PermissionsMap;
   tenantModules: string[];
@@ -132,6 +138,7 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       tokenType: "Bearer",
       tokenExpiresAt: null,
+      loginSessionId: null,
       user: null,
       permissions: {},
       tenantModules: [],
@@ -156,6 +163,7 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: result.refresh_token,
           tokenType: "Bearer",
           tokenExpiresAt: expiresAt,
+          loginSessionId: createLoginSessionId(),
           user: {
             id: result.user.id,
             username: result.user.username,
@@ -192,6 +200,7 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: result.refresh_token,
           tokenType: "Bearer",
           tokenExpiresAt: expiresAt,
+          loginSessionId: createLoginSessionId(),
           user: {
             id: result.user.id,
             username: result.user.username,
@@ -224,6 +233,7 @@ export const useAuthStore = create<AuthState>()(
           accessToken: null,
           refreshToken: null,
           tokenExpiresAt: null,
+          loginSessionId: null,
           permissions: {},
           tenantModules: [],
           managedTenants: [],
@@ -395,6 +405,7 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         tokenType: state.tokenType,
         tokenExpiresAt: state.tokenExpiresAt,
+        loginSessionId: state.loginSessionId,
         user: state.user,
         permissions: state.permissions,
         tenantModules: state.tenantModules,

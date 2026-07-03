@@ -29,6 +29,7 @@ export interface DashboardContent {
 }
 
 export interface BrandingImages {
+  tenantId: string | null;
   leftPanelBg: string;
   registerBg: string;
   whiteLogo: string;
@@ -41,6 +42,7 @@ export interface BrandingImages {
   person4: string | null;
   carousels: string[];
   adminUrl: string | null;
+  learnerUrl: string | null;
   tenantName: string | null;
   dashboardContent: DashboardContent | null;
 }
@@ -51,6 +53,7 @@ interface ApiBrandingResponse {
     tenant_id: string | null;
     tenant_name: string | null;
     domain_admin: string | null;
+    domain_learner: string | null;
     images: Record<string, string | null>;
     carousels: string[];
     size_hints: Record<string, string>;
@@ -72,6 +75,7 @@ interface ApiDashboardContentResponse {
 // ── Default branding (static fallbacks) ──
 
 const DEFAULT_BRANDING: BrandingImages = {
+  tenantId: null,
   leftPanelBg: fallbackLeftPanelBg,
   registerBg: fallbackRegisterBg,
   whiteLogo: fallbackWhiteLogo,
@@ -84,6 +88,7 @@ const DEFAULT_BRANDING: BrandingImages = {
   person4: null,
   carousels: [],
   adminUrl: null,
+  learnerUrl: null,
   tenantName: null,
   dashboardContent: null,
 };
@@ -138,6 +143,7 @@ async function fetchBrandingByDomain(domain: string): Promise<BrandingImages> {
       path ? storageUrl(path) || null : null;
 
     return {
+      tenantId: brandingData.tenant_id,
       leftPanelBg: resolve(brandingData.images.left_panel_bg, DEFAULT_BRANDING.leftPanelBg),
       registerBg: resolve(brandingData.images.register_bg, DEFAULT_BRANDING.registerBg),
       whiteLogo: resolve(brandingData.images.white_logo, DEFAULT_BRANDING.whiteLogo),
@@ -154,6 +160,7 @@ async function fetchBrandingByDomain(domain: string): Promise<BrandingImages> {
       adminUrl: brandingData.domain_admin
         ? `${brandingData.domain_admin.replace(/\/+$/, '')}/admin/`
         : null,
+      learnerUrl: brandingData.domain_learner || null,
       tenantName: brandingData.tenant_name || null,
       dashboardContent,
     };

@@ -7,6 +7,32 @@
 import { apiClient } from "./client";
 import type { ApiResponse, LoginResponse, AuthUserInfo, PermissionsMap, TenantBasic, RoleLabelMap } from "./types";
 
+export interface DemoQrAccount {
+  id: string;
+  label: string;
+  avatar_url: string | null;
+}
+
+export interface DemoQrAccountsResponse {
+  tenant: {
+    id: string;
+    name: string;
+  };
+  is_enabled: boolean;
+  ttl_seconds: number;
+  accounts: DemoQrAccount[];
+  locked_count: number;
+  next_reset_at: string | null;
+  next_reset_in_seconds: number;
+}
+
+export interface DemoQrClaimResponse {
+  redirect_url: string;
+  expires_in: number;
+  reserved_until: string | null;
+  ttl_seconds: number;
+}
+
 /**
  * Đăng nhập bằng username/email + password.
  * Trả về JWT access_token + refresh_token + user info.
@@ -118,6 +144,25 @@ export async function exchangeOttApi(ott: string): Promise<LoginResponse> {
     `${baseURL}/api/auth/ott/exchange`,
     { ott },
     { headers: { "Content-Type": "application/json" }, timeout: 10_000 }
+  );
+  return data.data;
+}
+
+function currentDomain(): string {
+  return window.location.hostname;
+}
+
+export async function getDemoQrAccountsApi(domain = currentDomain()): Promise<DemoQrAccountsResponse> {
+  const { data } = await apiClient.get<ApiResponse<DemoQrAccountsResponse>>(
+    `/api/demo-login/public/by-domain/${encodeURIComponent(domain)}/accounts`
+  );
+  return data.data;
+}
+
+export async function claimDemoQrAccountApi(accountId: string, domain = currentDomain()): Promise<DemoQrClaimResponse> {
+  const { data } = await apiClient.post<ApiResponse<DemoQrClaimResponse>>(
+    `/api/demo-login/public/by-domain/${encodeURIComponent(domain)}/claim`,
+    { account_id: accountId }
   );
   return data.data;
 }
