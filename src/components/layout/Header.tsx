@@ -36,11 +36,12 @@ import {
 import { useAppStore } from "@/stores/useAppStore";
 import { useSearchStore } from "@/stores/useSearchStore";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useNotifications, useUnreadNotificationCount, useMarkAllRead } from "@/hooks/useNotifications";
+import { useNotifications, useUnreadNotificationCount, useMarkNotificationRead } from "@/hooks/useNotifications";
 import type { Notification } from "@/data/types";
 import { cn } from "@/lib/utils";
 import { useBranding } from "@/hooks/useBranding";
 import { NotificationModal } from "@/components/dashboard/NotificationModal";
+import { AssignmentFeedbackNotificationDialog } from "@/components/dashboard/AssignmentFeedbackNotificationDialog";
 import { TenantSwitchModal } from "@/components/layout/TenantSwitchModal";
 import { useMyEnrollments, useCourses } from "@/hooks/useCourses";
 import { useAverageCourseCompletion } from "@/hooks/useProgress";
@@ -70,8 +71,9 @@ export function Header() {
   const navigate = useNavigate();
   const { count: unreadCount } = useUnreadNotificationCount();
   const { notifications, isLoading } = useNotifications();
-  const markAllRead = useMarkAllRead();
+  const markNotificationRead = useMarkNotificationRead();
   const [notifModalOpen, setNotifModalOpen] = useState(false);
+  const [feedbackNotification, setFeedbackNotification] = useState<Notification | null>(null);
   const [tenantModalOpen, setTenantModalOpen] = useState(false);
   const [pwModalOpen, setPwModalOpen] = useState(false);
   const { branding, isLoading: brandingLoading } = useBranding();
@@ -109,6 +111,15 @@ export function Header() {
   const handleLogout = () => {
     logout();
     navigate("/login", { replace: true });
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.read) {
+      markNotificationRead.mutate(notification.id);
+    }
+    if (notification.type === "assignment_feedback") {
+      setFeedbackNotification(notification);
+    }
   };
 
   return (
@@ -294,7 +305,11 @@ export function Header() {
                     {notifications.slice(0, 2).map((notification) => {
                       const Icon = ICON_MAP[notification.icon] || Info;
                       return (
-                        <div key={notification.id} className={cn("flex gap-3 p-3 border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors", !notification.read && "bg-primary/5")}>
+                        <div
+                          key={notification.id}
+                          onClick={() => handleNotificationClick(notification)}
+                          className={cn("flex gap-3 p-3 border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors", !notification.read && "bg-primary/5")}
+                        >
                           <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full mt-0.5", !notification.read ? "bg-primary/10" : "bg-muted")}>
                             <Icon className={cn("h-4 w-4", !notification.read ? "text-primary" : "text-muted-foreground")} />
                           </div>
@@ -325,6 +340,13 @@ export function Header() {
 
           {/* Notification Modal */}
           <NotificationModal open={notifModalOpen} onOpenChange={setNotifModalOpen} />
+          <AssignmentFeedbackNotificationDialog
+            notification={feedbackNotification}
+            open={!!feedbackNotification}
+            onOpenChange={(open) => {
+              if (!open) setFeedbackNotification(null);
+            }}
+          />
 
           {/* User Avatar (Universal) */}
           <div>

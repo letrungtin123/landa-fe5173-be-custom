@@ -11,9 +11,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { useNotifications, useMarkAllRead } from "@/hooks/useNotifications";
+import { useNotifications, useMarkAllRead, useMarkNotificationRead } from "@/hooks/useNotifications";
 import type { Notification } from "@/data/types";
 import { cn } from "@/lib/utils";
+import { AssignmentFeedbackNotificationDialog } from "./AssignmentFeedbackNotificationDialog";
 
 const ICON_MAP: Record<Notification["icon"], React.ElementType> = {
   badge: Shield,
@@ -27,10 +28,22 @@ interface NotificationModalProps {
 }
 
 export function NotificationModal({ open, onOpenChange }: NotificationModalProps) {
+  const [feedbackNotification, setFeedbackNotification] = useState<Notification | null>(null);
   const { notifications, isLoading, unreadCount } = useNotifications();
   const markAllRead = useMarkAllRead();
+  const markNotificationRead = useMarkNotificationRead();
+
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.read) {
+      markNotificationRead.mutate(notification.id);
+    }
+    if (notification.type === "assignment_feedback") {
+      setFeedbackNotification(notification);
+    }
+  };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
         {/* Header */}
@@ -107,6 +120,7 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2, delay: 0.03 * index }}
+                      onClick={() => handleNotificationClick(notification)}
                       className={cn(
                         "flex gap-3 px-5 py-3.5 hover:bg-muted/50 cursor-pointer transition-colors",
                         !notification.read && "bg-primary/[0.03]"
@@ -168,5 +182,13 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
         </div>
       </DialogContent>
     </Dialog>
+    <AssignmentFeedbackNotificationDialog
+      notification={feedbackNotification}
+      open={!!feedbackNotification}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) setFeedbackNotification(null);
+      }}
+    />
+    </>
   );
 }

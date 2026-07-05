@@ -97,6 +97,9 @@ const LibraryPage = React.lazy(() =>
 const LessonDetailPage = React.lazy(() =>
   import("@/pages/LessonDetailPage").then(m => ({ default: m.LessonDetailPage }))
 );
+const AssignmentDetailPage = React.lazy(() =>
+  import("@/pages/AssignmentDetailPage").then(m => ({ default: m.AssignmentDetailPage }))
+);
 const BadgesPage = React.lazy(() =>
   import("@/pages/BadgesPage").then(m => ({ default: m.BadgesPage }))
 );
@@ -213,6 +216,10 @@ function App() {
                     <Route
                       path="lessons/:lessonId"
                       element={<LessonDetailPage />}
+                    />
+                    <Route
+                      path="assignments/:assignmentId"
+                      element={<AssignmentDetailPage />}
                     />
                   </Route>
 

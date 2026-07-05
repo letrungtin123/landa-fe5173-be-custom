@@ -22,6 +22,11 @@ function transformNotification(n: any): FENotification {
     message: n.message || "",
     time: formatRelativeTime(n.created_at),
     read: !!n.is_read,
+    type: n.type || null,
+    courseId: n.course_id || null,
+    sentByName: n.sent_by_name || null,
+    createdAt: n.created_at || null,
+    metadata: n.metadata && typeof n.metadata === "object" ? n.metadata : null,
   };
 }
 

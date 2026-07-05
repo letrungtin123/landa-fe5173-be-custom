@@ -82,7 +82,7 @@ export function useMarkBlocksComplete() {
  */
 export function useBatchCourseProgress(courseIds: string[]) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const stableKey = courseIds.sort().join(',');
+  const stableKey = [...courseIds].sort().join(',');
 
   return useQuery({
     queryKey: ["batch-course-progress", stableKey],

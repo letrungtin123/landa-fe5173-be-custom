@@ -173,6 +173,8 @@ export interface Notification {
   title: string;
   message: string;
   course_id: string | null;
+  type?: string | null;
+  metadata?: Record<string, unknown> | null;
   created_at: string;
   is_read: boolean;
   read_at: string | null;

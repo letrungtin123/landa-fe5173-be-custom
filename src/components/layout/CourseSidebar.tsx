@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, X, BookOpen, FileText, File, FileSpreadsheet, Download, User, Mail, Phone, Shield } from "lucide-react";
+import { CheckCircle2, X, BookOpen, FileText, File, FileSpreadsheet, Download, User, Mail, Phone, Shield, ClipboardList, Lock } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
 import { useCourseStructure, useCourse } from "@/hooks/useCourses";
 import { useCourseFiles, type CourseFile } from "@/hooks/useCourseFiles";
+import { useCourseAssignments } from "@/hooks/useAssignments";
 import { storageUrl } from "@/utils/storageUrl";
 import type { Mentor } from "@/data/types";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -24,6 +25,7 @@ function getDocIcon(ext: string) {
 
 export function CourseSidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { courseId } = useParams();
   const {
     currentModuleId,
@@ -37,6 +39,7 @@ export function CourseSidebar() {
   const { data: course, isLoading } = useCourseStructure(courseId || "");
   const { data: courseDetail } = useCourse(courseId || "");
   const { data: refDocs = [] } = useCourseFiles(courseId || "");
+  const { data: assignments = [] } = useCourseAssignments(courseId || "");
   const colorMode = useThemeStore((s) => s.colorMode);
 
   const mentors = useMemo(() => {
@@ -84,6 +87,12 @@ export function CourseSidebar() {
   const handleLessonClick = (moduleId: string, lessonId: string) => {
     setCurrentLesson(moduleId, lessonId);
     navigate(`/courses/${encodeURIComponent(courseId || "c1")}/lessons/${lessonId}`);
+    setSidebarOpen(false);
+  };
+
+  const handleAssignmentClick = (assignmentId: string, canSubmit: boolean) => {
+    if (!canSubmit) return;
+    navigate(`/courses/${encodeURIComponent(courseId || "c1")}/assignments/${assignmentId}`);
     setSidebarOpen(false);
   };
 
@@ -205,6 +214,55 @@ export function CourseSidebar() {
                 );
               })}
             </div>
+
+            {assignments.length > 0 && (
+              <div className="mt-5 border-t border-border/70 pt-4">
+                <div className="px-5 mb-2">
+                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                    <ClipboardList className="h-3.5 w-3.5" />
+                    Bài tập
+                  </div>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  {assignments.map((assignment) => {
+                    const isActive = location.pathname.includes(`/assignments/${assignment.id}`);
+                    const locked = !assignment.can_submit;
+                    const done = assignment.status === "submitted" || assignment.status === "feedback_given";
+                    return (
+                      <button
+                        key={assignment.id}
+                        onClick={() => handleAssignmentClick(assignment.id, assignment.can_submit)}
+                        disabled={locked}
+                        className={cn(
+                          "flex w-full items-center gap-2 text-left py-2 pl-[32px] pr-5 transition-all",
+                          isActive
+                            ? "text-primary font-bold bg-primary/5"
+                            : locked
+                              ? "text-muted-foreground/60 cursor-not-allowed"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium"
+                        )}
+                      >
+                        <span className="shrink-0">
+                          {locked ? (
+                            <Lock className="h-3.5 w-3.5" />
+                          ) : done ? (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-success" fill="currentColor" stroke="white" strokeWidth={2} />
+                          ) : (
+                            <span className="inline-block h-3.5 w-3.5 rounded-full border-2 border-muted-foreground/30" />
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1 text-[13px] leading-snug">
+                          <span className="block truncate">{assignment.title}</span>
+                          <span className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                            {assignment.status === "feedback_given" ? "Đã feedback" : assignment.status === "submitted" ? "Đã nộp" : locked ? "Khóa đến khi hoàn thành 100%" : "Chưa nộp"}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

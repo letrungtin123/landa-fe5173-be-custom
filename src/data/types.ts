@@ -119,6 +119,11 @@ export interface Notification {
   message: string;
   time: string;
   read: boolean;
+  type?: string | null;
+  courseId?: string | null;
+  sentByName?: string | null;
+  createdAt?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface ContinueCourse {
