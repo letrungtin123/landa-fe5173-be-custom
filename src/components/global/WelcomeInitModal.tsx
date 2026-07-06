@@ -156,11 +156,11 @@ export function WelcomeInitModal() {
                 />
               </div>
 
-              <div className="mt-7 max-w-[250px] truncate rounded-full bg-[#35f0c3] px-4 py-2 text-[11px] font-black uppercase leading-none tracking-[0.12em] text-[#071f28] shadow-[0_8px_18px_rgba(20,184,166,0.18)] sm:mt-5 sm:max-w-[320px] sm:px-[15px] sm:py-[7px] sm:text-[10px]">
+              <div className="mt-7 max-w-[250px] truncate rounded-full bg-[#35f0c3] px-4 py-2 text-[11px] font-semibold uppercase leading-none tracking-[0.12em] text-[#071f28] shadow-[0_8px_18px_rgba(20,184,166,0.18)] sm:mt-5 sm:max-w-[320px] sm:px-[15px] sm:py-[7px] sm:text-[10px]">
                 Xin chào, {learnerName}
               </div>
 
-              <h2 className="mt-8 max-w-none text-[29px] font-semibold leading-[1.18] tracking-normal text-[#243f6b] dark:text-foreground sm:mt-4 sm:max-w-[620px] sm:text-[43px] sm:leading-[1.22]">
+              <h2 className="mt-8 max-w-none text-[29px] font-semibold leading-[1.18] tracking-normal text-[#213D6A] dark:text-foreground sm:mt-4 sm:max-w-[620px] sm:text-[43px] sm:leading-[1.22]">
                 <span className="block whitespace-nowrap">Chào mừng bạn đã đến</span>
                 <span className="block whitespace-nowrap">
                   với cổng học tập{" "}
@@ -175,7 +175,7 @@ export function WelcomeInitModal() {
                 </span>
               </h2>
 
-              <p className="mt-4 max-w-[346px] text-center text-[15px] font-normal leading-[1.25] text-[#344866]/85 dark:text-muted-foreground sm:mt-4 sm:max-w-[520px] sm:text-[14px] sm:leading-[1.18]">
+              <p className="mt-4 max-w-[346px] text-center text-[15px] font-normal leading-[1.25] text-[#213D6A]/85 dark:text-muted-foreground sm:mt-4 sm:max-w-[520px] sm:text-[14px] sm:leading-[1.18]">
                 <span className="block sm:hidden">
                   Hãy dành một nhịp để sẵn sàng. Mọi thứ trong
                 </span>
@@ -193,7 +193,7 @@ export function WelcomeInitModal() {
                 </span>
               </p>
 
-              <div className="mt-4 grid justify-items-center gap-[10px] text-[13px] font-medium text-muted-foreground sm:mt-[18px] sm:gap-[10px] sm:text-[13px]">
+              <div className="mt-2 grid justify-items-center gap-[5px] text-[13px] font-normal text-[#213D6A]/85 dark:text-muted-foreground sm:mt-[10px] sm:gap-[5px] sm:text-[13px]">
                 <div className="inline-flex items-center justify-center gap-2">
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-primary sm:h-4 sm:w-4" />
                   <span>Không gian học tập đã sẵn sàng cho bạn</span>
@@ -208,7 +208,7 @@ export function WelcomeInitModal() {
                 type="button"
                 onClick={handleContinue}
                 disabled={isPending}
-                className="mt-8 inline-flex h-12 min-w-[230px] items-center justify-center gap-3 rounded-full bg-primary px-7 text-[16px] font-bold text-primary-foreground shadow-[0_12px_26px_hsl(var(--primary)/0.28)] outline-none transition hover:-translate-y-0.5 hover:bg-primary/95 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-70 sm:mt-5 sm:h-10 sm:min-w-[192px] sm:gap-3 sm:px-6 sm:text-[15px]"
+                className="mt-2 inline-flex h-12 min-w-[230px] items-center justify-center gap-3 rounded-full bg-primary px-7 text-[16px] font-semibold text-primary-foreground shadow-[0_12px_26px_hsl(var(--primary)/0.28)] outline-none transition hover:-translate-y-0.5 hover:bg-primary/95 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-70 sm:mt-3 sm:h-10 sm:min-w-[192px] sm:gap-3 sm:px-6 sm:text-[15px]"
               >
                 {isPending ? "Đang bắt đầu..." : "Bắt đầu học ngay"}
                 <ArrowRight className="h-5 w-5 sm:h-5 sm:w-5" />
