@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, X, BookOpen, FileText, File, FileSpreadsheet, Download, User, Mail, Phone, Shield, ClipboardList, Lock } from "lucide-react";
+import { AlertTriangle, CheckCircle2, X, BookOpen, FileText, File, FileSpreadsheet, Download, User, Mail, Phone, Shield, ClipboardList, Lock } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -90,8 +90,8 @@ export function CourseSidebar() {
     setSidebarOpen(false);
   };
 
-  const handleAssignmentClick = (assignmentId: string, canSubmit: boolean) => {
-    if (!canSubmit) return;
+  const handleAssignmentClick = (assignmentId: string, canSubmit: boolean, lockedReason?: "progress" | "deadline" | null, done = false) => {
+    if (!canSubmit && !done && lockedReason !== "deadline") return;
     navigate(`/courses/${encodeURIComponent(courseId || "c1")}/assignments/${assignmentId}`);
     setSidebarOpen(false);
   };
@@ -226,27 +226,33 @@ export function CourseSidebar() {
                 <div className="flex flex-col gap-0.5">
                   {assignments.map((assignment) => {
                     const isActive = location.pathname.includes(`/assignments/${assignment.id}`);
-                    const locked = !assignment.can_submit;
                     const done = assignment.status === "submitted" || assignment.status === "feedback_given";
+                    const locked = !assignment.can_submit && !done;
+                    const deadlineLocked = assignment.locked_reason === "deadline" && !done;
+                    const canOpenAssignment = assignment.can_submit || done || assignment.locked_reason === "deadline";
                     return (
                       <button
                         key={assignment.id}
-                        onClick={() => handleAssignmentClick(assignment.id, assignment.can_submit)}
-                        disabled={locked}
+                        onClick={() => handleAssignmentClick(assignment.id, assignment.can_submit, assignment.locked_reason, done)}
+                        disabled={!canOpenAssignment}
                         className={cn(
                           "flex w-full items-center gap-2 text-left py-2 pl-[32px] pr-5 transition-all",
                           isActive
                             ? "text-primary font-bold bg-primary/5"
-                            : locked
+                            : locked && !deadlineLocked
                               ? "text-muted-foreground/60 cursor-not-allowed"
+                              : deadlineLocked
+                                ? "text-destructive hover:bg-destructive/10"
                               : "text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium"
                         )}
                       >
                         <span className="shrink-0">
-                          {locked ? (
-                            <Lock className="h-3.5 w-3.5" />
-                          ) : done ? (
+                          {done ? (
                             <CheckCircle2 className="h-3.5 w-3.5 text-success" fill="currentColor" stroke="white" strokeWidth={2} />
+                          ) : deadlineLocked ? (
+                            <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                          ) : locked ? (
+                            <Lock className="h-3.5 w-3.5" />
                           ) : (
                             <span className="inline-block h-3.5 w-3.5 rounded-full border-2 border-muted-foreground/30" />
                           )}
@@ -254,7 +260,7 @@ export function CourseSidebar() {
                         <span className="min-w-0 flex-1 text-[13px] leading-snug">
                           <span className="block truncate">{assignment.title}</span>
                           <span className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
-                            {assignment.status === "feedback_given" ? "Đã feedback" : assignment.status === "submitted" ? "Đã nộp" : locked ? "Khóa đến khi hoàn thành 100%" : "Chưa nộp"}
+                            {assignment.status === "feedback_given" ? "Đã phản hồi" : assignment.status === "submitted" ? "Đã nộp" : deadlineLocked ? "Hết hạn nộp" : locked ? "Khóa đến khi hoàn thành 100%" : "Chưa nộp"}
                           </span>
                         </span>
                       </button>

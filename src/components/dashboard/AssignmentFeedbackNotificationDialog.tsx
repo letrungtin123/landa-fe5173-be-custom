@@ -1,4 +1,5 @@
-import { BookOpen, Download, FileText, MessageSquareText, ShieldCheck } from "lucide-react";
+import { BookOpen, Download, FileText, MessageSquareText, ShieldCheck, Trophy } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,13 +9,17 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { downloadAssignmentFile, type AssignmentFileMeta } from "@/api/assignments";
+import { downloadAssignmentFile, getLearnerAssignment, type AssignmentFileMeta } from "@/api/assignments";
 import type { Notification } from "@/data/types";
 
 interface FeedbackMetadata {
+  assignment_id?: string;
+  submission_id?: string;
   course_name?: string;
   assignment_title?: string;
   assignment_question?: string;
+  grading_enabled?: boolean;
+  score?: number | null;
   feedback_text?: string;
   feedback_files?: AssignmentFileMeta[];
   feedback_at?: string;
@@ -69,10 +74,23 @@ export function AssignmentFeedbackNotificationDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const metadata = metadataOf(notification);
+  const assignmentId = metadata.assignment_id;
+  const currentAssignmentQuery = useQuery({
+    queryKey: ["assignment-feedback-current", assignmentId],
+    queryFn: () => getLearnerAssignment(assignmentId!),
+    enabled: open && !!assignmentId,
+    staleTime: 0,
+  });
+  const currentAssignment = currentAssignmentQuery.data;
+  const currentSubmission = currentAssignment?.submission;
   const courseName = metadata.course_name || "Khóa học";
-  const assignmentTitle = metadata.assignment_title || notification?.title || "Bài tập";
-  const feedbackText = metadata.feedback_text || notification?.message || "";
-  const feedbackAt = metadata.feedback_at || notification?.createdAt;
+  const assignmentTitle = currentAssignment?.title || metadata.assignment_title || notification?.title || "Bài tập";
+  const assignmentQuestion = currentAssignment?.question || metadata.assignment_question;
+  const gradingEnabled = currentAssignment?.grading_enabled ?? metadata.grading_enabled;
+  const score = currentSubmission ? currentSubmission.score : metadata.score;
+  const feedbackText = currentSubmission ? (currentSubmission.feedback_text || "") : (metadata.feedback_text || notification?.message || "");
+  const feedbackAt = currentSubmission ? currentSubmission.feedback_at : (metadata.feedback_at || notification?.createdAt);
+  const feedbackFiles = currentSubmission ? currentSubmission.feedback_files : metadata.feedback_files;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -83,7 +101,7 @@ export function AssignmentFeedbackNotificationDialog({
               <MessageSquareText className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <DialogTitle className="text-[18px] leading-6">Feedback bài tập</DialogTitle>
+              <DialogTitle className="text-[18px] leading-6">Phản hồi bài tập</DialogTitle>
               <DialogDescription className="mt-1 line-clamp-2">
                 {courseName}
               </DialogDescription>
@@ -103,16 +121,22 @@ export function AssignmentFeedbackNotificationDialog({
                 {notification.sentByName}
               </Badge>
             )}
+            {gradingEnabled && (
+              <Badge variant="outline" className="gap-1.5 border-success/25 bg-success/10 px-3 py-1 text-success">
+                <Trophy className="h-3.5 w-3.5" />
+                Điểm {typeof score === "number" ? `${score}/100` : "chưa có"}
+              </Badge>
+            )}
           </div>
 
           <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
             <div className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Bài tập</div>
             <h3 className="text-[18px] font-bold leading-6 text-foreground">{assignmentTitle}</h3>
-            {metadata.assignment_question && (
+            {assignmentQuestion && (
               <div className="mt-4 rounded-xl border border-border bg-muted/25 px-4 py-3">
                 <div className="mb-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Câu hỏi</div>
                 <div className="whitespace-pre-wrap text-[14px] leading-6 text-foreground">
-                  {metadata.assignment_question}
+                  {assignmentQuestion}
                 </div>
               </div>
             )}
@@ -120,14 +144,14 @@ export function AssignmentFeedbackNotificationDialog({
 
           <section className="mt-4 rounded-2xl border border-success/25 bg-success/10 p-4 shadow-sm">
             <div className="mb-2 flex items-center justify-between gap-3">
-              <div className="text-[11px] font-bold uppercase tracking-widest text-success">Feedback</div>
+              <div className="text-[11px] font-bold uppercase tracking-widest text-success">Phản hồi</div>
               {feedbackAt && <div className="text-[11px] font-medium text-muted-foreground">{formatDate(feedbackAt)}</div>}
             </div>
             <div className="whitespace-pre-wrap rounded-xl border border-success/20 bg-background/80 px-4 py-3 text-[14px] leading-6 text-foreground">
-              {feedbackText || "Admin đã feedback bài tập."}
+              {feedbackText || "Quản trị viên đã phản hồi bài tập."}
             </div>
             <div className="mt-4">
-              <FeedbackFiles files={metadata.feedback_files} />
+              <FeedbackFiles files={feedbackFiles} />
             </div>
           </section>
 

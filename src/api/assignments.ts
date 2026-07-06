@@ -19,6 +19,7 @@ export interface LearnerAssignmentSubmission {
   status: AssignmentStatus;
   submitted_at: string;
   submission_version: number;
+  score: number | null;
   feedback_text: string | null;
   feedback_files: AssignmentFileMeta[];
   feedback_at: string | null;
@@ -33,8 +34,13 @@ export interface LearnerAssignment {
   sort_order: number;
   is_published: boolean;
   allow_resubmission: boolean;
+  deadline_enabled: boolean;
+  deadline_at: string | null;
+  grading_enabled: boolean;
+  is_deadline_expired: boolean;
   status: AssignmentStatus;
   can_submit: boolean;
+  locked_reason: "progress" | "deadline" | null;
   submission: LearnerAssignmentSubmission | null;
 }
 
@@ -78,4 +84,3 @@ export async function downloadAssignmentFile(file: AssignmentFileMeta): Promise<
   anchor.remove();
   window.URL.revokeObjectURL(url);
 }
-
