@@ -1,18 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, CheckCircle2, Compass, Sparkles } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { ArrowRight, CheckCircle2, Compass } from "lucide-react";
 import {
   getWelcomeInitStateApi,
   markWelcomeInitSeenApi,
   type WelcomeInitState,
 } from "@/api/welcomeInit";
+import flowerImage from "@/assets/WelcomeInitModal/welcome_init_flower.png";
+import folderImage from "@/assets/WelcomeInitModal/welcome_init_folder.png";
+import linePlaneMobileImage from "@/assets/WelcomeInitModal/welcome_init_line_plan_mobile.png";
+import linePlanePcImage from "@/assets/WelcomeInitModal/welcome_init_line_plan_pc.png";
+import planeImage from "@/assets/WelcomeInitModal/welcome_init_plane.png";
 import { useBranding } from "@/hooks/useBranding";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -31,6 +30,11 @@ function storageSet(key: string): void {
   } catch {
     // Ignore private browsing / storage-disabled cases.
   }
+}
+
+function getDisplayName(fullName?: string | null, username?: string | null): string {
+  const normalized = fullName?.trim() || username?.trim();
+  return normalized || "bạn";
 }
 
 export function WelcomeInitModal() {
@@ -91,9 +95,8 @@ export function WelcomeInitModal() {
     setOpen(state.should_show && !blockedForSession && !locallyDismissed);
   }, [locallyDismissed, sessionDismissed, state]);
 
-  const tenantName = branding.tenantName || user?.tenantName || "tổ chức của bạn";
-  const displayName = user?.fullName?.trim() || user?.username || "bạn";
-  const firstName = displayName.split(/\s+/).slice(-1)[0] || displayName;
+  const tenantName = branding.tenantName || user?.tenantName || "cổng học tập";
+  const learnerName = getDisplayName(user?.fullName, user?.username);
 
   const handleContinue = () => {
     if (!state) {
@@ -113,96 +116,107 @@ export function WelcomeInitModal() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent
-        className="w-[calc(100vw-1.5rem)] max-w-[940px] max-h-[calc(100vh-1.5rem)] overflow-hidden border-border bg-card p-0 text-card-foreground shadow-2xl [&>button]:hidden sm:rounded-2xl"
-        onInteractOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-      >
-        <DialogTitle className="sr-only">Chào mừng bạn đến với {tenantName}</DialogTitle>
-        <DialogDescription className="sr-only">
-          Modal chào mừng xuất hiện trong lần đầu đăng nhập vào hệ thống học tập.
-        </DialogDescription>
+    <DialogPrimitive.Root open={open} onOpenChange={() => { }}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/35 backdrop-blur-[7px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 sm:bg-black/30" />
+        <DialogPrimitive.Content
+          className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2.5rem)] max-w-[426px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[16px] border-0 bg-card p-0 shadow-[0_18px_42px_hsl(var(--primary)/0.35)] outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:w-[calc(100vw-4rem)] sm:max-w-[832px] sm:rounded-[30px] sm:border-[10px] sm:border-card sm:shadow-[0_24px_70px_rgba(15,23,42,0.28)]"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogPrimitive.Title className="sr-only">
+            Chào mừng bạn đến với {tenantName}
+          </DialogPrimitive.Title>
+          <DialogPrimitive.Description className="sr-only">
+            Modal chào mừng xuất hiện trong lần đầu đăng nhập vào hệ thống học tập.
+          </DialogPrimitive.Description>
 
-        <div className="relative max-h-[calc(100vh-1.5rem)] overflow-y-auto">
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,hsl(var(--primary)/0.14),transparent_34%,hsl(var(--accent)/0.16))]" />
-          <div className="pointer-events-none absolute inset-0 opacity-[0.42] bg-[linear-gradient(to_right,hsl(var(--border)/0.55)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.55)_1px,transparent_1px)] bg-[size:28px_28px]" />
+          <div className="relative min-h-[526px] overflow-hidden rounded-[16px] bg-[linear-gradient(180deg,hsl(var(--primary)/0.46)_0%,hsl(var(--primary)/0.22)_48%,hsl(var(--card))_100%)] px-5 pb-10 pt-12 text-center text-foreground sm:min-h-[486px] sm:rounded-[21px] sm:px-12 sm:pb-12 sm:pt-10">
+            <picture className="pointer-events-none absolute left-0 top-[118px] w-[75px] opacity-95 sm:left-0 sm:top-[148px] sm:w-[149px]">
+              <source media="(min-width: 640px)" srcSet={linePlanePcImage} />
+              <img src={linePlaneMobileImage} alt="" className="h-auto w-full" />
+            </picture>
+            <img
+              src={planeImage}
+              alt=""
+              className="pointer-events-none absolute left-[46px] top-[86px] h-[54px] w-[54px] object-contain drop-shadow-[0_12px_18px_rgba(37,99,235,0.28)] sm:left-[108px] sm:top-[124px] sm:h-[62px] sm:w-[62px]"
+            />
+            <img
+              src={flowerImage}
+              alt=""
+              className="pointer-events-none absolute right-[30px] top-[108px] h-[46px] w-[46px] object-contain drop-shadow-[0_10px_22px_rgba(37,99,235,0.28)] sm:right-[92px] sm:top-[92px] sm:h-[66px] sm:w-[66px]"
+            />
 
-          <div className="relative grid md:min-h-[560px] md:grid-cols-[0.92fr_1.08fr]">
-            <div className="flex flex-col justify-between border-b border-border bg-muted/40 p-6 sm:p-8 md:border-b-0 md:border-r">
-              <div>
+            <div className="relative z-10 mx-auto flex max-w-[680px] flex-col items-center">
+              <div className="flex h-[66px] w-[66px] items-center justify-center overflow-hidden rounded-full border border-white/80 bg-white shadow-[0_8px_20px_rgba(15,23,42,0.16)] sm:h-[58px] sm:w-[58px]">
                 <img
                   src={branding.squareIcon}
                   alt={tenantName}
-                  className="h-20 w-20 object-contain sm:h-24 sm:w-24"
+                  className="h-full w-full object-contain"
                 />
-                <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  Khởi đầu mới
-                </div>
-                <h2 className="mt-5 max-w-[420px] text-3xl font-semibold leading-tight tracking-normal text-foreground sm:text-4xl md:text-5xl">
-                  Chào mừng bạn đến với {tenantName}
-                </h2>
               </div>
 
-              <div className="mt-8 grid gap-3 text-sm text-muted-foreground">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-primary" />
-                  <span>Không gian học tập đã sẵn sàng cho bạn.</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Compass className="h-5 w-5 text-primary" />
-                  <span>Hành trình hôm nay bắt đầu từ đây.</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col justify-between p-6 sm:p-8 md:p-10">
-              <div>
-                <div className="inline-flex rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                  Xin chào, {firstName}
-                </div>
-                <h3 className="mt-6 text-3xl font-semibold leading-tight text-foreground sm:text-4xl">
-                  Rất vui được gặp bạn trong hành trình học tập mới.
-                </h3>
-                <p className="mt-5 max-w-[520px] text-base leading-7 text-muted-foreground">
-                  Hãy dành một nhịp để sẵn sàng. Mọi thứ trong cổng học tập của {tenantName} đã được chuẩn bị để bạn bắt đầu thật mượt mà.
-                </p>
+              <div className="mt-7 max-w-[250px] truncate rounded-full bg-[#35f0c3] px-4 py-2 text-[11px] font-black uppercase leading-none tracking-[0.12em] text-[#071f28] shadow-[0_8px_18px_rgba(20,184,166,0.18)] sm:mt-5 sm:max-w-[320px] sm:px-[15px] sm:py-[7px] sm:text-[10px]">
+                Xin chào, {learnerName}
               </div>
 
-              <div className="mt-8 rounded-xl border border-border bg-background/70 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                    <Sparkles className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">Sẵn sàng bứt phá</p>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                      Bắt đầu học, theo dõi tiến độ và quay lại bất cứ lúc nào để tiếp tục đúng nhịp của bạn.
-                    </p>
-                  </div>
+              <h2 className="mt-8 max-w-none text-[29px] font-semibold leading-[1.18] tracking-normal text-[#243f6b] dark:text-foreground sm:mt-4 sm:max-w-[620px] sm:text-[43px] sm:leading-[1.22]">
+                <span className="block whitespace-nowrap">Chào mừng bạn đã đến</span>
+                <span className="block whitespace-nowrap">
+                  với cổng học tập{" "}
+                  <span className="inline-flex translate-y-[0.14em] items-center">
+                    <img
+                      src={folderImage}
+                      alt=""
+                      className="h-[35px] w-[44px] object-contain sm:h-[40px] sm:w-[51px]"
+                    />
+                  </span>{" "}
+                  <span className="text-primary">{tenantName}!</span>
+                </span>
+              </h2>
+
+              <p className="mt-4 max-w-[346px] text-center text-[15px] font-normal leading-[1.25] text-[#344866]/85 dark:text-muted-foreground sm:mt-4 sm:max-w-[520px] sm:text-[14px] sm:leading-[1.18]">
+                <span className="block sm:hidden">
+                  Hãy dành một nhịp để sẵn sàng. Mọi thứ trong
+                </span>
+                <span className="block sm:hidden">
+                  cổng học tập của {tenantName} đã được chuẩn bị để
+                </span>
+                <span className="block sm:hidden">
+                  bạn bắt đầu thật mượt mà.
+                </span>
+                <span className="hidden sm:block">
+                  Hãy dành một nhịp để sẵn sàng. Mọi thứ trong cổng học tập
+                </span>
+                <span className="hidden sm:block">
+                  của {tenantName} đã được chuẩn bị để bạn bắt đầu thật mượt mà.
+                </span>
+              </p>
+
+              <div className="mt-4 grid justify-items-center gap-[10px] text-[13px] font-medium text-muted-foreground sm:mt-[18px] sm:gap-[10px] sm:text-[13px]">
+                <div className="inline-flex items-center justify-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-primary sm:h-4 sm:w-4" />
+                  <span>Không gian học tập đã sẵn sàng cho bạn</span>
+                </div>
+                <div className="inline-flex items-center justify-center gap-2">
+                  <Compass className="h-4 w-4 shrink-0 text-primary sm:h-4 sm:w-4" />
+                  <span>Hành trình hôm nay bắt đầu từ đây</span>
                 </div>
               </div>
 
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Chúc bạn có một phiên học thật hiệu quả.
-                </p>
-                <Button
-                  type="button"
-                  size="lg"
-                  onClick={handleContinue}
-                  disabled={isPending}
-                  className="h-12 rounded-full px-6 text-base shadow-lg shadow-primary/20"
-                >
-                  {isPending ? "Đang bắt đầu..." : "Bắt đầu học ngay"}
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-              </div>
+              <button
+                type="button"
+                onClick={handleContinue}
+                disabled={isPending}
+                className="mt-8 inline-flex h-12 min-w-[230px] items-center justify-center gap-3 rounded-full bg-primary px-7 text-[16px] font-bold text-primary-foreground shadow-[0_12px_26px_hsl(var(--primary)/0.28)] outline-none transition hover:-translate-y-0.5 hover:bg-primary/95 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-70 sm:mt-5 sm:h-10 sm:min-w-[192px] sm:gap-3 sm:px-6 sm:text-[15px]"
+              >
+                {isPending ? "Đang bắt đầu..." : "Bắt đầu học ngay"}
+                <ArrowRight className="h-5 w-5 sm:h-5 sm:w-5" />
+              </button>
             </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }
