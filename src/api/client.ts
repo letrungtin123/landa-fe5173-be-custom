@@ -92,6 +92,27 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+function getRequestPath(url?: string) {
+  if (!url) return "";
+  try {
+    return new URL(url, config.apiBaseUrl || window.location.origin).pathname;
+  } catch {
+    return url.split("?")[0] || "";
+  }
+}
+
+function shouldSkipAuthRefresh(req?: InternalAxiosRequestConfig) {
+  const path = getRequestPath(req?.url);
+  return (
+    path === "/api/auth/login" ||
+    path === "/api/auth/refresh" ||
+    path === "/api/auth/logout" ||
+    path.startsWith("/api/sso/") ||
+    path.startsWith("/api/branding/") ||
+    path.startsWith("/api/demo-login/")
+  );
+}
+
 // ── Response Interceptor — xử lý 401 → refresh → retry ──
 // KHÔNG có mutex riêng ở đây — dùng duy nhất refreshMutex trong useAuthStore.
 // Tránh race condition giữa 2 lớp mutex riêng biệt.
@@ -112,6 +133,12 @@ apiClient.interceptors.response.use(
     if (responseData?.error === "account_disabled") {
       useAuthStore.getState().logout();
       window.location.href = "/login?error=account_disabled";
+      return Promise.reject(error);
+    }
+
+    // Public/auth endpoints tự xử lý lỗi trên UI. Không refresh/logout ở đây,
+    // nếu không login sai sẽ reload lại trang và làm mất thông báo lỗi form.
+    if (shouldSkipAuthRefresh(originalRequest)) {
       return Promise.reject(error);
     }
 

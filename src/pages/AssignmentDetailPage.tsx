@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   ClipboardList,
   Download,
-  FileCheck2,
   FileText,
   FileUp,
   Loader2,
@@ -16,7 +15,6 @@ import {
   Paperclip,
   RefreshCcw,
   Send,
-  ShieldCheck,
   Sparkles,
   Trophy,
   X,
@@ -109,9 +107,27 @@ function FileList({
 function AssignmentTimeline({ status }: { status?: string }) {
   const step = status === "feedback_given" ? 2 : status === "submitted" ? 1 : 0;
   const items = [
-    { label: "Chưa nộp", shortLabel: "Chưa nộp" },
-    { label: "Đã nộp", shortLabel: "Đã nộp" },
-    { label: "Phản hồi", shortLabel: "Phản hồi" },
+    {
+      label: "Chưa nộp",
+      shortLabel: "Chưa nộp",
+      dotClass: "border-destructive bg-destructive",
+      textClass: "text-destructive",
+      ringClass: "ring-destructive/15",
+    },
+    {
+      label: "Đã nộp",
+      shortLabel: "Đã nộp",
+      dotClass: "border-amber-500 bg-amber-500",
+      textClass: "text-amber-600 dark:text-amber-300",
+      ringClass: "ring-amber-500/15",
+    },
+    {
+      label: "Phản hồi",
+      shortLabel: "Phản hồi",
+      dotClass: "border-success bg-success",
+      textClass: "text-success",
+      ringClass: "ring-success/15",
+    },
   ];
 
   return (
@@ -133,14 +149,18 @@ function AssignmentTimeline({ status }: { status?: string }) {
               >
                 <span className="relative z-10 flex h-5 items-center justify-center">
                   {current ? (
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success text-success-foreground shadow-sm ring-[3px] ring-success/15">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                    </span>
+                    <span
+                      className={cn(
+                        "h-3.5 w-3.5 rounded-full border shadow-sm ring-[3px]",
+                        item.dotClass,
+                        item.ringClass,
+                      )}
+                    />
                   ) : (
                     <span
                       className={cn(
                         "h-2.5 w-2.5 rounded-full border transition-all duration-300",
-                        active ? "border-primary bg-primary" : "border-primary/30 bg-background",
+                        active ? "border-primary/70 bg-primary/70" : "border-primary/30 bg-background",
                       )}
                     />
                   )}
@@ -148,7 +168,7 @@ function AssignmentTimeline({ status }: { status?: string }) {
                 <span
                   className={cn(
                     "mt-2 block max-w-full truncate text-[10px] font-bold uppercase tracking-wide",
-                    active ? "text-primary" : "text-muted-foreground",
+                    current ? item.textClass : active ? "text-primary/80" : "text-muted-foreground",
                   )}
                 >
                   {item.shortLabel}
@@ -188,6 +208,7 @@ export function AssignmentDetailPage() {
   const isLocked = Boolean(assignment && assignment.locked_reason === "progress");
   const selectedFileSize = useMemo(() => files.reduce((sum, file) => sum + file.size, 0), [files]);
   const answerCount = answer.trim().length;
+  const feedbackReviewer = submission?.feedback_by_name || submission?.feedback_by_username || submission?.feedback_by_email || "";
 
   const submitHint = useMemo(() => {
     if (isDeadlineExpired && !isFeedbackGiven) return "Đã hết thời hạn nộp bài";
@@ -265,6 +286,18 @@ export function AssignmentDetailPage() {
   return (
     <div className="min-h-full bg-background">
       <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+        {isDeadlineExpired && (
+          <div className="mb-4 flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+            <div className="min-w-0">
+              <div className="text-sm font-bold text-destructive">Đã hết thời hạn nộp bài</div>
+              <div className="mt-0.5 text-[13px] font-medium text-muted-foreground">
+                Bạn vẫn có thể xem yêu cầu và phản hồi, nhưng không thể nộp hoặc nộp lại bài tập này.
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mb-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
           <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
             <div className="absolute inset-x-0 top-0 h-1 accent-surface-gradient" />
@@ -319,18 +352,6 @@ export function AssignmentDetailPage() {
             <AssignmentTimeline status={assignment.status} />
           </aside>
         </div>
-
-        {isDeadlineExpired && (
-          <div className="mb-4 flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-            <div className="min-w-0">
-              <div className="text-sm font-bold text-destructive">Đã hết thời hạn nộp bài</div>
-              <div className="mt-0.5 text-[13px] font-medium text-muted-foreground">
-                Bạn vẫn có thể xem yêu cầu và phản hồi, nhưng không thể nộp hoặc nộp lại bài tập này.
-              </div>
-            </div>
-          </div>
-        )}
 
         {isLocked && (
           <div className="mb-4 flex items-start gap-3 rounded-2xl border border-warning/30 bg-warning/10 px-4 py-3 text-warning dark:bg-warning/10">
@@ -498,34 +519,6 @@ export function AssignmentDetailPage() {
           </main>
 
           <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
-            <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-              <div className="mb-4 flex items-center gap-3">
-                <div className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-                  isDeadlineExpired ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground",
-                )}>
-                  {isDeadlineExpired ? <AlertTriangle className="h-5 w-5" /> : isLocked ? <Lock className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
-                </div>
-                <div>
-                  <div className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Quyền nộp</div>
-                  <div className="mt-0.5 text-[15px] font-bold text-foreground">{isDeadlineExpired ? "Hết hạn" : assignment.can_submit ? "Đã mở" : "Đang khóa"}</div>
-                </div>
-              </div>
-              <p className="text-[13px] font-medium leading-6 text-muted-foreground">
-                {isDeadlineExpired
-                  ? "Thời hạn nộp bài đã kết thúc, form nộp bài được khóa nhưng nội dung và phản hồi vẫn hiển thị."
-                  : isLocked
-                  ? "Bài tập sẽ mở khi tiến độ khóa học đạt 100%."
-                  : isFeedbackGiven
-                    ? "Phản hồi đã được gửi, bài làm không thể chỉnh sửa thêm."
-                    : canResubmit
-                      ? "Bạn có thể cập nhật bài trước khi quản trị viên gửi phản hồi."
-                      : isSubmitted
-                        ? "Bài làm đang chờ quản trị viên phản hồi."
-                        : "Bạn có thể gửi câu trả lời và tệp đính kèm."}
-              </p>
-            </section>
-
             {isFeedbackGiven && submission && (
               <section className="rounded-2xl border border-success/25 bg-success/10 p-5 shadow-sm">
                 <div className="mb-4 flex items-center gap-3">
@@ -537,16 +530,26 @@ export function AssignmentDetailPage() {
                     <div className="mt-0.5 text-[15px] font-bold text-foreground">
                       {submission.feedback_at ? formatDate(submission.feedback_at) : "Đã phản hồi"}
                     </div>
+                    <div className="mt-1 text-[12px] font-semibold text-muted-foreground">
+                      Người chấm: <span className="text-success">{feedbackReviewer || "Quản trị viên"}</span>
+                    </div>
                   </div>
                 </div>
-                {assignment.grading_enabled && (
-                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-success/25 bg-background/80 px-4 py-2 text-sm font-bold text-success">
-                    <Trophy className="h-4 w-4" />
-                    Điểm {typeof submission.score === "number" ? `${submission.score}/100` : "chưa có"}
+                <div className="rounded-xl border border-success/20 bg-background/70 px-4 py-3">
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    {assignment.grading_enabled && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-success/25 bg-success/10 px-2.5 py-1 text-[12px] font-bold text-success">
+                        <Trophy className="h-3.5 w-3.5" />
+                        Điểm {typeof submission.score === "number" ? `${submission.score}/100` : "chưa có"}
+                      </span>
+                    )}
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Lời nhận xét
+                    </span>
                   </div>
-                )}
-                <div className="whitespace-pre-wrap rounded-xl border border-success/20 bg-background/70 px-4 py-3 text-[14px] leading-6 text-foreground">
-                  {submission.feedback_text || "Quản trị viên đã phản hồi bài tập."}
+                  <div className="whitespace-pre-wrap text-[14px] font-medium leading-6 text-foreground">
+                    {submission.feedback_text || "Quản trị viên đã phản hồi bài tập."}
+                  </div>
                 </div>
                 {submission.feedback_files.length > 0 && (
                   <div className="mt-4">

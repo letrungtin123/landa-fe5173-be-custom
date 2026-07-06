@@ -38,6 +38,7 @@ import { WelcomeCourseModal } from "@/components/lesson/WelcomeCourseModal";
 import { SectionCompleteModal } from "@/components/lesson/SectionCompleteModal";
 import { useCourseCompletion } from "@/hooks/useProgress";
 import { useCourseModalConfig } from "@/hooks/useModalConfig";
+import { useBranding } from "@/hooks/useBranding";
 
 // ── Badge component (declared outside render to satisfy React Compiler) ──
 const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
@@ -62,6 +63,7 @@ export function LessonDetailPage() {
   const navigate = useNavigate();
   const { completionPercent, isLoading: isProgressLoading } = useCourseCompletion(courseId);
   const { data: modalConfig } = useCourseModalConfig(courseId);
+  const { branding } = useBranding();
   const currentLessonId = useAppStore((s) => s.currentLessonId);
   const currentUnitIndex = useAppStore((s) => s.currentUnitIndex);
   const nextUnit = useAppStore((s) => s.nextUnit);
@@ -219,6 +221,7 @@ export function LessonDetailPage() {
     courseDetail?.mentor_section?.logo_light,
   ]);
   const hasMentorSectionInfo = Boolean(mentorSectionDescription || mentorSectionLogo);
+  const tenantName = branding.tenantName || user?.tenantName || "Le & Associates";
 
   // Unit navigation handlers
   const totalUnits = lesson?.units.length || 0;
@@ -667,9 +670,9 @@ export function LessonDetailPage() {
       )}
 
       {/* ── Footer ── */}
-      <footer className="border-t border-border py-6 text-center bg-muted/30">
-        <p className="text-[14px] font-normal leading-[18px] text-muted-foreground">
-          Copyright © 2017 Le & Associates
+      <footer className="sticky bottom-0 z-30 border-t border-border/70 bg-background/90 px-4 py-4 text-center shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur supports-[backdrop-filter]:bg-background/75">
+        <p className="truncate text-[13px] font-medium leading-[18px] text-muted-foreground">
+          Copyright © {tenantName}
         </p>
       </footer>
 

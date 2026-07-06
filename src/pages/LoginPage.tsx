@@ -144,7 +144,7 @@ export function LoginPage() {
           startCooldown(cooldown);
           setErrors({ email: `Quá nhiều lần thử sai. Vui lòng đợi ${cooldown} giây.` });
         } else {
-          setErrors({ email: "Tên đăng nhập hoặc mật khẩu không đúng" });
+          setErrors({ email: "Thông tin không hợp lệ!" });
         }
       } else {
         setErrors({ email: "Lỗi kết nối máy chủ. Vui lòng thử lại sau." });
