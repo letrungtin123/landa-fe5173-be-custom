@@ -131,27 +131,27 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
       <DialogContent
         className="w-auto max-w-none p-0 border-none overflow-visible bg-transparent shadow-none [&>button]:hidden outline-none flex items-center justify-center"
       >
-        <div className="relative w-[520px] bg-background rounded-3xl shadow-2xl flex flex-col items-center overflow-hidden">
+        <div className="relative w-[calc(100vw-32px)] max-w-[520px] bg-background rounded-[24px] md:rounded-3xl shadow-2xl flex flex-col items-center overflow-hidden">
           {/* Header xanh gradient + Confetti */}
-          <div className="relative w-full bg-gradient-to-br from-[#4F88FF] via-[#6366f1] to-[#8b5cf6] pt-10 pb-14 flex flex-col items-center justify-center overflow-hidden">
+          <div className="relative w-full min-h-[190px] md:min-h-[216px] bg-gradient-to-br from-[#4F88FF] via-[#6366f1] to-[#8b5cf6] px-5 py-8 md:px-8 md:py-10 flex flex-col items-center justify-center overflow-hidden">
             <Confetti />
-            <div className="z-10 flex items-center justify-center w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm mb-4">
-              <Sparkles className="h-8 w-8 text-white" />
+            <div className="z-10 flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-full bg-white/20 backdrop-blur-sm mb-4 md:mb-5 shrink-0">
+              <Sparkles className="h-7 w-7 md:h-8 md:w-8 text-white" />
             </div>
-            <h1 className="text-white text-[28px] font-bold z-10 tracking-tight text-center px-6">
+            <h1 className="z-10 max-w-[440px] px-1 text-center text-[24px] font-bold leading-[30px] tracking-normal text-white md:text-[28px] md:leading-[34px]">
               {currentConfig.title || "Xuất sắc!"}
             </h1>
           </div>
 
           {/* Content */}
-          <div className="px-10 pt-8 pb-10 flex flex-col items-center text-center w-full">
-            <p className="text-muted-foreground text-[15px] leading-relaxed mb-8 max-w-[420px]">
+          <div className="px-6 pt-7 pb-8 md:px-10 md:pt-8 md:pb-10 flex flex-col items-center text-center w-full">
+            <p className="text-muted-foreground text-[14px] md:text-[15px] leading-6 mb-7 md:mb-8 max-w-[420px]">
               {currentConfig.description || "Bạn đã hoàn thành phần học này. Hãy tiếp tục chinh phục những nội dung tiếp theo!"}
             </p>
 
             <Button
               onClick={handleDismiss}
-              className="rounded-full px-10 py-6 text-[16px] font-semibold gap-2 transition-all duration-300 w-auto min-w-[220px] bg-gradient-to-r from-[#4F88FF] to-[#6366f1] hover:from-[#3b6fde] hover:to-[#5558e3] text-white shadow-lg shadow-blue-600/30 hover:shadow-blue-600/40"
+              className="w-full max-w-[260px] rounded-full px-8 py-6 text-[16px] font-semibold gap-2 transition-all duration-300 md:w-auto md:min-w-[220px] bg-gradient-to-r from-[#4F88FF] to-[#6366f1] hover:from-[#3b6fde] hover:to-[#5558e3] text-white shadow-lg shadow-blue-600/30 hover:shadow-blue-600/40"
             >
               Tiếp tục học <ArrowRight className="w-5 h-5 ml-1" />
             </Button>

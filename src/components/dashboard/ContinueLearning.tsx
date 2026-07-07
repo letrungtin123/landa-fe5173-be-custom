@@ -7,13 +7,6 @@ import { ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Se
 import { useState, useMemo, useEffect, useRef } from "react";
 import { storageUrl } from "@/utils/storageUrl";
 import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useSearchStore } from "@/stores/useSearchStore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyEnrollments, useCourses } from "@/hooks/useCourses";
@@ -22,12 +15,14 @@ import { useBatchCourseProgress } from "@/hooks/useProgress";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import type { ContinueCourse } from "@/data/types";
-import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
-import { CourseFilterBar, type CourseFilter } from "@/components/CourseFilterBar";
-import type { CourseCategoryInfo } from "@/api/types";
+import type { CourseFilter } from "@/components/CourseFilterBar";
+
+type ContinueLearningCourse = ContinueCourse & {
+  progress: number;
+};
 
 /** Card hiển thị 1 khóa học đang học kèm progress bar */
-function CourseCard({ course, index, isLast, completionPercent }: { course: ContinueCourse; index: number; isLast: boolean; completionPercent: number }) {
+function CourseCard({ course, completionPercent }: { course: ContinueCourse; completionPercent: number }) {
   const { colorStyle } = useThemeStore();
   const displayPercent = Math.floor(Math.round(completionPercent * 100) / 10 + 0.4) / 10;
 
@@ -40,15 +35,15 @@ function CourseCard({ course, index, isLast, completionPercent }: { course: Cont
       className="w-[85vw] max-w-[300px] shrink-0 snap-start md:w-auto md:max-w-none md:shrink flex"
     >
       <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`} className="flex flex-1 w-full">
-        <div className="group flex flex-col md:flex-row flex-1 w-full h-[330px] md:h-[180px] overflow-hidden rounded-[28px] md:rounded-3xl border border-border md:border-primary shadow-sm md:shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-card transition-all duration-200 hover:shadow-md hover:scale-[1.02] p-2 pb-4 md:p-0 md:pb-0">
+        <div className="group flex flex-col md:flex-row flex-1 w-full h-[330px] md:h-[180px] overflow-hidden rounded-[24px] md:rounded-3xl border border-border md:border-primary shadow-sm md:shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-card transition-all duration-200 hover:shadow-md hover:scale-[1.02] p-1.5 pb-4 md:p-0 md:pb-0">
           {/* Thumbnail */}
-          <div className="w-full md:w-[40%] h-40 md:h-full shrink-0 relative flex items-center justify-center overflow-hidden md:p-1.5 rounded-[20px] md:rounded-none">
+          <div className="w-full md:w-[40%] h-40 md:h-full shrink-0 relative flex items-center justify-center overflow-hidden md:p-1.5 rounded-[18px] md:rounded-none">
             {course.thumbnail ? (
               <>
                 <img
                   src={course.thumbnail}
                   alt={course.title}
-                  className="z-10 h-full w-full object-cover rounded-[20px] md:rounded-[18px]"
+                  className="z-10 h-full w-full object-cover rounded-[18px]"
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
                     e.currentTarget.nextElementSibling?.classList.replace("hidden", "flex");
@@ -56,7 +51,7 @@ function CourseCard({ course, index, isLast, completionPercent }: { course: Cont
                 />
                 <div 
                   className={cn(
-                     "hidden h-full w-full items-center justify-center rounded-[20px] md:rounded-[18px]",
+                     "hidden h-full w-full items-center justify-center rounded-[18px]",
                      colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent"
                   )}
                 >
@@ -66,7 +61,7 @@ function CourseCard({ course, index, isLast, completionPercent }: { course: Cont
             ) : (
               <div 
                 className={cn(
-                  "flex h-full w-full items-center justify-center rounded-[20px] md:rounded-[18px]",
+                  "flex h-full w-full items-center justify-center rounded-[18px]",
                   colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent"
                 )}
               >
@@ -134,7 +129,7 @@ function CourseCard({ course, index, isLast, completionPercent }: { course: Cont
 export function ContinueLearning() {
   const { data: enrollments, isLoading: enrollLoading, error } = useMyEnrollments();
   const { data: courseList, isLoading: coursesLoading } = useCourses();
-  const [activeFilter, setActiveFilter] = useState<CourseFilter>('all');
+  const [activeFilter] = useState<CourseFilter>('all');
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(4);
@@ -184,60 +179,55 @@ export function ContinueLearning() {
     }
   }, [globalSearchTerm]);
 
-  const isLoading = enrollLoading || coursesLoading;
+  const isLoadingBaseData = enrollLoading || coursesLoading;
   
-  const coursesData = courseList?.data || [];
-  const courseMap = new Map(coursesData.map((c: any) => [c.id, c]));
-  const categories: CourseCategoryInfo[] = [];
+  const coursesData = useMemo(() => courseList?.data || [], [courseList?.data]);
+  const courseMap = useMemo(() => new Map(coursesData.map((c: any) => [c.id, c])), [coursesData]);
 
   // Chuyển enrollments → ContinueCourse format
-  const allCourses: ContinueCourse[] =
-    enrollments && enrollments.length > 0
-      ? enrollments
-          .filter((e: any) => courseMap.has(e.course_id))
-          .map((e: any) => {
-            const courseId = e.course_id;
-            const fullCourse = courseMap.get(courseId);
-          
-            const imageUrl = storageUrl((fullCourse as any)?.image_url) || null;
-          
-            return {
-              id: courseId,
-              moduleLabel: "Course",
-              lessonLabel: e.display_name,
-              title: e.display_name,
-              thumbnail: imageUrl,
-              categories: [],
-            };
-          })
-      : [];
+  const allCourses = useMemo<ContinueLearningCourse[]>(() => {
+    if (!enrollments || enrollments.length === 0) return [];
+
+    return enrollments
+      .filter((e: any) => courseMap.has(e.course_id))
+      .map((e: any) => {
+        const courseId = e.course_id;
+        const fullCourse = courseMap.get(courseId);
+        const progress = Number(e.progress) || 0;
+        const imageUrl = storageUrl((fullCourse as any)?.image_url) || null;
+
+        return {
+          id: courseId,
+          moduleLabel: "Course",
+          lessonLabel: e.display_name,
+          title: e.display_name,
+          thumbnail: imageUrl,
+          categories: [],
+          progress,
+        };
+      });
+  }, [courseMap, enrollments]);
 
   // Batch progress
   const courseIds = useMemo(() => allCourses.map(c => c.id), [allCourses]);
-  const { data: progressMap } = useBatchCourseProgress(courseIds);
+  const { data: progressMap, isLoading: progressLoading } = useBatchCourseProgress(courseIds);
+  const isLoading = isLoadingBaseData || (courseIds.length > 0 && progressLoading);
 
-  // Counts
-  const completedCount = allCourses.filter(c => (progressMap?.get(c.id) || 0) >= 100).length;
-  const inProgressCount = allCourses.filter(c => (progressMap?.get(c.id) || 0) < 100).length;
-  const categoryCounts = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const cat of categories) {
-      m.set(cat.id, allCourses.filter(c => c.categories?.some(cc => String(cc.id) === String(cat.id))).length);
-    }
-    return m;
-  }, [categories, allCourses]);
+  const learningCourses = useMemo(() => {
+    return allCourses.filter((course) => Math.max(progressMap?.get(course.id) ?? 0, course.progress) > 0);
+  }, [allCourses, progressMap]);
 
   // Filter
   const courses = useMemo(() => {
-    let filtered = allCourses;
+    let filtered = learningCourses;
     
     // Filter by status
     if (activeFilter === 'completed') {
-      filtered = allCourses.filter(c => (progressMap?.get(c.id) || 0) >= 100);
+      filtered = learningCourses.filter(c => Math.max(progressMap?.get(c.id) ?? 0, c.progress) >= 100);
     } else if (activeFilter === 'in_progress') {
-      filtered = allCourses.filter(c => (progressMap?.get(c.id) || 0) < 100);
+      filtered = learningCourses.filter(c => Math.max(progressMap?.get(c.id) ?? 0, c.progress) < 100);
     } else if (activeFilter !== 'all') {
-      filtered = allCourses.filter(c => c.categories?.some(cat => String(cat.id) === String(activeFilter)));
+      filtered = learningCourses.filter(c => c.categories?.some(cat => String(cat.id) === String(activeFilter)));
     }
     
     // Filter by search term (bỏ dấu tiếng Việt khi so sánh)
@@ -249,14 +239,18 @@ export function ContinueLearning() {
     }
     
     return filtered;
-  }, [activeFilter, allCourses, progressMap, searchTerm]);
+  }, [activeFilter, learningCourses, progressMap, searchTerm]);
 
   const totalPages = Math.ceil(courses.length / itemsPerPage);
 
   const paginatedCourses = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return courses.slice(startIndex, startIndex + itemsPerPage);
-  }, [courses, currentPage]);
+  }, [courses, currentPage, itemsPerPage]);
+
+  if (!isLoading && !error && learningCourses.length === 0) {
+    return null;
+  }
 
   return (
     <div id="continue-learning-section" className="scroll-mt-24">
@@ -287,26 +281,6 @@ export function ContinueLearning() {
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
-
-      {/* Filter Bar — tạm comment
-      {allCourses.length > 0 && (
-        <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <CourseFilterBar
-              activeFilter={activeFilter}
-              onFilterChange={setActiveFilter}
-              totalCount={allCourses.length}
-              completedCount={completedCount}
-              inProgressCount={inProgressCount}
-              categories={categories}
-              categoryCounts={categoryCounts}
-              showOnlyStatus={true}
-              className="mb-0"
-            />
-          </div>
-        </div>
-      )}
-      */}
 
       {/* Đang tải */}
       {isLoading && (
@@ -367,8 +341,8 @@ export function ContinueLearning() {
           <div
             className="flex items-stretch overflow-x-auto snap-x snap-mandatory gap-4 pb-4 pl-2 -mr-4 md:pl-0 md:mr-0 md:grid md:grid-cols-2 md:gap-6 md:pb-0 md:overflow-visible hide-scrollbar"
           >
-            {paginatedCourses.map((course, index) => (
-              <CourseCard key={course.id} course={course} index={index} isLast={index === paginatedCourses.length - 1} completionPercent={progressMap?.get(course.id) || 0} />
+            {paginatedCourses.map((course) => (
+              <CourseCard key={course.id} course={course} completionPercent={Math.max(progressMap?.get(course.id) ?? 0, course.progress)} />
             ))}
           </div>
 
@@ -429,7 +403,7 @@ export function ContinueLearning() {
                         transition={{ duration: 0.12 }}
                         className="absolute bottom-full mb-2 left-0 z-50 min-w-[48px] rounded-xl border border-border bg-card p-1 shadow-lg"
                       >
-                        {[2, 4, 6].map(size => (
+                        {[2, 4, 6, 8, 10].map(size => (
                           <button
                             key={size}
                             onClick={() => {

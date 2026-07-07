@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Lightbulb } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -22,6 +22,7 @@ const DEFAULT_TITLE = "Khai phá tiềm năng từ kho tri thức đặc biệt"
 
 export function RecommendedSection() {
   const [currentTip, setCurrentTip] = useState(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const { branding } = useBranding();
   const dc = branding.dashboardContent;
 
@@ -31,6 +32,31 @@ export function RecommendedSection() {
   const tips = dc?.tips?.length
     ? dc.tips.map(t => ({ quote: t.title, author: t.desc }))
     : DEFAULT_TIPS;
+
+  const goToTip = (direction: 1 | -1) => {
+    if (tips.length <= 1) return;
+    setCurrentTip((current) => (current + direction + tips.length) % tips.length);
+  };
+
+  const handleTipTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTipTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    const start = touchStartRef.current;
+    const touch = event.changedTouches[0];
+    touchStartRef.current = null;
+
+    if (!start || !touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+
+    if (Math.abs(deltaX) < 40 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+
+    goToTip(deltaX < 0 ? 1 : -1);
+  };
 
   return (
     <div className="w-full mt-10">
@@ -46,7 +72,7 @@ export function RecommendedSection() {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Hero Card */}
         <div
-          className="relative flex-1 overflow-hidden rounded-[32px] min-h-[220px] lg:h-[310px] shadow-sm flex flex-col justify-between p-6 md:p-8"
+          className="relative flex-1 overflow-hidden rounded-[20px] md:rounded-[32px] min-h-[220px] lg:h-[310px] shadow-sm flex flex-col justify-between p-6 md:p-8"
           style={{
             border: '1.5px solid hsl(var(--primary))',
             backgroundColor: 'hsl(var(--primary) / 0.04)',
@@ -83,7 +109,9 @@ export function RecommendedSection() {
 
         {/* Tips Card */}
         <div
-          className="relative w-full lg:w-[240px] shrink-0 rounded-[32px] p-6 flex flex-col shadow-sm"
+          className="relative w-full lg:w-[240px] shrink-0 rounded-[32px] p-6 flex flex-col shadow-sm touch-pan-y"
+          onTouchStart={handleTipTouchStart}
+          onTouchEnd={handleTipTouchEnd}
           style={{ backgroundColor: 'hsl(var(--primary) / 0.04)' }}
         >
           {/* Header */}

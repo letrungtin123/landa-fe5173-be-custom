@@ -138,6 +138,22 @@ export function LibraryPage() {
     setCurrentPage(1);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const clearExtensionOnMobile = () => {
+      if (mediaQuery.matches) {
+        setActiveExtension("");
+        setCurrentPage(1);
+      }
+    };
+
+    clearExtensionOnMobile();
+    mediaQuery.addEventListener("change", clearExtensionOnMobile);
+    return () => mediaQuery.removeEventListener("change", clearExtensionOnMobile);
+  }, []);
+
   const { data: categoriesData, isLoading: catLoading } = useLibraryCategories();
   const { data: documentsData, isLoading: docLoading, isFetching: docFetching } = useLibraryDocuments({
     page: currentPage,
@@ -155,7 +171,6 @@ export function LibraryPage() {
     if (!debouncedSearch) return true;
     return removeVietnameseTones(cat.name.toLowerCase()).includes(removeVietnameseTones(debouncedSearch.toLowerCase()));
   });
-  const totalDocuments = (categoriesData?.categories || []).reduce((sum, c) => sum + (c.count || 0), 0);
   const documents = documentsData?.results || [];
   const totalCount = documentsData?.count || 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -333,7 +348,7 @@ export function LibraryPage() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 min-w-0 lg:pl-8 mt-8 lg:mt-0 pt-8">
+        <div className="flex-1 min-w-0 lg:pl-8 mt-2 lg:mt-0 pt-2 lg:pt-8">
           {activeCategory ? (
             <div className="space-y-6">
               <div>
@@ -364,7 +379,7 @@ export function LibraryPage() {
                 
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="rounded-full bg-card h-10 px-6 border-border shadow-sm text-[14px] font-semibold leading-[18px]">
+                    <Button variant="outline" className="hidden rounded-full bg-card h-10 px-6 border-border shadow-sm text-[14px] font-semibold leading-[18px] md:inline-flex">
                       <Filter className="h-4 w-4 mr-2 text-muted-foreground" /> 
                       {activeExtension ? activeExtension.toUpperCase() : "Lọc"}
                     </Button>
@@ -449,22 +464,19 @@ export function LibraryPage() {
               {renderPagination()}
             </div>
           ) : (
-            <div className="space-y-10">
+            <div className="space-y-6 md:space-y-10">
           {/* Banner */}
-          <div className="space-y-4">
+          <div className="space-y-0 md:space-y-4">
             <div>
-              <div 
-                className="mb-3 inline-flex w-fit whitespace-nowrap items-center justify-center h-[23px] rounded-[41px] px-3 py-1 text-[10px] font-bold uppercase tracking-widest font-['SF_Pro',_sans-serif]"
-                style={{ backgroundColor: "#43FDD7", color: "#000" }}
-              >
-                Library
+              <div className="mb-0 block w-fit whitespace-nowrap text-[28px] font-bold leading-[34px] text-foreground md:mb-3 md:inline-flex md:h-[23px] md:items-center md:justify-center md:rounded-[41px] md:bg-[#43FDD7] md:px-3 md:py-1 md:text-[10px] md:uppercase md:leading-[14px] md:tracking-widest md:text-black">
+                Thư viện
               </div>
-              <h1 className="text-[36px] font-semibold leading-[40px] text-foreground mb-4 md:mb-6">
+              <h1 className="hidden text-[36px] font-semibold leading-[40px] text-foreground mb-4 md:mb-6 md:block">
                 Kiến tạo tri thức, vững bước tương lai
               </h1>
             </div>
 
-            <div className="w-full h-[160px] sm:h-[240px] md:h-[320px] rounded-2xl overflow-hidden relative border border-border shadow-sm">
+            <div className="hidden w-full h-[160px] sm:h-[240px] md:block md:h-[320px] rounded-2xl overflow-hidden relative border border-border shadow-sm">
               <img
                 src="/images/library_banner.png"
                 alt="Library Banner"
@@ -474,7 +486,7 @@ export function LibraryPage() {
           </div>
 
           {/* Search + Extension Filter */}
-          <div className="space-y-3">
+          <div className="hidden space-y-3 md:block">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <div className="hidden md:block relative flex-1">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -486,11 +498,8 @@ export function LibraryPage() {
                   className="w-full pl-12 pr-4 py-3 bg-card border border-border rounded-full outline-none focus:border-primary transition-colors text-[14px] font-normal leading-[18px]"
                 />
               </div>
-              <div className="text-[14px] font-normal leading-[18px] text-muted-foreground shrink-0">
-                {totalDocuments} tài liệu
-              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="hidden flex-wrap gap-2 md:flex">
               {Object.entries(EXTENSION_COLORS).filter(([k]) => !["jpeg","jpg"].includes(k) || k === "jpg").map(([ext, color]) => (
                 <button
                   key={ext}
@@ -517,7 +526,7 @@ export function LibraryPage() {
           </div>
 
           {/* Categories */}
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-[20px] font-bold leading-[24px] text-foreground">
                 Danh mục tài liệu

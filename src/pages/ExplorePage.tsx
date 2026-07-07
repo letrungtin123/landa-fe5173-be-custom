@@ -33,7 +33,10 @@ export function ExplorePage() {
 
   // Dynamic explore hero card content
   const { branding } = useBranding();
-  const exploreBadge = branding.dashboardContent?.explore_hero_badge || 'COURSE';
+  const configuredExploreBadge = branding.dashboardContent?.explore_hero_badge?.trim();
+  const exploreBadge = !configuredExploreBadge || configuredExploreBadge.toLowerCase() === 'course'
+    ? 'Khoá học'
+    : configuredExploreBadge;
   const exploreTitle = branding.dashboardContent?.explore_hero_title || 'Khám phá hành trình học tập của tôi';
 
   // State cho bộ filter trạng thái học (hiển thị mặc định)
@@ -186,7 +189,7 @@ export function ExplorePage() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 min-w-0 lg:pl-8 mt-8 lg:mt-0 pt-8">
+        <div className="flex-1 min-w-0 lg:pl-8 mt-2 lg:mt-0 pt-2 lg:pt-8">
           <AnimatePresence mode="wait">
               /* ══════════════ OVERVIEW — Grouped by category ══════════════ */
             <motion.div
@@ -200,10 +203,10 @@ export function ExplorePage() {
               <div className="mb-8 flex flex-col lg:flex-row gap-6 w-full items-stretch">
                 {/* Left Panel — Hero */}
                 <div
-                  className="relative flex-1 rounded-[32px] p-5 pb-3 md:p-6 flex flex-col justify-between min-h-[240px] md:min-h-[250px] lg:h-[270px]"
+                  className="relative flex-1 rounded-[20px] md:rounded-[32px] p-5 pb-3 md:p-6 flex flex-col justify-between min-h-[240px] md:min-h-[250px] lg:h-[270px]"
                 >
                   {/* Background container that clips */}
-                  <div className="absolute inset-0 rounded-[32px] overflow-hidden z-0 pointer-events-none" style={{ border: '1.5px solid hsl(var(--primary))', backgroundColor: 'hsl(var(--primary) / 0.04)' }}>
+                  <div className="absolute inset-0 rounded-[20px] md:rounded-[32px] overflow-hidden z-0 pointer-events-none" style={{ border: '1.5px solid hsl(var(--primary))', backgroundColor: 'hsl(var(--primary) / 0.04)' }}>
                     {/* Illustration */}
                     <img
                       src={heroIllustration}
@@ -866,11 +869,11 @@ function ExploreCourseCard({
 
   return (
     <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`} className="flex flex-1 w-full">
-      <Card className="group h-[330px] md:h-[420px] flex flex-col flex-1 w-full p-2 pb-4 md:pb-6 rounded-[28px] border-border bg-card shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
+      <Card className="group h-[330px] md:h-[420px] flex flex-col flex-1 w-full p-1.5 pb-4 md:pb-6 rounded-[24px] md:rounded-[28px] border-border bg-card shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
         {/* Ảnh bìa khóa học */}
         <div
           className={cn(
-            "flex h-40 md:h-48 items-center justify-center relative overflow-hidden shrink-0 rounded-[20px]",
+            "flex h-40 md:h-48 items-center justify-center relative overflow-hidden shrink-0 rounded-[18px] md:rounded-[20px]",
             colorStyle === "gradient" ? "accent-surface-gradient" : "bg-accent"
           )}
         >
@@ -878,7 +881,7 @@ function ExploreCourseCard({
             <img
               src={imageUrl}
               alt={course.display_name}
-              className="absolute inset-0 z-10 h-full w-full object-cover rounded-[20px]"
+              className="absolute inset-0 z-10 h-full w-full object-cover rounded-[18px] md:rounded-[20px]"
               onError={(e) => {
                 e.currentTarget.style.display = "none";
                 e.currentTarget.nextElementSibling?.classList.remove("hidden");

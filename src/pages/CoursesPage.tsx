@@ -182,11 +182,11 @@ export function CoursesPage() {
                   transition={{ duration: 0.4, delay: 0.1 * index }}
                 >
                   <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`}>
-                    <Card className="group overflow-hidden border-border shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
+                    <Card className="group overflow-hidden rounded-[24px] md:rounded-[28px] border-border p-1.5 shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
                       {/* Ảnh bìa */}
                       <div
                         className={cn(
-                          "flex h-48 items-center justify-center relative overflow-hidden",
+                          "flex h-48 items-center justify-center relative overflow-hidden rounded-[18px] md:rounded-[20px]",
                           colorStyle === "gradient"
                             ? "accent-surface-gradient"
                             : "bg-accent"
@@ -196,7 +196,7 @@ export function CoursesPage() {
                           <img
                             src={imageUrl}
                             alt={course.display_name}
-                            className="absolute inset-0 z-10 h-full w-full object-cover"
+                            className="absolute inset-0 z-10 h-full w-full object-cover rounded-[18px] md:rounded-[20px]"
                             onError={(e) => {
                               // Ảnh 404 → ẩn img, hiện icon fallback
                               e.currentTarget.style.display = "none";

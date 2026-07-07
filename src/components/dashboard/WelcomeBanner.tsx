@@ -314,7 +314,7 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
       const overPercent = comparisonPercent - 100;
       return (
         <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
-          Hôm nay bạn đã học <span className="text-[#45FFCA] font-semibold">{formatTime(todayMinutes)}</span>,{' '}
+          Hôm nay bạn đã online <span className="text-[#45FFCA] font-semibold">{formatTime(todayMinutes)}</span>,{' '}
           {overPercent > 0 ? (
             <>cao hơn <span className="text-[#45FFCA] font-semibold">{overPercent}%</span> so với</>
           ) : (
@@ -328,7 +328,7 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
 
     return (
       <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
-        Hôm nay bạn đã học <span className="text-[#45FFCA] font-semibold">{formatTime(todayMinutes)}</span>.<br />
+        Hôm nay bạn đã online <span className="text-[#45FFCA] font-semibold">{formatTime(todayMinutes)}</span>.<br />
         Trung bình tuần của bạn là {formatTime(weeklyAvgMinutes)}/ngày — cố thêm một chút nữa nhé!
       </p>
     );
@@ -367,18 +367,18 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
       {/* Weekly Momentum Card */}
       <div
         className={cn(
-          "relative flex flex-col overflow-hidden rounded-[14px] md:rounded-[32px] pt-6 shadow-sm text-primary-foreground w-full max-w-[840px] h-[300px]",
+          "relative flex flex-col overflow-hidden rounded-[20px] md:rounded-[32px] pt-6 shadow-sm text-primary-foreground w-full max-w-[840px] h-[300px]",
           colorStyle === "gradient"
             ? "bg-gradient-to-r from-primary to-primary/80"
             : "bg-primary"
         )}
       >
         <div className="relative z-10 w-full px-8 md:px-10 mb-1">
-          <div className="mb-2 flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h3 className="text-[22px] font-bold tracking-tight text-white">Weekly Momentum</h3>
+          <div className="mb-1 flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h3 className="text-[22px] font-bold leading-[26px] tracking-tight text-white">Weekly Momentum</h3>
               {!isDefaultWeekly && (
-                <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/80">
+                <div className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/80">
                   <CalendarDays className="h-3 w-3" />
                   Filtered
                 </div>

@@ -48,7 +48,7 @@ export function CourseLayout() {
       <CourseSidebar />
 
       {/* Main Content Area */}
-      <div id="course-main-scroll" className="flex-1 overflow-y-auto relative bg-background">
+      <div id="course-main-scroll" className="min-w-0 flex-1 overflow-y-auto relative bg-background">
         <PageTransition animationKey={location.pathname}>
           <Outlet />
         </PageTransition>

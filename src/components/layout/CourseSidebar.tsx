@@ -97,8 +97,8 @@ export function CourseSidebar() {
   };
 
   const sidebarContent = (
-    <ScrollArea className="h-full">
-      <div className="py-5">
+    <div className="h-full overflow-y-auto overflow-x-hidden">
+      <div className="w-full max-w-[320px] py-5 overflow-x-hidden">
         {/* Loading */}
         {isLoading && (
           <div className="flex flex-col gap-5 px-5 py-4">
@@ -138,8 +138,8 @@ export function CourseSidebar() {
         {course && (
           <>
             {/* Course Title */}
-            <div className="px-5 mb-5 mt-3">
-              <h2 className="mb-2 text-[18px] font-extrabold text-foreground tracking-tight leading-tight">
+            <div className="px-5 mb-5 mt-3 min-w-0 max-w-full overflow-hidden">
+              <h2 className="mb-2 block max-w-[280px] truncate text-[18px] font-extrabold text-foreground tracking-tight leading-tight" title={course.title || "L&A Onboarding 2026"}>
                 {course.title || "L&A Onboarding 2026"}
               </h2>
               <p className="text-[13px] font-bold text-primary">
@@ -158,15 +158,15 @@ export function CourseSidebar() {
                   <div key={module.id} className="mb-3">
                     {/* Module Header */}
                     <div className={cn(
-                      "py-2 mb-1 border-l-4",
+                      "py-2 mb-1 border-l-4 overflow-hidden",
                       isActiveModule ? "border-primary bg-primary/5" : "border-transparent"
                     )}>
-                      <div className="flex-1 min-w-0 pl-[16px] pr-5">
-                        <div className="flex items-start gap-1.5">
+                      <div className="flex-1 min-w-0 max-w-full overflow-hidden pl-[16px] pr-5">
+                        <div className="flex max-w-[280px] items-start gap-1.5 overflow-hidden">
                           <p className={cn(
-                            "text-[14px] font-bold leading-snug flex-1",
+                            "block max-w-[256px] flex-1 text-[14px] font-bold leading-snug line-clamp-2 break-words",
                             isActiveModule ? "text-primary" : "text-muted-foreground"
-                          )}>
+                          )} title={module.title}>
                             {module.title}
                           </p>
                           {module.completed && (
@@ -189,7 +189,7 @@ export function CourseSidebar() {
                             key={lesson.id}
                             onClick={() => handleLessonClick(module.id, lesson.id)}
                             className={cn(
-                              "flex w-full items-center gap-2 text-left py-1.5 pl-[20px] pr-5 transition-all",
+                              "flex w-full min-w-0 items-center gap-2 overflow-hidden text-left py-1.5 pl-[20px] pr-5 transition-all",
                               isActive
                                 ? "text-primary font-bold bg-primary/5"
                                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium"
@@ -203,7 +203,7 @@ export function CourseSidebar() {
                                 <span className="inline-block h-3.5 w-3.5 rounded-full border-2 border-muted-foreground/30" />
                               )}
                             </span>
-                            <span className="text-[13px] leading-snug">
+                            <span className="block max-w-[232px] flex-1 truncate text-[13px] leading-snug" title={lesson.title}>
                               {lesson.title}
                             </span>
                           </button>
@@ -257,9 +257,9 @@ export function CourseSidebar() {
                             <span className="inline-block h-3.5 w-3.5 rounded-full border-2 border-muted-foreground/30" />
                           )}
                         </span>
-                        <span className="min-w-0 flex-1 text-[13px] leading-snug">
-                          <span className="block truncate">{assignment.title}</span>
-                          <span className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                        <span className="min-w-0 max-w-[232px] flex-1 text-[13px] leading-snug">
+                          <span className="block truncate" title={assignment.title}>{assignment.title}</span>
+                          <span className="block truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
                             {assignment.status === "feedback_given" ? "Đã phản hồi" : assignment.status === "submitted" ? "Đã nộp" : deadlineLocked ? "Hết hạn nộp" : locked ? "Khóa đến khi hoàn thành 100%" : "Chưa nộp"}
                           </span>
                         </span>
@@ -272,7 +272,7 @@ export function CourseSidebar() {
           </>
         )}
       </div>
-    </ScrollArea>
+    </div>
   );
 
   const infoContent = (
@@ -365,7 +365,7 @@ export function CourseSidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden w-[320px] shrink-0 border-r border-border bg-sidebar lg:block">
+      <aside className="hidden w-[320px] min-w-[320px] max-w-[320px] shrink-0 overflow-hidden border-r border-border bg-sidebar lg:block">
         {sidebarContent}
       </aside>
 
