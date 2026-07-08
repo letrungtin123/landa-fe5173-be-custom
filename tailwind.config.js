@@ -57,23 +57,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: [
-          "SF Pro Text",
-          "Inter",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "Roboto",
-          "Helvetica",
-          "Arial",
-          "sans-serif",
-        ],
-        display: [
-          "SF Pro Display",
-          "SF Pro Text",
-          "Inter",
-          "Arial",
-          "sans-serif",
-        ],
+        sans: ["var(--app-sans-font)"],
+        display: ["var(--app-display-font)"],
       },
       borderRadius: {
         lg: "var(--radius)",

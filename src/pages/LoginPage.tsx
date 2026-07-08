@@ -277,7 +277,7 @@ export function LoginPage() {
               </div>
               )}
 
-              <h1 className="text-[65px] font-bold leading-[60px] text-white uppercase font-['SF_Pro',_sans-serif]">
+              <h1 className="text-[65px] font-bold leading-[60px] text-white uppercase">
                 READY TO
                 <br />
                 GROW?
@@ -321,15 +321,15 @@ export function LoginPage() {
               <div className="mb-6 flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-blue-50">
                 <Info className="h-8 w-8 text-[#1d4ed8]" />
               </div>
-              <h2 className="mb-3 text-[24px] font-bold tracking-tight text-[#1a1a1a] font-['SF_Pro',_sans-serif]">
+              <h2 className="mb-3 text-[24px] font-bold tracking-tight text-[#1a1a1a]">
                 Quên mật khẩu?
               </h2>
-              <p className="mb-8 text-[14px] text-[#888] leading-relaxed max-w-[340px] mx-auto font-['SF_Pro',_sans-serif]">
+              <p className="mb-8 text-[14px] text-[#888] leading-relaxed max-w-[340px] mx-auto">
                 Vui lòng liên hệ quản trị viên để được hỗ trợ cấp lại mật khẩu cho tài khoản của bạn.
               </p>
               <button
                 onClick={() => setShowForgotPassword(false)}
-                className="flex items-center justify-center gap-2 w-full rounded-[10px] bg-[#f3f4f6] py-3 text-[14px] font-semibold text-[#4b5563] transition-all hover:bg-[#e5e7eb] active:scale-[0.98] font-['SF_Pro',_sans-serif]"
+                className="flex items-center justify-center gap-2 w-full rounded-[10px] bg-[#f3f4f6] py-3 text-[14px] font-semibold text-[#4b5563] transition-all hover:bg-[#e5e7eb] active:scale-[0.98]"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Quay lại đăng nhập
@@ -350,10 +350,10 @@ export function LoginPage() {
                   </div>
 
                   <div className="flex flex-col items-center lg:items-start gap-[3px] text-center lg:text-left">
-                    <h2 className="text-3xl font-semibold leading-9 text-black whitespace-nowrap font-['SF_Pro',_sans-serif]">
+                    <h2 className="text-3xl font-semibold leading-9 text-black whitespace-nowrap">
                       Đăng nhập vào E-learning
                     </h2>
-                    <p className="hidden lg:block text-[14px] font-normal leading-[20px] text-neutral-400 font-['SF_Pro',_sans-serif]">
+                    <p className="hidden lg:block text-[14px] font-normal leading-[20px] text-neutral-400">
                       Vui lòng đăng nhập vào tài khoản đã được cung cấp để tiếp tục.
                     </p>
                   </div>
@@ -378,7 +378,7 @@ export function LoginPage() {
                           setEmail(e.target.value);
                           if (errors.email) setErrors((p) => ({ ...p, email: undefined }));
                         }}
-                        className={`w-full h-9 rounded-[10px] border bg-white px-[19px] text-[14px] font-normal leading-[16px] text-black font-['SF_Pro',_sans-serif] outline-none transition-colors placeholder:text-stone-300 focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8] ${errors.email ? "border-[#dc2626]" : "border-gray-200"
+                        className={`w-full h-9 rounded-[10px] border bg-white px-[19px] text-[14px] font-normal leading-[16px] text-black outline-none transition-colors placeholder:text-stone-300 focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8] ${errors.email ? "border-[#dc2626]" : "border-gray-200"
                           }`}
                       />
                       {errors.email && (
@@ -391,14 +391,14 @@ export function LoginPage() {
                       <div className="flex items-center justify-between w-full absolute top-0">
                         <label
                           htmlFor="login-password"
-                          className="text-[14px] font-normal leading-[16px] text-black font-['SF_Pro',_sans-serif]"
+                          className="text-[14px] font-normal leading-[16px] text-black"
                         >
                           Mật khẩu<span className="text-red-600">*</span>
                         </label>
                         <button
                           type="button"
                           onClick={() => setShowForgotPassword(true)}
-                          className="text-[14px] font-normal leading-[16px] text-[#1d4ed8] hover:underline font-['SF_Pro',_sans-serif]"
+                          className="text-[14px] font-normal leading-[16px] text-[#1d4ed8] hover:underline"
                         >
                           Quên mật khẩu?
                         </button>
@@ -414,7 +414,7 @@ export function LoginPage() {
                             if (errors.password)
                               setErrors((p) => ({ ...p, password: undefined }));
                           }}
-                          className={`w-full h-9 rounded-[10px] border bg-white px-[19px] pr-10 text-[14px] font-normal leading-[16px] text-black font-['SF_Pro',_sans-serif] outline-none transition-colors placeholder:text-stone-300 focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8] ${errors.password ? "border-[#dc2626]" : "border-gray-200"
+                          className={`w-full h-9 rounded-[10px] border bg-white px-[19px] pr-10 text-[14px] font-normal leading-[16px] text-black outline-none transition-colors placeholder:text-stone-300 focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8] ${errors.password ? "border-[#dc2626]" : "border-gray-200"
                             }`}
                         />
                         <button
@@ -431,7 +431,7 @@ export function LoginPage() {
                         </button>
                       </div>
                       {errors.password && (
-                        <p className="absolute top-[60px] text-[12px] text-[#dc2626] font-['SF_Pro',_sans-serif]">
+                        <p className="absolute top-[60px] text-[12px] text-[#dc2626]">
                           {errors.password}
                         </p>
                       )}
@@ -443,7 +443,7 @@ export function LoginPage() {
                     <button
                       type="submit"
                       disabled={isSubmitting || cooldownSeconds > 0}
-                      className="w-full h-9 rounded-[29px] bg-[#1d4ed8] text-[14px] font-normal leading-[16px] text-white transition-all font-['SF_Pro',_sans-serif] hover:bg-[#1e40af] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                      className="w-full h-9 rounded-[29px] bg-[#1d4ed8] text-[14px] font-normal leading-[16px] text-white transition-all hover:bg-[#1e40af] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                       {cooldownSeconds > 0 ? (
                         `Đợi ${cooldownSeconds}s`
@@ -687,7 +687,7 @@ export function LoginPage() {
               )} */}
 
               <div className="w-full flex justify-center mt-[13px]">
-                <p className="max-w-[320px] text-center text-[12px] font-normal leading-[16px] text-neutral-400 font-['SF_Pro',_sans-serif]">
+                <p className="max-w-[320px] text-center text-[12px] font-normal leading-[16px] text-neutral-400">
                   Bằng việc đăng nhập, bạn đã xác nhận đồng ý với các{" "}
                   <span className="underline hover:text-neutral-600 transition-colors">Điều khoản</span>
                   {" "}và{" "}
@@ -701,7 +701,7 @@ export function LoginPage() {
           <div className="mt-auto pt-6">
             <p className="text-center text-[12px] font-normal leading-[16px] text-neutral-400">
               Bạn chưa có tài khoản?{" "}
-              <Link to="/register" className="text-blue-700 hover:underline font-normal font-['SF_Pro',_sans-serif]">
+              <Link to="/register" className="text-blue-700 hover:underline font-normal">
                 Đăng ký ngay
               </Link>
             </p>

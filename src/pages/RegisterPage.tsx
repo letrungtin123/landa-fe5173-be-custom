@@ -122,7 +122,7 @@ export function RegisterPage() {
             {/* Back button */}
             <button
               onClick={() => navigate("/login")}
-              className="flex items-center gap-2 text-sm font-normal text-[#8f8f8f] hover:text-neutral-600 transition-colors font-['SF_Pro',_sans-serif] mb-6 w-fit"
+              className="flex items-center gap-2 text-sm font-normal text-[#8f8f8f] hover:text-neutral-600 transition-colors mb-6 w-fit"
             >
               <ArrowLeft className="h-4 w-4" />
               Quay lại
@@ -140,10 +140,10 @@ export function RegisterPage() {
                 </div>
 
                 <div className="flex flex-col items-center lg:items-start text-center lg:text-left gap-1 mb-6">
-                  <h2 className="text-[28px] font-semibold text-black tracking-[0] leading-[35px] font-['SF_Pro',_sans-serif]">
+                  <h2 className="text-[28px] font-semibold text-black tracking-[0] leading-[35px]">
                     Đăng ký tài khoản
                   </h2>
-                  <p className="hidden lg:block text-sm font-normal text-[#8f8f8f] tracking-[0] leading-5 font-['SF_Pro',_sans-serif]">
+                  <p className="hidden lg:block text-sm font-normal text-[#8f8f8f] tracking-[0] leading-5">
                     Đăng ký ngay để bắt đầu hành trình học tập của bạn.
                   </p>
                 </div>
@@ -160,7 +160,7 @@ export function RegisterPage() {
                 {/* Họ + Tên */}
                 <div className="flex gap-[10px]">
                   <div className="flex-1 flex flex-col gap-2">
-                    <label htmlFor="reg-lastname" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
+                    <label htmlFor="reg-lastname" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px]">
                       <span className="text-black">Họ</span><span className="text-[#e9252f]">*</span>
                     </label>
                     <div className="relative w-full h-[38px] rounded-[10px] border border-solid border-[#ebeaea] bg-white transition-colors focus-within:border-[#0052d0]">
@@ -170,13 +170,13 @@ export function RegisterPage() {
                         placeholder="Tran"
                         value={lastName}
                         onChange={(e) => { setLastName(e.target.value); clearError("last_name"); }}
-                        className={`absolute inset-0 w-full h-full px-[19px] text-sm font-normal text-black tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif] ${errors.last_name ? "border-[#e9252f]" : ""}`}
+                        className={`absolute inset-0 w-full h-full px-[19px] text-sm font-normal text-black tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none ${errors.last_name ? "border-[#e9252f]" : ""}`}
                       />
                     </div>
-                    {errors.last_name && <p className="text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.last_name}</p>}
+                    {errors.last_name && <p className="text-[12px] text-red-600">{errors.last_name}</p>}
                   </div>
                   <div className="flex-1 flex flex-col gap-2">
-                    <label htmlFor="reg-firstname" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
+                    <label htmlFor="reg-firstname" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px]">
                       <span className="text-black">Tên</span><span className="text-[#e9252f]">*</span>
                     </label>
                     <div className="relative w-full h-[38px] rounded-[10px] border border-solid border-[#ebeaea] bg-white transition-colors focus-within:border-[#0052d0]">
@@ -186,16 +186,16 @@ export function RegisterPage() {
                         placeholder="Nhut"
                         value={firstName}
                         onChange={(e) => { setFirstName(e.target.value); clearError("first_name"); }}
-                        className={`absolute inset-0 w-full h-full px-[19px] text-sm font-normal text-black tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif] ${errors.first_name ? "border-[#e9252f]" : ""}`}
+                        className={`absolute inset-0 w-full h-full px-[19px] text-sm font-normal text-black tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none ${errors.first_name ? "border-[#e9252f]" : ""}`}
                       />
                     </div>
-                    {errors.first_name && <p className="text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.first_name}</p>}
+                    {errors.first_name && <p className="text-[12px] text-red-600">{errors.first_name}</p>}
                   </div>
                 </div>
 
                 {/* Email */}
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="reg-email" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
+                  <label htmlFor="reg-email" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px]">
                     <span className="text-black">Địa chỉ email</span><span className="text-[#e9252f]">*</span>
                   </label>
                   <div className="relative w-full h-[38px] rounded-[10px] border border-solid border-[#ebeaea] bg-white transition-colors focus-within:border-[#0052d0]">
@@ -205,15 +205,15 @@ export function RegisterPage() {
                       placeholder="Email"
                       value={email}
                       onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
-                      className={`absolute inset-0 w-full h-full px-[19px] text-sm font-normal text-black tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif] ${errors.email ? "border-[#e9252f]" : ""}`}
+                      className={`absolute inset-0 w-full h-full px-[19px] text-sm font-normal text-black tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none ${errors.email ? "border-[#e9252f]" : ""}`}
                     />
                   </div>
-                  {errors.email && <p className="text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.email}</p>}
+                  {errors.email && <p className="text-[12px] text-red-600">{errors.email}</p>}
                 </div>
 
                 {/* Mật khẩu */}
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="reg-password" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
+                  <label htmlFor="reg-password" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px]">
                     <span className="text-black">Mật khẩu</span><span className="text-[#e9252f]">*</span>
                   </label>
                   <div className={`relative w-full flex items-center h-[38px] rounded-[10px] border border-solid bg-white transition-colors focus-within:border-[#0052d0] ${errors.password ? "border-[#e9252f]" : "border-[#ebeaea]"}`}>
@@ -223,7 +223,7 @@ export function RegisterPage() {
                       placeholder="••••••••••••"
                       value={password}
                       onChange={(e) => { setPassword(e.target.value); clearError("password"); }}
-                      className="h-full flex-1 pl-[19px] pr-10 text-sm font-normal text-black placeholder:text-[#cdcdcd] tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif]"
+                      className="h-full flex-1 pl-[19px] pr-10 text-sm font-normal text-black placeholder:text-[#cdcdcd] tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none"
                     />
                     <button
                       type="button"
@@ -234,12 +234,12 @@ export function RegisterPage() {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  {errors.password && <p className="text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.password}</p>}
+                  {errors.password && <p className="text-[12px] text-red-600">{errors.password}</p>}
                 </div>
 
                 {/* Xác nhận mật khẩu */}
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="reg-confirm" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
+                  <label htmlFor="reg-confirm" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px]">
                     <span className="text-black">Xác nhận mật khẩu</span><span className="text-[#e9252f]">*</span>
                   </label>
                   <div className={`relative w-full flex items-center h-[38px] rounded-[10px] border border-solid bg-white transition-colors focus-within:border-[#0052d0] ${errors.confirm ? "border-[#e9252f]" : "border-[#ebeaea]"}`}>
@@ -249,7 +249,7 @@ export function RegisterPage() {
                       placeholder="••••••••••••"
                       value={confirmPassword}
                       onChange={(e) => { setConfirmPassword(e.target.value); clearError("confirm"); }}
-                      className="h-full flex-1 pl-[19px] pr-10 text-sm font-normal text-black placeholder:text-[#cdcdcd] tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none font-['SF_Pro',_sans-serif]"
+                      className="h-full flex-1 pl-[19px] pr-10 text-sm font-normal text-black placeholder:text-[#cdcdcd] tracking-[0] leading-[14px] rounded-[10px] bg-transparent outline-none"
                     />
                     <button
                       type="button"
@@ -260,7 +260,7 @@ export function RegisterPage() {
                       {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  {errors.confirm && <p className="text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.confirm}</p>}
+                  {errors.confirm && <p className="text-[12px] text-red-600">{errors.confirm}</p>}
                 </div>
 
                 {/* Submit */}
@@ -279,7 +279,7 @@ export function RegisterPage() {
                         Đang đăng ký…
                       </span>
                     ) : (
-                      <span className="flex items-center justify-center font-normal text-white text-sm text-center tracking-[0] leading-[14px] font-['SF_Pro',_sans-serif]">
+                      <span className="flex items-center justify-center font-normal text-white text-sm text-center tracking-[0] leading-[14px]">
                         Đăng ký
                       </span>
                     )}
@@ -299,14 +299,14 @@ export function RegisterPage() {
                   />
                   <svg className="pointer-events-none absolute left-0 top-[0px] hidden h-3.5 w-3.5 p-[2px] text-white peer-checked:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </div>
-                <label htmlFor="reg-terms" className="flex flex-wrap font-normal text-[#8f8f8f] text-xs tracking-[0] leading-4 cursor-pointer font-['SF_Pro',_sans-serif]">
+                <label htmlFor="reg-terms" className="flex flex-wrap font-normal text-[#8f8f8f] text-xs tracking-[0] leading-4 cursor-pointer">
                   <span>Bằng việc đăng ký, bạn đã xác nhận đồng ý với các </span>
                   <span className="underline hover:text-neutral-600 transition-colors mx-1">Điều khoản</span>
                   <span> và </span>
                   <span className="underline hover:text-neutral-600 transition-colors ml-1">Chính sách của công ty.</span>
                 </label>
               </div>
-              {errors.terms && <p className="mt-1 text-[12px] text-red-600 font-['SF_Pro',_sans-serif]">{errors.terms}</p>}
+              {errors.terms && <p className="mt-1 text-[12px] text-red-600">{errors.terms}</p>}
             </div>
           </div>
         </div>
@@ -348,7 +348,7 @@ function LeftPanel({ branding, isLoading }: { branding: BrandingImages; isLoadin
           </div>
           )}
 
-          <h1 className="text-[65px] font-bold leading-[60px] text-white uppercase font-['SF_Pro',_sans-serif]">
+          <h1 className="text-[65px] font-bold leading-[60px] text-white uppercase">
             READY TO
             <br />
             GROW?

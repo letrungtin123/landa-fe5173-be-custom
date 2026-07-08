@@ -72,7 +72,7 @@ function CourseCard({ course, completionPercent }: { course: ContinueCourse; com
 
           {/* Nội dung */}
           <div className="flex flex-col flex-1 pt-3 px-2 md:p-5 md:w-[60%]">
-            <div className="mb-1 md:mb-2 w-full flex items-center gap-1.5 text-[12px] md:text-[10px] font-medium md:font-semibold leading-[16px] md:leading-[20px] tracking-normal md:tracking-[-0.05px] text-primary">
+            <div className="mb-1 md:mb-[5px] w-full flex items-center gap-1.5 text-[12px] md:text-[10px] font-medium md:font-semibold leading-[16px] md:leading-[20px] tracking-normal md:tracking-[-0.05px] text-primary">
               <span className="truncate">
                 {course.categories && course.categories.length > 0
                   ? course.categories.map((c) => c.name).join(" • ")

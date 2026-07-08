@@ -120,7 +120,7 @@ export function WelcomeInitModal() {
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/35 backdrop-blur-[7px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 sm:bg-black/30" />
         <DialogPrimitive.Content
-          className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2.5rem)] max-w-[426px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[16px] border-0 bg-card p-0 shadow-[0_18px_42px_hsl(var(--primary)/0.35)] outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:w-[calc(100vw-4rem)] sm:max-w-[832px] sm:rounded-[30px] sm:border-[10px] sm:border-card sm:shadow-[0_24px_70px_rgba(15,23,42,0.28)]"
+          className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2.5rem)] max-w-[426px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[16px] border-0 bg-white p-0 shadow-[0_18px_42px_rgba(37,99,235,0.24)] outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 dark:bg-[#0f172a] dark:shadow-[0_18px_46px_rgba(2,6,23,0.66)] sm:w-[calc(100vw-4rem)] sm:max-w-[832px] sm:rounded-[30px] sm:border-[10px] sm:border-white sm:shadow-[0_24px_70px_rgba(15,23,42,0.28)] sm:dark:border-[#111827]"
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
@@ -131,7 +131,7 @@ export function WelcomeInitModal() {
             Modal chào mừng xuất hiện trong lần đầu đăng nhập vào hệ thống học tập.
           </DialogPrimitive.Description>
 
-          <div className="relative min-h-[526px] overflow-hidden rounded-[16px] bg-[linear-gradient(180deg,hsl(var(--primary)/0.46)_0%,hsl(var(--primary)/0.22)_48%,hsl(var(--card))_100%)] px-5 pb-10 pt-12 text-center text-foreground sm:min-h-[486px] sm:rounded-[21px] sm:px-12 sm:pb-12 sm:pt-10">
+          <div className="relative min-h-[526px] overflow-hidden rounded-[16px] bg-[linear-gradient(180deg,rgba(147,197,253,0.72)_0%,rgba(219,234,254,0.58)_48%,#ffffff_100%)] px-5 pb-10 pt-12 text-center text-[#213d6a] dark:bg-[linear-gradient(180deg,rgba(30,64,175,0.48)_0%,rgba(15,23,42,0.86)_52%,#0f172a_100%)] dark:text-slate-100 sm:min-h-[486px] sm:rounded-[21px] sm:px-12 sm:pb-12 sm:pt-10">
             <picture className="pointer-events-none absolute left-0 top-[118px] w-[75px] opacity-95 sm:left-0 sm:top-[148px] sm:w-[149px]">
               <source media="(min-width: 640px)" srcSet={linePlanePcImage} />
               <img src={linePlaneMobileImage} alt="" className="h-auto w-full" />
@@ -160,7 +160,7 @@ export function WelcomeInitModal() {
                 Xin chào, {learnerName}
               </div>
 
-              <h2 className="mt-8 max-w-none text-[29px] font-semibold leading-[1.18] tracking-normal text-[#213D6A] dark:text-foreground sm:mt-4 sm:max-w-[620px] sm:text-[43px] sm:leading-[1.22]">
+              <h2 className="mt-8 max-w-none text-[29px] font-semibold leading-[1.18] tracking-normal text-[#213D6A] dark:text-slate-100 sm:mt-4 sm:max-w-[620px] sm:text-[43px] sm:leading-[1.22]">
                 <span className="block whitespace-nowrap">Chào mừng bạn đã đến</span>
                 <span className="block whitespace-nowrap">
                   với cổng học tập{" "}
@@ -171,11 +171,11 @@ export function WelcomeInitModal() {
                       className="h-[35px] w-[44px] object-contain sm:h-[40px] sm:w-[51px]"
                     />
                   </span>{" "}
-                  <span className="text-primary">{tenantName}!</span>
+                  <span className="text-[#2563eb] dark:text-[#93c5fd]">{tenantName}!</span>
                 </span>
               </h2>
 
-              <p className="mt-4 max-w-[346px] text-center text-[15px] font-normal leading-[1.25] text-[#213D6A]/85 dark:text-muted-foreground sm:mt-4 sm:max-w-[520px] sm:text-[14px] sm:leading-[1.18]">
+              <p className="mt-4 max-w-[346px] text-center text-[15px] font-normal leading-[1.25] text-[#213D6A]/85 dark:text-slate-300 sm:mt-4 sm:max-w-[520px] sm:text-[14px] sm:leading-[1.18]">
                 <span className="block sm:hidden">
                   Hãy dành một nhịp để sẵn sàng. Mọi thứ trong
                 </span>
@@ -193,13 +193,13 @@ export function WelcomeInitModal() {
                 </span>
               </p>
 
-              <div className="mt-2 grid justify-items-center gap-[5px] text-[13px] font-normal text-[#213D6A]/85 dark:text-muted-foreground sm:mt-[10px] sm:gap-[5px] sm:text-[13px]">
+              <div className="mt-2 grid justify-items-center gap-[5px] text-[13px] font-normal text-[#213D6A]/85 dark:text-slate-300 sm:mt-[10px] sm:gap-[5px] sm:text-[13px]">
                 <div className="inline-flex items-center justify-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-primary sm:h-4 sm:w-4" />
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2563eb] dark:text-[#93c5fd] sm:h-4 sm:w-4" />
                   <span>Không gian học tập đã sẵn sàng cho bạn</span>
                 </div>
                 <div className="inline-flex items-center justify-center gap-2">
-                  <Compass className="h-4 w-4 shrink-0 text-primary sm:h-4 sm:w-4" />
+                  <Compass className="h-4 w-4 shrink-0 text-[#2563eb] dark:text-[#93c5fd] sm:h-4 sm:w-4" />
                   <span>Hành trình hôm nay bắt đầu từ đây</span>
                 </div>
               </div>
@@ -208,7 +208,7 @@ export function WelcomeInitModal() {
                 type="button"
                 onClick={handleContinue}
                 disabled={isPending}
-                className="mt-2 inline-flex h-12 min-w-[230px] items-center justify-center gap-3 rounded-full bg-primary px-7 text-[16px] font-semibold text-primary-foreground shadow-[0_12px_26px_hsl(var(--primary)/0.28)] outline-none transition hover:-translate-y-0.5 hover:bg-primary/95 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-70 sm:mt-3 sm:h-10 sm:min-w-[192px] sm:gap-3 sm:px-6 sm:text-[15px]"
+                className="mt-2 inline-flex h-12 min-w-[230px] items-center justify-center gap-3 rounded-full bg-[#2563eb] px-7 text-[16px] font-semibold text-white shadow-[0_12px_26px_rgba(37,99,235,0.28)] outline-none transition hover:-translate-y-0.5 hover:bg-[#1d4ed8] focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-70 dark:bg-[#3b82f6] dark:shadow-[0_12px_28px_rgba(59,130,246,0.24)] dark:hover:bg-[#60a5fa] dark:focus-visible:ring-[#93c5fd] dark:focus-visible:ring-offset-[#0f172a] sm:mt-3 sm:h-10 sm:min-w-[192px] sm:gap-3 sm:px-6 sm:text-[15px]"
               >
                 {isPending ? "Đang bắt đầu..." : "Bắt đầu học ngay"}
                 <ArrowRight className="h-5 w-5 sm:h-5 sm:w-5" />

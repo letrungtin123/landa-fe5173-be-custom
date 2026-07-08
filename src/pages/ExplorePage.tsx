@@ -219,7 +219,7 @@ export function ExplorePage() {
                     <div>
                       {/* Badge COURSE */}
                       <div
-                        className="mb-3 inline-flex w-fit whitespace-nowrap items-center justify-center h-[23px] rounded-[41px] px-3 py-1 text-[10px] font-bold uppercase tracking-widest font-['SF_Pro',_sans-serif]"
+                        className="mb-3 inline-flex w-fit whitespace-nowrap items-center justify-center h-[23px] rounded-[41px] px-3 py-1 text-[10px] font-bold uppercase tracking-widest"
                         style={{ backgroundColor: "#43FDD7", color: "#000" }}
                       >
                         {exploreBadge}
