@@ -8,6 +8,19 @@ import { useBranding } from "@/hooks/useBranding";
 import { exchangeSsoCode, fetchPublicSsoConfigByDomain, type PublicSsoProvider, type SsoProvider } from "@/api/sso";
 import { openSsoPopup } from "@/utils/ssoPopup";
 
+function getSafeNextPath(value: string | null): string {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/dashboard";
+  try {
+    const url = new URL(value, window.location.origin);
+    if (url.origin !== window.location.origin || url.pathname === "/login") {
+      return "/dashboard";
+    }
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return "/dashboard";
+  }
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
@@ -52,6 +65,7 @@ export function LoginPage() {
     };
   }, []);
   const [searchParams] = useSearchParams();
+  const nextPath = getSafeNextPath(searchParams.get("next"));
   const currentDomain = window.location.hostname;
   const { data: ssoConfig } = useQuery({
     queryKey: ["public-sso", currentDomain],
@@ -131,7 +145,7 @@ export function LoginPage() {
       setFailedAttempts(0);
       setCooldownSeconds(0);
       if (cooldownTimerRef.current) { clearInterval(cooldownTimerRef.current); cooldownTimerRef.current = null; }
-      navigate("/dashboard", { replace: true });
+      navigate(nextPath, { replace: true });
     } catch (err: unknown) {
       console.error("[LoginPage] login() threw:", err);
       const axiosErr = err as { response?: { status?: number } };
@@ -169,7 +183,7 @@ export function LoginPage() {
         client_app: "learner",
       });
       await setSession(session);
-      navigate("/dashboard", { replace: true });
+      navigate(nextPath, { replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Đăng nhập SSO thất bại.";
       if (!msg.includes("huy")) {

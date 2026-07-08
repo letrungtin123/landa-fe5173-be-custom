@@ -493,6 +493,24 @@
       )
       1;
   }
+
+  @keyframes course-focus-pulse {
+    0%,
+    100% {
+      border-color: hsl(var(--primary));
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.18);
+    }
+
+    50% {
+      border-color: hsl(var(--primary));
+      box-shadow: 0 0 0 8px hsl(var(--primary) / 0.24);
+    }
+  }
+
+  .course-focus-highlight {
+    border-color: hsl(var(--primary)) !important;
+    animation: course-focus-pulse 0.75s ease-in-out 4;
+  }
 }
 
 /* ============================================================

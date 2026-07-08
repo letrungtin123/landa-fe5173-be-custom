@@ -6,13 +6,13 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { storageUrl } from "@/utils/storageUrl";
 import { Search, Loader2, BookOpen, ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, Filter } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useSearchStore } from "@/stores/useSearchStore";
 import { cn } from "@/lib/utils";
-import { useCourses, useMyEnrollments, useCoursesByCategory } from "@/hooks/useCourses";
+import { useCourse, useCourses, useMyEnrollments, useCoursesByCategory } from "@/hooks/useCourses";
 import { useCourseCompletion, useBatchCourseProgress } from "@/hooks/useProgress";
 
 import heroIllustration from "@/assets/ExplorePage/KhamPhaHanhTrinhHocTapCuaToi.png.png";
@@ -24,11 +24,24 @@ import { useBranding } from "@/hooks/useBranding";
 // Filter types cho detail view
 type DetailFilter = 'all' | 'in_progress' | 'completed' | 'not_enrolled';
 
+function findCourseFocusElement(courseId: string): HTMLElement | null {
+  const candidates = Array.from(
+    document.querySelectorAll<HTMLElement>("[data-explore-focus-course]")
+  ).filter(element => element.dataset.exploreFocusCourse === courseId);
+
+  return candidates.find(element => element.getClientRects().length > 0) || candidates[0] || null;
+}
+
 export function ExplorePage() {
   const { colorStyle } = useThemeStore();
+  const [searchParams] = useSearchParams();
+  const focusCourseId = searchParams.get("focus_course")?.trim() || "";
+  const handledFocusRef = useRef<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [highlightCourseId, setHighlightCourseId] = useState<string | null>(null);
   const { data: courseData, isLoading } = useCourses(debouncedSearch || undefined);
+  const { data: focusCourseDetail } = useCourse(focusCourseId);
   const { data: enrollments } = useMyEnrollments();
 
   // Dynamic explore hero card content
@@ -82,6 +95,10 @@ export function ExplorePage() {
 
   const allCourses = courseData?.data || [];
   const categories = courseData?.categories || [];
+  const focusCourseFromList = focusCourseId
+    ? allCourses.find(course => course.id === focusCourseId)
+    : undefined;
+  const focusCourse = focusCourseFromList || focusCourseDetail;
 
   // Batch progress cho tất cả enrolled courses
   const enrolledCourseIds = useMemo(
@@ -138,11 +155,69 @@ export function ExplorePage() {
   };
 
   const globalSearchTerm = useSearchStore(s => s.globalSearchTerm);
+  const setGlobalSearchTerm = useSearchStore(s => s.setGlobalSearchTerm);
   useEffect(() => {
     if (globalSearchTerm !== searchTerm) {
       handleSearchChange(globalSearchTerm);
     }
   }, [globalSearchTerm]);
+
+  useEffect(() => {
+    if (!focusCourseId || handledFocusRef.current === focusCourseId) return;
+
+    handledFocusRef.current = focusCourseId;
+    setGlobalSearchTerm("");
+    setSearchTerm("");
+    setDebouncedSearch("");
+    setDetailFilter("all");
+    setSelectedCategoryIds(new Set());
+    setSelectedCategoryDetail(null);
+    setCategoryDetailPage(1);
+    setMobileFilterOpen(false);
+    setCategoryDropdownOpen(false);
+    setHighlightCourseId(focusCourseId);
+
+    const timer = window.setTimeout(() => {
+      setHighlightCourseId((current) => (current === focusCourseId ? null : current));
+    }, 3000);
+
+    return () => window.clearTimeout(timer);
+  }, [focusCourseId, setGlobalSearchTerm]);
+
+  useEffect(() => {
+    if (!focusCourseId || !focusCourse || isLoading || selectedCategoryDetail) return;
+
+    let cancelled = false;
+    let attempts = 0;
+    let hasScrolled = false;
+    const timers: number[] = [];
+
+    const scrollToFocusedCourse = () => {
+      if (cancelled) return;
+
+      const target = findCourseFocusElement(focusCourseId);
+      if (target) {
+        target.scrollIntoView({
+          behavior: hasScrolled ? "auto" : "smooth",
+          block: "center",
+          inline: "nearest",
+        });
+        hasScrolled = true;
+      }
+
+      attempts += 1;
+      if (attempts < (target ? 6 : 24)) {
+        timers.push(window.setTimeout(scrollToFocusedCourse, target ? 350 : 125));
+      }
+    };
+
+    timers.push(window.setTimeout(scrollToFocusedCourse, 80));
+
+    return () => {
+      cancelled = true;
+      timers.forEach(timer => window.clearTimeout(timer));
+    };
+  }, [focusCourseId, focusCourse, isLoading, selectedCategoryDetail]);
 
 
 
@@ -169,6 +244,27 @@ export function ExplorePage() {
     if (selectedCategoryIds.size === 0) return entries;
     return entries.filter(([id]) => selectedCategoryIds.has(id));
   }, [coursesByCategory, selectedCategoryIds]);
+
+  const focusCourseVisibleInCategorySections = Boolean(
+    focusCourseId && visibleCategories.some(([, { courses }]) =>
+      applyStatusFilter(courses).some(course => course.id === focusCourseId)
+    )
+  );
+  const shouldRenderStandaloneFocusCourse = Boolean(
+    focusCourseId && focusCourse && !focusCourseVisibleInCategorySections && !selectedCategoryDetail
+  );
+
+  const limitCoursesForDisplay = (courses: typeof allCourses, limit: number) => {
+    const limited = courses.slice(0, limit);
+    if (!focusCourseId || limited.some(course => course.id === focusCourseId)) {
+      return limited;
+    }
+
+    const focused = courses.find(course => course.id === focusCourseId);
+    if (!focused) return limited;
+
+    return [focused, ...limited].slice(0, limit);
+  };
 
 
 
@@ -537,7 +633,7 @@ export function ExplorePage() {
               )}
 
               {/* Empty state — API trả rỗng hoặc filter danh mục không có kết quả */}
-              {!isLoading && (allCourses.length === 0 || visibleCategories.length === 0) && (
+              {!isLoading && !shouldRenderStandaloneFocusCourse && (allCourses.length === 0 || visibleCategories.length === 0) && (
                 <div className="rounded-2xl border border-dashed border-border bg-card/50 p-16 text-center">
                   <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
                     <BookOpen className="h-10 w-10 text-primary/40" />
@@ -572,6 +668,27 @@ export function ExplorePage() {
                 )}
 
               {/* Category sections — giới hạn số card, có nút Xem tất cả */}
+              {!isLoading && shouldRenderStandaloneFocusCourse && focusCourse && (
+                <section className="mb-10 scroll-mt-24">
+                  <div className="mb-5 flex items-baseline gap-2">
+                    <h2 className="text-[22px] font-bold leading-[28px] text-foreground">
+                      Khóa học từ email
+                    </h2>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2 md:gap-x-6 md:gap-y-10 lg:grid-cols-3">
+                    <div data-explore-focus-course={focusCourse.id} className="flex scroll-mt-24">
+                      <ExploreCourseCard
+                        course={focusCourse}
+                        isEnrolled={enrolledIds.has(focusCourse.id)}
+                        colorStyle={colorStyle}
+                        categoryName={focusCourse.categories?.[0]?.name || "Khóa học"}
+                        isHighlighted={highlightCourseId === focusCourse.id}
+                      />
+                    </div>
+                  </div>
+                </section>
+              )}
+
               {!isLoading && allCourses.length > 0 && !selectedCategoryDetail && (
                 <div className="space-y-10">
                   {visibleCategories.map(([catId, { name, courses: catCourses }]) => {
@@ -586,8 +703,8 @@ export function ExplorePage() {
                     const hasMoreMobile = displayCourses.length > mobileLimit;
                     const hasMorePC = displayCourses.length > pcLimit;
                     // PC lấy 6, mobile lấy 4 (dùng CSS ẩn/hiện)
-                    const pcCourses = displayCourses.slice(0, pcLimit);
-                    const mobileCourses = displayCourses.slice(0, mobileLimit);
+                    const pcCourses = limitCoursesForDisplay(displayCourses, pcLimit);
+                    const mobileCourses = limitCoursesForDisplay(displayCourses, mobileLimit);
 
                     return (
                       <section key={catId} id={`category-section-${catId}`} className="scroll-mt-6">
@@ -632,12 +749,17 @@ export function ExplorePage() {
                         {/* Mobile carousel — 4 cards */}
                         <div className="flex items-stretch overflow-x-auto snap-x snap-mandatory gap-4 pb-4 pl-2 -mr-4 md:hidden hide-scrollbar">
                           {mobileCourses.map((course) => (
-                            <div key={course.id} className="w-[85vw] max-w-[300px] shrink-0 snap-start flex">
+                            <div
+                              key={course.id}
+                              data-explore-focus-course={course.id === focusCourseId ? course.id : undefined}
+                              className="w-[85vw] max-w-[300px] shrink-0 snap-start flex scroll-mt-24"
+                            >
                               <ExploreCourseCard
                                 course={course}
                                 isEnrolled={enrolledIds.has(course.id)}
                                 colorStyle={colorStyle}
                                 categoryName={name}
+                                isHighlighted={highlightCourseId === course.id}
                               />
                             </div>
                           ))}
@@ -646,12 +768,17 @@ export function ExplorePage() {
                         {/* PC grid — 6 cards */}
                         <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-x-6 md:gap-y-10">
                           {pcCourses.map((course) => (
-                            <div key={course.id} className="flex">
+                            <div
+                              key={course.id}
+                              data-explore-focus-course={course.id === focusCourseId ? course.id : undefined}
+                              className="flex scroll-mt-24"
+                            >
                               <ExploreCourseCard
                                 course={course}
                                 isEnrolled={enrolledIds.has(course.id)}
                                 colorStyle={colorStyle}
                                 categoryName={name}
+                                isHighlighted={highlightCourseId === course.id}
                               />
                             </div>
                           ))}
@@ -853,11 +980,13 @@ function ExploreCourseCard({
   isEnrolled,
   colorStyle,
   categoryName,
+  isHighlighted = false,
 }: {
   course: any;
   isEnrolled: boolean;
   colorStyle: string;
   categoryName?: string;
+  isHighlighted?: boolean;
 }) {
   const imageUrl = storageUrl((course as any).image_url) || null;
 
@@ -869,7 +998,12 @@ function ExploreCourseCard({
 
   return (
     <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`} className="flex flex-1 w-full">
-      <Card className="group h-[330px] md:h-[420px] flex flex-col flex-1 w-full p-1.5 pb-4 md:pb-6 rounded-[24px] md:rounded-[28px] border-border bg-card shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
+      <Card
+        className={cn(
+          "group h-[330px] md:h-[420px] flex flex-col flex-1 w-full p-1.5 pb-4 md:pb-6 rounded-[24px] md:rounded-[28px] border-border bg-card shadow-sm transition-all hover:shadow-md hover:scale-[1.02]",
+          isHighlighted && "course-focus-highlight"
+        )}
+      >
         {/* Ảnh bìa khóa học */}
         <div
           className={cn(
