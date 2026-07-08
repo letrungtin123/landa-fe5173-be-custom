@@ -4,6 +4,7 @@ import {
   getLearnerCourseAssignments,
   submitLearnerAssignment,
 } from "@/api/assignments";
+import { refetchProgressWithRetry } from "@/lib/progressRefetch";
 
 export function useCourseAssignments(courseId?: string) {
   return useQuery({
@@ -30,8 +31,10 @@ export function useSubmitAssignment(courseId?: string, assignmentId?: string) {
       submitLearnerAssignment(assignmentId!, input),
     onSuccess: (assignment) => {
       queryClient.setQueryData(["assignment", assignmentId], assignment);
-      if (courseId) queryClient.invalidateQueries({ queryKey: ["course-assignments", courseId] });
+      if (courseId) {
+        queryClient.invalidateQueries({ queryKey: ["course-assignments", courseId] });
+        refetchProgressWithRetry(queryClient, courseId);
+      }
     },
   });
 }
-

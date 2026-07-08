@@ -90,8 +90,7 @@ export function CourseSidebar() {
     setSidebarOpen(false);
   };
 
-  const handleAssignmentClick = (assignmentId: string, canSubmit: boolean, lockedReason?: "progress" | "deadline" | null, done = false) => {
-    if (!canSubmit && !done && lockedReason !== "deadline") return;
+  const handleAssignmentClick = (assignmentId: string) => {
     navigate(`/courses/${encodeURIComponent(courseId || "c1")}/assignments/${assignmentId}`);
     setSidebarOpen(false);
   };
@@ -229,18 +228,16 @@ export function CourseSidebar() {
                     const done = assignment.status === "submitted" || assignment.status === "feedback_given";
                     const locked = !assignment.can_submit && !done;
                     const deadlineLocked = assignment.locked_reason === "deadline" && !done;
-                    const canOpenAssignment = assignment.can_submit || done || assignment.locked_reason === "deadline";
                     return (
                       <button
                         key={assignment.id}
-                        onClick={() => handleAssignmentClick(assignment.id, assignment.can_submit, assignment.locked_reason, done)}
-                        disabled={!canOpenAssignment}
+                        onClick={() => handleAssignmentClick(assignment.id)}
                         className={cn(
                           "flex w-full items-center gap-2 text-left py-2 pl-[32px] pr-5 transition-all",
                           isActive
                             ? "text-primary font-bold bg-primary/5"
-                            : locked && !deadlineLocked
-                              ? "text-muted-foreground/60 cursor-not-allowed"
+                          : locked && !deadlineLocked
+                              ? "text-muted-foreground/70 hover:bg-muted/40"
                               : deadlineLocked
                                 ? "text-destructive hover:bg-destructive/10"
                               : "text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium"
@@ -260,7 +257,7 @@ export function CourseSidebar() {
                         <span className="min-w-0 max-w-[232px] flex-1 text-[13px] leading-snug">
                           <span className="block truncate" title={assignment.title}>{assignment.title}</span>
                           <span className="block truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
-                            {assignment.status === "feedback_given" ? "Đã phản hồi" : assignment.status === "submitted" ? "Đã nộp" : deadlineLocked ? "Hết hạn nộp" : locked ? "Khóa đến khi hoàn thành 100%" : "Chưa nộp"}
+                            {assignment.status === "feedback_given" ? "Đã phản hồi" : assignment.status === "submitted" ? "Đã nộp" : deadlineLocked ? "Hết hạn nộp" : locked ? "Học xong nội dung để nộp" : "Chưa nộp"}
                           </span>
                         </span>
                       </button>

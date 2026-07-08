@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { downloadAssignmentFile, type AssignmentFileMeta } from "@/api/assignments";
+import { downloadAssignmentFile, type AssignmentFileMeta, type LearnerAssignment } from "@/api/assignments";
 import { useAssignment, useSubmitAssignment } from "@/hooks/useAssignments";
 
 const MAX_PENDING_FILES = 5;
@@ -40,6 +40,16 @@ function formatDate(value?: string | null) {
     dateStyle: "short",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function assignmentDeadlineLabel(assignment?: LearnerAssignment | null) {
+  if (!assignment || assignment.deadline_mode === "none") return "";
+  const deadline = assignment.effective_deadline_at || assignment.deadline_at;
+  if (!deadline) return "";
+  if (assignment.deadline_mode === "relative_to_enrollment" && assignment.deadline_after_days) {
+    return `${formatDate(deadline)} · sau ${assignment.deadline_after_days} ngày từ lúc ghi danh`;
+  }
+  return formatDate(deadline);
 }
 
 function formatBytes(value?: number) {
@@ -205,14 +215,15 @@ export function AssignmentDetailPage() {
   const isDeadlineExpired = Boolean(assignment?.is_deadline_expired);
   const canResubmit = Boolean(isSubmitted && assignment?.allow_resubmission && !isDeadlineExpired);
   const canSubmit = Boolean(assignment?.can_submit && !isFeedbackGiven && (!isSubmitted || canResubmit));
-  const isLocked = Boolean(assignment && assignment.locked_reason === "progress");
+  const isLocked = Boolean(assignment && assignment.locked_reason === "content");
+  const deadlineLabel = assignmentDeadlineLabel(assignment);
   const selectedFileSize = useMemo(() => files.reduce((sum, file) => sum + file.size, 0), [files]);
   const answerCount = answer.trim().length;
   const feedbackReviewer = submission?.feedback_by_name || submission?.feedback_by_username || submission?.feedback_by_email || "";
 
   const submitHint = useMemo(() => {
     if (isDeadlineExpired && !isFeedbackGiven) return "Đã hết thời hạn nộp bài";
-    if (isLocked) return "Khóa đến khi hoàn thành 100% khóa học";
+    if (isLocked) return "Học xong nội dung khóa học để nộp bài";
     if (isFeedbackGiven) return "Bài tập đã có phản hồi";
     if (isSubmitted && !canResubmit) return "Bài đã nộp và đang chờ phản hồi";
     if (canResubmit) return "Có thể nộp lại trước khi quản trị viên phản hồi";
@@ -306,7 +317,7 @@ export function AssignmentDetailPage() {
                 <ClipboardList className="h-3.5 w-3.5" />
                 Bài tập
               </span>
-              {assignment.deadline_enabled && assignment.deadline_at && (
+              {deadlineLabel && (
                 <span
                   className={cn(
                     "inline-flex h-8 items-center gap-1.5 text-[12px] font-bold",
@@ -316,7 +327,7 @@ export function AssignmentDetailPage() {
                   )}
                 >
                   <CalendarClock className="h-3.5 w-3.5" />
-                  Hạn {formatDate(assignment.deadline_at)}
+                  Hạn {deadlineLabel}
                 </span>
               )}
             </div>
@@ -357,9 +368,9 @@ export function AssignmentDetailPage() {
           <div className="mb-4 flex items-start gap-3 rounded-2xl border border-warning/30 bg-warning/10 px-4 py-3 text-warning dark:bg-warning/10">
             <Lock className="mt-0.5 h-5 w-5 shrink-0" />
             <div className="min-w-0">
-              <div className="text-sm font-bold text-foreground">Hoàn thành 100% khóa học để mở nộp bài</div>
+              <div className="text-sm font-bold text-foreground">Học xong nội dung khóa học để mở nộp bài</div>
               <div className="mt-0.5 text-[13px] font-medium text-muted-foreground">
-                Bạn vẫn xem được yêu cầu bài tập, nhưng form nộp bài sẽ khóa đến khi đủ tiến độ.
+                Bạn vẫn xem được yêu cầu bài tập, nhưng form nộp bài sẽ khóa đến khi hoàn thành toàn bộ nội dung bài học.
               </div>
             </div>
           </div>

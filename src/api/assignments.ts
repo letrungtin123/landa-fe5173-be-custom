@@ -2,6 +2,8 @@ import { apiClient } from "./client";
 import type { ApiResponse } from "./types";
 
 export type AssignmentStatus = "not_submitted" | "submitted" | "feedback_given";
+export type AssignmentDeadlineMode = "none" | "absolute" | "relative_to_enrollment";
+export type AssignmentSubmissionUnlockMode = "after_content_complete" | "anytime";
 
 export interface AssignmentFileMeta {
   id: string;
@@ -39,12 +41,16 @@ export interface LearnerAssignment {
   is_published: boolean;
   allow_resubmission: boolean;
   deadline_enabled: boolean;
+  deadline_mode: AssignmentDeadlineMode;
   deadline_at: string | null;
+  deadline_after_days: number | null;
+  effective_deadline_at: string | null;
   grading_enabled: boolean;
+  submission_unlock_mode: AssignmentSubmissionUnlockMode;
   is_deadline_expired: boolean;
   status: AssignmentStatus;
   can_submit: boolean;
-  locked_reason: "progress" | "deadline" | null;
+  locked_reason: "content" | "deadline" | null;
   submission: LearnerAssignmentSubmission | null;
 }
 
