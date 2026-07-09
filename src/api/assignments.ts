@@ -45,6 +45,7 @@ export interface LearnerAssignment {
   deadline_at: string | null;
   deadline_after_days: number | null;
   effective_deadline_at: string | null;
+  attachment_file: AssignmentFileMeta | null;
   grading_enabled: boolean;
   submission_unlock_mode: AssignmentSubmissionUnlockMode;
   is_deadline_expired: boolean;

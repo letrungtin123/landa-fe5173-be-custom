@@ -45,9 +45,14 @@ function formatDate(value?: string | null) {
 function assignmentDeadlineLabel(assignment?: LearnerAssignment | null) {
   if (!assignment || assignment.deadline_mode === "none") return "";
   const deadline = assignment.effective_deadline_at || assignment.deadline_at;
-  if (!deadline) return "";
+  if (!deadline) {
+    if (assignment.deadline_mode === "relative_to_enrollment" && assignment.deadline_after_days) {
+      return `Hạn nộp sau ${assignment.deadline_after_days} ngày kể từ khi bạn ghi danh khóa học`;
+    }
+    return "";
+  }
   if (assignment.deadline_mode === "relative_to_enrollment" && assignment.deadline_after_days) {
-    return `${formatDate(deadline)} · sau ${assignment.deadline_after_days} ngày từ lúc ghi danh`;
+    return `Hạn nộp ${formatDate(deadline)}`;
   }
   return formatDate(deadline);
 }
@@ -406,6 +411,15 @@ export function AssignmentDetailPage() {
               <div className="whitespace-pre-wrap rounded-xl border border-border bg-muted/25 px-4 py-4 text-[15px] leading-7 text-foreground">
                 {assignment.question}
               </div>
+              {assignment.attachment_file && (
+                <div className="mt-5">
+                  <div className="mb-2 flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-muted-foreground">
+                    <Paperclip className="h-3.5 w-3.5" />
+                    Tệp đính kèm từ quản trị viên
+                  </div>
+                  <FileList files={[assignment.attachment_file]} layout="single" />
+                </div>
+              )}
             </section>
 
             <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
