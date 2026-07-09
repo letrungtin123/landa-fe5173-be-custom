@@ -1,14 +1,21 @@
 import { useEffect, useRef } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useParams } from "react-router-dom";
 import { CourseSidebar } from "./CourseSidebar";
 import { PageTransition } from "./PageTransition";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
+import { CompleteCourseModal } from "@/components/lesson/CompleteCourseModal";
+import { Course100PercentModal } from "@/components/lesson/Course100PercentModal";
+import { useCourseCompletion } from "@/hooks/useProgress";
+import { useCourseModalConfig } from "@/hooks/useModalConfig";
 
 const RELOAD_FLAG = "la-page-reloading";
 
 export function CourseLayout() {
   const location = useLocation();
+  const { courseId } = useParams();
   const processedRef = useRef(false);
+  const { completionPercent, isLoading: isProgressLoading } = useCourseCompletion(courseId);
+  const { data: modalConfig } = useCourseModalConfig(courseId);
 
   useEffect(() => {
     // Guard: chỉ xử lý 1 lần (tránh StrictMode double-mount xóa flag sai)
@@ -53,6 +60,23 @@ export function CourseLayout() {
           <Outlet />
         </PageTransition>
       </div>
+
+      {courseId && (
+        <>
+          <CompleteCourseModal
+            courseId={courseId}
+            completionPercent={completionPercent}
+            isLoading={isProgressLoading}
+            config={modalConfig}
+          />
+          <Course100PercentModal
+            courseId={courseId}
+            completionPercent={completionPercent}
+            isLoading={isProgressLoading}
+            config={modalConfig}
+          />
+        </>
+      )}
     </div>
   );
 }

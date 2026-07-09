@@ -32,8 +32,6 @@ import { FaqContent } from "@/components/lesson/FaqContent";
 import { PdfContent } from "@/components/lesson/PdfContent";
 import DiagramContent from "@/components/lesson/DiagramContent";
 import { HtmlBlockContent } from "@/components/lesson/HtmlBlockContent";
-import { CompleteCourseModal } from "@/components/lesson/CompleteCourseModal";
-import { Course100PercentModal } from "@/components/lesson/Course100PercentModal";
 import { WelcomeCourseModal } from "@/components/lesson/WelcomeCourseModal";
 import { SectionCompleteModal } from "@/components/lesson/SectionCompleteModal";
 import { useCourseCompletion } from "@/hooks/useProgress";
@@ -677,8 +675,6 @@ export function LessonDetailPage() {
       </footer>
 
       {courseId && <WelcomeCourseModal courseId={courseId} completionPercent={completionPercent} isLoading={isProgressLoading} config={modalConfig} />}
-      {courseId && <CompleteCourseModal courseId={courseId} completionPercent={completionPercent} isLoading={isProgressLoading} config={modalConfig} />}
-      {courseId && <Course100PercentModal courseId={courseId} completionPercent={completionPercent} isLoading={isProgressLoading} config={modalConfig} />}
       {courseId && courseTree && <SectionCompleteModal courseId={courseId} modules={courseTree.modules} />}
 
       {/* ── Image Lightbox ── */}
