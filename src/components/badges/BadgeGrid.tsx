@@ -5,7 +5,7 @@ import { BadgeCard } from "./BadgeCard";
 import { BADGE_DEFINITIONS, CATEGORY_LABELS, type BadgeCategory, type BadgeDefinition } from "@/data/badgeConfig";
 import type { EarnedBadge } from "@/lib/badgeEvaluator";
 import { cn } from "@/lib/utils";
-import { BADGE_CARD_IMAGES } from "@/data/badgeImages";
+import { BADGE_CARD_IMAGES, BADGE_MOBILE_CARD_IMAGES } from "@/data/badgeImages";
 import type { BadgeImageMap } from "@/hooks/useBadges";
 
 interface BadgeGridProps {
@@ -69,10 +69,14 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageM
   // Resolve image URL for a badge (dynamic from API, fallback to hardcoded)
   const getCardUrl = (badgeId: string) => badgeImageMap?.[badgeId]?.cardUrl || null;
   const getIconUrl = (badgeId: string) => badgeImageMap?.[badgeId]?.iconUrl || null;
+  const getMobileCardUrl = (badgeId: string) => badgeImageMap?.[badgeId]?.mobileCardUrl || null;
 
   // Selected badge card image — for detail modal
   const selectedImgSrc = selectedBadge
     ? (getCardUrl(selectedBadge.badge.id) || BADGE_CARD_IMAGES[selectedBadge.badge.id] || BADGE_CARD_IMAGES["onboarding_warrior"])
+    : "";
+  const selectedMobileImgSrc = selectedBadge
+    ? (getMobileCardUrl(selectedBadge.badge.id) || BADGE_MOBILE_CARD_IMAGES[selectedBadge.badge.id] || BADGE_MOBILE_CARD_IMAGES["onboarding_warrior"])
     : "";
 
   return (
@@ -102,7 +106,7 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageM
         <AnimatePresence mode="popLayout">
           {filteredBadges.length > 0 ? (
             <motion.div
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 w-full"
+              className="grid grid-cols-2 gap-4 w-full md:grid-cols-3 lg:grid-cols-4"
               layout
             >
               {filteredBadges.map((badge, i) => (
@@ -126,6 +130,9 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageM
                     earned={earnedMap.get(badge.id)}
                     cardImageUrl={getCardUrl(badge.id)}
                     iconImageUrl={getIconUrl(badge.id)}
+                    mobileCardImageUrl={getMobileCardUrl(badge.id)}
+                    useMobileCardOnMobile
+                    enableLockedFlip
                     onClick={() => {
                       const earned = earnedMap.get(badge.id);
                       if (earned) setSelectedBadge({ badge, earned });
@@ -167,7 +174,7 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageM
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 className="w-full max-w-[360px] outline-none pointer-events-auto relative flex flex-col items-center"
               >
-                <div className="w-full aspect-[4/6.5] overflow-hidden rounded-[2rem] shadow-2xl relative group">
+                <div className="w-full aspect-[84/113] overflow-hidden rounded-xl shadow-2xl relative group md:aspect-[4/6.5] md:rounded-[2rem]">
                   <button
                     onClick={() => setSelectedBadge(null)}
                     className="absolute right-3 top-3 z-30 rounded-full p-2 bg-black/40 text-white/80 transition-colors hover:bg-black/60 hover:text-white backdrop-blur-sm"
@@ -175,11 +182,14 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageM
                     <X className="h-5 w-5" />
                   </button>
 
-                  <img 
-                    src={selectedImgSrc} 
-                    alt={selectedBadge.badge.name} 
-                    className="w-full h-full object-cover"
-                  />
+                  <picture className="block h-full w-full">
+                    <source media="(max-width: 767px)" srcSet={selectedMobileImgSrc} />
+                    <img
+                      src={selectedImgSrc}
+                      alt={selectedBadge.badge.name}
+                      className="block w-full h-full object-cover"
+                    />
+                  </picture>
 
                   {/* Shine effect applying to the whole card */}
                   <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden rounded-[20px]">
@@ -192,7 +202,7 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageM
 
                   {/* Absolute positioned button overlapping the image */}
                   {selectedBadge.badge.id !== "omnipotent_master" && (
-                    <div className="absolute inset-x-0 bottom-[14%] z-20 flex justify-center">
+                    <div className="absolute inset-x-0 bottom-[14%] z-20 hidden justify-center md:flex">
                       <motion.button
                         onClick={() => setSelectedBadge(null)}
                         className="w-[65%] max-w-[220px] rounded-full bg-[#0b5cff] px-6 py-3 text-[15px] font-bold text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:bg-blue-600 transition-all"

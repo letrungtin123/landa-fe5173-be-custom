@@ -164,6 +164,7 @@ export interface BadgeDefinitionFromAPI {
   image_key: string;
   card_image_url: string | null;
   icon_image_url: string | null;
+  mobile_card_image_url: string | null;
 }
 
 // ── Thông báo ──

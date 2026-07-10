@@ -22,6 +22,7 @@ export interface BadgeImageMap {
   [badgeId: string]: {
     cardUrl: string | null;
     iconUrl: string | null;
+    mobileCardUrl: string | null;
   };
 }
 
@@ -96,6 +97,7 @@ export function useBadges(): UseBadgesResult {
       map[b.id] = {
         cardUrl: b.card_image_url ? storageUrl(b.card_image_url) : null,
         iconUrl: b.icon_image_url ? storageUrl(b.icon_image_url) : null,
+        mobileCardUrl: b.mobile_card_image_url ? storageUrl(b.mobile_card_image_url) : null,
       };
     }
     return map;

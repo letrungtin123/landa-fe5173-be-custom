@@ -4,20 +4,16 @@
 // - Header: tiêu đề + progress tổng
 // - Filter tabs
 // - BadgeGrid component
-// - Section "Bạn sắp đạt" — badges gần nhất chưa earn
 // ============================================================
 
 import { motion } from "framer-motion";
-import { Trophy, TrendingUp } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { BadgeGrid } from "@/components/badges/BadgeGrid";
-import { BadgeCard } from "@/components/badges/BadgeCard";
 import { useBadges } from "@/hooks/useBadges";
-import { BADGE_DEFINITIONS } from "@/data/badgeConfig";
 
 export function BadgesPage() {
   const {
     earnedBadges,
-    unearnedBadges,
     totalBadges,
     earnedCount,
     isLoading,
@@ -63,13 +59,13 @@ export function BadgesPage() {
             ))}
           </div>
 
-          {/* Badge grid skeleton — matches real grid: 2 / 3 / 4 cols */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
+          {/* Badge grid skeleton */}
+          <div className="grid grid-cols-2 gap-4 w-full md:grid-cols-3 lg:grid-cols-4">
             {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-              <div key={i} className="flex flex-col gap-3 rounded-3xl border border-border/30 bg-card p-4 animate-pulse">
-                <div className="aspect-square w-full rounded-2xl bg-muted" />
-                <div className="h-4 w-3/4 rounded bg-muted mx-auto" />
-                <div className="h-3 w-1/2 rounded bg-muted mx-auto" />
+              <div key={i} className="mx-auto flex w-full max-w-[256px] flex-col gap-3 rounded-[12px] border border-border/30 bg-card animate-pulse md:mx-0 md:max-w-none md:rounded-3xl md:p-4">
+                <div className="aspect-[84/113] w-full rounded-[12px] bg-muted md:aspect-square md:rounded-2xl" />
+                <div className="hidden h-4 w-3/4 rounded bg-muted mx-auto md:block" />
+                <div className="hidden h-3 w-1/2 rounded bg-muted mx-auto md:block" />
               </div>
             ))}
           </div>
@@ -141,34 +137,6 @@ export function BadgesPage() {
         >
           <BadgeGrid earnedBadges={earnedBadges} activeBadgeIds={activeBadgeIds} badgeImageMap={badgeImageMap} />
         </motion.div>
-
-        {/* "Coming Soon" section — badges sắp đạt */}
-        {unearnedBadges.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.4 }}
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="h-4 w-4 text-accent" />
-              <h2 className="text-lg font-bold text-foreground">Sắp đạt được</h2>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Hãy tiếp tục cố gắng để mở khóa các danh hiệu này
-            </p>
-            <div className="space-y-2">
-              {unearnedBadges.slice(0, 3).map(badge => (
-                <BadgeCard
-                  key={badge.id}
-                  badge={badge}
-                  compact
-                  cardImageUrl={badgeImageMap[badge.id]?.cardUrl}
-                  iconImageUrl={badgeImageMap[badge.id]?.iconUrl}
-                />
-              ))}
-            </div>
-          </motion.div>
-        )}
       </motion.div>
     </>
   );
