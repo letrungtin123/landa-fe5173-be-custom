@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { resolveThemePreset, useThemeStore } from "@/stores/useThemeStore";
 
 /**
  * ThemeProvider — syncs Zustand theme state to DOM attributes on mount.
@@ -13,7 +13,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const html = document.documentElement;
     html.setAttribute("data-theme", colorMode);
     html.setAttribute("data-color-style", colorStyle);
-    html.setAttribute("data-preset", preset);
+    html.setAttribute("data-preset", resolveThemePreset(preset));
   }, [colorMode, colorStyle, preset]);
 
   // Watch for system color scheme changes

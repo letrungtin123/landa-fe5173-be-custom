@@ -28,10 +28,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import {
   useThemeStore,
   THEME_PRESETS,
+  THEME_PRESET_SWITCHER_ENABLED,
 } from "@/stores/useThemeStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useSearchStore } from "@/stores/useSearchStore";
@@ -214,34 +214,36 @@ export function Header() {
 
           <div className="hidden sm:flex items-center gap-1">
             {/* Theme Preset Picker */}
-            <DropdownMenu modal={false}>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Theme preset">
-                  <Palette className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                  Bảng màu
-                </DropdownMenuLabel>
-                {THEME_PRESETS.map((p) => (
-                  <DropdownMenuItem
-                    key={p.id}
-                    onClick={() => setPreset(p.id)}
-                    className={cn(
-                      "gap-2",
-                      preset === p.id && "bg-accent/10 text-accent font-medium"
-                    )}
-                  >
-                    <span
-                      className="h-3.5 w-3.5 rounded-full shrink-0 border border-border"
-                      style={{ backgroundColor: p.color }}
-                    />
-                    {p.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {THEME_PRESET_SWITCHER_ENABLED && (
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Theme preset">
+                    <Palette className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    Bảng màu
+                  </DropdownMenuLabel>
+                  {THEME_PRESETS.map((p) => (
+                    <DropdownMenuItem
+                      key={p.id}
+                      onClick={() => setPreset(p.id)}
+                      className={cn(
+                        "gap-2",
+                        preset === p.id && "bg-accent/10 text-accent font-medium"
+                      )}
+                    >
+                      <span
+                        className="h-3.5 w-3.5 rounded-full shrink-0 border border-border"
+                        style={{ backgroundColor: p.color }}
+                      />
+                      {p.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             {/* Light/Dark Toggle */}
             <Button
@@ -267,9 +269,10 @@ export function Header() {
               <Button variant="ghost" size="icon" className="relative h-9 w-9" aria-label="Notifications">
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
-                  <Badge className="absolute -right-0.5 -top-0.5 h-4 w-4 rounded-full p-0 text-[10px] flex items-center justify-center bg-destructive text-destructive-foreground border-2 border-background">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </Badge>
+                  <span
+                    className="absolute right-1 top-1 h-2 w-2 rounded-full bg-destructive ring-2 ring-background"
+                    aria-hidden="true"
+                  />
                 )}
               </Button>
             </DropdownMenuTrigger>
@@ -375,26 +378,28 @@ export function Header() {
                   
                   {/* Theme controls in top right matching the image */}
                   <div className="absolute top-3 right-3 sm:hidden flex items-center bg-background/80 backdrop-blur-md rounded-lg shadow-sm p-0.5 border border-border/20 z-10">
-                    <DropdownMenu modal={false}>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted" aria-label="Theme preset">
-                          <Palette className="h-3.5 w-3.5 text-foreground" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-44">
-                        <DropdownMenuLabel className="text-xs text-muted-foreground">Bảng màu</DropdownMenuLabel>
-                        {THEME_PRESETS.map((p) => (
-                          <DropdownMenuItem
-                            key={p.id}
-                            onClick={() => setPreset(p.id)}
-                            className={cn("gap-2", preset === p.id && "bg-accent/10 text-accent font-medium")}
-                          >
-                            <span className="h-3.5 w-3.5 rounded-full shrink-0 border border-border" style={{ backgroundColor: p.color }} />
-                            {p.name}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {THEME_PRESET_SWITCHER_ENABLED && (
+                      <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted" aria-label="Theme preset">
+                            <Palette className="h-3.5 w-3.5 text-foreground" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          <DropdownMenuLabel className="text-xs text-muted-foreground">Bảng màu</DropdownMenuLabel>
+                          {THEME_PRESETS.map((p) => (
+                            <DropdownMenuItem
+                              key={p.id}
+                              onClick={() => setPreset(p.id)}
+                              className={cn("gap-2", preset === p.id && "bg-accent/10 text-accent font-medium")}
+                            >
+                              <span className="h-3.5 w-3.5 rounded-full shrink-0 border border-border" style={{ backgroundColor: p.color }} />
+                              {p.name}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                     <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted" onClick={toggleColorMode}>
                       {colorMode === "light" ? <Moon className="h-3.5 w-3.5 text-foreground" /> : <Sun className="h-3.5 w-3.5 text-foreground" />}
                     </Button>

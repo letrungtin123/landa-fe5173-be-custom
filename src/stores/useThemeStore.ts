@@ -19,6 +19,9 @@ export interface ThemePresetInfo {
   color: string; // representative hex color for preview
 }
 
+export const LOCKED_THEME_PRESET: ThemePreset = "la-blue";
+export const THEME_PRESET_SWITCHER_ENABLED = false;
+
 export const THEME_PRESETS: ThemePresetInfo[] = [
   { id: "la-blue", name: "L&A Blue", color: "#2563eb" },
   { id: "ocean", name: "Ocean", color: "#3282b8" },
@@ -29,6 +32,10 @@ export const THEME_PRESETS: ThemePresetInfo[] = [
   { id: "teal", name: "Teal", color: "#14b8a6" },
   { id: "amber", name: "Amber", color: "#f59e0b" },
 ];
+
+export function resolveThemePreset(preset: ThemePreset): ThemePreset {
+  return THEME_PRESET_SWITCHER_ENABLED ? preset : LOCKED_THEME_PRESET;
+}
 
 interface ThemeState {
   colorMode: ColorMode;
@@ -46,9 +53,10 @@ function syncThemeToDOM(
   preset: ThemePreset
 ) {
   const html = document.documentElement;
+  const effectivePreset = resolveThemePreset(preset);
   html.setAttribute("data-theme", colorMode);
   html.setAttribute("data-color-style", colorStyle);
-  html.setAttribute("data-preset", preset);
+  html.setAttribute("data-preset", effectivePreset);
 }
 
 export const useThemeStore = create<ThemeState>()(
@@ -75,15 +83,26 @@ export const useThemeStore = create<ThemeState>()(
       },
 
       setPreset: (preset) => {
-        set({ preset });
-        syncThemeToDOM(get().colorMode, get().colorStyle, preset);
+        const effectivePreset = resolveThemePreset(preset);
+        set({ preset: effectivePreset });
+        syncThemeToDOM(get().colorMode, get().colorStyle, effectivePreset);
       },
     }),
     {
       name: "la-theme",
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<ThemeState> | undefined;
+        return {
+          ...currentState,
+          ...persisted,
+          preset: resolveThemePreset(persisted?.preset ?? currentState.preset),
+        };
+      },
       onRehydrateStorage: () => (state) => {
         if (state) {
-          syncThemeToDOM(state.colorMode, state.colorStyle, state.preset);
+          const effectivePreset = resolveThemePreset(state.preset);
+          state.preset = effectivePreset;
+          syncThemeToDOM(state.colorMode, state.colorStyle, effectivePreset);
         }
       },
     }

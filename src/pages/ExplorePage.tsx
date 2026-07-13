@@ -6,7 +6,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { storageUrl } from "@/utils/storageUrl";
 import { Search, Loader2, BookOpen, ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, Filter } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { UserProfileCard } from "@/components/dashboard/UserProfileCard";
 import { BadgeShowcase } from "@/components/badges/BadgeShowcase";
 import { useBranding } from "@/hooks/useBranding";
+import { ConfirmEnrollModal } from "@/components/explore/ConfirmEnrollModal";
 
 // Filter types cho detail view
 type DetailFilter = 'all' | 'in_progress' | 'completed' | 'not_enrolled';
@@ -34,12 +35,14 @@ function findCourseFocusElement(courseId: string): HTMLElement | null {
 
 export function ExplorePage() {
   const { colorStyle } = useThemeStore();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const focusCourseId = searchParams.get("focus_course")?.trim() || "";
   const handledFocusRef = useRef<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [highlightCourseId, setHighlightCourseId] = useState<string | null>(null);
+  const [pendingConfirmCourse, setPendingConfirmCourse] = useState<any | null>(null);
   const { data: courseData, isLoading } = useCourses(debouncedSearch || undefined);
   const { data: focusCourseDetail } = useCourse(focusCourseId);
   const { data: enrollments } = useMyEnrollments();
@@ -106,6 +109,19 @@ export function ExplorePage() {
     [allCourses, enrolledIds]
   );
   const { data: progressMap } = useBatchCourseProgress(enrolledCourseIds);
+
+  const courseDetailPath = (courseId: string) => `/courses/${encodeURIComponent(courseId)}/lessons/overview`;
+
+  const openEnrollConfirm = (course: any) => {
+    setPendingConfirmCourse(course);
+  };
+
+  const handleConfirmStartCourse = () => {
+    if (!pendingConfirmCourse?.id) return;
+    const targetPath = courseDetailPath(pendingConfirmCourse.id);
+    setPendingConfirmCourse(null);
+    navigate(targetPath);
+  };
 
   // Group courses by category
   const coursesByCategory = useMemo(() => {
@@ -269,6 +285,7 @@ export function ExplorePage() {
 
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -683,6 +700,7 @@ export function ExplorePage() {
                         colorStyle={colorStyle}
                         categoryName={focusCourse.categories?.[0]?.name || "Khóa học"}
                         isHighlighted={highlightCourseId === focusCourse.id}
+                        onRequireConfirm={openEnrollConfirm}
                       />
                     </div>
                   </div>
@@ -760,6 +778,7 @@ export function ExplorePage() {
                                 colorStyle={colorStyle}
                                 categoryName={name}
                                 isHighlighted={highlightCourseId === course.id}
+                                onRequireConfirm={openEnrollConfirm}
                               />
                             </div>
                           ))}
@@ -779,6 +798,7 @@ export function ExplorePage() {
                                 colorStyle={colorStyle}
                                 categoryName={name}
                                 isHighlighted={highlightCourseId === course.id}
+                                onRequireConfirm={openEnrollConfirm}
                               />
                             </div>
                           ))}
@@ -847,7 +867,17 @@ export function ExplorePage() {
                           const displayPercent = Math.floor(Math.round(completionPercent * 100) / 10 + 0.4) / 10;
 
                           return (
-                            <Link key={course.id} to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`} className="flex w-full">
+                            <Link
+                              key={course.id}
+                              to={courseDetailPath(course.id)}
+                              onClick={(event) => {
+                                if (!isEnrolled) {
+                                  event.preventDefault();
+                                  openEnrollConfirm(course);
+                                }
+                              }}
+                              className="flex w-full"
+                            >
                               <div className="group flex flex-row flex-1 w-full h-[150px] overflow-hidden rounded-2xl border border-primary shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-card transition-all duration-200 hover:shadow-md hover:scale-[1.02]">
                                 {/* Thumbnail */}
                                 <div className="w-[38%] h-full shrink-0 relative flex items-center justify-center overflow-hidden p-1.5">
@@ -924,6 +954,7 @@ export function ExplorePage() {
                               isEnrolled={enrolledIds.has(course.id)}
                               colorStyle={colorStyle}
                               categoryName={selectedCategoryDetail.name}
+                              onRequireConfirm={openEnrollConfirm}
                             />
                           </div>
                         ))}
@@ -971,6 +1002,17 @@ export function ExplorePage() {
         </div>
       </div>
     </motion.div>
+      <ConfirmEnrollModal
+        open={!!pendingConfirmCourse}
+        courseName={pendingConfirmCourse?.display_name || ""}
+        logoSrc={branding.squareIcon}
+        tenantName={branding.tenantName}
+        onOpenChange={(open) => {
+          if (!open) setPendingConfirmCourse(null);
+        }}
+        onConfirm={handleConfirmStartCourse}
+      />
+    </>
   );
 }
 
@@ -981,12 +1023,14 @@ function ExploreCourseCard({
   colorStyle,
   categoryName,
   isHighlighted = false,
+  onRequireConfirm,
 }: {
   course: any;
   isEnrolled: boolean;
   colorStyle: string;
   categoryName?: string;
   isHighlighted?: boolean;
+  onRequireConfirm?: (course: any) => void;
 }) {
   const imageUrl = storageUrl((course as any).image_url) || null;
 
@@ -997,7 +1041,16 @@ function ExploreCourseCard({
   const displayPercent = typeof completionPercent === "number" ? Math.floor(Math.round(completionPercent * 100) / 10 + 0.4) / 10 : 0;
 
   return (
-    <Link to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`} className="flex flex-1 w-full">
+    <Link
+      to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`}
+      onClick={(event) => {
+        if (!isEnrolled) {
+          event.preventDefault();
+          onRequireConfirm?.(course);
+        }
+      }}
+      className="flex flex-1 w-full"
+    >
       <Card
         className={cn(
           "group h-[330px] md:h-[420px] flex flex-col flex-1 w-full p-1.5 pb-4 md:pb-6 rounded-[24px] md:rounded-[28px] border-border bg-card shadow-sm transition-all hover:shadow-md hover:scale-[1.02]",
@@ -1072,11 +1125,11 @@ function ExploreCourseCard({
                   )}
                 </div>
               ) : (
-                <button
+                <span
                   className="w-fit rounded-full bg-primary px-6 md:px-8 py-2 md:py-3 text-[14px] md:text-[15px] font-bold leading-[18px] text-white transition-colors hover:bg-primary/90"
                 >
                   Bắt đầu học
-                </button>
+                </span>
               )}
               {isEnrolled && typeof completionPercent === "number" && completionPercent < 100 && (
                 <span className="text-[12px] md:text-[13px] font-bold leading-[16px] text-foreground">

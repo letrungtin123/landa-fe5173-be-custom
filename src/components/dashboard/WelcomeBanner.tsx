@@ -295,7 +295,7 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
     if (todayMinutes === 0) {
       return (
         <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
-          Hôm nay bạn chưa bắt đầu học.<br />
+          Hôm nay bạn chưa bắt đầu online.<br />
           Hãy dành chút thời gian để duy trì nhịp độ tuần này nhé!
         </p>
       );
@@ -304,7 +304,7 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
     if (weeklyAvgMinutes === 0) {
       return (
         <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
-          Bạn đã học <span className="text-[#45FFCA] font-semibold">{formatTime(todayMinutes)}</span> hôm nay.<br />
+          Bạn đã online <span className="text-[#45FFCA] font-semibold">{formatTime(todayMinutes)}</span> hôm nay.<br />
           Khởi đầu tuần mới thật tuyệt vời!
         </p>
       );
@@ -374,7 +374,7 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
         )}
       >
         <div className="relative z-10 w-full px-8 md:px-10 mb-1">
-          <div className="mb-1 flex items-start justify-between gap-3">
+          <div className="mb-0 flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <h3 className="text-[22px] font-bold leading-[26px] tracking-tight text-white">Weekly Momentum</h3>
               {!isDefaultWeekly && (
