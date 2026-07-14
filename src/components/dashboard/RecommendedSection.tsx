@@ -109,7 +109,7 @@ export function RecommendedSection() {
 
         {/* Tips Card */}
         <div
-          className="relative w-full lg:w-[240px] shrink-0 rounded-[32px] p-6 flex flex-col shadow-sm touch-pan-y"
+          className="relative w-full lg:w-[240px] shrink-0 rounded-[20px] md:rounded-[32px] p-6 flex flex-col shadow-sm touch-pan-y"
           onTouchStart={handleTipTouchStart}
           onTouchEnd={handleTipTouchEnd}
           style={{ backgroundColor: 'hsl(var(--primary) / 0.04)' }}

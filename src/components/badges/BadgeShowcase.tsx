@@ -54,7 +54,7 @@ export function BadgeShowcase() {
       <div className="px-6 pt-6 pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-amber-500" />
+            <Trophy className="h-4 w-4 text-[#0062DF]" />
             <h3 className="text-sm font-bold text-foreground">Danh hiệu</h3>
           </div>
           <span className="text-xs font-semibold text-accent">
@@ -65,7 +65,7 @@ export function BadgeShowcase() {
         {/* Progress bar */}
         <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-yellow-500"
+            className="h-full rounded-full bg-[#0062DF]"
             initial={{ width: 0 }}
             animate={{ width: `${(earnedCount / totalBadges) * 100}%` }}
             transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}

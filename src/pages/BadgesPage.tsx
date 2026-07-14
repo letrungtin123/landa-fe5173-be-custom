@@ -19,6 +19,7 @@ export function BadgesPage() {
     isLoading,
     activeBadgeIds,
     badgeImageMap,
+    badgeProgressMap,
   } = useBadges();
 
   const progressPercent = totalBadges ? Math.round((earnedCount / totalBadges) * 100) : 0;
@@ -87,10 +88,10 @@ export function BadgesPage() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="mb-8"
+          className="mb-4 md:mb-8"
         >
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-yellow-500 text-white shadow-md">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#004BB8] via-[#0062DF] to-[#4EA1FF] text-white shadow-md">
               <Trophy className="h-5 w-5" />
             </div>
             <div>
@@ -113,7 +114,7 @@ export function BadgesPage() {
             </div>
             <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
               <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500"
+                className="h-full rounded-full bg-[#0062DF]"
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPercent}%` }}
                 transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
@@ -135,7 +136,12 @@ export function BadgesPage() {
           transition={{ duration: 0.4, delay: 0.2 }}
           className="mb-10"
         >
-          <BadgeGrid earnedBadges={earnedBadges} activeBadgeIds={activeBadgeIds} badgeImageMap={badgeImageMap} />
+          <BadgeGrid
+            earnedBadges={earnedBadges}
+            activeBadgeIds={activeBadgeIds}
+            badgeImageMap={badgeImageMap}
+            badgeProgressMap={badgeProgressMap}
+          />
         </motion.div>
       </motion.div>
     </>

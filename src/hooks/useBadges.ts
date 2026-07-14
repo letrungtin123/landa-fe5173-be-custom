@@ -11,7 +11,7 @@ import { useMyEnrollments } from "./useCourses";
 import { useMyCertificates } from "./useCertificates";
 import { getBatchCourseProgress } from "@/api/progress";
 import { getUserBadges, saveUserBadge, updateBadgeShown, getActiveBadges } from "@/api/badges";
-import { evaluateBadges, getShownBadgeIds, markBadgeShown, syncBadgesToLocalStorage, type EarnedBadge } from "@/lib/badgeEvaluator";
+import { buildBadgeProgressMap, evaluateBadges, getShownBadgeIds, markBadgeShown, syncBadgesToLocalStorage, type BadgeProgressMap, type EarnedBadge } from "@/lib/badgeEvaluator";
 import { BADGE_DEFINITIONS, type BadgeDefinition } from "@/data/badgeConfig";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { BadgeDefinitionFromAPI } from "@/api/types";
@@ -37,6 +37,7 @@ export interface UseBadgesResult {
   activeBadgeIds?: string[];
   /** Map badge_id → { cardUrl, iconUrl } — dynamic images from API */
   badgeImageMap: BadgeImageMap;
+  badgeProgressMap: BadgeProgressMap;
 }
 
 /**
@@ -184,6 +185,18 @@ export function useBadges(): UseBadgesResult {
     return BADGE_DEFINITIONS.filter((b) => !earnedIds.has(b.id) && activeSet.has(b.id));
   }, [earnedBadges, activeBadgeIds]);
 
+  const badgeProgressMap = useMemo(() => {
+    if (!enrollments) return {};
+
+    return buildBadgeProgressMap({
+      enrollments,
+      certificates: certificates || [],
+      courseCompletions,
+      courseGrades,
+      profile,
+    }, activeBadgeIds);
+  }, [enrollments, certificates, courseCompletions, courseGrades, profile, activeBadgeIds]);
+
   // Mutation to save badge lên BE
   const { mutate: saveBadge } = useMutation({
     mutationFn: ({ badgeId, markAsShown }: { badgeId: string, markAsShown: boolean }) => saveUserBadge(badgeId, markAsShown)
@@ -308,5 +321,6 @@ export function useBadges(): UseBadgesResult {
     dismissNewBadge,
     activeBadgeIds,
     badgeImageMap,
+    badgeProgressMap,
   };
 }

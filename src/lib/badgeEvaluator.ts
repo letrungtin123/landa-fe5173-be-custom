@@ -24,7 +24,88 @@ export interface EvaluationData {
   profile?: any;
 }
 
+export interface BadgeProgressInfo {
+  current: number;
+  target: number;
+  percent: number;
+  label: string;
+}
+
+export type BadgeProgressMap = Record<string, BadgeProgressInfo>;
+
 const STORAGE_KEY = "la_badge_timestamps";
+
+function toProgressInfo(current: number, target: number, unitLabel: string): BadgeProgressInfo {
+  const safeTarget = Math.max(1, target);
+  const clampedCurrent = Math.min(Math.max(0, current), safeTarget);
+
+  return {
+    current: clampedCurrent,
+    target: safeTarget,
+    percent: Math.round((clampedCurrent / safeTarget) * 100),
+    label: `${clampedCurrent}/${safeTarget} ${unitLabel}`,
+  };
+}
+
+/**
+ * Build progress for badge rules that are based on completed course counts.
+ * Badges with non-count logic (profile, completion speed, etc.) intentionally
+ * return no progress so the locked-card back side stays clean.
+ */
+export function buildBadgeProgressMap(
+  data: EvaluationData,
+  activeBadgeIds?: string[]
+): BadgeProgressMap {
+  const activeSet = activeBadgeIds ? new Set(activeBadgeIds) : null;
+  const shouldInclude = (badgeId: string) => !activeSet || activeSet.has(badgeId);
+  const progressMap: BadgeProgressMap = {};
+  const enrollmentById = new Map(data.enrollments.map((e) => [e.course_id, e]));
+
+  let completedCount = 0;
+  let onboardingCompletedCount = 0;
+  let recruitmentCompletedCount = 0;
+  let hasCompletedOnboarding = false;
+  let hasCompletedOther = false;
+
+  for (const [courseId, pct] of data.courseCompletions) {
+    if (pct < 100) continue;
+
+    completedCount++;
+
+    const courseName = enrollmentById.get(courseId)?.display_name?.toLowerCase() || "";
+    const isOnboarding = courseName.includes("onboarding");
+    const isRecruitment = courseName.includes("tuy\u1ec3n d\u1ee5ng");
+
+    if (isOnboarding) {
+      onboardingCompletedCount++;
+      hasCompletedOnboarding = true;
+    } else {
+      hasCompletedOther = true;
+    }
+
+    if (isRecruitment) {
+      recruitmentCompletedCount++;
+    }
+  }
+
+  const put = (badgeId: string, current: number, target: number, unitLabel = "kh\u00f3a") => {
+    if (!shouldInclude(badgeId)) return;
+    progressMap[badgeId] = toProgressInfo(current, target, unitLabel);
+  };
+
+  put("onboarding_warrior", onboardingCompletedCount, 1);
+  put("value_holder", onboardingCompletedCount, 2);
+  put("la_ambassador", Number(hasCompletedOnboarding) + Number(hasCompletedOther), 2);
+  put("la_breakthrough", completedCount, 3);
+  put("la_expert", completedCount, 5);
+  put("recruitment_master", recruitmentCompletedCount, 1);
+  put("otif_expert", recruitmentCompletedCount, 2);
+  put("trusted_ambassador", recruitmentCompletedCount, 3);
+  put("omnipotent_master", completedCount, 20);
+  put("system_explorer", completedCount, 10);
+
+  return progressMap;
+}
 
 /** Lưu timestamp earn badge vào localStorage */
 function persistTimestamp(badgeId: string, username?: string): string {

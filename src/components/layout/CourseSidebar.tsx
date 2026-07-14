@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, CheckCircle2, X, BookOpen, FileText, File, FileSpreadsheet, Download, User, Mail, Phone, Shield, ClipboardList, Lock } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
 import { useCourseStructure, useCourse } from "@/hooks/useCourses";
@@ -20,6 +21,37 @@ function getDocIcon(ext: string) {
   if (['doc', 'docx'].includes(ext)) return File;
   if (['xls', 'xlsx', 'csv'].includes(ext)) return FileSpreadsheet;
   return File;
+}
+
+function SidebarTooltip({
+  text,
+  children,
+  side = "right",
+}: {
+  text: string;
+  children: ReactNode;
+  side?: "top" | "right" | "bottom" | "left";
+}) {
+  if (!text.trim()) return <>{children}</>;
+
+  return (
+    <Tooltip delayDuration={180}>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent
+        side={side}
+        align="center"
+        sideOffset={10}
+        className="max-w-[280px] rounded-xl border border-border/80 bg-popover px-3.5 py-2.5 text-popover-foreground shadow-[0_16px_36px_rgba(15,23,42,0.18)] dark:shadow-[0_16px_36px_rgba(0,0,0,0.42)]"
+      >
+        <div className="flex items-start gap-2">
+          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+          <p className="text-[12px] font-semibold leading-snug tracking-normal">
+            {text}
+          </p>
+        </div>
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 
@@ -96,7 +128,8 @@ export function CourseSidebar() {
   };
 
   const sidebarContent = (
-    <div className="h-full overflow-y-auto overflow-x-hidden">
+    <TooltipProvider delayDuration={180} skipDelayDuration={80}>
+      <div className="h-full overflow-y-auto overflow-x-hidden">
       <div className="w-full max-w-[320px] py-5 overflow-x-hidden">
         {/* Loading */}
         {isLoading && (
@@ -138,9 +171,11 @@ export function CourseSidebar() {
           <>
             {/* Course Title */}
             <div className="px-5 mb-5 mt-3 min-w-0 max-w-full overflow-hidden">
-              <h2 className="mb-2 block max-w-[280px] truncate text-[18px] font-extrabold text-foreground tracking-tight leading-tight" title={course.title || "L&A Onboarding 2026"}>
-                {course.title || "L&A Onboarding 2026"}
-              </h2>
+              <SidebarTooltip text={course.title || "L&A Onboarding 2026"}>
+                <h2 className="mb-2 block max-w-[280px] truncate text-[18px] font-extrabold text-foreground tracking-tight leading-tight">
+                  {course.title || "L&A Onboarding 2026"}
+                </h2>
+              </SidebarTooltip>
               <p className="text-[13px] font-bold text-primary">
                 Nội dung khoá học
               </p>
@@ -162,12 +197,14 @@ export function CourseSidebar() {
                     )}>
                       <div className="flex-1 min-w-0 max-w-full overflow-hidden pl-[16px] pr-5">
                         <div className="flex max-w-[280px] items-start gap-1.5 overflow-hidden">
-                          <p className={cn(
-                            "block max-w-[256px] flex-1 text-[14px] font-bold leading-snug line-clamp-2 break-words",
-                            isActiveModule ? "text-primary" : "text-muted-foreground"
-                          )} title={module.title}>
-                            {module.title}
-                          </p>
+                          <SidebarTooltip text={module.title}>
+                            <p className={cn(
+                              "block max-w-[256px] flex-1 text-[14px] font-bold leading-snug line-clamp-2 break-words",
+                              isActiveModule ? "text-primary" : "text-muted-foreground"
+                            )}>
+                              {module.title}
+                            </p>
+                          </SidebarTooltip>
                           {module.completed && (
                             <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" fill="currentColor" stroke="white" strokeWidth={2} />
                           )}
@@ -202,9 +239,11 @@ export function CourseSidebar() {
                                 <span className="inline-block h-3.5 w-3.5 rounded-full border-2 border-muted-foreground/30" />
                               )}
                             </span>
-                            <span className="block max-w-[232px] flex-1 truncate text-[13px] leading-snug" title={lesson.title}>
-                              {lesson.title}
-                            </span>
+                            <SidebarTooltip text={lesson.title}>
+                              <span className="block max-w-[232px] flex-1 truncate text-[13px] leading-snug">
+                                {lesson.title}
+                              </span>
+                            </SidebarTooltip>
                           </button>
                         );
                       })}
@@ -227,15 +266,19 @@ export function CourseSidebar() {
                     const isActive = location.pathname.includes(`/assignments/${assignment.id}`);
                     const done = assignment.status === "submitted" || assignment.status === "feedback_given";
                     const locked = !assignment.can_submit && !done;
+                    const contentLocked = assignment.locked_reason === "content" && !done;
                     const deadlineLocked = assignment.locked_reason === "deadline" && !done;
                     return (
                       <button
                         key={assignment.id}
+                        disabled={contentLocked}
                         onClick={() => handleAssignmentClick(assignment.id)}
                         className={cn(
-                          "flex w-full items-center gap-2 text-left py-2 pl-[32px] pr-5 transition-all",
+                          "flex w-full items-center gap-2 text-left py-2 pl-[32px] pr-5 transition-all disabled:cursor-not-allowed disabled:opacity-60",
                           isActive
                             ? "text-primary font-bold bg-primary/5"
+                          : contentLocked
+                              ? "text-muted-foreground/70"
                           : locked && !deadlineLocked
                               ? "text-muted-foreground/70 hover:bg-muted/40"
                               : deadlineLocked
@@ -255,7 +298,9 @@ export function CourseSidebar() {
                           )}
                         </span>
                         <span className="min-w-0 max-w-[232px] flex-1 text-[13px] leading-snug">
-                          <span className="block truncate" title={assignment.title}>{assignment.title}</span>
+                          <SidebarTooltip text={assignment.title}>
+                            <span className="block truncate">{assignment.title}</span>
+                          </SidebarTooltip>
                           <span className="block truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
                             {assignment.status === "feedback_given" ? "Đã phản hồi" : assignment.status === "submitted" ? "Đã nộp" : deadlineLocked ? "Hết hạn nộp" : locked ? "Học xong nội dung để nộp" : "Chưa nộp"}
                           </span>
@@ -269,7 +314,8 @@ export function CourseSidebar() {
           </>
         )}
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 
   const infoContent = (

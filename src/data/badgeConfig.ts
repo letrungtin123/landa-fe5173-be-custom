@@ -106,7 +106,7 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
   {
     id: "omnipotent_master",
     name: "Bậc Thầy Toàn Năng",
-    description: "Hoàn thành 20 khóa học bất kỳ trên hệ thống của L&A",
+    description: "Hoàn thành 20 khóa học bất kỳ trên hệ thống",
     category: "expertise",
     tier: "diamond",
     requirement: "Hoàn thành 100% 20 khóa học bất kỳ",

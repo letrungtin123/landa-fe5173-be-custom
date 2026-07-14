@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Lock } from "lucide-react";
 import { BadgeIcon } from "./BadgeIcon";
 import { TIER_CONFIG, type BadgeDefinition } from "@/data/badgeConfig";
-import type { EarnedBadge } from "@/lib/badgeEvaluator";
+import type { BadgeProgressInfo, EarnedBadge } from "@/lib/badgeEvaluator";
 import { cn } from "@/lib/utils";
 import { BADGE_CARD_IMAGES, BADGE_MOBILE_CARD_IMAGES } from "@/data/badgeImages";
 
@@ -15,6 +15,7 @@ interface BadgeCardProps {
   cardImageUrl?: string | null;
   iconImageUrl?: string | null;
   mobileCardImageUrl?: string | null;
+  progressInfo?: BadgeProgressInfo | null;
   useMobileCardOnMobile?: boolean;
   enableLockedFlip?: boolean;
 }
@@ -27,6 +28,7 @@ export function BadgeCard({
   cardImageUrl,
   iconImageUrl,
   mobileCardImageUrl,
+  progressInfo,
   useMobileCardOnMobile = false,
   enableLockedFlip = false,
 }: BadgeCardProps) {
@@ -169,18 +171,39 @@ export function BadgeCard({
               roundedClass
             )}
           >
-            <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-muted/70 shadow-sm md:mb-3 md:h-10 md:w-10">
-              <Lock className="h-4 w-4 text-muted-foreground md:h-5 md:w-5" />
+            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-muted/70 shadow-sm md:h-9 md:w-9">
+              <Lock className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/80 md:text-[11px]">
+            <p className="h-3 text-[10px] font-bold uppercase leading-3 tracking-[0.12em] text-muted-foreground/80 md:text-[11px]">
               Chưa đạt
             </p>
-            <h3 className="mt-1 line-clamp-2 text-sm font-extrabold leading-tight text-foreground md:text-base">
+            <h3 className="mt-1 flex min-h-[34px] items-center justify-center line-clamp-2 text-sm font-extrabold leading-[17px] text-foreground md:min-h-[38px] md:text-base md:leading-[19px]">
               {badge.name}
             </h3>
-            <p className="mt-2 line-clamp-5 text-xs font-medium leading-relaxed text-muted-foreground md:mt-3 md:line-clamp-6 md:text-sm">
+            <p className={cn(
+              "mt-2 max-w-[190px] text-xs font-medium leading-[15px] text-muted-foreground md:max-w-[180px] md:leading-[16px]",
+              progressInfo
+                ? "min-h-[45px] line-clamp-3 md:min-h-[64px] md:line-clamp-4"
+                : "min-h-[75px] line-clamp-5 md:min-h-[96px] md:line-clamp-6"
+            )}>
               {badge.description}
             </p>
+            {progressInfo && (
+              <div className="mt-2 w-full max-w-[176px] md:mt-1">
+                <div className="mb-1 flex items-center justify-between gap-2 whitespace-nowrap text-[9px] font-semibold leading-none text-muted-foreground/80 md:text-[10px]">
+                  <span className="truncate">{"Ti\u1ebfn \u0111\u1ed9"}</span>
+                  <span className="shrink-0">{progressInfo.label}</span>
+                </div>
+                <div className="h-[3px] w-full overflow-hidden rounded-full bg-background/80 md:h-1">
+                  <motion.div
+                    className="h-full rounded-full bg-[#0062DF]"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progressInfo.percent}%` }}
+                    transition={{ duration: 0.45, ease: "easeOut" }}
+                  />
+                </div>
+              </div>
+            )}
             <span className="mt-2 text-[10px] font-semibold text-muted-foreground/60 md:mt-3">
               Chạm để quay lại
             </span>

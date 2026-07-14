@@ -1,12 +1,18 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { Check, ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { BadgeCard } from "./BadgeCard";
 import { BADGE_DEFINITIONS, CATEGORY_LABELS, type BadgeCategory, type BadgeDefinition } from "@/data/badgeConfig";
 import type { EarnedBadge } from "@/lib/badgeEvaluator";
 import { cn } from "@/lib/utils";
 import { BADGE_CARD_IMAGES, BADGE_MOBILE_CARD_IMAGES } from "@/data/badgeImages";
-import type { BadgeImageMap } from "@/hooks/useBadges";
+import type { BadgeImageMap, BadgeProgressMap } from "@/hooks/useBadges";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface BadgeGridProps {
   earnedBadges: EarnedBadge[];
@@ -14,6 +20,7 @@ interface BadgeGridProps {
   className?: string;
   /** Dynamic badge image map from API */
   badgeImageMap?: BadgeImageMap;
+  badgeProgressMap?: BadgeProgressMap;
 }
 
 type FilterType = "all" | "earned" | "locked" | BadgeCategory;
@@ -27,7 +34,7 @@ const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: "innovation", label: CATEGORY_LABELS.innovation },
 ];
 
-export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageMap }: BadgeGridProps) {
+export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageMap, badgeProgressMap }: BadgeGridProps) {
   const [filter, setFilter] = useState<FilterType>("all");
   const [selectedBadge, setSelectedBadge] = useState<{ badge: BadgeDefinition; earned: EarnedBadge } | null>(null);
 
@@ -78,11 +85,42 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageM
   const selectedMobileImgSrc = selectedBadge
     ? (getMobileCardUrl(selectedBadge.badge.id) || BADGE_MOBILE_CARD_IMAGES[selectedBadge.badge.id] || BADGE_MOBILE_CARD_IMAGES["onboarding_warrior"])
     : "";
+  const selectedFilterLabel = FILTER_OPTIONS.find(opt => opt.value === filter)?.label || FILTER_OPTIONS[0].label;
 
   return (
     <div className={cn("space-y-6", className)}>
       {/* Filter tabs */}
-      <div className="flex flex-wrap gap-2">
+      <div className="md:hidden">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex h-10 w-full items-center justify-between rounded-xl border border-border bg-card px-3.5 text-left text-[13px] font-semibold text-foreground shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5">
+              <span className="flex min-w-0 items-center gap-2">
+                <SlidersHorizontal className="h-4 w-4 shrink-0 text-primary" />
+                <span className="truncate">{selectedFilterLabel}</span>
+              </span>
+              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[calc(100vw-2rem)] max-w-[360px] rounded-xl p-1.5">
+            {FILTER_OPTIONS.map(opt => (
+              <DropdownMenuItem
+                key={opt.value}
+                onSelect={() => setFilter(opt.value)}
+                className="flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-[13px] font-semibold"
+              >
+                <span>
+                  {opt.label}
+                  {opt.value === "earned" && ` (${earnedBadges.length})`}
+                  {opt.value === "locked" && ` (${activeBadgesDef.length - earnedBadges.length})`}
+                </span>
+                {filter === opt.value && <Check className="h-4 w-4 text-primary" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div className="hidden flex-wrap gap-2 md:flex">
         {FILTER_OPTIONS.map(opt => (
           <button
             key={opt.value}
@@ -131,6 +169,7 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageM
                     cardImageUrl={getCardUrl(badge.id)}
                     iconImageUrl={getIconUrl(badge.id)}
                     mobileCardImageUrl={getMobileCardUrl(badge.id)}
+                    progressInfo={badgeProgressMap?.[badge.id]}
                     useMobileCardOnMobile
                     enableLockedFlip
                     onClick={() => {
