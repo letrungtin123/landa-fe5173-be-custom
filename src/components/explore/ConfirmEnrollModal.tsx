@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import clockIcon from "@/assets/InitConfirmEnrollModal/clock-icon.png";
 import fileIcon from "@/assets/InitConfirmEnrollModal/folder-icon.png";
 import lineIcon from "@/assets/InitConfirmEnrollModal/line-icon.png";
 import roundIcon from "@/assets/InitConfirmEnrollModal/round-icon.png";
+import { useAppStore } from "@/stores/useAppStore";
 
 interface ConfirmEnrollModalProps {
   open: boolean;
@@ -22,6 +24,13 @@ export function ConfirmEnrollModal({
   onConfirm,
 }: ConfirmEnrollModalProps) {
   const displayCourseName = courseName || tenantName || "Khóa học";
+
+  const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
+
+  useEffect(() => {
+    setCourseModalActive(open);
+    return () => setCourseModalActive(false);
+  }, [open, setCourseModalActive]);
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>

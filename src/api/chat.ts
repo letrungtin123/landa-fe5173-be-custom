@@ -126,7 +126,7 @@ export function sendMessageStream(
       const response = await fetch(url, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ content, ...(courseId ? { courseId } : {}) }),
+        body: JSON.stringify({ content, target: 'learner', ...(courseId ? { courseId } : {}) }),
         signal: controller.signal,
       });
 

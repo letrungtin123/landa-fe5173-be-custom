@@ -328,7 +328,7 @@ export function ExplorePage() {
                     />
                   </div>
 
-                  <div className="relative z-[70] flex flex-col flex-1 w-full justify-between pointer-events-auto">
+                  <div className="relative z-10 flex flex-col flex-1 w-full justify-between pointer-events-auto">
                     <div>
                       {/* Badge COURSE */}
                       <div
@@ -361,7 +361,7 @@ export function ExplorePage() {
                       </div>
 
                       {/* Mobile Filter Button */}
-                      <div className="md:hidden w-full relative z-[90]" ref={mobileFilterRef}>
+                      <div className="md:hidden w-full relative z-20" ref={mobileFilterRef}>
                         <button
                           onClick={() => setMobileFilterOpen(prev => !prev)}
                           className={cn(
@@ -388,7 +388,7 @@ export function ExplorePage() {
                               animate={{ opacity: 1, y: 0, scale: 1 }}
                               exit={{ opacity: 0, y: 10, scale: 0.97 }}
                               transition={{ duration: 0.15 }}
-                              className="absolute left-0 top-[calc(100%+8px)] z-[120] w-[280px] rounded-2xl border border-border bg-card p-4 shadow-xl flex flex-col gap-5 max-h-[60vh] overflow-y-auto scrollbar-thin"
+                              className="absolute left-0 top-[calc(100%+8px)] z-30 w-[280px] rounded-2xl border border-border bg-card p-4 shadow-xl flex flex-col gap-5 max-h-[60vh] overflow-y-auto scrollbar-thin"
                             >
                               {/* Trạng thái học */}
                               <div className="flex flex-col gap-2.5">
@@ -518,7 +518,7 @@ export function ExplorePage() {
               </div>
 
               {/* Bộ lọc trạng thái học + dropdown danh mục (Chỉ hiển thị trên PC) */}
-              <div className="relative z-[70] hidden md:flex items-center justify-between gap-3 mb-6 flex-wrap">
+              <div className="relative z-10 hidden md:flex items-center justify-between gap-3 mb-6 flex-wrap">
                 {/* Left — Filter pills */}
                 <div className="flex flex-wrap gap-2">
                   {([
@@ -543,7 +543,7 @@ export function ExplorePage() {
                 </div>
 
                 {/* Right — Category dropdown */}
-                <div className="relative z-[90]" ref={dropdownRef}>
+                <div className="relative z-20" ref={dropdownRef}>
                   <button
                     onClick={() => setCategoryDropdownOpen(prev => !prev)}
                     className={cn(
@@ -570,7 +570,7 @@ export function ExplorePage() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -4, scale: 0.97 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-full mt-2 z-[120] w-[240px] rounded-2xl border border-border bg-card p-2 shadow-xl"
+                        className="absolute right-0 top-full mt-2 z-30 w-[240px] rounded-2xl border border-border bg-card p-2 shadow-xl"
                       >
                         {/* Tất cả danh mục — clear */}
                         <button

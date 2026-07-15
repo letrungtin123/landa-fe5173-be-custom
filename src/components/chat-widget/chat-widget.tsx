@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { storageUrl } from '@/utils/storageUrl';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useAppStore } from '@/stores/useAppStore';
 import {
   fetchActiveBot, fetchConversations, createConversation,
   deleteConversation, fetchMessages, sendMessageStream,
@@ -84,6 +85,7 @@ export default function ChatWidget() {
   const dragRef = useRef({ sx: 0, sy: 0, sl: 0, st: 0, active: false, moved: false });
 
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const isCourseModalActive = useAppStore(s => s.isCourseModalActive);
 
   // ── Pre-load bot avatar on mount (for FAB) ──
   useEffect(() => {
@@ -316,7 +318,14 @@ export default function ChatWidget() {
     fetchConversations().then(setConversations).catch(() => {});
   };
 
-  if (!isAuthenticated) return null;
+  useEffect(() => {
+    if (!isCourseModalActive) return;
+    setOpen(false);
+    setFullscreen(false);
+    setConfirmDeleteId(null);
+  }, [isCourseModalActive]);
+
+  if (!isAuthenticated || isCourseModalActive) return null;
 
   const widgetClass = fullscreen
     ? 'fixed inset-4 z-[9998] rounded-2xl'
@@ -333,7 +342,7 @@ export default function ChatWidget() {
           onPointerDown={onFabPointerDown}
           onPointerMove={onFabPointerMove}
           onPointerUp={onFabPointerUp}
-          style={{ position: 'fixed', zIndex: 9999, touchAction: 'none' }}
+          style={{ position: 'fixed', zIndex: 40, touchAction: 'none' }}
           className="bottom-[85px] md:bottom-6 right-6 h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/25 flex items-center justify-center hover:shadow-xl hover:shadow-primary/30 cursor-grab active:cursor-grabbing select-none"
           title="Chat với AI"
         >
