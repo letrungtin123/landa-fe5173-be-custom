@@ -11,7 +11,7 @@ import { useLessonDetail } from "@/hooks/useLessonDetail";
 import { useCourse, useCourseStructure, useCourseBlocksRaw } from "@/hooks/useCourses";
 import { useCourseFiles } from "@/hooks/useCourseFiles";
 import type { CourseFile } from "@/hooks/useCourseFiles";
-import { BookOpen, Download, FileText, FileSpreadsheet, Presentation, MessageCircle, CheckCircle2, ChevronUp } from "lucide-react";
+import { BookOpen, Download, FileText, FileSpreadsheet, Presentation, CheckCircle2, ChevronUp } from "lucide-react";
 import { MentorSidebar } from "@/components/lesson/MentorSidebar";
 import { LessonImageCarousel } from "@/components/lesson/LessonImageCarousel";
 import { useParams, useNavigate } from "react-router-dom";
@@ -627,16 +627,6 @@ export function LessonDetailPage() {
                       Chưa có tài liệu...
                     </p>
                   )}
-                </div>
-
-                {/* AI Mentor hint */}
-                <div className="mt-2 rounded-2xl border border-border bg-card p-3 text-center shadow-sm">
-                  <p className="mb-2 text-[10px] font-bold leading-[14px] text-primary tracking-widest uppercase">
-                    AI MENTOR
-                  </p>
-                  <p className="text-[14px] font-normal leading-[18px] text-muted-foreground">
-                    Bạn cần trợ giúp trong quá trình học?
-                  </p>
                 </div>
 
               </div>

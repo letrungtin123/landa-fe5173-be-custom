@@ -23,6 +23,12 @@ function getDocIcon(ext: string) {
   return File;
 }
 
+function getMentorRoleLabel(role?: string | null) {
+  if (role === 'instructor') return 'Giảng viên';
+  if (role === 'staff') return 'Trợ giảng';
+  return role || 'Trợ giảng';
+}
+
 function SidebarTooltip({
   text,
   children,
@@ -114,7 +120,6 @@ export function CourseSidebar() {
   const hasMentorSectionInfo = Boolean(mentorSectionDescription || mentorSectionLogo);
 
   const [activeTab, setActiveTab] = useState<'content' | 'info'>('content');
-  const [selectedMentor, setSelectedMentor] = useState<Mentor | null>(null);
 
   const handleLessonClick = (moduleId: string, lessonId: string) => {
     setCurrentLesson(moduleId, lessonId);
@@ -325,12 +330,12 @@ export function CourseSidebar() {
         {mentors.length > 0 ? (
           mentors.map((mentor) => {
             const avatarUrl = mentor.profile_image_url_full || mentor.profile_image_url || mentor.avatar;
-            const role = mentor.role === 'instructor' ? 'Giảng viên' : mentor.role === 'staff' ? 'Trợ giảng' : (mentor.role || "Trợ giảng");
+            const role = getMentorRoleLabel(mentor.role);
+            const intro = mentor.bio || mentorSectionDescription || "Chưa có thông tin chi tiết.";
             return (
-              <div 
-                key={mentor.id} 
-                onClick={() => setSelectedMentor(mentor)}
-                className="rounded-xl border border-border bg-card p-6 flex flex-col items-center text-center shadow-sm cursor-pointer transition-colors hover:border-primary/50 hover:bg-accent/30 active:bg-accent/50"
+              <div
+                key={mentor.id}
+                className="rounded-xl border border-border bg-card p-6 flex flex-col items-center text-center shadow-sm"
               >
                 <div className="relative mb-3">
                   {avatarUrl ? (
@@ -349,21 +354,36 @@ export function CourseSidebar() {
                   Mentor
                 </div>
                 <h3 className="text-[18px] font-bold text-foreground">{mentor.name}</h3>
-                <p className="text-[13px] text-muted-foreground mb-4">{role}</p>
+                <div className="mt-1.5 mb-4 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-semibold leading-[14px] text-primary">
+                  <Shield className="h-3 w-3" />
+                  {role}
+                </div>
                 
                 <div className="w-full h-px bg-border/50 mb-4" />
                 
-                <div className="w-full text-left">
+                <div className="w-full space-y-3 text-left">
                   {mentorSectionLogo && (
                     <img
                       src={mentorSectionLogo}
                       alt=""
-                      className="h-6 w-auto object-contain object-left mb-3"
+                      className="h-6 w-auto object-contain object-left"
                     />
                   )}
-                  <p className="text-[13px] text-muted-foreground leading-relaxed">
-                    {mentor.bio || mentorSectionDescription || "Chưa có thông tin chi tiết."}
-                  </p>
+                  {mentor.email && (
+                    <InfoRow icon={Mail} label="Email" value={mentor.email} />
+                  )}
+                  {mentor.phone_number && (
+                    <InfoRow icon={Phone} label="Điện thoại" value={mentor.phone_number} />
+                  )}
+                  <div className="rounded-2xl bg-muted/50 border border-border/50 p-4">
+                    <div className="flex items-center gap-1.5 text-[14px] font-semibold leading-[18px] text-muted-foreground mb-2">
+                      <FileText className="h-3.5 w-3.5" />
+                      Giới thiệu
+                    </div>
+                    <p className="text-[14px] font-normal leading-[18px] text-foreground whitespace-pre-line">
+                      {intro}
+                    </p>
+                  </div>
                 </div>
               </div>
             );
@@ -461,85 +481,6 @@ export function CourseSidebar() {
           </>
         )}
       </AnimatePresence>
-
-      {/* ═══ MENTOR DETAIL MODAL (MOBILE) ═══ */}
-      <AnimatePresence>
-        {selectedMentor && (
-          <div
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 lg:hidden"
-            onClick={() => setSelectedMentor(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.92, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-card shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Close */}
-              <button
-                onClick={() => setSelectedMentor(null)}
-                className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/80 border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-
-              {/* Header gradient */}
-              <div className="h-32 w-full bg-gradient-to-br from-primary/90 via-primary to-primary/50 relative">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-60 mix-blend-overlay"></div>
-              </div>
-
-              {/* Avatar + Name */}
-              <div className="relative px-6 pb-6">
-                <div className="flex flex-col items-center -mt-12 mb-4">
-                  <div className="h-24 w-24 rounded-full border-4 border-card bg-muted shadow-xl overflow-hidden mb-3">
-                    {selectedMentor.profile_image_url_full || selectedMentor.profile_image_url || selectedMentor.avatar ? (
-                      <img
-                        src={(selectedMentor.profile_image_url_full || selectedMentor.profile_image_url || selectedMentor.avatar)!}
-                        alt={selectedMentor.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-primary/10">
-                        <User className="h-10 w-10 text-primary/40" />
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="text-[20px] font-bold leading-[24px] text-foreground text-center">
-                    {selectedMentor.name || selectedMentor.full_name}
-                  </h3>
-                  <div className="mt-1.5 flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-semibold leading-[14px] text-primary">
-                    <Shield className="h-3 w-3" />
-                    {selectedMentor.role === 'instructor' ? 'Giảng viên' : selectedMentor.role === 'staff' ? 'Trợ giảng' : (selectedMentor.role || 'Trợ giảng')}
-                  </div>
-                </div>
-
-                {/* Info rows */}
-                <div className="space-y-3">
-                  {selectedMentor.email && (
-                    <InfoRow icon={Mail} label="Email" value={selectedMentor.email} />
-                  )}
-                  {selectedMentor.phone_number && (
-                    <InfoRow icon={Phone} label="Điện thoại" value={selectedMentor.phone_number} />
-                  )}
-                  {selectedMentor.bio && (
-                    <div className="rounded-2xl bg-muted/50 border border-border/50 p-4">
-                      <div className="flex items-center gap-1.5 text-[14px] font-semibold leading-[18px] text-muted-foreground mb-2">
-                        <FileText className="h-3.5 w-3.5" />
-                        Giới thiệu
-                      </div>
-                      <p className="text-[14px] font-normal leading-[18px] text-foreground whitespace-pre-line">
-                        {selectedMentor.bio}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </>
   );
 }
@@ -550,7 +491,7 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
       <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
       <div className="min-w-0 flex-1">
         <div className="text-[10px] font-semibold leading-[14px] text-muted-foreground">{label}</div>
-        <div className="text-[14px] font-semibold leading-[18px] text-foreground truncate">{value}</div>
+        <div className="text-[14px] font-semibold leading-[18px] text-foreground break-words">{value}</div>
       </div>
     </div>
   );

@@ -29,7 +29,7 @@ export function BottomNav() {
             className="flex flex-1 flex-col items-center justify-center gap-1 relative"
           >
             {isActive && (
-              <span className="absolute inset-x-4 top-0 h-0.5 bg-accent rounded-b-full" />
+              <span className="absolute inset-x-4 top-0 h-0.5 bg-accent" />
             )}
             <img
               src={item.iconSrc}

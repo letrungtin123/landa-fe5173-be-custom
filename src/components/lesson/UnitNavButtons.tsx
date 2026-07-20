@@ -22,7 +22,6 @@ interface UnitNavButtonsProps {
 
 export function UnitNavButtons({
   currentIndex,
-  totalUnits,
   onPrev,
   onNext,
   onComplete,
@@ -51,11 +50,6 @@ export function UnitNavButtons({
         <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         Quay lại
       </button>
-
-      {/* Indicator */}
-      <span className="text-[12px] sm:text-[14px] font-normal leading-[18px] text-muted-foreground text-center shrink-0">
-        {currentIndex + 1} / {totalUnits}
-      </span>
 
       {/* Tiếp tục / Hoàn thành */}
       <div className="flex justify-end items-center gap-1.5 sm:gap-3 shrink-0">
@@ -90,10 +84,9 @@ export function UnitNavButtons({
             {isCompleted && hasNextLesson && (
               <button
                 onClick={onNextLesson}
-                className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-primary px-3 sm:px-6 py-2 sm:py-2.5 text-[11px] sm:text-[14px] font-semibold leading-[18px] text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97] whitespace-nowrap"
+                className="inline-flex min-w-[112px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[11px] font-semibold leading-[18px] text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97] whitespace-nowrap sm:min-w-[132px] sm:gap-2 sm:px-6 sm:py-2.5 sm:text-[14px]"
               >
-                <span className="hidden sm:inline">Tiếp tục học</span>
-                <span className="sm:hidden">Tiếp tục</span>
+                Tiếp tục
                 <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
             )}
@@ -101,7 +94,7 @@ export function UnitNavButtons({
         ) : (
           <button
             onClick={onNext}
-            className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-primary px-3 sm:px-6 py-2 sm:py-2.5 text-[11px] sm:text-[14px] font-semibold leading-[18px] text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97] whitespace-nowrap"
+            className="inline-flex min-w-[112px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[11px] font-semibold leading-[18px] text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97] whitespace-nowrap sm:min-w-[132px] sm:gap-2 sm:px-6 sm:py-2.5 sm:text-[14px]"
           >
             Tiếp tục
             <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -111,4 +104,3 @@ export function UnitNavButtons({
     </div>
   );
 }
-

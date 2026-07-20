@@ -295,7 +295,7 @@ export function ExplorePage() {
       <div className="flex flex-col lg:flex-row w-full">
         {/* Left Sidebar */}
         <div className="hidden lg:block w-full lg:w-[280px] shrink-0 lg:border-r lg:border-border lg:pr-8 pt-4 lg:pt-8 mb-6 lg:mb-0">
-          <div className="sticky top-24 space-y-10 max-h-[calc(100vh-120px)] overflow-y-auto hide-scrollbar pb-8">
+          <div className="sticky top-24 space-y-10 self-start pb-8">
             <UserProfileCard />
             <BadgeShowcase />
           </div>
@@ -878,7 +878,7 @@ export function ExplorePage() {
                               }}
                               className="flex w-full"
                             >
-                              <div className="group flex flex-row flex-1 w-full h-[150px] overflow-hidden rounded-2xl border border-primary shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-card transition-all duration-200 hover:shadow-md hover:scale-[1.02]">
+                              <div className="group flex flex-row flex-1 w-full h-[150px] overflow-hidden rounded-2xl border-[1.5px] border-primary/55 bg-card shadow-[0_2px_10px_rgb(0,0,0,0.02)] transition-all duration-200 hover:border-primary/80 hover:shadow-md hover:scale-[1.02]">
                                 {/* Thumbnail */}
                                 <div className="w-[38%] h-full shrink-0 relative flex items-center justify-center overflow-hidden p-1.5">
                                   {imageUrl ? (
@@ -903,14 +903,14 @@ export function ExplorePage() {
                                   )}
                                 </div>
                                 {/* Content */}
-                                <div className="flex flex-col flex-1 p-3 w-[62%]">
+                                <div className="flex min-w-0 flex-1 flex-col p-3">
                                   <div className="mb-1 text-[10px] font-semibold leading-[16px] tracking-[-0.05px] text-primary truncate">
                                     {selectedCategoryDetail.name}
                                   </div>
                                   <h3 className="mb-0 text-[14px] font-semibold leading-[18px] text-foreground group-hover:text-primary transition-colors line-clamp-2">
                                     {course.display_name}
                                   </h3>
-                                  <div className="mt-auto">
+                                  <div className="mt-auto pt-2">
                                     {isEnrolled && completionPercent < 100 && (
                                       <div className="mb-1.5">
                                         <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
@@ -918,8 +918,8 @@ export function ExplorePage() {
                                         </div>
                                       </div>
                                     )}
-                                    <div className="flex items-center justify-between w-full">
-                                      <div className="flex items-center gap-1 text-[12px] font-bold leading-normal text-primary">
+                                    <div className="flex items-center justify-between gap-3 w-full">
+                                      <div className="flex min-w-0 items-center gap-1 text-[12px] font-bold leading-normal text-primary">
                                         {isEnrolled ? (
                                           completionPercent === 100 ? (
                                             <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
@@ -1053,7 +1053,7 @@ function ExploreCourseCard({
     >
       <Card
         className={cn(
-          "group h-[330px] md:h-[420px] flex flex-col flex-1 w-full p-1.5 pb-4 md:pb-6 rounded-[24px] md:rounded-[28px] border-border bg-card shadow-sm transition-all hover:shadow-md hover:scale-[1.02]",
+          "group h-[330px] md:h-[420px] flex flex-col flex-1 w-full p-1.5 pb-4 md:pb-6 rounded-[24px] md:rounded-[28px] border-[1.5px] border-primary/55 bg-card shadow-sm transition-all hover:border-primary/80 hover:shadow-md hover:scale-[1.02]",
           isHighlighted && "course-focus-highlight"
         )}
       >
@@ -1083,7 +1083,7 @@ function ExploreCourseCard({
           />
         </div>
 
-        <div className="pt-3 md:pt-4 px-2 flex flex-col flex-1">
+        <div className="flex flex-col flex-1 px-1.5 pt-3 md:px-2.5 md:pt-4">
           {/* Category label nhỏ màu xanh */}
           {categoryName && (
             <p className="mb-1.5 text-[12px] md:text-[13px] font-medium leading-[16px] text-primary">
@@ -1091,11 +1091,11 @@ function ExploreCourseCard({
             </p>
           )}
 
-          <h3 className="mb-4 md:mb-5 text-[16px] md:text-[20px] font-bold leading-[22px] md:leading-[26px] text-foreground group-hover:text-accent transition-colors line-clamp-2">
+          <h3 className="mb-0 text-[16px] md:text-[20px] font-bold leading-[22px] md:leading-[26px] text-foreground group-hover:text-accent transition-colors line-clamp-2">
             {course.display_name}
           </h3>
 
-          <div className="mt-auto pt-3 md:pt-5">
+          <div className="mt-auto pt-3 md:pt-4">
             {/* Thanh tiến độ — chỉ hiển thị khi đã enroll và chưa hoàn thành */}
             {isEnrolled && typeof completionPercent === "number" && completionPercent < 100 && (
               <div className="mb-3 md:mb-4">
@@ -1109,9 +1109,9 @@ function ExploreCourseCard({
             )}
 
             {/* CTA button / link */}
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-center justify-between gap-3 w-full">
               {isEnrolled ? (
-                <div className="flex items-center gap-1.5 text-[14px] md:text-[15px] font-bold leading-[20px] text-primary">
+                <div className="flex min-w-0 items-center gap-1.5 text-[14px] md:text-[15px] font-bold leading-[20px] text-primary">
                   {completionPercent === 100 ? (
                     <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                       <Check className="h-4 w-4 md:h-5 md:w-5 stroke-[3]" />

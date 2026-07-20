@@ -39,12 +39,12 @@ export function DashboardPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="mx-auto w-full max-w-[1420px] px-4 pb-8 md:px-8 xl:px-10"
+        className="mx-auto w-full max-w-[1420px] px-4 pb-8 pt-4 md:px-8 lg:pt-0 xl:px-10"
       >
         <div className="flex flex-col lg:flex-row">
           {/* Thanh bên trái */}
           <div className="hidden lg:block w-full lg:w-[280px] shrink-0 lg:border-r lg:border-border lg:pr-12 pt-8">
-            <div className="sticky top-24 space-y-10 max-h-[calc(100vh-120px)] overflow-y-auto hide-scrollbar pb-8">
+            <div className="sticky top-24 space-y-10 self-start pb-8">
               <UserProfileCard />
               <BadgeShowcase />
             </div>

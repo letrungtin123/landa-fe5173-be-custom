@@ -90,7 +90,7 @@ export function ConfirmEnrollModal({
             <div className="mt-[11px] text-center font-normal italic text-foreground/80 md:mt-[17px]">
               <p className="max-w-[285px] text-[10px] leading-[12px] md:hidden">
                 <span className="block">
-                  *Hệ thống sẽ bắt đầu tính thời gian làm bài ngay khi
+                  Hệ thống sẽ bắt đầu tính thời gian làm bài ngay khi
                 </span>
                 <span className="block">
                   bạn xác nhận. Hãy đảm bảo bạn đã sẵn sàng nhé!
@@ -98,7 +98,7 @@ export function ConfirmEnrollModal({
               </p>
               <p className="hidden max-w-[360px] text-[12px] leading-[14px] md:block">
                 <span className="block">
-                  *Hệ thống sẽ bắt đầu tính thời gian làm bài ngay khi
+                  Hệ thống sẽ bắt đầu tính thời gian làm bài ngay khi
                 </span>
                 <span className="block">
                   bạn xác nhận. Hãy đảm bảo bạn đã sẵn sàng nhé!
@@ -109,7 +109,7 @@ export function ConfirmEnrollModal({
             <button
               type="button"
               onClick={onConfirm}
-              className="mt-[26px] inline-flex h-[38px] min-w-[164px] items-center justify-center rounded-full bg-primary px-6 text-[14px] font-semibold text-primary-foreground shadow-[0_12px_28px_hsl(var(--primary)/0.28)] outline-none transition hover:-translate-y-0.5 hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card md:mt-[46px]"
+              className="mt-[26px] inline-flex h-[38px] min-w-[164px] items-center justify-center rounded-full bg-primary px-6 text-[14px] font-semibold text-primary-foreground outline-none transition hover:-translate-y-0.5 hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card dark:text-white md:mt-[46px]"
             >
               Bắt đầu học ngay
             </button>

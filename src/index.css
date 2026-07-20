@@ -210,8 +210,8 @@
     --popover: 222 47% 9%;
     --popover-foreground: 210 40% 92%;
 
-    --primary: 216 100% 65%;
-    --primary-foreground: 222 47% 6%;
+    --primary: 216 100% 45%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 217 33% 15%;
     --secondary-foreground: 210 40% 80%;
@@ -243,7 +243,7 @@
     --sidebar-active: 217 91% 60%;
 
     --gradient-from: 217 91% 60%;
-    --gradient-to: 216 100% 50%;
+    --gradient-to: 216 100% 40%;
   }
 
   /* ============================

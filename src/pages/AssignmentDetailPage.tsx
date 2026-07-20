@@ -528,7 +528,7 @@ export function AssignmentDetailPage() {
                 <Button
                   disabled={!canSubmit || submitMut.isPending || !answer.trim()}
                   onClick={submit}
-                  className="h-11 w-full gap-2 px-5 text-[14px] font-bold sm:w-auto"
+                  className="h-11 w-full gap-2 rounded-full px-5 text-[14px] font-bold sm:w-auto"
                 >
                   {submitMut.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

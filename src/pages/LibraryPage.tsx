@@ -341,7 +341,7 @@ export function LibraryPage() {
       <div className="flex flex-col lg:flex-row w-full">
         {/* Left Sidebar */}
         <div className="hidden lg:block w-full lg:w-[280px] shrink-0 lg:border-r lg:border-border lg:pr-8 pt-4 lg:pt-8 mb-6 lg:mb-0">
-          <div className="sticky top-24 space-y-10 max-h-[calc(100vh-120px)] overflow-y-auto hide-scrollbar pb-8">
+          <div className="sticky top-24 space-y-10 self-start pb-8">
             <UserProfileCard />
             <BadgeShowcase />
           </div>
@@ -565,7 +565,7 @@ export function LibraryPage() {
                         className={`group/card cursor-pointer overflow-hidden border-2 transition-all duration-300 shrink-0 snap-start w-[220px] sm:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] h-[200px] rounded-[28px] ${displayClass} flex-col ${
                           isActive
                             ? "ring-2 ring-offset-2 ring-primary border-primary shadow-md"
-                            : "border-transparent hover:shadow-md hover:-translate-y-1"
+                            : "border-transparent"
                         }`}
                         style={{ backgroundColor: bgColor }}
                       >

@@ -162,11 +162,11 @@ export function Header() {
         )}
 
         {/* Logo */}
-        <Link to="/dashboard" className="flex shrink-0 items-center gap-2 -translate-x-[2px]">
+        <Link to="/dashboard" className="flex h-10 w-[128px] shrink-0 items-center -translate-x-[2px] sm:w-[168px] lg:w-[184px]">
           <img
             src={currentHeaderLogo}
             alt="Logo"
-            className={`h-10 w-auto object-contain transition-opacity duration-300 ${brandingLoading ? 'opacity-0' : 'opacity-100'}`}
+            className={`h-full w-full object-contain object-left transition-opacity duration-300 ${brandingLoading ? 'opacity-0' : 'opacity-100'}`}
           />
         </Link>
 
@@ -190,7 +190,7 @@ export function Header() {
               >
                 {item.label}
                 {isActive && (
-                  <span className="absolute inset-x-2 -bottom-[1.05rem] h-0.5 bg-accent rounded-full" />
+                  <span className="absolute inset-x-2 -bottom-[1.05rem] h-0.5 bg-accent" />
                 )}
               </Link>
             );

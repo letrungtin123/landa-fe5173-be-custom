@@ -6,7 +6,8 @@ import { BADGE_DEFINITIONS, CATEGORY_LABELS, type BadgeCategory, type BadgeDefin
 import type { EarnedBadge } from "@/lib/badgeEvaluator";
 import { cn } from "@/lib/utils";
 import { BADGE_CARD_IMAGES, BADGE_MOBILE_CARD_IMAGES } from "@/data/badgeImages";
-import type { BadgeImageMap, BadgeProgressMap } from "@/hooks/useBadges";
+import type { BadgeImageMap } from "@/hooks/useBadges";
+import type { BadgeProgressMap } from "@/lib/badgeEvaluator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -239,22 +240,6 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageM
                     />
                   </div>
 
-                  {/* Absolute positioned button overlapping the image */}
-                  {selectedBadge.badge.id !== "omnipotent_master" && (
-                    <div className="absolute inset-x-0 bottom-[14%] z-20 hidden justify-center md:flex">
-                      <motion.button
-                        onClick={() => setSelectedBadge(null)}
-                        className="w-[65%] max-w-[220px] rounded-full bg-[#0b5cff] px-6 py-3 text-[15px] font-bold text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:bg-blue-600 transition-all"
-                        whileHover={{ scale: 1.04 }}
-                        whileTap={{ scale: 0.96 }}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6 }}
-                      >
-                        Tuyệt vời! 🎉
-                      </motion.button>
-                    </div>
-                  )}
                 </div>
               </motion.div>
             </div>

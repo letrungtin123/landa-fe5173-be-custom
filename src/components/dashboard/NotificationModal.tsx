@@ -45,11 +45,21 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
+      <DialogContent
+        className="flex max-h-[calc(100dvh-24px)] w-[calc(100vw-24px)] max-w-lg flex-col gap-0 overflow-hidden p-0 focus:outline-none sm:max-h-[85vh] sm:w-full"
+        tabIndex={-1}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          const dialogContent = event.currentTarget as HTMLElement | null;
+          requestAnimationFrame(() => {
+            dialogContent?.focus({ preventScroll: true });
+          });
+        }}
+      >
         {/* Header */}
-        <DialogHeader className="px-5 pt-5 pb-3 border-b border-border bg-muted/10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+        <DialogHeader className="border-b border-border bg-muted/10 px-4 pb-3 pl-4 pr-12 pt-5 text-left sm:px-5 sm:pr-12">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
               <DialogTitle className="text-base">Tất cả thông báo</DialogTitle>
               {unreadCount > 0 && (
                 <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
@@ -61,7 +71,7 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-primary"
+                className="h-7 gap-1.5 px-0 text-xs text-muted-foreground hover:text-primary sm:px-2"
                 onClick={() => markAllRead.mutate()}
                 disabled={markAllRead.isPending}
               >
@@ -70,13 +80,13 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
               </Button>
             )}
           </div>
-          <DialogDescription className="text-xs">
+          <DialogDescription className="text-left text-xs">
             Các thông báo cập nhật từ khóa học và hệ thống
           </DialogDescription>
         </DialogHeader>
 
         {/* Body */}
-        <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain custom-scrollbar">
           {/* Skeleton Loading */}
           {isLoading && (
             <div className="p-4 space-y-4">
