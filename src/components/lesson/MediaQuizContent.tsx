@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import DOMPurify from "dompurify";
-import { CheckCircle2, ChevronLeft, ChevronRight, Info, Lightbulb, Loader2, XCircle } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, Info, Lightbulb, Loader2, XCircle } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { submitMediaQuizAnswer } from "@/api/blocks";
@@ -77,83 +77,6 @@ function renderQuestionMedia(question: MediaQuizQuestion, onImageClick?: (src: s
         alt={question.media.alt || "Ảnh câu hỏi kèm media"}
         className="max-h-[450px] w-full object-contain"
       />
-    </div>
-  );
-}
-
-function renderQuestionMediaCarousel(
-  question: MediaQuizQuestion,
-  options: {
-    canGoPrevious: boolean;
-    canGoNext: boolean;
-    showNavigation: boolean;
-    onPrevious: () => void;
-    onNext: () => void;
-    onImageClick?: (src: string) => void;
-  },
-) {
-  const renderNavigation = () => {
-    if (!options.showNavigation) return null;
-    return (
-      <>
-        <button
-          type="button"
-          disabled={!options.canGoPrevious}
-          onClick={(event) => {
-            event.stopPropagation();
-            if (options.canGoPrevious) options.onPrevious();
-          }}
-          className="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white shadow-lg transition-all hover:bg-black/65 disabled:cursor-not-allowed disabled:opacity-35"
-          aria-label="Media trước"
-        >
-          <ChevronLeft className="h-6 w-6" />
-        </button>
-        <button
-          type="button"
-          disabled={!options.canGoNext}
-          onClick={(event) => {
-            event.stopPropagation();
-            if (options.canGoNext) options.onNext();
-          }}
-          className="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white shadow-lg transition-all hover:bg-black/65 disabled:cursor-not-allowed disabled:opacity-35"
-          aria-label="Media tiếp theo"
-        >
-          <ChevronRight className="h-6 w-6" />
-        </button>
-      </>
-    );
-  };
-
-  if (!question.media?.storage_path) {
-    return (
-      <div className="relative rounded-2xl border border-dashed border-border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
-        Media của câu hỏi này chưa sẵn sàng.
-        {renderNavigation()}
-      </div>
-    );
-  }
-
-  const mediaUrl = resolveMediaQuizMediaUrl(question.media.storage_path);
-  if (question.media.type === "video") {
-    return (
-      <div className="relative overflow-hidden rounded-2xl bg-[#0d1117] aspect-video shadow-lg">
-        <video src={mediaUrl} controls className="h-full w-full object-contain" preload="metadata" />
-        {renderNavigation()}
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className="relative w-full rounded-2xl overflow-hidden bg-muted/20 flex items-center justify-center border border-border shadow-sm p-4 cursor-zoom-in"
-      onClick={() => options.onImageClick?.(mediaUrl)}
-    >
-      <img
-        src={mediaUrl}
-        alt={question.media.alt || "Ảnh câu hỏi kèm media"}
-        className="max-h-[450px] w-full object-contain"
-      />
-      {renderNavigation()}
     </div>
   );
 }
@@ -392,6 +315,8 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
 
   const canGoPreviousMedia = activeIndex > 0;
   const canGoNextMedia = activeIndex < quiz.questions.length - 1 && completedQuestionIds.has(currentQuestion.id);
+  const isFinalQuestionCompleted = activeIndex >= quiz.questions.length - 1 && blockCompleted && isCorrect === true;
+  const shouldShowResultMessage = !!resultMessage && isCorrect !== true;
 
   return (
     <div className="w-full">
@@ -405,14 +330,7 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
         </div>
 
         <div className="mb-8">
-          {renderQuestionMediaCarousel(currentQuestion, {
-            canGoPrevious: canGoPreviousMedia,
-            canGoNext: canGoNextMedia,
-            showNavigation: quiz.questions.length > 1,
-            onPrevious: () => navigateToQuestion(activeIndex - 1),
-            onNext: () => navigateToQuestion(activeIndex + 1),
-            onImageClick,
-          })}
+          {renderQuestionMedia(currentQuestion, onImageClick)}
         </div>
 
         <div
@@ -497,16 +415,16 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
           </div>
         )}
 
-        {resultMessage && (
+        {shouldShowResultMessage && (
           <div
-            className={`mt-6 flex items-center gap-3 rounded-xl p-4 ${
+            className={`mt-6 flex items-center ${
               isCorrect
-                ? "bg-success/10 border border-success/20"
-                : "bg-destructive/10 border border-destructive/20"
+                ? "gap-1.5 py-1 text-success"
+                : "gap-3 rounded-xl bg-destructive/10 border border-destructive/20 p-4"
             }`}
           >
-            {isCorrect ? <CheckCircle2 className="h-5 w-5 text-success shrink-0" /> : <XCircle className="h-5 w-5 text-destructive shrink-0" />}
-            <span className="text-sm font-medium text-foreground">{resultMessage}</span>
+            {!isCorrect && <XCircle className="h-5 w-5 text-destructive shrink-0" />}
+            <span className={`text-sm font-medium ${isCorrect ? "text-success" : "text-foreground"}`}>{resultMessage}</span>
           </div>
         )}
 
@@ -523,8 +441,21 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
           </div>
         )}
 
-        <div className="mt-8 flex items-center justify-between border-t border-border pt-6">
-          <div>
+        <div className="mt-8 flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-3">
+            {quiz.questions.length > 1 && (
+              <button
+                type="button"
+                disabled={!canGoPreviousMedia}
+                onClick={() => {
+                  if (canGoPreviousMedia) navigateToQuestion(activeIndex - 1);
+                }}
+                className="flex items-center gap-2 rounded-full bg-transparent px-0 py-3 text-[14px] font-bold text-muted-foreground transition-all hover:text-foreground active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Quay lại
+              </button>
+            )}
             {currentHints.length > 0 && isCorrect !== true && !blockCompleted ? (
               <button
                 type="button"
@@ -534,13 +465,9 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
                 <Lightbulb className="h-4 w-4" />
                 {showHint ? "Ẩn gợi ý" : "Xem gợi ý"}
               </button>
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                {blockCompleted ? "Đã hoàn thành câu hỏi kèm media." : "Trả lời đúng để tiếp tục."}
-              </div>
-            )}
+            ) : null}
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-3">
             {!resultMessage ? (
               <button
                 type="button"
@@ -560,6 +487,23 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
                 Thử lại
               </button>
             ) : null}
+            {isCorrect === true && canGoNextMedia && (
+              <button
+                type="button"
+                onClick={() => {
+                  navigateToQuestion(activeIndex + 1);
+                }}
+                className="rounded-full bg-primary px-6 py-3 text-[14px] font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97]"
+              >
+                Tiếp tục
+              </button>
+            )}
+            {isFinalQuestionCompleted && (
+              <div className="flex items-center gap-1.5 px-4 py-3 text-green-600 dark:text-green-400">
+                <Check className="h-5 w-5 shrink-0 stroke-[3]" />
+                <span className="text-[14px] font-bold whitespace-nowrap">Đã hoàn thành</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

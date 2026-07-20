@@ -658,7 +658,7 @@ export function LessonDetailPage() {
       )}
 
       {/* ── Footer ── */}
-      <footer className="sticky bottom-0 z-30 border-t border-border/70 bg-background/90 px-4 py-4 text-center shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur supports-[backdrop-filter]:bg-background/75">
+      <footer className="border-t border-border/70 bg-background px-4 py-4 text-center">
         <p className="truncate text-[13px] font-medium leading-[18px] text-muted-foreground">
           Copyright © {tenantName}
         </p>
