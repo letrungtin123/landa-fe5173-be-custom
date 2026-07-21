@@ -3,10 +3,10 @@ import react from '@vitejs/plugin-react'
 import path from "path"
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), 'VITE_')
+  const env = loadEnv(mode, process.cwd(), '')
 
-  // Backend URL cho Vite proxy
-  const apiUrl = env.VITE_PROXY_TARGET || env.VITE_API_BASE_URL || 'http://localhost:3001'
+  // Backend URL cho Vite proxy. PROXY_* chi dung server-side, khong bake vao browser bundle.
+  const backendProxyTarget = env.PROXY_BACKEND_URL || env.VITE_PROXY_TARGET || env.VITE_API_BASE_URL || 'http://localhost:3001'
 
   // Legacy edX LMS URL — chỉ cần cho asset/xblock proxy
   const lmsUrl = env.VITE_LMS_BASE_URL || ''
@@ -59,6 +59,46 @@ export default defineConfig(({ mode }) => {
     },
   } : null;
 
+  const proxyConfig = {
+    '/api': {
+      target: backendProxyTarget,
+      changeOrigin: true,
+      secure: false,
+    },
+    ...(lmsUrl ? {
+      '/asset-v1': {
+        target: lmsUrl,
+        changeOrigin: true,
+        secure: false,
+      },
+    } : {}),
+    '/media': {
+      target: lmsUrl || backendProxyTarget,
+      changeOrigin: true,
+      secure: false,
+      autoRewrite: true,
+    },
+    ...(lmsUrl ? {
+      '/xblock': {
+        target: lmsUrl,
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: '',
+      },
+      '/courses': {
+        target: lmsUrl,
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: '',
+        bypass: (req) => {
+          if (!req.url?.includes('/xblock/')) {
+            return req.url
+          }
+        },
+      },
+    } : {}),
+  }
+
   return {
     plugins: [react(), stripConsolePlugin].filter(Boolean),
     resolve: {
@@ -68,45 +108,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       allowedHosts,
-      proxy: {
-        '/api': {
-          target: apiUrl,
-          changeOrigin: true,
-          secure: false,
-        },
-        ...(lmsUrl ? {
-          '/asset-v1': {
-            target: lmsUrl,
-            changeOrigin: true,
-            secure: false,
-          },
-        } : {}),
-        '/media': {
-          target: lmsUrl || apiUrl,
-          changeOrigin: true,
-          secure: false,
-          autoRewrite: true,
-        },
-        ...(lmsUrl ? {
-          '/xblock': {
-            target: lmsUrl,
-            changeOrigin: true,
-            secure: false,
-            cookieDomainRewrite: '',
-          },
-          '/courses': {
-            target: lmsUrl,
-            changeOrigin: true,
-            secure: false,
-            cookieDomainRewrite: '',
-            bypass: (req) => {
-              if (!req.url?.includes('/xblock/')) {
-                return req.url
-              }
-            },
-          },
-        } : {}),
-      },
+      proxy: proxyConfig,
     },
 
     // ── Production build ──
@@ -153,6 +155,7 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       port: previewPort,
       allowedHosts,
+      proxy: proxyConfig,
     },
   }
 })

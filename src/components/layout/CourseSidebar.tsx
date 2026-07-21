@@ -1,4 +1,4 @@
-import { useState, useMemo, type ReactNode } from "react";
+import { cloneElement, isValidElement, useState, useMemo, useCallback, useEffect, useRef, type ReactElement, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, CheckCircle2, X, BookOpen, FileText, File, FileSpreadsheet, Download, User, Mail, Phone, Shield, ClipboardList, Lock } from "lucide-react";
@@ -33,28 +33,85 @@ function SidebarTooltip({
   text,
   children,
   side = "right",
+  measureSelector,
 }: {
   text: string;
   children: ReactNode;
   side?: "top" | "right" | "bottom" | "left";
+  measureSelector?: string;
 }) {
-  if (!text.trim()) return <>{children}</>;
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+  const child = useMemo(() => {
+    return isValidElement(children) ? (children as ReactElement<any>) : null;
+  }, [children]);
+
+  const measureTruncation = useCallback(() => {
+    const triggerEl = triggerRef.current;
+    const el = measureSelector && triggerEl
+      ? triggerEl.querySelector<HTMLElement>(measureSelector)
+      : triggerEl;
+
+    if (!el) {
+      setIsTruncated(false);
+      return;
+    }
+
+    setIsTruncated(
+      el.scrollWidth > el.clientWidth + 1 ||
+      el.scrollHeight > el.clientHeight + 1
+    );
+  }, [measureSelector]);
+
+  const setTriggerRef = useCallback((node: HTMLElement | null) => {
+    triggerRef.current = node;
+
+    const originalRef = child ? (child as any).ref : null;
+    if (typeof originalRef === "function") originalRef(node);
+    else if (originalRef && typeof originalRef === "object") originalRef.current = node;
+  }, [child]);
+
+  useEffect(() => {
+    measureTruncation();
+    const el = triggerRef.current;
+    if (!el) return;
+
+    const frameId = window.requestAnimationFrame(measureTruncation);
+    const resizeObserver = typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(measureTruncation)
+      : null;
+
+    resizeObserver?.observe(el);
+    window.addEventListener("resize", measureTruncation);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", measureTruncation);
+    };
+  }, [measureTruncation, text]);
+
+  if (!text.trim() || !child) return <>{children}</>;
+
+  const trigger = cloneElement(child, {
+    ref: setTriggerRef,
+    className: cn("min-w-0", child.props.className),
+  });
+
+  if (!isTruncated) return trigger;
 
   return (
     <Tooltip delayDuration={180}>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipTrigger asChild>{trigger}</TooltipTrigger>
       <TooltipContent
         side={side}
         align="center"
         sideOffset={10}
         className="max-w-[280px] rounded-xl border border-border/80 bg-popover px-3.5 py-2.5 text-popover-foreground shadow-[0_16px_36px_rgba(15,23,42,0.18)] dark:shadow-[0_16px_36px_rgba(0,0,0,0.42)]"
       >
-        <div className="flex items-start gap-2">
-          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-          <p className="text-[12px] font-semibold leading-snug tracking-normal">
-            {text}
-          </p>
-        </div>
+        <p className="text-[12px] font-semibold leading-snug tracking-normal">
+          {text}
+        </p>
       </TooltipContent>
     </Tooltip>
   );
@@ -175,16 +232,22 @@ export function CourseSidebar() {
         {course && (
           <>
             {/* Course Title */}
-            <div className="px-5 mb-5 mt-3 min-w-0 max-w-full overflow-hidden">
-              <SidebarTooltip text={course.title || "L&A Onboarding 2026"}>
-                <h2 className="mb-2 block max-w-[280px] truncate text-[18px] font-extrabold text-foreground tracking-tight leading-tight">
+            <SidebarTooltip
+              text={course.title || "L&A Onboarding 2026"}
+              measureSelector="[data-sidebar-tooltip-measure]"
+            >
+              <div className="px-5 mb-5 mt-3 min-w-0 max-w-full overflow-hidden">
+                <h2
+                  data-sidebar-tooltip-measure
+                  className="mb-2 block max-w-[280px] truncate text-[18px] font-extrabold text-foreground tracking-tight leading-tight"
+                >
                   {course.title || "L&A Onboarding 2026"}
                 </h2>
-              </SidebarTooltip>
               <p className="text-[13px] font-bold text-primary">
                 Nội dung khoá học
               </p>
-            </div>
+              </div>
+            </SidebarTooltip>
 
             {/* Modules */}
             <div className="flex flex-col gap-1">
@@ -196,20 +259,25 @@ export function CourseSidebar() {
                 return (
                   <div key={module.id} className="mb-3">
                     {/* Module Header */}
-                    <div className={cn(
-                      "py-2 mb-1 border-l-4 overflow-hidden",
-                      isActiveModule ? "border-primary bg-primary/5" : "border-transparent"
-                    )}>
+                    <SidebarTooltip
+                      text={module.title}
+                      measureSelector="[data-sidebar-tooltip-measure]"
+                    >
+                      <div className={cn(
+                        "py-2 mb-1 border-l-4 overflow-hidden",
+                        isActiveModule ? "border-primary bg-primary/5" : "border-transparent"
+                      )}>
                       <div className="flex-1 min-w-0 max-w-full overflow-hidden pl-[16px] pr-5">
                         <div className="flex max-w-[280px] items-start gap-1.5 overflow-hidden">
-                          <SidebarTooltip text={module.title}>
-                            <p className={cn(
+                            <p
+                              data-sidebar-tooltip-measure
+                              className={cn(
                               "block max-w-[256px] flex-1 text-[14px] font-bold leading-snug line-clamp-2 break-words",
                               isActiveModule ? "text-primary" : "text-muted-foreground"
-                            )}>
+                              )}
+                            >
                               {module.title}
                             </p>
-                          </SidebarTooltip>
                           {module.completed && (
                             <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" fill="currentColor" stroke="white" strokeWidth={2} />
                           )}
@@ -219,15 +287,20 @@ export function CourseSidebar() {
                           {completedLessons}/{totalLessons}{module.duration ? ` | ${module.duration}` : ""}
                         </p>
                       </div>
-                    </div>
+                      </div>
+                    </SidebarTooltip>
 
                     {/* Lessons List */}
                     <div className="flex flex-col gap-0.5">
                       {module.lessons.map((lesson) => {
                         const isActive = lesson.id === currentLessonId;
                         return (
-                          <button
+                          <SidebarTooltip
                             key={lesson.id}
+                            text={lesson.title}
+                            measureSelector="[data-sidebar-tooltip-measure]"
+                          >
+                            <button
                             onClick={() => handleLessonClick(module.id, lesson.id)}
                             className={cn(
                               "flex w-full min-w-0 items-center gap-2 overflow-hidden text-left py-1.5 pl-[20px] pr-5 transition-all",
@@ -244,12 +317,14 @@ export function CourseSidebar() {
                                 <span className="inline-block h-3.5 w-3.5 rounded-full border-2 border-muted-foreground/30" />
                               )}
                             </span>
-                            <SidebarTooltip text={lesson.title}>
-                              <span className="block max-w-[232px] flex-1 truncate text-[13px] leading-snug">
+                              <span
+                                data-sidebar-tooltip-measure
+                                className="block max-w-[232px] flex-1 truncate text-[13px] leading-snug"
+                              >
                                 {lesson.title}
                               </span>
-                            </SidebarTooltip>
-                          </button>
+                            </button>
+                          </SidebarTooltip>
                         );
                       })}
                     </div>
@@ -274,8 +349,12 @@ export function CourseSidebar() {
                     const contentLocked = assignment.locked_reason === "content" && !done;
                     const deadlineLocked = assignment.locked_reason === "deadline" && !done;
                     return (
-                      <button
+                      <SidebarTooltip
                         key={assignment.id}
+                        text={assignment.title}
+                        measureSelector="[data-sidebar-tooltip-measure]"
+                      >
+                        <button
                         disabled={contentLocked}
                         onClick={() => handleAssignmentClick(assignment.id)}
                         className={cn(
@@ -303,14 +382,18 @@ export function CourseSidebar() {
                           )}
                         </span>
                         <span className="min-w-0 max-w-[232px] flex-1 text-[13px] leading-snug">
-                          <SidebarTooltip text={assignment.title}>
-                            <span className="block truncate">{assignment.title}</span>
-                          </SidebarTooltip>
+                          <span
+                            data-sidebar-tooltip-measure
+                            className="block truncate"
+                          >
+                            {assignment.title}
+                          </span>
                           <span className="block truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
                             {assignment.status === "feedback_given" ? "Đã phản hồi" : assignment.status === "submitted" ? "Đã nộp" : deadlineLocked ? "Hết hạn nộp" : locked ? "Học xong nội dung để nộp" : "Chưa nộp"}
                           </span>
                         </span>
-                      </button>
+                        </button>
+                      </SidebarTooltip>
                     );
                   })}
                 </div>
