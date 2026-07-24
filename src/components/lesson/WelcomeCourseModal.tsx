@@ -5,6 +5,7 @@ import WelcomePicture from "@/assets/CompleteCourseModal/WelcomePicture.png";
 import { ArrowRight } from "lucide-react";
 import type { CourseModalConfigData } from "@/api/modalConfig";
 import { useAppStore } from "@/stores/useAppStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCourseModalState, updateCourseModalState } from "@/api/modalState";
 
@@ -18,6 +19,7 @@ interface WelcomeCourseModalProps {
 export function WelcomeCourseModal({ courseId, completionPercent, isLoading, config }: WelcomeCourseModalProps) {
   const [open, setOpen] = useState(false);
   const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
 
   const isEnabled = config?.welcome_enabled === true;
 
@@ -29,7 +31,7 @@ export function WelcomeCourseModal({ courseId, completionPercent, isLoading, con
   const queryClient = useQueryClient();
 
   const { data: modalState, isLoading: isModalStateLoading } = useQuery({
-    queryKey: ["courseModalState", courseId],
+    queryKey: ["courseModalState", courseId, sessionMode],
     queryFn: () => getCourseModalState(courseId),
     enabled: !!courseId && !isLoading,
     staleTime: 5 * 60 * 1000,
@@ -39,7 +41,7 @@ export function WelcomeCourseModal({ courseId, completionPercent, isLoading, con
     mutationFn: (updates: { welcome_shown?: boolean; confirm_shown?: boolean; complete_shown?: boolean }) =>
       updateCourseModalState(courseId, updates),
     onSuccess: (data) => {
-      queryClient.setQueryData(["courseModalState", courseId], data);
+      queryClient.setQueryData(["courseModalState", courseId, sessionMode], data);
     }
   });
 

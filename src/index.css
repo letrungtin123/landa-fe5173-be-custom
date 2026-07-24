@@ -379,6 +379,22 @@
     overflow-x: clip;
   }
 
+  html.demo-iframe-guide-scroll-locked,
+  body.demo-iframe-guide-scroll-locked,
+  #course-main-scroll.demo-iframe-guide-scroll-locked {
+    scrollbar-gutter: auto !important;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  html.demo-iframe-guide-scroll-locked::-webkit-scrollbar,
+  body.demo-iframe-guide-scroll-locked::-webkit-scrollbar,
+  #course-main-scroll.demo-iframe-guide-scroll-locked::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none;
+  }
+
   /* Prevent Radix UI from shifting layout when scroll is locked */
   body[data-scroll-locked] {
     padding-right: 0 !important;
@@ -513,8 +529,217 @@
   }
 
   .course-focus-highlight {
+    position: relative;
+    z-index: 99970;
     border-color: hsl(var(--primary)) !important;
     animation: course-focus-pulse 0.75s ease-in-out 4;
+  }
+
+  @keyframes welcome-init-modal-center-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes welcome-init-modal-center-out {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
+
+  .welcome-init-modal-shell {
+    transform-origin: center center;
+  }
+
+  .welcome-init-modal-content[data-state="open"] .welcome-init-modal-shell {
+    animation: welcome-init-modal-center-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .welcome-init-modal-content[data-state="closed"] .welcome-init-modal-shell {
+    animation: welcome-init-modal-center-out 120ms ease-in;
+  }
+
+  @keyframes demo-iframe-hero-cta-border {
+    0%,
+    100% {
+      border-color: var(--demo-cta-line-strong);
+      box-shadow:
+        0 0 0 0 var(--demo-cta-echo-shadow),
+        0 14px 34px var(--demo-cta-line-shadow),
+        0 8px 20px rgba(0, 0, 0, 0.28);
+    }
+
+    50% {
+      border-color: var(--demo-cta-border-end);
+      box-shadow:
+        0 0 0 4px var(--demo-cta-echo-ring),
+        0 16px 38px var(--demo-cta-line-shadow),
+        0 10px 24px rgba(0, 0, 0, 0.32);
+    }
+  }
+
+  @keyframes demo-iframe-hero-cta-wave {
+    0% {
+      opacity: 0;
+      inset: -1px;
+    }
+
+    12% {
+      opacity: 0.62;
+      inset: -4px;
+    }
+
+    100% {
+      opacity: 0;
+      inset: -16px;
+    }
+  }
+
+  @keyframes demo-iframe-dark-lock-fade {
+    from {
+      background-color: rgba(0, 0, 0, 0);
+    }
+
+    to {
+      background-color: rgba(0, 0, 0, 0.72);
+    }
+  }
+
+  .demo-iframe-dark-lock-overlay {
+    background-color: rgba(0, 0, 0, 0.72);
+    animation: demo-iframe-dark-lock-fade 420ms ease-out both;
+  }
+
+  @keyframes demo-iframe-dark-mask-fade {
+    from {
+      fill: rgba(0, 0, 0, 0);
+    }
+
+    to {
+      fill: rgba(0, 0, 0, 0.72);
+    }
+  }
+
+  .demo-iframe-dark-mask-fill {
+    fill: rgba(0, 0, 0, 0.72);
+    animation: demo-iframe-dark-mask-fade 420ms ease-out both;
+  }
+
+  @keyframes demo-iframe-play-bubble-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.94);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .demo-iframe-play-bubble {
+    animation: demo-iframe-play-bubble-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    transform-origin: bottom center;
+  }
+
+  .demo-iframe-hero-cta-guide {
+    --demo-cta-bg-top: #ffffff;
+    --demo-cta-bg-bottom: #effaff;
+    --demo-cta-border-start: #ffffff;
+    --demo-cta-border-mid: rgba(255, 255, 255, 0.78);
+    --demo-cta-border-end: #ffffff;
+    --demo-cta-line-strong: rgba(255, 255, 255, 0.82);
+    --demo-cta-line-soft: rgba(255, 255, 255, 0.58);
+    --demo-cta-echo-line: rgba(255, 255, 255, 0.38);
+    --demo-cta-line-shadow: rgba(255, 255, 255, 0.16);
+    --demo-cta-echo-ring: rgba(255, 255, 255, 0.08);
+    --demo-cta-echo-shadow: rgba(255, 255, 255, 0.18);
+    --demo-cta-wave-radius: 9999px;
+    border: 2px solid transparent;
+    background:
+      linear-gradient(180deg, var(--demo-cta-bg-top) 0%, var(--demo-cta-bg-bottom) 100%) padding-box,
+      linear-gradient(120deg, var(--demo-cta-border-start) 0%, var(--demo-cta-border-mid) 48%, var(--demo-cta-border-end) 100%) border-box;
+    isolation: isolate;
+    overflow: visible;
+    pointer-events: auto;
+    animation: demo-iframe-hero-cta-border 1.12s ease-in-out infinite;
+  }
+
+  .demo-iframe-hero-cta-guide-blue {
+    --demo-cta-line-strong: hsl(var(--primary) / 0.92);
+    --demo-cta-line-soft: hsl(var(--primary) / 0.68);
+    --demo-cta-echo-line: hsl(var(--primary) / 0.54);
+    --demo-cta-line-shadow: hsl(var(--primary) / 0.3);
+    --demo-cta-echo-ring: hsl(var(--primary) / 0.16);
+    --demo-cta-echo-shadow: hsl(var(--primary) / 0.34);
+  }
+
+  .demo-iframe-hero-cta-guide-yellow {
+    --demo-cta-line-strong: rgba(245, 158, 11, 0.82);
+    --demo-cta-line-soft: rgba(217, 119, 6, 0.56);
+    --demo-cta-echo-line: rgba(245, 158, 11, 0.42);
+    --demo-cta-line-shadow: rgba(245, 158, 11, 0.2);
+    --demo-cta-echo-ring: rgba(245, 158, 11, 0.1);
+    --demo-cta-echo-shadow: rgba(245, 158, 11, 0.22);
+  }
+
+  .demo-iframe-hero-cta-guide-wave-only {
+    --demo-cta-wave-radius: 9999px;
+    isolation: isolate;
+    overflow: visible;
+    pointer-events: auto;
+  }
+
+  .demo-iframe-hero-cta-guide-answer {
+    --demo-cta-wave-radius: 1rem;
+  }
+
+  .demo-iframe-hero-cta-guide::before,
+  .demo-iframe-hero-cta-guide::after,
+  .demo-iframe-hero-cta-guide-wave-only::before,
+  .demo-iframe-hero-cta-guide-wave-only::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border: 1px solid var(--demo-cta-line-strong);
+    border-radius: var(--demo-cta-wave-radius, 9999px);
+    box-shadow: 0 0 12px var(--demo-cta-line-shadow);
+    pointer-events: none;
+    animation: demo-iframe-hero-cta-wave 1.35s ease-out infinite;
+    will-change: opacity, inset;
+  }
+
+  .demo-iframe-hero-cta-guide::after,
+  .demo-iframe-hero-cta-guide-wave-only::after {
+    border-color: var(--demo-cta-line-soft);
+    animation-delay: 0.3s;
+  }
+
+  .demo-iframe-hero-cta-echo {
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border: 1px solid var(--demo-cta-echo-line);
+    border-radius: var(--demo-cta-wave-radius, 9999px);
+    box-shadow:
+      0 0 0 3px var(--demo-cta-echo-ring),
+      0 0 18px var(--demo-cta-echo-shadow);
+    pointer-events: none;
+    animation: demo-iframe-hero-cta-wave 1.35s ease-out infinite;
+    animation-delay: 0.6s;
   }
 }
 

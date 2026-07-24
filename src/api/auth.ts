@@ -5,7 +5,7 @@
 // ============================================================
 
 import { apiClient } from "./client";
-import type { ApiResponse, LoginResponse, AuthUserInfo, PermissionsMap, TenantBasic, RoleLabelMap } from "./types";
+import type { ApiResponse, LoginResponse, AuthUserInfo, PermissionsMap, TenantBasic, RoleLabelMap, SessionMode } from "./types";
 
 export interface DemoQrAccount {
   id: string;
@@ -80,6 +80,7 @@ export async function getUserMe(): Promise<{
   tenant_modules: string[];
   managed_tenants: TenantBasic[];
   role_labels?: RoleLabelMap;
+  session_mode?: SessionMode;
 }> {
   const { data } = await apiClient.get<ApiResponse<{
     user: AuthUserInfo;
@@ -87,6 +88,7 @@ export async function getUserMe(): Promise<{
     tenant_modules: string[];
     managed_tenants: TenantBasic[];
     role_labels?: RoleLabelMap;
+    session_mode?: SessionMode;
   }>>("/api/auth/me");
   return data.data;
 }
@@ -163,6 +165,14 @@ export async function claimDemoQrAccountApi(accountId: string, domain = currentD
   const { data } = await apiClient.post<ApiResponse<DemoQrClaimResponse>>(
     `/api/demo-login/public/by-domain/${encodeURIComponent(domain)}/claim`,
     { account_id: accountId }
+  );
+  return data.data;
+}
+
+export async function bootstrapDemoIframeApi(embedId: string, parentOrigin: string): Promise<LoginResponse> {
+  const { data } = await apiClient.post<ApiResponse<LoginResponse>>(
+    `/api/demo-login/public/iframe/${encodeURIComponent(embedId)}/bootstrap`,
+    { parent_origin: parentOrigin }
   );
   return data.data;
 }

@@ -18,9 +18,11 @@ export function ProfilePage() {
   const { data: profile, isLoading, error } = useProfile();
   const updateProfile = useUpdateProfile();
   const user = useAuthStore((s) => s.user);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
   const updateUser = useAuthStore((s) => s.updateUser);
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isDemoIframe = sessionMode === "demo_iframe";
 
   // Form state
   const [formData, setFormData] = useState({
@@ -121,6 +123,12 @@ export function ProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isDemoIframe) {
+      setToast({ message: "Không thể lưu thay đổi trong chế độ demo nhúng.", type: "error" });
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
 
     // Tên hiển thị là bắt buộc
     if (!formData.name.trim()) {
@@ -438,7 +446,8 @@ export function ProfilePage() {
                 )}
                 <Button
                   type="submit"
-                  disabled={updateProfile.isPending}
+                  disabled={updateProfile.isPending || isDemoIframe}
+                  title={isDemoIframe ? "Không thể lưu thay đổi trong chế độ demo nhúng" : undefined}
                   className="w-full sm:w-auto h-12 rounded-2xl px-10 font-bold shadow-lg shadow-primary/20 transition-all hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0"
                 >
                   {updateProfile.isPending ? (

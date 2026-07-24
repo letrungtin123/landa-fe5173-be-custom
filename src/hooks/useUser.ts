@@ -16,11 +16,12 @@ export function useUser(courseId?: string) {
   const storeUser = useAuthStore((s) => s.user);
   const roleLabels = useAuthStore((s) => s.roleLabels);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
 
   const { completionPercent } = useCourseCompletion(courseId);
 
   // Calculate streak from localStorage
-  const streak = getStreak();
+  const streak = sessionMode === "demo_iframe" ? 0 : getStreak();
 
   const user: User | undefined = storeUser
     ? {

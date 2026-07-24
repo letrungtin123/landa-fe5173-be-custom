@@ -14,9 +14,10 @@ import { useAuthStore } from "@/stores/useAuthStore";
  */
 export function useCourseCompletion(courseId?: string) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
 
   const { data: completionPercent, isLoading, error } = useQuery({
-    queryKey: ["course-completion-fast", courseId],
+    queryKey: ["course-completion-fast", courseId, sessionMode],
     queryFn: () => getMyCourseProgress(courseId!),
     enabled: isAuthenticated && !!courseId,
     staleTime: 5 * 60 * 1000,
@@ -82,10 +83,11 @@ export function useMarkBlocksComplete() {
  */
 export function useBatchCourseProgress(courseIds: string[]) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
   const stableKey = [...courseIds].sort().join(',');
 
   return useQuery({
-    queryKey: ["batch-course-progress", stableKey],
+    queryKey: ["batch-course-progress", stableKey, sessionMode],
     queryFn: async (): Promise<Map<string, number>> => {
       if (!courseIds || courseIds.length === 0) return new Map();
       // 1 API call cho tất cả courses (thay vì N calls tuần tự)

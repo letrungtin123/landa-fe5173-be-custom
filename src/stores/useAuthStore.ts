@@ -10,7 +10,7 @@ import { loginApi, refreshTokenApi, logoutApi, getUserMe, getRoleLabelsApi } fro
 import { queryClient } from "@/App";
 import { useStudyTimeStore } from "@/stores/useStudyTimeStore";
 import { avatarUrl } from "@/utils/storageUrl";
-import type { TenantBasic, PermissionsMap, LoginResponse, RoleLabelMap } from "@/api/types";
+import type { TenantBasic, PermissionsMap, LoginResponse, RoleLabelMap, SessionMode } from "@/api/types";
 import { normalizeRoleLabels } from "@/utils/roleLabels";
 
 // ── Mã hóa/giải mã đơn giản cho token trong storage ──
@@ -44,17 +44,90 @@ function deobfuscate(encoded: string): string {
 }
 
 // ── Custom storage sử dụng mã hóa ──
+function isEmbeddedWindow(): boolean {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+}
+
+function persistedSessionMode(value: string): SessionMode {
+  try {
+    const parsed = JSON.parse(value) as { state?: { sessionMode?: unknown } };
+    return parsed.state?.sessionMode === "demo_iframe" ? "demo_iframe" : "normal";
+  } catch {
+    return "normal";
+  }
+}
+
+function readEncrypted(area: Storage, key: string): string | null {
+  const raw = area.getItem(key);
+  if (!raw) return null;
+  return deobfuscate(raw) || null;
+}
+
+function writeEncrypted(area: Storage, key: string, value: string): void {
+  area.setItem(key, obfuscate(value));
+}
+
 const encryptedStorage = createJSONStorage<AuthState>(() => ({
   getItem(key: string): string | null {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    return deobfuscate(raw) || null;
+    const embedded = isEmbeddedWindow();
+
+    if (embedded) {
+      const sessionValue = readEncrypted(sessionStorage, key);
+      if (sessionValue) return sessionValue;
+
+      const legacyValue = readEncrypted(localStorage, key);
+      if (legacyValue && persistedSessionMode(legacyValue) === "demo_iframe") {
+        localStorage.removeItem(key);
+      }
+      return null;
+    }
+
+    const localValue = readEncrypted(localStorage, key);
+    if (!localValue) return null;
+
+    if (persistedSessionMode(localValue) === "demo_iframe") {
+      localStorage.removeItem(key);
+      return null;
+    }
+
+    return localValue;
   },
   setItem(key: string, value: string): void {
-    localStorage.setItem(key, obfuscate(value));
+    const embedded = isEmbeddedWindow();
+    const mode = persistedSessionMode(value);
+
+    if (embedded) {
+      if (mode === "demo_iframe") {
+        writeEncrypted(sessionStorage, key, value);
+      } else {
+        sessionStorage.removeItem(key);
+      }
+      return;
+    }
+
+    if (mode === "demo_iframe") {
+      sessionStorage.removeItem(key);
+      const localValue = readEncrypted(localStorage, key);
+      if (localValue && persistedSessionMode(localValue) === "demo_iframe") {
+        localStorage.removeItem(key);
+      }
+      return;
+    }
+
+    sessionStorage.removeItem(key);
+    writeEncrypted(localStorage, key, value);
   },
   removeItem(key: string): void {
+    if (isEmbeddedWindow()) {
+      sessionStorage.removeItem(key);
+      return;
+    }
     localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
   },
 }));
 
@@ -78,6 +151,7 @@ interface AuthState {
   tokenType: string;
   tokenExpiresAt: number | null;
   loginSessionId: string | null;
+  sessionMode: SessionMode;
   user: AuthUser | null;
   permissions: PermissionsMap;
   tenantModules: string[];
@@ -139,6 +213,7 @@ export const useAuthStore = create<AuthState>()(
       tokenType: "Bearer",
       tokenExpiresAt: null,
       loginSessionId: null,
+      sessionMode: "normal",
       user: null,
       permissions: {},
       tenantModules: [],
@@ -164,6 +239,7 @@ export const useAuthStore = create<AuthState>()(
           tokenType: "Bearer",
           tokenExpiresAt: expiresAt,
           loginSessionId: createLoginSessionId(),
+          sessionMode: result.session_mode || "normal",
           user: {
             id: result.user.id,
             username: result.user.username,
@@ -201,6 +277,7 @@ export const useAuthStore = create<AuthState>()(
           tokenType: "Bearer",
           tokenExpiresAt: expiresAt,
           loginSessionId: createLoginSessionId(),
+          sessionMode: result.session_mode || "normal",
           user: {
             id: result.user.id,
             username: result.user.username,
@@ -234,6 +311,7 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           tokenExpiresAt: null,
           loginSessionId: null,
+          sessionMode: "normal",
           permissions: {},
           tenantModules: [],
           managedTenants: [],
@@ -302,6 +380,7 @@ export const useAuthStore = create<AuthState>()(
               refreshToken: result.refresh_token,
               tokenType: "Bearer",
               tokenExpiresAt: expiresAt,
+              sessionMode: result.session_mode || "normal",
               user: {
                 id: result.user.id,
                 username: result.user.username,
@@ -406,6 +485,7 @@ export const useAuthStore = create<AuthState>()(
         tokenType: state.tokenType,
         tokenExpiresAt: state.tokenExpiresAt,
         loginSessionId: state.loginSessionId,
+        sessionMode: state.sessionMode,
         user: state.user,
         permissions: state.permissions,
         tenantModules: state.tenantModules,

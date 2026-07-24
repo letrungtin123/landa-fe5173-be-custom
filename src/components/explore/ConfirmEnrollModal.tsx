@@ -5,6 +5,7 @@ import fileIcon from "@/assets/InitConfirmEnrollModal/folder-icon.png";
 import lineIcon from "@/assets/InitConfirmEnrollModal/line-icon.png";
 import roundIcon from "@/assets/InitConfirmEnrollModal/round-icon.png";
 import { useAppStore } from "@/stores/useAppStore";
+import { cn } from "@/lib/utils";
 
 interface ConfirmEnrollModalProps {
   open: boolean;
@@ -13,6 +14,7 @@ interface ConfirmEnrollModalProps {
   tenantName?: string | null;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
+  demoGuideActive?: boolean;
 }
 
 export function ConfirmEnrollModal({
@@ -22,6 +24,7 @@ export function ConfirmEnrollModal({
   tenantName,
   onOpenChange,
   onConfirm,
+  demoGuideActive = false,
 }: ConfirmEnrollModalProps) {
   const displayCourseName = courseName || tenantName || "Khóa học";
 
@@ -32,11 +35,21 @@ export function ConfirmEnrollModal({
     return () => setCourseModalActive(false);
   }, [open, setCourseModalActive]);
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (demoGuideActive && !nextOpen) return;
+    onOpenChange(nextOpen);
+  };
+
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+    <DialogPrimitive.Root open={open} onOpenChange={handleOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-        <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 h-[462px] max-h-[calc(100dvh-24px)] w-[375px] max-w-[100vw] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[24px] border-[6px] border-white bg-card p-0 shadow-[0_24px_80px_rgba(15,23,42,0.32)] outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 dark:border-border dark:shadow-[0_24px_90px_rgba(0,0,0,0.68)] md:h-[517px] md:w-[847px] md:max-w-[calc(100vw-64px)] md:rounded-[30px] md:border-[9px]">
+        <DialogPrimitive.Content
+          onEscapeKeyDown={demoGuideActive ? (event) => event.preventDefault() : undefined}
+          onInteractOutside={demoGuideActive ? (event) => event.preventDefault() : undefined}
+          onPointerDownOutside={demoGuideActive ? (event) => event.preventDefault() : undefined}
+          className="fixed left-1/2 top-1/2 z-50 h-[462px] max-h-[calc(100dvh-24px)] w-[375px] max-w-[100vw] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[24px] border-[6px] border-white bg-card p-0 shadow-[0_24px_80px_rgba(15,23,42,0.32)] outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 dark:border-border dark:shadow-[0_24px_90px_rgba(0,0,0,0.68)] md:h-[517px] md:w-[847px] md:max-w-[calc(100vw-64px)] md:rounded-[30px] md:border-[9px]"
+        >
           <DialogPrimitive.Title className="sr-only">
             Xác nhận bắt đầu khóa học {displayCourseName}
           </DialogPrimitive.Title>
@@ -109,9 +122,15 @@ export function ConfirmEnrollModal({
             <button
               type="button"
               onClick={onConfirm}
-              className="mt-[26px] inline-flex h-[38px] min-w-[164px] items-center justify-center rounded-full bg-primary px-6 text-[14px] font-semibold text-primary-foreground outline-none transition hover:-translate-y-0.5 hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card dark:text-white md:mt-[46px]"
+              className={cn(
+                "mt-[26px] inline-flex h-[38px] min-w-[164px] items-center justify-center rounded-full px-6 text-[14px] font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card md:mt-[46px]",
+                demoGuideActive
+                  ? "demo-iframe-hero-cta-guide-wave-only demo-iframe-hero-cta-guide-blue relative bg-primary text-primary-foreground hover:-translate-y-0.5 dark:text-white"
+                  : "bg-primary text-primary-foreground hover:-translate-y-0.5 hover:bg-primary/90 dark:text-white"
+              )}
             >
-              Bắt đầu học ngay
+              {demoGuideActive && <span className="demo-iframe-hero-cta-echo" aria-hidden="true" />}
+              <span className="relative z-10">Bắt đầu học ngay</span>
             </button>
           </div>
         </DialogPrimitive.Content>

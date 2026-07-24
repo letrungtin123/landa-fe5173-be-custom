@@ -3,6 +3,11 @@
 // ============================================================
 
 import { apiClient } from "./client";
+import { useAuthStore } from "@/stores/useAuthStore";
+import {
+  overlayDemoIframeBlocks,
+  overlayDemoIframeEnrollments,
+} from "@/stores/demoIframeLearningStore";
 import type {
   ApiResponse,
   CourseListResponse,
@@ -10,6 +15,10 @@ import type {
   CourseBlocksResponse,
   EnrollmentItem,
 } from "./types";
+
+function isDemoIframeSession(): boolean {
+  return useAuthStore.getState().sessionMode === "demo_iframe";
+}
 
 /**
  * Lấy danh sách khóa học learner được thấy.
@@ -49,7 +58,7 @@ export async function getCourseBlocks(
   const { data } = await apiClient.get<ApiResponse<CourseBlocksResponse>>(
     `/api/learner/courses/${encodeURIComponent(courseId)}/blocks`
   );
-  return data.data;
+  return isDemoIframeSession() ? overlayDemoIframeBlocks(courseId, data.data) : data.data;
 }
 
 /**
@@ -59,7 +68,7 @@ export async function getMyEnrollments(): Promise<EnrollmentItem[]> {
   const { data } = await apiClient.get<ApiResponse<EnrollmentItem[]>>(
     "/api/learner/enrollments"
   );
-  return data.data;
+  return isDemoIframeSession() ? overlayDemoIframeEnrollments(data.data) : data.data;
 }
 
 /**
@@ -69,6 +78,9 @@ export async function enrollCourse(courseId: string): Promise<{
   enrollment_id: string;
   already_enrolled: boolean;
 }> {
+  if (isDemoIframeSession()) {
+    return { enrollment_id: "", already_enrolled: true };
+  }
   const { data } = await apiClient.post<ApiResponse<{
     enrollment_id: string;
     already_enrolled: boolean;

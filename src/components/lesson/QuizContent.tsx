@@ -27,6 +27,11 @@ import {
   type ProblemMedia,
 } from "@/lib/problemMedia";
 import { storageUrl } from "@/utils/storageUrl";
+import type { DemoIframeLessonQuizGuidePhase } from "@/utils/demoIframeDashboardGuide";
+import {
+  DEMO_IFRAME_GUIDE_SCROLL_SHORT_MS,
+  scrollDemoIframeElementToCenter,
+} from "@/utils/demoIframeSmoothScroll";
 
 // ── Custom Dropdown cho Problem Type: Dropdown ──
 function CustomDropdown({
@@ -109,6 +114,10 @@ interface QuizContentProps {
   problemUsageKey: string;
   problemMedia?: ProblemMedia | null;
   onImageClick?: (src: string) => void;
+  demoGuidePhase?: DemoIframeLessonQuizGuidePhase;
+  onDemoGuideHintClick?: () => void;
+  onDemoGuideAnswerSelected?: () => void;
+  onDemoGuideSubmitComplete?: () => void;
 }
 
 function ProblemMediaBlock({
@@ -176,7 +185,15 @@ function ProblemMediaBlock({
   );
 }
 
-export function QuizContent({ problemUsageKey, problemMedia, onImageClick }: QuizContentProps) {
+export function QuizContent({
+  problemUsageKey,
+  problemMedia,
+  onImageClick,
+  demoGuidePhase = "idle",
+  onDemoGuideHintClick,
+  onDemoGuideAnswerSelected,
+  onDemoGuideSubmitComplete,
+}: QuizContentProps) {
   const [parsedProblems, setParsedProblems] = useState<ParsedProblem[]>([]);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
 
@@ -197,6 +214,12 @@ export function QuizContent({ problemUsageKey, problemMedia, onImageClick }: Qui
 
   // Explanation state: lưu giải thích đáp án fetch từ problem_show API
   const [fetchedExplanation, setFetchedExplanation] = useState<string>("");
+  const isDemoGuideHintActive = demoGuidePhase === "hint";
+  const isDemoGuideAnswerActive = demoGuidePhase === "answer";
+  const isDemoGuideSubmitActive = demoGuidePhase === "submit";
+  const demoGuideHintButtonRef = useRef<HTMLButtonElement>(null);
+  const demoGuideAnswerOptionRef = useRef<HTMLLabelElement>(null);
+  const demoGuideSubmitButtonRef = useRef<HTMLButtonElement>(null);
 
   // Fetch quiz HTML qua useQuery — tự động dedup (Strict Mode safe) + cache
   const { data: quizHtml } = useQuery({
@@ -325,7 +348,47 @@ export function QuizContent({ problemUsageKey, problemMedia, onImageClick }: Qui
     setShowHint(prev => !prev);
   }, []);
 
+  const handleHintButtonClick = useCallback(() => {
+    if (isDemoGuideHintActive) {
+      setShowHint(true);
+      onDemoGuideHintClick?.();
+      return;
+    }
+
+    handleToggleHint();
+  }, [handleToggleHint, isDemoGuideHintActive, onDemoGuideHintClick]);
+
   // Check xem có hint không (từ OLX parsed data)
+  const handleSubmitButtonClick = useCallback(async () => {
+    await handleSubmit();
+    if (isDemoGuideSubmitActive) {
+      onDemoGuideSubmitComplete?.();
+    }
+  }, [handleSubmit, isDemoGuideSubmitActive, onDemoGuideSubmitComplete]);
+
+  useEffect(() => {
+    const target = isDemoGuideHintActive
+      ? demoGuideHintButtonRef.current
+      : isDemoGuideAnswerActive
+        ? demoGuideAnswerOptionRef.current
+        : isDemoGuideSubmitActive
+          ? demoGuideSubmitButtonRef.current
+          : null;
+    if (!target) return;
+
+    let cancelGuideScroll: (() => void) | null = null;
+    const timer = window.setTimeout(() => {
+      cancelGuideScroll = scrollDemoIframeElementToCenter(target, {
+        durationMs: DEMO_IFRAME_GUIDE_SCROLL_SHORT_MS,
+      });
+    }, 120);
+
+    return () => {
+      window.clearTimeout(timer);
+      cancelGuideScroll?.();
+    };
+  }, [isDemoGuideAnswerActive, isDemoGuideHintActive, isDemoGuideSubmitActive]);
+
   const hasHints = parsedProblems.some(p => p.hasHints && p.hintHtml);
 
   // ── Loading state ──
@@ -397,21 +460,31 @@ export function QuizContent({ problemUsageKey, problemMedia, onImageClick }: Qui
                   const isSelected = answers[prob.id] === opt.id;
                   const isDisabled = resultMessage !== null;
                   const labelLetter = String.fromCharCode(65 + index); // A, B, C, D...
+                  const isDemoGuideAnswerTarget = isDemoGuideAnswerActive && index === 1 && !isDisabled;
 
                   return (
                     <label
                       key={opt.id}
+                      ref={isDemoGuideAnswerTarget ? demoGuideAnswerOptionRef : undefined}
                       className={`group flex w-full cursor-pointer items-center gap-4 rounded-2xl p-4 text-left transition-all ${isSelected
                         ? "bg-primary/5 ring-1 ring-primary"
                         : "bg-muted/40 hover:bg-muted/80"
-                        } ${isDisabled ? "cursor-not-allowed opacity-70" : ""}`}
+                        } ${isDisabled ? "cursor-not-allowed opacity-70" : ""} ${isDemoGuideAnswerTarget ? "relative z-[100000] demo-iframe-hero-cta-guide-wave-only demo-iframe-hero-cta-guide-blue demo-iframe-hero-cta-guide-answer" : ""}`}
                     >
+                      {isDemoGuideAnswerTarget && (
+                        <span className="demo-iframe-hero-cta-echo" aria-hidden="true" />
+                      )}
                       <input
                         type="radio"
                         name={prob.id}
                         value={opt.id}
                         checked={isSelected}
-                        onChange={(e) => handleChange(prob.id, e.target.value, prob.type)}
+                        onChange={(e) => {
+                          handleChange(prob.id, e.target.value, prob.type);
+                          if (isDemoGuideAnswerTarget) {
+                            onDemoGuideAnswerSelected?.();
+                          }
+                        }}
                         disabled={isDisabled}
                         className="hidden"
                       />
@@ -589,11 +662,17 @@ export function QuizContent({ problemUsageKey, problemMedia, onImageClick }: Qui
           <div>
             {hasHints && isCorrect !== true && (
               <button
-                onClick={handleToggleHint}
-                className="flex items-center gap-2 rounded-full border-2 border-warning/30 bg-warning/5 px-5 py-2.5 text-[13px] font-semibold text-warning transition-all hover:bg-warning/10 active:scale-[0.97]"
+                ref={demoGuideHintButtonRef}
+                onClick={handleHintButtonClick}
+                className={`flex items-center gap-2 rounded-full border-2 border-warning/30 bg-warning/5 px-5 py-2.5 text-[13px] font-semibold text-warning transition-all hover:bg-warning/10 active:scale-[0.97] ${isDemoGuideHintActive ? "relative z-[100000] demo-iframe-hero-cta-guide-wave-only demo-iframe-hero-cta-guide-yellow" : ""}`}
               >
-                <Lightbulb className="h-4 w-4" />
-                {showHint ? "Ẩn gợi ý" : "Xem gợi ý"}
+                {isDemoGuideHintActive && (
+                  <span className="demo-iframe-hero-cta-echo" aria-hidden="true" />
+                )}
+                <Lightbulb className="relative z-10 h-4 w-4" />
+                <span className="relative z-10">
+                  {showHint ? "Ẩn gợi ý" : "Xem gợi ý"}
+                </span>
               </button>
             )}
           </div>
@@ -602,10 +681,14 @@ export function QuizContent({ problemUsageKey, problemMedia, onImageClick }: Qui
           <div className="flex gap-3">
             {!resultMessage ? (
               <button
+                ref={demoGuideSubmitButtonRef}
                 disabled={Object.keys(answers).length === 0 || submit.isPending}
-                onClick={handleSubmit}
-                className="rounded-full bg-primary px-8 py-3 text-[14px] font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-2"
+                onClick={handleSubmitButtonClick}
+                className={`rounded-full bg-primary px-8 py-3 text-[14px] font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-2 ${isDemoGuideSubmitActive ? "relative z-[100000] demo-iframe-hero-cta-guide-wave-only demo-iframe-hero-cta-guide-blue" : ""}`}
               >
+                {isDemoGuideSubmitActive && (
+                  <span className="demo-iframe-hero-cta-echo" aria-hidden="true" />
+                )}
                 {submit.isPending && (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 )}

@@ -6,6 +6,7 @@ import { ArrowRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CourseModalConfigData } from "@/api/modalConfig";
 import { useAppStore } from "@/stores/useAppStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCourseModalState, updateCourseModalState } from "@/api/modalState";
 
@@ -21,6 +22,7 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
   const [checked, setChecked] = useState(false);
   const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
   const setConfirmJustClosed = useAppStore((s) => s.setConfirmJustClosed);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
 
   const [isPending, setIsPending] = useState(false);
 
@@ -37,7 +39,7 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
   const queryClient = useQueryClient();
 
   const { data: modalState, isLoading: isModalStateLoading } = useQuery({
-    queryKey: ["courseModalState", courseId],
+    queryKey: ["courseModalState", courseId, sessionMode],
     queryFn: () => getCourseModalState(courseId),
     enabled: !!courseId && !isLoading,
     staleTime: 5 * 60 * 1000,
@@ -47,7 +49,7 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
     mutationFn: (updates: { welcome_shown?: boolean; confirm_shown?: boolean; complete_shown?: boolean }) =>
       updateCourseModalState(courseId, updates),
     onSuccess: (data) => {
-      queryClient.setQueryData(["courseModalState", courseId], data);
+      queryClient.setQueryData(["courseModalState", courseId, sessionMode], data);
     }
   });
 

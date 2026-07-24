@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 function getStreak(): number {
   try {
@@ -10,7 +11,8 @@ function getStreak(): number {
 }
 
 export function StreakCounter() {
-  const streak = getStreak();
+  const sessionMode = useAuthStore((s) => s.sessionMode);
+  const streak = sessionMode === "demo_iframe" ? 0 : getStreak();
 
   return (
     <motion.div

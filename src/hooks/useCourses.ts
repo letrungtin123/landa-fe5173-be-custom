@@ -248,9 +248,10 @@ export function useCourse(courseId: string) {
  */
 export function useMyEnrollments() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
 
   return useQuery({
-    queryKey: ["enrollments"],
+    queryKey: ["enrollments", sessionMode],
     queryFn: getMyEnrollments,
     enabled: isAuthenticated,
     staleTime: 2 * 60 * 1000,
@@ -263,16 +264,17 @@ export function useMyEnrollments() {
  */
 export function useCourseStructure(courseId: string) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
   const qc = useQueryClient();
 
   return useQuery({
-    queryKey: ["course-blocks", courseId],
+    queryKey: ["course-blocks", courseId, sessionMode],
     queryFn: async () => {
       try {
         const raw = await getCourseBlocks(courseId);
         return adaptBlocksResponse(raw);
       } catch (err: any) {
-        if (err?.response?.status === 403 || err?.response?.status === 400) {
+        if (sessionMode !== "demo_iframe" && (err?.response?.status === 403 || err?.response?.status === 400)) {
           try {
             await enrollCourse(courseId);
             qc.invalidateQueries({ queryKey: ["enrollments"] });
@@ -295,10 +297,11 @@ export function useCourseStructure(courseId: string) {
  */
 export function useCourseBlocksRaw(courseId: string) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
   const qc = useQueryClient();
 
   return useQuery({
-    queryKey: ["course-blocks", courseId],
+    queryKey: ["course-blocks", courseId, sessionMode],
     queryFn: async () => {
       try {
         const raw = await getCourseBlocks(courseId);
@@ -306,7 +309,7 @@ export function useCourseBlocksRaw(courseId: string) {
         return adapted;
       } catch (err: any) {
         console.error('[useCourseBlocksRaw] ERROR:', err?.response?.status, err?.message);
-        if (err?.response?.status === 403 || err?.response?.status === 400) {
+        if (sessionMode !== "demo_iframe" && (err?.response?.status === 403 || err?.response?.status === 400)) {
           try {
             await enrollCourse(courseId);
             qc.invalidateQueries({ queryKey: ["enrollments"] });

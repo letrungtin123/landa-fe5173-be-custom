@@ -34,6 +34,25 @@ export interface BadgeProgressInfo {
 export type BadgeProgressMap = Record<string, BadgeProgressInfo>;
 
 const STORAGE_KEY = "la_badge_timestamps";
+const transientTimestamps = new Map<string, string>();
+const transientShown = new Map<string, Set<string>>();
+
+export interface BadgeStorageOptions {
+  transient?: boolean;
+}
+
+function scopedKey(base: string, username?: string): string {
+  return username ? `${base}_${username}` : base;
+}
+
+function transientKey(username?: string): string {
+  return username || "__anonymous__";
+}
+
+export function resetTransientBadgeStorage(): void {
+  transientTimestamps.clear();
+  transientShown.clear();
+}
 
 function toProgressInfo(current: number, target: number, unitLabel: string): BadgeProgressInfo {
   const safeTarget = Math.max(1, target);
@@ -108,8 +127,17 @@ export function buildBadgeProgressMap(
 }
 
 /** Lưu timestamp earn badge vào localStorage */
-function persistTimestamp(badgeId: string, username?: string): string {
-  const key = username ? `${STORAGE_KEY}_${username}` : STORAGE_KEY;
+function persistTimestamp(badgeId: string, username?: string, options?: BadgeStorageOptions): string {
+  if (options?.transient) {
+    const key = `${transientKey(username)}:${badgeId}`;
+    const existing = transientTimestamps.get(key);
+    if (existing) return existing;
+    const now = new Date().toISOString();
+    transientTimestamps.set(key, now);
+    return now;
+  }
+
+  const key = scopedKey(STORAGE_KEY, username);
   const now = new Date().toISOString();
   try {
     const stored = JSON.parse(localStorage.getItem(key) || "{}");
@@ -124,8 +152,12 @@ function persistTimestamp(badgeId: string, username?: string): string {
 }
 
 /** Lấy timestamp đã lưu  */
-function getTimestamp(badgeId: string, username?: string): string | null {
-  const key = username ? `${STORAGE_KEY}_${username}` : STORAGE_KEY;
+function getTimestamp(badgeId: string, username?: string, options?: BadgeStorageOptions): string | null {
+  if (options?.transient) {
+    return transientTimestamps.get(`${transientKey(username)}:${badgeId}`) || null;
+  }
+
+  const key = scopedKey(STORAGE_KEY, username);
   try {
     const stored = JSON.parse(localStorage.getItem(key) || "{}");
     return stored[badgeId] || null;
@@ -135,8 +167,12 @@ function getTimestamp(badgeId: string, username?: string): string | null {
 }
 
 /** Lấy tất cả badge IDs đã hiển thị unlock modal */
-export function getShownBadgeIds(username?: string): Set<string> {
-  const key = username ? `la_badge_shown_${username}` : "la_badge_shown";
+export function getShownBadgeIds(username?: string, options?: BadgeStorageOptions): Set<string> {
+  if (options?.transient) {
+    return new Set(transientShown.get(transientKey(username)) || []);
+  }
+
+  const key = scopedKey("la_badge_shown", username);
   try {
     const shown = JSON.parse(localStorage.getItem(key) || "[]");
     return new Set(shown);
@@ -146,10 +182,18 @@ export function getShownBadgeIds(username?: string): Set<string> {
 }
 
 /** Đánh dấu badge đã hiển thị unlock modal */
-export function markBadgeShown(badgeId: string, username?: string): void {
-  const key = username ? `la_badge_shown_${username}` : "la_badge_shown";
+export function markBadgeShown(badgeId: string, username?: string, options?: BadgeStorageOptions): void {
+  if (options?.transient) {
+    const key = transientKey(username);
+    const shown = transientShown.get(key) || new Set<string>();
+    shown.add(badgeId);
+    transientShown.set(key, shown);
+    return;
+  }
+
+  const key = scopedKey("la_badge_shown", username);
   try {
-    const shown = getShownBadgeIds(username);
+    const shown = getShownBadgeIds(username, options);
     shown.add(badgeId);
     localStorage.setItem(key, JSON.stringify([...shown]));
   } catch {
@@ -158,9 +202,11 @@ export function markBadgeShown(badgeId: string, username?: string): void {
 }
 
 /** Đồng bộ data từ Backend về LocalStorage */
-export function syncBadgesToLocalStorage(beBadges: Array<{badge_id: string, is_shown: boolean, earned_at: string}>, username?: string): void {
-  const tsKey = username ? `${STORAGE_KEY}_${username}` : STORAGE_KEY;
-  const shownKey = username ? `la_badge_shown_${username}` : "la_badge_shown";
+export function syncBadgesToLocalStorage(beBadges: Array<{badge_id: string, is_shown: boolean, earned_at: string}>, username?: string, options?: BadgeStorageOptions): void {
+  if (options?.transient) return;
+
+  const tsKey = scopedKey(STORAGE_KEY, username);
+  const shownKey = scopedKey("la_badge_shown", username);
   
   try {
     const timestamps = JSON.parse(localStorage.getItem(tsKey) || "{}");
@@ -195,7 +241,7 @@ export function syncBadgesToLocalStorage(beBadges: Array<{badge_id: string, is_s
  * Core evaluation function — kiểm tra từng badge definition
  * dựa trên dữ liệu real-time từ API.
  */
-export function evaluateBadges(data: EvaluationData, username?: string, activeBadgeIds?: string[]): EarnedBadge[] {
+export function evaluateBadges(data: EvaluationData, username?: string, activeBadgeIds?: string[], options?: BadgeStorageOptions): EarnedBadge[] {
   const earned: EarnedBadge[] = [];
   const activeSet = activeBadgeIds ? new Set(activeBadgeIds) : null;
 
@@ -204,7 +250,7 @@ export function evaluateBadges(data: EvaluationData, username?: string, activeBa
     if (badge.id === "perfect_profile") continue;
 
     // Nếu đã đạt được từ trước (hoặc backend trả về), luôn luôn tính là đã đạt
-    const existingTimestamp = getTimestamp(badge.id, username);
+    const existingTimestamp = getTimestamp(badge.id, username, options);
     if (existingTimestamp) {
       earned.push({
         badge,
@@ -213,14 +259,14 @@ export function evaluateBadges(data: EvaluationData, username?: string, activeBa
       continue;
     }
 
-    const result = checkBadge(badge, data, username);
+    const result = checkBadge(badge, data, username, options);
     if (result) {
       // Clear legacy global key if present to prevent false positives
-      if (localStorage.getItem("la_profile_updated")) {
+      if (!options?.transient && localStorage.getItem("la_profile_updated")) {
         localStorage.removeItem("la_profile_updated");
       }
       
-      const newTimestamp = persistTimestamp(badge.id, username);
+      const newTimestamp = persistTimestamp(badge.id, username, options);
       earned.push({
         badge,
         earnedAt: newTimestamp,
@@ -233,7 +279,7 @@ export function evaluateBadges(data: EvaluationData, username?: string, activeBa
   // Kiểm tra "Mảnh ghép hoàn hảo"
   const ppBadge = BADGE_DEFINITIONS.find((b) => b.id === "perfect_profile");
   if (ppBadge && (!activeSet || activeSet.has(ppBadge.id))) {
-    const ppTimestamp = getTimestamp(ppBadge.id, username);
+    const ppTimestamp = getTimestamp(ppBadge.id, username, options);
     if (ppTimestamp) {
       earned.push({
         badge: ppBadge,
@@ -241,7 +287,7 @@ export function evaluateBadges(data: EvaluationData, username?: string, activeBa
       });
     } else {
       const profileUpdatedKey = username ? `la_profile_updated_${username}` : "la_profile_updated";
-      const hasProfileUpdateInStorage = localStorage.getItem(profileUpdatedKey) === "true";
+      const hasProfileUpdateInStorage = !options?.transient && localStorage.getItem(profileUpdatedKey) === "true";
       
       // Kiểm tra trên object profile thực tế từ API (phòng khi mất localStorage)
       let hasProfileData = false;
@@ -262,11 +308,11 @@ export function evaluateBadges(data: EvaluationData, username?: string, activeBa
       }
 
       if (hasProfileUpdateInStorage || hasProfileData) {
-        if (hasProfileData && !hasProfileUpdateInStorage) {
+        if (!options?.transient && hasProfileData && !hasProfileUpdateInStorage) {
           localStorage.setItem(profileUpdatedKey, "true");
         }
         
-        const newTs = persistTimestamp(ppBadge.id, username);
+        const newTs = persistTimestamp(ppBadge.id, username, options);
         earned.push({
           badge: ppBadge,
           earnedAt: newTs,
@@ -286,7 +332,8 @@ interface CheckResult {
 function checkBadge(
   badge: BadgeDefinition,
   data: EvaluationData,
-  username?: string
+  username?: string,
+  options?: BadgeStorageOptions,
 ): CheckResult | null {
   const { enrollments, certificates, courseCompletions: completions, courseGrades: grades } = data;
 
@@ -315,7 +362,7 @@ function checkBadge(
     }
 
     case "speed_scholar": {
-      if (username && getTimestamp("speed_scholar", username)) {
+      if (username && getTimestamp("speed_scholar", username, options)) {
          return {}; // Đã đạt được thì giữ nguyên vĩnh viễn
       }
       for (const [courseId, pct] of completions) {

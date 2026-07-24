@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { apiClient } from "./client";
+import type { ActiveBot } from "./chat";
 
 interface ApiResponse<T> { success: boolean; data: T; }
 
@@ -16,10 +17,23 @@ export interface BotPersona {
   template_fullbody_url: string | null;
   custom_name: string | null;
   custom_description: string | null;
-  custom_prompt: string | null;
+  custom_prompt?: string | null;
+}
+
+export interface DemoIframeChatbotPreview {
+  bot: ActiveBot | null;
+  personas: BotPersona[];
 }
 
 export async function fetchBotPersonas(botId: string): Promise<BotPersona[]> {
   const { data } = await apiClient.get<ApiResponse<BotPersona[]>>(`/api/ai-chatbot/bots/${botId}/personas`);
+  return data.data;
+}
+
+export async function fetchDemoIframeChatbotPreview(): Promise<DemoIframeChatbotPreview> {
+  const { data } = await apiClient.get<ApiResponse<DemoIframeChatbotPreview>>(
+    "/api/ai-chatbot/chat/demo-iframe-preview",
+    { params: { target: "learner" } },
+  );
   return data.data;
 }

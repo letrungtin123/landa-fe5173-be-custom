@@ -17,6 +17,32 @@ function requireEnvNumber(key: string, fallback?: number): number {
   return num;
 }
 
+function normalizePublicBaseUrl(raw: unknown): string {
+  return String(raw || "").trim().replace(/\/+$/, "");
+}
+
+function wouldCauseMixedContent(baseUrl: string): boolean {
+  return (
+    typeof window !== "undefined" &&
+    window.location.protocol === "https:" &&
+    /^http:\/\//i.test(baseUrl)
+  );
+}
+
+let mixedContentWarningShown = false;
+
+function getPublicApiBaseUrl(): string {
+  const baseUrl = normalizePublicBaseUrl(import.meta.env.VITE_API_BASE_URL);
+  if (wouldCauseMixedContent(baseUrl)) {
+    if (!mixedContentWarningShown) {
+      mixedContentWarningShown = true;
+      console.warn("[ENV] VITE_API_BASE_URL dùng HTTP trên trang HTTPS, tự chuyển sang same-origin /api để tránh mixed content.");
+    }
+    return "";
+  }
+  return baseUrl;
+}
+
 export const config = {
   /** Timeout (ms) cho API calls */
   apiTimeoutMs: requireEnvNumber("VITE_API_TIMEOUT_MS", 30_000),
@@ -30,7 +56,7 @@ export const config = {
    * Production: Kong Gateway hoặc reverse proxy route /api/* về backend
    */
   get apiBaseUrl(): string {
-    return (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
+    return getPublicApiBaseUrl();
   },
 
   /** @deprecated SSO — hiện tại không dùng, giữ cho LoginPage guard */

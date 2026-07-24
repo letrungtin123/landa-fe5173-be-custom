@@ -36,9 +36,26 @@ if (existsSync(envFile)) {
 const PORT = parseInt(process.env.VITE_PREVIEW_PORT || process.env.PORT || "5173", 10);
 
 // Custom Node.js Backend — đọc từ .env.production
-const API_BACKEND = process.env.VITE_API_BASE_URL;
+function normalizeBaseUrl(raw) {
+  const value = String(raw || "").trim().replace(/\/+$/, "");
+  if (!value) return "";
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+    return url.origin + url.pathname.replace(/\/+$/, "");
+  } catch {
+    return "";
+  }
+}
+
+const API_BACKEND = normalizeBaseUrl(
+  process.env.API_BACKEND_URL ||
+  process.env.PROXY_BACKEND_URL ||
+  process.env.VITE_API_PROXY_TARGET ||
+  process.env.VITE_API_BASE_URL
+);
 if (!API_BACKEND) {
-  console.error("[FE-5173] ❌ Thiếu biến VITE_API_BASE_URL trong .env.production");
+  console.error("[FE-5173] Thiếu API_BACKEND_URL trong .env.production để proxy /api về backend");
   process.exit(1);
 }
 
@@ -96,6 +113,15 @@ async function getIndexHtml() {
 
 function shouldProxy(pathname) {
   return PROXY_PATHS.some((prefix) => pathname.startsWith(prefix));
+}
+
+function frameAwareHeaders(pathname, headers) {
+  if (pathname !== "/demo-embed") return headers;
+  const next = { ...headers };
+  delete next["X-Frame-Options"];
+  next["Content-Security-Policy"] = String(next["Content-Security-Policy"] || "")
+    .replace("frame-ancestors 'none'", "frame-ancestors http: https:");
+  return next;
 }
 
 async function proxyToBackend(req, res) {
@@ -186,7 +212,7 @@ async function serveStatic(req, res) {
       headers["Content-Encoding"] = encoding;
     }
 
-    res.writeHead(200, headers);
+    res.writeHead(200, frameAwareHeaders(pathname, headers));
     // Stream file — non-blocking
     createReadStream(servePath).pipe(res);
     return;
@@ -195,12 +221,12 @@ async function serveStatic(req, res) {
   // SPA fallback — serve cached index.html
   const indexContent = await getIndexHtml();
   if (indexContent) {
-    res.writeHead(200, {
+    res.writeHead(200, frameAwareHeaders(pathname, {
       ...SECURITY_HEADERS,
       "Content-Type": "text/html; charset=utf-8",
       "Content-Length": indexContent.length,
       "Cache-Control": "no-cache",
-    });
+    }));
     res.end(indexContent);
   } else {
     res.writeHead(404);

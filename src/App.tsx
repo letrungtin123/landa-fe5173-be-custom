@@ -52,6 +52,7 @@ let pendingOttExchange: Promise<void> | null = null;
         tokenType: "Bearer",
         tokenExpiresAt: Date.now() + result.expires_in * 1000,
         loginSessionId: createLoginSessionId(),
+        sessionMode: result.session_mode || "normal",
         user: {
           id: result.user.id,
           username: result.user.username,
@@ -113,6 +114,9 @@ const RegisterPage = React.lazy(() =>
 const DemoQrLoginPage = React.lazy(() =>
   import("@/pages/DemoQrLoginPage").then(m => ({ default: m.DemoQrLoginPage }))
 );
+const DemoIframeEmbedPage = React.lazy(() =>
+  import("@/pages/DemoIframeEmbedPage").then(m => ({ default: m.DemoIframeEmbedPage }))
+);
 
 // ── React Query config ──
 const queryClient = new QueryClient({
@@ -147,6 +151,7 @@ function PageLoader() {
  */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
   const location = useLocation();
   if (!isAuthenticated) {
     const next = `${location.pathname}${location.search}${location.hash}`;
@@ -158,7 +163,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       {/* Global badge watcher — hiện modal khi earn badge mới bất kể đang ở route nào */}
       <GlobalBadgeWatcher />
       {/* Global study time tracker — đếm giờ học ngay khi login, mọi route */}
-      <StudyTimeTracker />
+      {sessionMode !== "demo_iframe" ? <StudyTimeTracker /> : null}
       {/* AI Chat Widget — hiện FAB chat trên mọi trang */}
       <ChatWidget />
       {children}
@@ -196,6 +201,7 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/demo-login" element={<DemoQrLoginPage />} />
+                <Route path="/demo-embed" element={<DemoIframeEmbedPage />} />
 
 
                 {/* Routes bảo vệ — yêu cầu đăng nhập */}

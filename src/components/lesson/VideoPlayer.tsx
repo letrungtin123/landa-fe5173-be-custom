@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 interface VideoPlayerProps {
   lesson: LessonDetail;
   videoUrl?: string | null;
+  demoGuideActive?: boolean;
+  onDemoGuidePlay?: () => void;
 }
 
 /**
@@ -39,7 +41,12 @@ function getYouTubeId(url: string): string | null {
   return null;
 }
 
-export function VideoPlayer({ lesson, videoUrl: propVideoUrl }: VideoPlayerProps) {
+export function VideoPlayer({
+  lesson,
+  videoUrl: propVideoUrl,
+  demoGuideActive = false,
+  onDemoGuidePlay,
+}: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -93,8 +100,11 @@ export function VideoPlayer({ lesson, videoUrl: propVideoUrl }: VideoPlayerProps
     const v = videoRef.current;
     if (!v) return;
     if (v.paused) {
-      v.play();
+      void v.play();
       setIsPlaying(true);
+      if (demoGuideActive) {
+        onDemoGuidePlay?.();
+      }
     } else {
       v.pause();
       setIsPlaying(false);
@@ -146,6 +156,7 @@ export function VideoPlayer({ lesson, videoUrl: propVideoUrl }: VideoPlayerProps
     return (
       <div
         ref={containerRef}
+        onPointerDownCapture={demoGuideActive ? onDemoGuidePlay : undefined}
         className="relative overflow-hidden rounded-2xl bg-[#0d1117] aspect-video shadow-lg"
       >
         {isLoading && (
@@ -168,6 +179,7 @@ export function VideoPlayer({ lesson, videoUrl: propVideoUrl }: VideoPlayerProps
     return (
       <div
         ref={containerRef}
+        onPointerDownCapture={demoGuideActive ? onDemoGuidePlay : undefined}
         className="relative overflow-hidden rounded-2xl bg-[#0d1117] aspect-video shadow-lg"
       >
         {isLoading && (
@@ -219,10 +231,18 @@ export function VideoPlayer({ lesson, videoUrl: propVideoUrl }: VideoPlayerProps
       {!isPlaying && !isLoading && (
         <button
           onClick={togglePlay}
-          className="absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity"
+          className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 transition-opacity"
         >
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm transition-transform hover:scale-110">
-            <Play className="h-8 w-8 ml-1 text-white" />
+          <div
+            className={cn(
+              "flex h-20 w-20 items-center justify-center rounded-full backdrop-blur-sm transition-transform hover:scale-110",
+              demoGuideActive
+                ? "demo-iframe-hero-cta-guide relative text-[#075985]"
+                : "bg-white/15"
+            )}
+          >
+            {demoGuideActive && <span className="demo-iframe-hero-cta-echo" aria-hidden="true" />}
+            <Play className={cn("relative z-10 h-8 w-8 ml-1", demoGuideActive ? "text-[#075985]" : "text-white")} />
           </div>
         </button>
       )}
@@ -259,4 +279,3 @@ export function VideoPlayer({ lesson, videoUrl: propVideoUrl }: VideoPlayerProps
     </div>
   );
 }
-

@@ -15,6 +15,11 @@ import planeImage from "@/assets/WelcomeInitModal/welcome_init_plane.png";
 import { useBranding } from "@/hooks/useBranding";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import {
+  DEMO_IFRAME_DASHBOARD_CTA_EVENT,
+  demoIframeDashboardCtaKey,
+  markDemoIframeDashboardCtaPending,
+} from "@/utils/demoIframeDashboardGuide";
 
 function storageGet(key: string): boolean {
   try {
@@ -44,6 +49,7 @@ export function WelcomeInitModal() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const loginSessionId = useAuthStore((s) => s.loginSessionId);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
 
   const [open, setOpen] = useState(false);
   const [locallyDismissed, setLocallyDismissed] = useState(false);
@@ -56,6 +62,11 @@ export function WelcomeInitModal() {
 
   const queryKey = useMemo(
     () => ["welcome-init-state", user?.id, loginSessionId || "rehydrated"],
+    [loginSessionId, user?.id]
+  );
+
+  const dashboardCtaGuideKey = useMemo(
+    () => demoIframeDashboardCtaKey(user?.id, loginSessionId),
     [loginSessionId, user?.id]
   );
 
@@ -104,6 +115,17 @@ export function WelcomeInitModal() {
       return;
     }
 
+    const notifyDashboardCtaGuide = () => {
+      if (sessionMode !== "demo_iframe" || !dashboardCtaGuideKey) return;
+
+      markDemoIframeDashboardCtaPending(dashboardCtaGuideKey);
+      window.dispatchEvent(
+        new CustomEvent(DEMO_IFRAME_DASHBOARD_CTA_EVENT, {
+          detail: { key: dashboardCtaGuideKey },
+        })
+      );
+    };
+
     setLocallyDismissed(true);
     if (state.is_demo_account && sessionKey) {
       storageSet(sessionKey);
@@ -111,7 +133,10 @@ export function WelcomeInitModal() {
     }
 
     markSeen(undefined, {
-      onSettled: () => setOpen(false),
+      onSettled: () => {
+        setOpen(false);
+        window.setTimeout(notifyDashboardCtaGuide, 160);
+      },
     });
   };
 
@@ -120,7 +145,7 @@ export function WelcomeInitModal() {
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/35 backdrop-blur-[7px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 sm:bg-black/30" />
         <DialogPrimitive.Content
-          className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2.5rem)] max-w-[426px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[16px] border-0 bg-white p-0 shadow-[0_18px_42px_rgba(37,99,235,0.24)] outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 dark:bg-[#0f172a] dark:shadow-[0_18px_46px_rgba(2,6,23,0.66)] sm:w-[calc(100vw-4rem)] sm:max-w-[832px] sm:rounded-[30px] sm:border-[10px] sm:border-white sm:shadow-[0_24px_70px_rgba(15,23,42,0.28)] sm:dark:border-[#111827]"
+          className="welcome-init-modal-content fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2.5rem)] max-w-[426px] -translate-x-1/2 -translate-y-1/2 outline-none sm:w-[calc(100vw-4rem)] sm:max-w-[832px]"
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
@@ -131,6 +156,7 @@ export function WelcomeInitModal() {
             Modal chào mừng xuất hiện trong lần đầu đăng nhập vào hệ thống học tập.
           </DialogPrimitive.Description>
 
+          <div className="welcome-init-modal-shell overflow-hidden rounded-[16px] border-0 bg-white p-0 shadow-[0_18px_42px_rgba(37,99,235,0.24)] dark:bg-[#0f172a] dark:shadow-[0_18px_46px_rgba(2,6,23,0.66)] sm:rounded-[30px] sm:border-[10px] sm:border-white sm:shadow-[0_24px_70px_rgba(15,23,42,0.28)] sm:dark:border-[#111827]">
           <div className="relative min-h-[526px] overflow-hidden rounded-[16px] bg-[linear-gradient(180deg,rgba(147,197,253,0.72)_0%,rgba(219,234,254,0.58)_48%,#ffffff_100%)] px-5 pb-10 pt-12 text-center text-[#213d6a] dark:bg-[linear-gradient(180deg,rgba(30,64,175,0.48)_0%,rgba(15,23,42,0.86)_52%,#0f172a_100%)] dark:text-slate-100 sm:min-h-[486px] sm:rounded-[21px] sm:px-12 sm:pb-12 sm:pt-10">
             <picture className="pointer-events-none absolute left-0 top-[118px] w-[75px] opacity-95 sm:left-0 sm:top-[148px] sm:w-[149px]">
               <source media="(min-width: 640px)" srcSet={linePlanePcImage} />
@@ -214,6 +240,7 @@ export function WelcomeInitModal() {
                 <ArrowRight className="h-5 w-5 sm:h-5 sm:w-5" />
               </button>
             </div>
+          </div>
           </div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>

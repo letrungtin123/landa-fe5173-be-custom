@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageCircle, X, Plus, ArrowLeft, Send, Trash2,
@@ -16,24 +16,104 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { storageUrl } from '@/utils/storageUrl';
+import { useBranding } from '@/hooks/useBranding';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useAppStore } from '@/stores/useAppStore';
+import {
+  clearDemoIframeCompanionWidgetPending,
+  DEMO_IFRAME_COMPANION_REVEAL_CLOSE_DELAY_MS,
+  DEMO_IFRAME_COMPANION_WIDGET_DELAY_MS,
+  DEMO_IFRAME_COMPANION_WIDGET_EVENT,
+  DEMO_IFRAME_EXPLORE_COURSE_EVENT,
+  DEMO_IFRAME_EXPLORE_COURSE_ID,
+  DEMO_IFRAME_LESSON_QUIZ_ASSIST_ANSWER,
+  DEMO_IFRAME_LESSON_QUIZ_ASSIST_EVENT,
+  DEMO_IFRAME_LESSON_QUIZ_GUIDE_EVENT,
+  DEMO_IFRAME_LESSON_QUIZ_GUIDE_WIDGET_CLOSE_DELAY_MS,
+  DEMO_IFRAME_LESSON_QUIZ_QUESTION,
+  demoIframeCompanionWidgetKey,
+  demoIframeExploreCourseKey,
+  type DemoIframeLessonQuizAssistDetail,
+  isDemoIframeCompanionWidgetPending,
+  markDemoIframeExploreCoursePending,
+  setDemoIframeFlowLock,
+} from '@/utils/demoIframeDashboardGuide';
+import { lockDemoIframeUserScroll } from '@/utils/demoIframeGuideLock';
 import {
   fetchActiveBot, fetchConversations, createConversation,
   deleteConversation, fetchMessages, sendMessageStream,
   type ActiveBot, type ChatConversation, type ChatMessage,
 } from '@/api/chat';
-import { fetchBotPersonas, type BotPersona } from '@/api/chatbot';
+import { fetchBotPersonas, fetchDemoIframeChatbotPreview, type BotPersona } from '@/api/chatbot';
 
 // ── Types ──
 type WidgetState = 'loading' | 'no-bot' | 'persona-picker' | 'conversations' | 'chat';
+type DemoCompanionPhase = 'idle' | 'waiting' | 'focus';
+type DemoQuizAssistPhase = 'idle' | 'typing' | 'thinking' | 'streaming' | 'done';
+type DemoSurveyAnswerKey = 'A' | 'B' | 'C' | 'D';
+const DEMO_IFRAME_FLOW_LOCK_COMPANION = 'companion-widget';
+const DEMO_IFRAME_FLOW_LOCK_QUIZ_ASSIST = 'quiz-assist-widget';
+const DEMO_QUIZ_ASSIST_TYPE_CHAR_MS = 30;
+const DEMO_QUIZ_ASSIST_TYPE_PUNCTUATION_MS = 120;
+const DEMO_QUIZ_ASSIST_STREAM_CHUNK_MS = 44;
+const DEMO_QUIZ_ASSIST_STREAM_PUNCTUATION_MS = 150;
+const DEMO_QUIZ_ASSIST_THINKING_MS = 2000;
+
+function getDemoQuizAssistStepDelay(chars: string[], nextIndex: number, baseDelayMs: number, punctuationDelayMs: number) {
+  const previousChar = chars[Math.max(0, nextIndex - 1)];
+  return /[,.!?;:]/.test(previousChar) ? punctuationDelayMs : baseDelayMs;
+}
+
+const DEMO_COMPANION_SURVEY_QUESTIONS: Array<{
+  question: string;
+  correct: DemoSurveyAnswerKey;
+  answers: Array<{ key: DemoSurveyAnswerKey; text: string }>;
+}> = [
+    {
+      question: 'Khi tham gia một buổi networking, bạn thường làm gì?',
+      correct: 'B',
+      answers: [
+        { key: 'A', text: 'Chủ động tìm người có giá trị để kết nối?' },
+        { key: 'B', text: 'Đi khắp nơi trò chuyện, làm quen với nhiều người và tạo không khí vui vẻ.' },
+        { key: 'C', text: 'Ở cùng những người quen và trò chuyện nhẹ nhàng.' },
+        { key: 'D', text: 'Quan sát trước rồi mới bắt chuyện khi cần' },
+      ],
+    },
+    {
+      question: 'Khi làm việc nhóm, bạn thích vai trò nào nhất?',
+      correct: 'B',
+      answers: [
+        { key: 'A', text: 'Lãnh đạo và đưa ra quyết định.' },
+        { key: 'B', text: 'Truyền cảm hứng, giao tiếp và kết nối mọi người.' },
+        { key: 'C', text: 'Hỗ trợ, phối hợp để cả nhóm làm việc hài hòa.' },
+        { key: 'D', text: 'Lập kế hoạch, kiểm tra chi tiết và chất lượng.' },
+      ],
+    },
+    {
+      question: 'Điều gì khiến bạn cảm thấy hứng thú nhất trong công việc?',
+      correct: 'D',
+      answers: [
+        { key: 'A', text: 'Đạt mục tiêu và chiến thắng thử thách.' },
+        { key: 'B', text: 'Giải quyết vấn đề bằng logic và độ chính xác.' },
+        { key: 'C', text: 'Xây dựng mối quan hệ lâu dài với đồng nghiệp.' },
+        { key: 'D', text: 'Được giao tiếp, thuyết trình, gặp gỡ nhiều người và nhận sự ghi nhận.' },
+      ],
+    },
+  ];
+
+function getPersonaDisplayName(persona?: BotPersona | null): string {
+  return persona?.custom_name || persona?.template_name || '';
+}
+
+function findDemoInfluencePersona(personas: BotPersona[]): BotPersona | null {
+  return personas.find(persona => getPersonaDisplayName(persona).trim().toLowerCase() === 'influence') || null;
+}
 
 // ── Simple toast replacement (no sonner dependency) ──
 function showToast(message: string, type: 'success' | 'error' = 'error') {
   const el = document.createElement('div');
-  el.className = `fixed bottom-20 left-1/2 -translate-x-1/2 z-[10001] px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium transition-all duration-300 ${
-    type === 'error' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'
-  }`;
+  el.className = `fixed bottom-20 left-1/2 -translate-x-1/2 z-[10001] px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium transition-all duration-300 ${type === 'error' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'
+    }`;
   el.textContent = message;
   document.body.appendChild(el);
   setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
@@ -59,10 +139,19 @@ export default function ChatWidget() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [demoCompanionPhase, setDemoCompanionPhase] = useState<DemoCompanionPhase>('idle');
+  const [demoQuizAssistPhase, setDemoQuizAssistPhase] = useState<DemoQuizAssistPhase>('idle');
+  const [selectedDemoCompanionPersona, setSelectedDemoCompanionPersona] = useState<BotPersona | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const demoCompanionTimerRef = useRef<number | null>(null);
+  const demoCompanionCloseTimerRef = useRef<number | null>(null);
+  const demoQuizAssistTimersRef = useRef<number[]>([]);
+  const demoQuizAssistCaretFrameRef = useRef<number | null>(null);
+  const demoCompanionStartedRef = useRef(false);
 
   // Detect courseId from URL: /courses/:courseId/...
   const location = useLocation();
+  const navigate = useNavigate();
   const courseId = useMemo(() => {
     const match = location.pathname.match(/\/courses\/([^/]+)/);
     return match?.[1] ? decodeURIComponent(match[1]) : undefined;
@@ -85,20 +174,395 @@ export default function ChatWidget() {
   const dragRef = useRef({ sx: 0, sy: 0, sl: 0, st: 0, active: false, moved: false });
 
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const userId = useAuthStore(s => s.user?.id);
+  const loginSessionId = useAuthStore(s => s.loginSessionId);
+  const sessionMode = useAuthStore(s => s.sessionMode);
   const isCourseModalActive = useAppStore(s => s.isCourseModalActive);
+  const { branding } = useBranding();
+  const isDemoIframe = sessionMode === 'demo_iframe';
+  const demoCompanionKey = useMemo(
+    () => demoIframeCompanionWidgetKey(userId, loginSessionId),
+    [loginSessionId, userId],
+  );
+  const demoExploreCourseKey = useMemo(
+    () => demoIframeExploreCourseKey(userId, loginSessionId),
+    [loginSessionId, userId],
+  );
+  const isDemoCompanionFocus = demoCompanionPhase === 'focus';
+  const isDemoCompanionWaiting = demoCompanionPhase === 'waiting';
+  const isDemoQuizAssistActive = demoQuizAssistPhase !== 'idle';
+  const isDemoWidgetLocked = isDemoCompanionFocus || isDemoQuizAssistActive;
+
+  const startDemoCompanionFlow = useCallback(() => {
+    if (!isDemoIframe || !demoCompanionKey || demoCompanionStartedRef.current) return;
+
+    demoCompanionStartedRef.current = true;
+    if (demoCompanionTimerRef.current) {
+      window.clearTimeout(demoCompanionTimerRef.current);
+      demoCompanionTimerRef.current = null;
+    }
+    if (demoCompanionCloseTimerRef.current) {
+      window.clearTimeout(demoCompanionCloseTimerRef.current);
+      demoCompanionCloseTimerRef.current = null;
+    }
+
+    setOpen(false);
+    setFullscreen(false);
+    setConfirmDeleteId(null);
+    setSelectedDemoCompanionPersona(null);
+    setDemoCompanionPhase('waiting');
+
+    demoCompanionTimerRef.current = window.setTimeout(() => {
+      clearDemoIframeCompanionWidgetPending(demoCompanionKey);
+      setFullscreen(false);
+      setOpen(true);
+      setDemoCompanionPhase('focus');
+      demoCompanionTimerRef.current = null;
+    }, DEMO_IFRAME_COMPANION_WIDGET_DELAY_MS);
+  }, [demoCompanionKey, isDemoIframe]);
+
+  useEffect(() => {
+    if (!isDemoIframe || !demoCompanionKey) {
+      if (demoCompanionTimerRef.current) {
+        window.clearTimeout(demoCompanionTimerRef.current);
+        demoCompanionTimerRef.current = null;
+      }
+      if (demoCompanionCloseTimerRef.current) {
+        window.clearTimeout(demoCompanionCloseTimerRef.current);
+        demoCompanionCloseTimerRef.current = null;
+      }
+      setDemoCompanionPhase('idle');
+      setSelectedDemoCompanionPersona(null);
+      demoCompanionStartedRef.current = false;
+      return;
+    }
+
+    if (isDemoIframeCompanionWidgetPending(demoCompanionKey)) {
+      startDemoCompanionFlow();
+    }
+
+    const handleDemoCompanionStart = (event: Event) => {
+      const detail = (event as CustomEvent<{ key?: string }>).detail;
+      if (detail?.key && detail.key !== demoCompanionKey) return;
+      startDemoCompanionFlow();
+    };
+
+    window.addEventListener(DEMO_IFRAME_COMPANION_WIDGET_EVENT, handleDemoCompanionStart);
+    return () => {
+      window.removeEventListener(DEMO_IFRAME_COMPANION_WIDGET_EVENT, handleDemoCompanionStart);
+    };
+  }, [demoCompanionKey, isDemoIframe, startDemoCompanionFlow]);
+
+  useEffect(() => {
+    return () => {
+      if (demoCompanionTimerRef.current) {
+        window.clearTimeout(demoCompanionTimerRef.current);
+        demoCompanionTimerRef.current = null;
+      }
+      if (demoCompanionCloseTimerRef.current) {
+        window.clearTimeout(demoCompanionCloseTimerRef.current);
+        demoCompanionCloseTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleDemoCompanionSurveyComplete = useCallback((persona: BotPersona | null) => {
+    if (!isDemoIframe) return;
+
+    setSelectedDemoCompanionPersona(persona);
+    if (demoCompanionCloseTimerRef.current) {
+      window.clearTimeout(demoCompanionCloseTimerRef.current);
+      demoCompanionCloseTimerRef.current = null;
+    }
+
+    demoCompanionCloseTimerRef.current = window.setTimeout(() => {
+      if (demoExploreCourseKey) {
+        markDemoIframeExploreCoursePending(demoExploreCourseKey);
+      }
+
+      setOpen(false);
+      setFullscreen(false);
+      setConfirmDeleteId(null);
+      setDemoCompanionPhase('idle');
+      demoCompanionCloseTimerRef.current = null;
+
+      navigate(`/explore?focus_course=${encodeURIComponent(DEMO_IFRAME_EXPLORE_COURSE_ID)}`);
+      window.setTimeout(() => {
+        window.dispatchEvent(
+          new CustomEvent(DEMO_IFRAME_EXPLORE_COURSE_EVENT, {
+            detail: { key: demoExploreCourseKey, courseId: DEMO_IFRAME_EXPLORE_COURSE_ID },
+          }),
+        );
+      }, 0);
+    }, DEMO_IFRAME_COMPANION_REVEAL_CLOSE_DELAY_MS);
+  }, [demoExploreCourseKey, isDemoIframe, navigate]);
+
+  useEffect(() => {
+    if (demoCompanionPhase === 'idle') return;
+    setDemoIframeFlowLock(DEMO_IFRAME_FLOW_LOCK_COMPANION, true);
+    const unlockScroll = lockDemoIframeUserScroll();
+
+    return () => {
+      setDemoIframeFlowLock(DEMO_IFRAME_FLOW_LOCK_COMPANION, false);
+      unlockScroll();
+    };
+  }, [demoCompanionPhase]);
+
+  const clearDemoQuizAssistTimers = useCallback(() => {
+    demoQuizAssistTimersRef.current.forEach(timer => window.clearTimeout(timer));
+    demoQuizAssistTimersRef.current = [];
+    if (demoQuizAssistCaretFrameRef.current !== null) {
+      window.cancelAnimationFrame(demoQuizAssistCaretFrameRef.current);
+      demoQuizAssistCaretFrameRef.current = null;
+    }
+  }, []);
+
+  const scheduleDemoQuizAssistTimer = useCallback((callback: () => void, delayMs: number) => {
+    const timer = window.setTimeout(() => {
+      demoQuizAssistTimersRef.current = demoQuizAssistTimersRef.current.filter(item => item !== timer);
+      callback();
+    }, delayMs);
+    demoQuizAssistTimersRef.current.push(timer);
+    return timer;
+  }, []);
+
+  const focusDemoQuizAssistInputAtEnd = useCallback((valueLength: number) => {
+    if (demoQuizAssistCaretFrameRef.current !== null) {
+      window.cancelAnimationFrame(demoQuizAssistCaretFrameRef.current);
+    }
+
+    demoQuizAssistCaretFrameRef.current = window.requestAnimationFrame(() => {
+      demoQuizAssistCaretFrameRef.current = null;
+      const input = inputRef.current;
+      if (!input) return;
+      input.focus({ preventScroll: true });
+      input.setSelectionRange(valueLength, valueLength);
+      input.scrollTop = input.scrollHeight;
+      window.setTimeout(() => {
+        input.scrollTop = input.scrollHeight;
+      }, 0);
+    });
+  }, []);
+
+  const startDemoQuizAssistFlow = useCallback((questionText: string, answerText: string) => {
+    if (!isDemoIframe) return;
+
+    clearDemoQuizAssistTimers();
+    abortRef.current?.abort();
+    abortRef.current = null;
+
+    const influencePersona = selectedDemoCompanionPersona || findDemoInfluencePersona(personas);
+    if (influencePersona) {
+      setSelectedDemoCompanionPersona(influencePersona);
+    } else {
+      fetchDemoIframeChatbotPreview()
+        .then(preview => {
+          setActiveBot(preview.bot);
+          setPersonas(preview.personas);
+          const influence = findDemoInfluencePersona(preview.personas);
+          if (influence) setSelectedDemoCompanionPersona(influence);
+        })
+        .catch(() => {});
+    }
+
+    const nowIso = new Date().toISOString();
+    const conversationId = `demo-quiz-assist-${Date.now()}`;
+    setCurrentConv({
+      id: conversationId,
+      tenant_id: activeBot?.tenant_id || 'demo',
+      bot_id: activeBot?.bot_id || activeBot?.id || 'demo-bot',
+      persona_id: influencePersona?.id || 'demo-influence',
+      user_id: userId || 'demo-user',
+      title: 'Demo quiz assist',
+      created_at: nowIso,
+      updated_at: nowIso,
+      persona_name: 'Influence',
+      persona_avatar_url: influencePersona?.template_avatar_url || null,
+      last_message: null,
+      last_message_at: null,
+    });
+    setMessages([]);
+    setStreamText('');
+    setStreaming(false);
+    setInputValue('');
+    setHasMore(false);
+    setNextCursor(null);
+    setLoadingMessages(false);
+    setLoadingConvs(false);
+    setFullscreen(false);
+    setConfirmDeleteId(null);
+    setDemoCompanionPhase('idle');
+    setDemoQuizAssistPhase('typing');
+    setState('chat');
+    setOpen(true);
+
+    const questionChars = Array.from(questionText);
+    let typedCount = 0;
+    const typeNext = () => {
+      typedCount = Math.min(questionChars.length, typedCount + 1);
+      const nextInputValue = questionChars.slice(0, typedCount).join('');
+      setInputValue(nextInputValue);
+      focusDemoQuizAssistInputAtEnd(nextInputValue.length);
+
+      if (typedCount < questionChars.length) {
+        scheduleDemoQuizAssistTimer(
+          typeNext,
+          getDemoQuizAssistStepDelay(
+            questionChars,
+            typedCount,
+            DEMO_QUIZ_ASSIST_TYPE_CHAR_MS,
+            DEMO_QUIZ_ASSIST_TYPE_PUNCTUATION_MS,
+          ),
+        );
+        return;
+      }
+
+      scheduleDemoQuizAssistTimer(() => {
+        const sentAt = new Date().toISOString();
+        const userMessage: ChatMessage = {
+          id: `demo-user-question-${Date.now()}`,
+          conversation_id: conversationId,
+          role: 'user',
+          content: questionText,
+          metadata: { demo_iframe: true, simulated: true },
+          created_at: sentAt,
+        };
+        setMessages([userMessage]);
+        setInputValue('');
+        setStreamText('');
+        setStreaming(true);
+        setDemoQuizAssistPhase('thinking');
+        scrollChatToBottom('smooth');
+
+        scheduleDemoQuizAssistTimer(() => {
+          setDemoQuizAssistPhase('streaming');
+          const answerChars = Array.from(answerText);
+          let streamedCount = 0;
+          const streamNext = () => {
+            streamedCount = Math.min(answerChars.length, streamedCount + 2);
+            setStreamText(answerChars.slice(0, streamedCount).join(''));
+
+            if (streamedCount < answerChars.length) {
+              scheduleDemoQuizAssistTimer(
+                streamNext,
+                getDemoQuizAssistStepDelay(
+                  answerChars,
+                  streamedCount,
+                  DEMO_QUIZ_ASSIST_STREAM_CHUNK_MS,
+                  DEMO_QUIZ_ASSIST_STREAM_PUNCTUATION_MS,
+                ),
+              );
+              return;
+            }
+
+            scheduleDemoQuizAssistTimer(() => {
+              const assistantMessage: ChatMessage = {
+                id: `demo-influence-answer-${Date.now()}`,
+                conversation_id: conversationId,
+                role: 'assistant',
+                content: answerText,
+                metadata: { demo_iframe: true, simulated: true, persona: 'Influence' },
+                created_at: new Date().toISOString(),
+              };
+              setMessages(current => [...current, assistantMessage]);
+              setStreamText('');
+              setStreaming(false);
+              setDemoQuizAssistPhase('done');
+              scrollChatToBottom('smooth');
+
+              scheduleDemoQuizAssistTimer(() => {
+                setOpen(false);
+                setFullscreen(false);
+                setConfirmDeleteId(null);
+                setDemoQuizAssistPhase('idle');
+                window.dispatchEvent(new CustomEvent(DEMO_IFRAME_LESSON_QUIZ_GUIDE_EVENT));
+              }, DEMO_IFRAME_LESSON_QUIZ_GUIDE_WIDGET_CLOSE_DELAY_MS);
+            }, 260);
+          };
+
+          streamNext();
+        }, DEMO_QUIZ_ASSIST_THINKING_MS);
+      }, 260);
+    };
+
+    scheduleDemoQuizAssistTimer(typeNext, 420);
+  }, [
+    activeBot?.bot_id,
+    activeBot?.id,
+    activeBot?.tenant_id,
+    clearDemoQuizAssistTimers,
+    focusDemoQuizAssistInputAtEnd,
+    isDemoIframe,
+    personas,
+    scheduleDemoQuizAssistTimer,
+    scrollChatToBottom,
+    selectedDemoCompanionPersona,
+    userId,
+  ]);
+
+  useEffect(() => {
+    if (!isDemoIframe) {
+      clearDemoQuizAssistTimers();
+      setDemoQuizAssistPhase('idle');
+      return;
+    }
+
+    const handleDemoQuizAssistStart = (event: Event) => {
+      const detail = (event as CustomEvent<DemoIframeLessonQuizAssistDetail>).detail;
+      const question = detail?.question?.trim() || DEMO_IFRAME_LESSON_QUIZ_QUESTION;
+      const answer = detail?.answer?.trim() || DEMO_IFRAME_LESSON_QUIZ_ASSIST_ANSWER;
+      startDemoQuizAssistFlow(question, answer);
+    };
+
+    window.addEventListener(DEMO_IFRAME_LESSON_QUIZ_ASSIST_EVENT, handleDemoQuizAssistStart);
+    return () => {
+      window.removeEventListener(DEMO_IFRAME_LESSON_QUIZ_ASSIST_EVENT, handleDemoQuizAssistStart);
+    };
+  }, [clearDemoQuizAssistTimers, isDemoIframe, startDemoQuizAssistFlow]);
+
+  useEffect(() => {
+    return () => clearDemoQuizAssistTimers();
+  }, [clearDemoQuizAssistTimers]);
+
+  useEffect(() => {
+    if (!isDemoQuizAssistActive) return;
+
+    setDemoIframeFlowLock(DEMO_IFRAME_FLOW_LOCK_QUIZ_ASSIST, true);
+    const unlockScroll = lockDemoIframeUserScroll();
+    return () => {
+      setDemoIframeFlowLock(DEMO_IFRAME_FLOW_LOCK_QUIZ_ASSIST, false);
+      unlockScroll();
+    };
+  }, [isDemoQuizAssistActive]);
 
   // ── Pre-load bot avatar on mount (for FAB) ──
   useEffect(() => {
     if (!isAuthenticated) return;
-    fetchActiveBot()
+    const loadBot = isDemoIframe
+      ? fetchDemoIframeChatbotPreview().then(preview => preview.bot)
+      : fetchActiveBot();
+    loadBot
       .then(bot => { if (bot) setActiveBot(bot); })
-      .catch(() => {});
-  }, [isAuthenticated]);
+      .catch(() => { });
+  }, [isAuthenticated, isDemoIframe]);
 
   // ── Load full data when widget opens ──
   const loadActiveBot = useCallback(async () => {
     setState('loading');
     try {
+      if (isDemoIframe) {
+        const preview = await fetchDemoIframeChatbotPreview();
+        setActiveBot(preview.bot);
+        if (!preview.bot) { setState('no-bot'); return; }
+        setLoadingConvs(false);
+        setConversations([]);
+        setCurrentConv(null);
+        setMessages([]);
+        setPersonas(preview.personas);
+        setState('persona-picker');
+        return;
+      }
+
       const bot = await fetchActiveBot();
       setActiveBot(bot);
       if (!bot) { setState('no-bot'); return; }
@@ -116,13 +580,14 @@ export default function ChatWidget() {
         setState('conversations');
       }
     } catch {
+      setLoadingConvs(false);
       setState('no-bot');
     }
-  }, []);
+  }, [isDemoIframe]);
 
   useEffect(() => {
-    if (open) loadActiveBot();
-  }, [open, loadActiveBot]);
+    if (open && !isDemoQuizAssistActive) loadActiveBot();
+  }, [isDemoQuizAssistActive, open, loadActiveBot]);
 
   // ── FAB pointer drag ──
   const onFabPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -155,7 +620,7 @@ export default function ChatWidget() {
     d.active = false;
     const fab = fabRef.current;
     if (!fab) return;
-    try { fab.releasePointerCapture(e.pointerId); } catch {}
+    try { fab.releasePointerCapture(e.pointerId); } catch { }
 
     if (!d.moved) {
       setOpen(true);
@@ -180,6 +645,7 @@ export default function ChatWidget() {
 
   // ── Create conversation ──
   const handleCreateConversation = async (personaId: string) => {
+    if (isDemoIframe) return;
     try {
       const conv = await createConversation(personaId);
       setConversations(prev => [conv, ...prev]);
@@ -193,6 +659,7 @@ export default function ChatWidget() {
 
   // ── Open existing conversation ──
   const handleOpenConversation = async (conv: ChatConversation) => {
+    if (isDemoIframe) return;
     setCurrentConv(conv);
     setLoadingMessages(true);
     setState('chat');
@@ -208,6 +675,7 @@ export default function ChatWidget() {
 
   // ── Load more messages ──
   const handleLoadMore = async () => {
+    if (isDemoIframe) return;
     if (!currentConv || !hasMore || !nextCursor || loadingMore) return;
     setLoadingMore(true);
     try {
@@ -221,6 +689,7 @@ export default function ChatWidget() {
 
   // ── Delete conversation ──
   const handleDeleteConversation = (convId: string) => {
+    if (isDemoIframe) return;
     setConfirmDeleteId(convId);
   };
 
@@ -240,6 +709,10 @@ export default function ChatWidget() {
   };
 
   const confirmDelete = async () => {
+    if (isDemoIframe) {
+      setConfirmDeleteId(null);
+      return;
+    }
     if (!confirmDeleteId) return;
     setDeleting(true);
     try {
@@ -260,6 +733,15 @@ export default function ChatWidget() {
   // ── New conversation ──
   const handleNewConvFromList = async () => {
     if (!activeBot) return;
+    if (isDemoIframe) {
+      try {
+        const preview = await fetchDemoIframeChatbotPreview();
+        setActiveBot(preview.bot);
+        setPersonas(preview.personas);
+        setState('persona-picker');
+      } catch { showToast('Không tải được nhân cách'); }
+      return;
+    }
     if (conversations.length >= 10) { showToast('Tối đa 10 cuộc hội thoại'); return; }
     try {
       const p = await fetchBotPersonas(activeBot.bot_id);
@@ -270,6 +752,7 @@ export default function ChatWidget() {
 
   // ── Send message ──
   const handleSend = () => {
+    if (isDemoIframe) return;
     if (!currentConv || !inputValue.trim() || streaming) return;
     const content = inputValue.trim();
     setInputValue('');
@@ -335,27 +818,66 @@ export default function ChatWidget() {
     setMessages([]);
     setHasMore(false);
     setNextCursor(null);
+    if (isDemoIframe) {
+      setState('persona-picker');
+      return;
+    }
     setState('conversations');
-    fetchConversations().then(setConversations).catch(() => {});
+    fetchConversations().then(setConversations).catch(() => { });
   };
 
   useEffect(() => {
     if (!isCourseModalActive) return;
+    if (demoCompanionPhase !== 'idle') return;
     setOpen(false);
     setFullscreen(false);
     setConfirmDeleteId(null);
-  }, [isCourseModalActive]);
+  }, [demoCompanionPhase, isCourseModalActive]);
 
   if (!isAuthenticated || isCourseModalActive) return null;
 
+  const widgetZClass = isDemoQuizAssistActive ? 'z-[100020]' : isDemoCompanionFocus ? 'z-[10020]' : 'z-[9998]';
   const widgetClass = fullscreen
-    ? 'fixed inset-4 z-[9998] rounded-2xl'
-    : 'fixed bottom-6 right-6 z-[9998] w-[420px] h-[600px] rounded-2xl';
+    ? `fixed inset-3 md:inset-4 ${widgetZClass} rounded-2xl`
+    : `fixed left-3 right-3 bottom-[82px] ${widgetZClass} h-[calc(100dvh-110px)] min-h-[360px] max-h-[620px] w-auto rounded-2xl md:left-auto md:right-6 md:bottom-6 md:h-[600px] md:min-h-0 md:w-[420px]`;
 
-  const botAvatarSrc = activeBot?.bot_avatar_url ? storageUrl(activeBot.bot_avatar_url) : null;
+  const demoHeaderPersona = isDemoIframe ? selectedDemoCompanionPersona : null;
+  const demoHeaderPersonaName = getPersonaDisplayName(demoHeaderPersona);
+  const demoHeaderPersonaAvatarSrc = demoHeaderPersona?.template_avatar_url
+    ? storageUrl(demoHeaderPersona.template_avatar_url)
+    : null;
+  const botAvatarSrc = demoHeaderPersonaAvatarSrc || (activeBot?.bot_avatar_url ? storageUrl(activeBot.bot_avatar_url) : null);
+  const widgetHeaderTitle = demoHeaderPersonaName || activeBot?.bot_name || 'AI Assistant';
+  const widgetHeaderSubtitle = demoHeaderPersonaName
+    ? `${demoHeaderPersonaName} là bạn đồng hành của bạn!`
+    : streaming ? 'Đang trả lời...' : 'Online';
 
   return (
     <>
+      <AnimatePresence>
+        {isDemoCompanionWaiting && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="demo-iframe-dark-lock-overlay fixed inset-0 z-[10030] cursor-default"
+            aria-hidden="true"
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isDemoCompanionFocus && open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="demo-iframe-dark-lock-overlay fixed inset-0 z-[10000]"
+            aria-hidden="true"
+          />
+        )}
+      </AnimatePresence>
+
       {/* ═══════ Draggable FAB ═══════ */}
       {!open && (
         <div
@@ -363,7 +885,7 @@ export default function ChatWidget() {
           onPointerDown={onFabPointerDown}
           onPointerMove={onFabPointerMove}
           onPointerUp={onFabPointerUp}
-          style={{ position: 'fixed', zIndex: 40, touchAction: 'none' }}
+          style={{ position: 'fixed', zIndex: isDemoIframe ? 9997 : 40, touchAction: 'none' }}
           className="bottom-[85px] md:bottom-6 right-6 h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/25 flex items-center justify-center hover:shadow-xl hover:shadow-primary/30 cursor-grab active:cursor-grabbing select-none"
           title="Chat với AI"
         >
@@ -389,7 +911,7 @@ export default function ChatWidget() {
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-primary/5 to-transparent">
               <div className="flex items-center gap-2.5">
-                {state === 'chat' && (
+                {state === 'chat' && !isDemoWidgetLocked && (
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
                     <ArrowLeft className="h-4 w-4" />
                   </Button>
@@ -402,19 +924,23 @@ export default function ChatWidget() {
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold truncate">{activeBot?.bot_name || 'AI Assistant'}</p>
+                  <p className="text-sm font-semibold truncate">{widgetHeaderTitle}</p>
                   <p className="text-[11px] text-muted-foreground">
-                    {streaming ? '✍️ Đang trả lời...' : '🟢 Online'}
+                    {widgetHeaderSubtitle}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setFullscreen(f => !f)} title={fullscreen ? 'Thu nhỏ' : 'Phóng to'}>
-                  {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setOpen(false); setFullscreen(false); }}>
-                  <X className="h-4 w-4" />
-                </Button>
+                {!isDemoWidgetLocked && (
+                  <>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setFullscreen(f => !f)} title={fullscreen ? 'Thu nhỏ' : 'Phóng to'}>
+                      {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setOpen(false); setFullscreen(false); }}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -425,8 +951,12 @@ export default function ChatWidget() {
               {state === 'persona-picker' && (
                 <PersonaPicker
                   personas={personas}
-                  onSelect={handleCreateConversation}
-                  onBack={conversations.length > 0 ? () => setState('conversations') : undefined}
+                  onSelect={isDemoIframe ? undefined : handleCreateConversation}
+                  onBack={!isDemoIframe && conversations.length > 0 ? () => setState('conversations') : undefined}
+                  readOnly={isDemoIframe}
+                  showSurveyCta={isDemoCompanionFocus}
+                  demoContactLogoSrc={isDemoIframe ? branding.squareIcon : undefined}
+                  onDemoCompanionSurveyComplete={isDemoIframe ? handleDemoCompanionSurveyComplete : undefined}
                 />
               )}
               {state === 'conversations' && (
@@ -453,6 +983,7 @@ export default function ChatWidget() {
                   onKeyDown={handleKeyDown}
                   scrollRef={scrollRef}
                   inputRef={inputRef}
+                  inputReadOnly={isDemoQuizAssistActive}
                 />
               )}
             </div>
@@ -527,18 +1058,54 @@ function NoBotState() {
   );
 }
 
-function PersonaPicker({ personas, onSelect, onBack }: {
+function PersonaPicker({ personas, onSelect, onBack, readOnly = false, showSurveyCta = false, demoContactLogoSrc, onDemoCompanionSurveyComplete }: {
   personas: BotPersona[];
-  onSelect: (id: string) => void;
+  onSelect?: (id: string) => void;
   onBack?: () => void;
+  readOnly?: boolean;
+  showSurveyCta?: boolean;
+  demoContactLogoSrc?: string;
+  onDemoCompanionSurveyComplete?: (persona: BotPersona | null) => void;
 }) {
   const [selecting, setSelecting] = useState<string | null>(null);
+  const [surveyStarted, setSurveyStarted] = useState(false);
+  const [currentSurveyQuestion, setCurrentSurveyQuestion] = useState(0);
+  const influencePersona = useMemo(() => findDemoInfluencePersona(personas), [personas]);
 
   const handleSelect = async (id: string) => {
+    if (readOnly || !onSelect) return;
     setSelecting(id);
     await onSelect(id);
     setSelecting(null);
   };
+
+  useEffect(() => {
+    if (!showSurveyCta) {
+      setSurveyStarted(false);
+      setCurrentSurveyQuestion(0);
+    }
+  }, [showSurveyCta]);
+
+  const handleSurveyCorrect = () => {
+    const isLastQuestion = currentSurveyQuestion >= DEMO_COMPANION_SURVEY_QUESTIONS.length - 1;
+    if (isLastQuestion) {
+      onDemoCompanionSurveyComplete?.(influencePersona);
+      setCurrentSurveyQuestion(DEMO_COMPANION_SURVEY_QUESTIONS.length);
+      return;
+    }
+
+    setCurrentSurveyQuestion(index => Math.min(index + 1, DEMO_COMPANION_SURVEY_QUESTIONS.length));
+  };
+
+  if (showSurveyCta && surveyStarted) {
+    return (
+      <DemoCompanionSurvey
+        currentQuestionIndex={currentSurveyQuestion}
+        companionPersona={influencePersona}
+        onCorrectAnswer={handleSurveyCorrect}
+      />
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -561,13 +1128,18 @@ function PersonaPicker({ personas, onSelect, onBack }: {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.06 }}
-                onClick={() => handleSelect(p.id)}
-                disabled={selecting !== null}
-                className="group relative rounded-xl border bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200 overflow-hidden text-left disabled:opacity-50"
+                onClick={readOnly ? undefined : () => handleSelect(p.id)}
+                disabled={!readOnly && selecting !== null}
+                aria-disabled={readOnly}
+                tabIndex={readOnly ? -1 : 0}
+                className={`group relative rounded-xl border bg-card transition-all duration-200 overflow-hidden text-left disabled:opacity-50 ${readOnly
+                    ? 'cursor-default'
+                    : 'hover:border-primary/50 hover:shadow-md'
+                  }`}
               >
                 <div className="h-28 bg-gradient-to-br from-muted/40 to-muted/10 flex items-end justify-center overflow-hidden">
                   {fullbody ? (
-                    <img src={storageUrl(fullbody)} alt="" className="h-[90%] w-auto object-contain drop-shadow-md group-hover:scale-105 transition-transform" />
+                    <img src={storageUrl(fullbody)} alt="" className={`h-[90%] w-auto object-contain drop-shadow-md transition-transform ${readOnly ? '' : 'group-hover:scale-105'}`} />
                   ) : (
                     <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                       <Bot className="h-6 w-6 text-primary/40" />
@@ -597,6 +1169,191 @@ function PersonaPicker({ personas, onSelect, onBack }: {
           })}
         </div>
       </ScrollArea>
+      {showSurveyCta && (
+        <div className="px-4 pb-5 pt-2">
+          <button
+            type="button"
+            className="demo-iframe-hero-cta-guide-wave-only demo-iframe-hero-cta-guide-blue relative mx-auto flex h-11 w-full max-w-[340px] items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold leading-none text-white shadow-lg shadow-primary/25 outline-none transition hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            onClick={() => setSurveyStarted(true)}
+          >
+            <span className="demo-iframe-hero-cta-echo" aria-hidden="true" />
+            <Sparkles className="relative z-10 h-4 w-4" />
+            <span className="relative z-10">Khảo sát chọn bạn đồng hành</span>
+          </button>
+        </div>
+      )}
+      {readOnly && !showSurveyCta && (
+        <div className="border-t bg-gradient-to-r from-primary/5 via-background to-primary/5 px-4 py-4">
+          <div className="mx-auto flex w-full max-w-[340px] items-center justify-center gap-3 rounded-2xl border border-primary/15 bg-background/90 px-4 py-3 shadow-sm">
+            {demoContactLogoSrc ? (
+              <img
+                src={demoContactLogoSrc}
+                alt=""
+                className="h-9 w-9 shrink-0 rounded-xl border border-primary/10 object-cover shadow-sm"
+                draggable={false}
+              />
+            ) : (
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/10 bg-primary/10">
+                <Sparkles className="h-4 w-4 text-primary" />
+              </div>
+            )}
+            <p className="text-[13px] font-semibold leading-[18px] text-foreground">
+              Liên hệ Nesso để được tư vấn miễn phí
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DemoCompanionSurvey({
+  currentQuestionIndex,
+  companionPersona,
+  onCorrectAnswer,
+}: {
+  currentQuestionIndex: number;
+  companionPersona: BotPersona | null;
+  onCorrectAnswer: () => void;
+}) {
+  const question = DEMO_COMPANION_SURVEY_QUESTIONS[currentQuestionIndex];
+  const isComplete = currentQuestionIndex >= DEMO_COMPANION_SURVEY_QUESTIONS.length;
+  const companionName = getPersonaDisplayName(companionPersona) || 'Influence';
+  const companionAvatarSrc = companionPersona?.template_avatar_url ? storageUrl(companionPersona.template_avatar_url) : null;
+  const companionFullbodySrc = companionPersona?.template_fullbody_url ? storageUrl(companionPersona.template_fullbody_url) : null;
+  const companionDescription = 'Sau bài khảo sát, hệ thống đã chọn Influence làm bạn đồng hành phù hợp với bạn: Hướng ngoại, Nhiệt huyết, Truyền cảm hứng, Thích giao tiếp, kết nối.';
+
+  return (
+    <div className="flex-1 min-h-0 overflow-hidden px-5 py-5 bg-gradient-to-b from-sky-50/40 via-white to-white">
+      <AnimatePresence mode="wait">
+        {isComplete ? (
+          <motion.div
+            key="survey-complete"
+            initial={{ opacity: 0, y: 22, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -12, scale: 0.98 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+            className="flex h-full flex-col items-center justify-center text-center"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.08, type: 'spring', stiffness: 280, damping: 20 }}
+              className="relative w-full max-w-[330px] overflow-hidden rounded-2xl border border-sky-100 bg-white shadow-[0_24px_70px_rgba(14,116,144,0.18)]"
+            >
+              <div className="relative bg-gradient-to-br from-sky-50 via-white to-cyan-50 px-5 pt-5">
+                <div className="mx-auto flex h-9 w-fit items-center gap-2 rounded-full border border-sky-100 bg-white/90 px-3 text-xs font-semibold text-sky-700 shadow-sm">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Bạn đồng hành đã sẵn sàng
+                </div>
+
+                <motion.div
+                  initial={{ y: 18, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.18, duration: 0.32, ease: 'easeOut' }}
+                  className="relative mx-auto mt-5 flex h-40 w-full items-end justify-center"
+                >
+                  {companionFullbodySrc ? (
+                    <img
+                      src={companionFullbodySrc}
+                      alt={companionName}
+                      className="relative z-10 h-full w-auto object-contain drop-shadow-[0_18px_24px_rgba(15,23,42,0.18)]"
+                      draggable={false}
+                    />
+                  ) : companionAvatarSrc ? (
+                    <img
+                      src={companionAvatarSrc}
+                      alt={companionName}
+                      className="relative z-10 h-28 w-28 rounded-full border-4 border-white object-cover shadow-xl"
+                      draggable={false}
+                    />
+                  ) : (
+                    <div className="relative z-10 flex h-28 w-28 items-center justify-center rounded-full border-4 border-white bg-sky-100 text-sky-600 shadow-xl">
+                      <Bot className="h-12 w-12" />
+                    </div>
+                  )}
+                </motion.div>
+              </div>
+
+              <div className="px-5 pb-6 pt-4">
+                <motion.h3
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.26, duration: 0.24 }}
+                  className="text-xl font-extrabold tracking-normal text-slate-950"
+                >
+                  {companionName}
+                </motion.h3>
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.32, duration: 0.24 }}
+                  className="mt-2 text-base font-bold text-sky-700"
+                >
+                  {companionName} là bạn đồng hành của bạn!
+                </motion.p>
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.38, duration: 0.24 }}
+                  className="mx-auto mt-3 max-w-[260px] text-sm leading-6 text-slate-500"
+                >
+                  {companionDescription}
+                </motion.p>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key={currentQuestionIndex}
+            initial={{ opacity: 0, x: 36 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -28 }}
+            transition={{ duration: 0.28, ease: 'easeOut' }}
+            className="flex h-full min-h-0 flex-col"
+          >
+            <div className="mb-4">
+              <div className="mb-3 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.12em] text-sky-600">
+                <span>Câu {currentQuestionIndex + 1}</span>
+                <span>{currentQuestionIndex + 1}/{DEMO_COMPANION_SURVEY_QUESTIONS.length}</span>
+              </div>
+              <h3 className="text-base font-bold leading-6 text-slate-950">
+                {question.question}
+              </h3>
+            </div>
+
+            <div className="space-y-3 overflow-y-auto pr-1">
+              {question.answers.map((answer, index) => {
+                const isCorrect = answer.key === question.correct;
+                return (
+                  <motion.button
+                    key={answer.key}
+                    type="button"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05, duration: 0.22 }}
+                    onClick={isCorrect ? onCorrectAnswer : undefined}
+                    disabled={!isCorrect}
+                    aria-disabled={!isCorrect}
+                    className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-all ${isCorrect
+                        ? 'border-sky-300 bg-sky-50 text-sky-950 shadow-[0_10px_24px_rgba(14,165,233,0.16)] hover:border-sky-400 hover:bg-sky-100'
+                        : 'cursor-not-allowed border-slate-200 bg-slate-50/60 text-slate-400 opacity-55'
+                      }`}
+                  >
+                    <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${isCorrect
+                        ? 'bg-sky-600 text-white shadow-sm'
+                        : 'bg-slate-200 text-slate-400'
+                      }`}>
+                      {answer.key}
+                    </span>
+                    <span className="text-sm font-medium leading-6">{answer.text}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -670,7 +1427,7 @@ function ConversationList({ conversations, loading, onOpen, onDelete, onNew }: {
   );
 }
 
-function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMore, onLoadMore, inputValue, onInputChange, onSend, onKeyDown, scrollRef, inputRef }: {
+function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMore, onLoadMore, inputValue, onInputChange, onSend, onKeyDown, scrollRef, inputRef, inputReadOnly = false }: {
   messages: ChatMessage[];
   streamText: string;
   streaming: boolean;
@@ -684,6 +1441,7 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
   onKeyDown: (e: React.KeyboardEvent) => void;
   scrollRef: React.RefObject<HTMLDivElement | null>;
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
+  inputReadOnly?: boolean;
 }) {
   useEffect(() => {
     const el = scrollRef.current;
@@ -693,6 +1451,19 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
   }, [messages.length, streamText, scrollRef]);
 
   useEffect(() => { if (!loading) inputRef.current?.focus(); }, [loading, inputRef]);
+
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+
+    const minHeight = 40;
+    const maxHeight = 128;
+    input.style.height = `${minHeight}px`;
+    const nextHeight = Math.min(maxHeight, Math.max(minHeight, input.scrollHeight));
+    input.style.height = `${nextHeight}px`;
+    input.style.overflowY = input.scrollHeight > maxHeight ? 'auto' : 'hidden';
+    input.scrollTop = input.scrollHeight;
+  }, [inputRef, inputValue]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -753,17 +1524,18 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
             ref={inputRef}
             value={inputValue}
             onChange={e => onInputChange(e.target.value)}
-            onKeyDown={onKeyDown}
+            onKeyDown={inputReadOnly ? undefined : onKeyDown}
             placeholder="Nhập tin nhắn..."
+            readOnly={inputReadOnly}
             disabled={streaming}
             rows={1}
-            className="flex-1 resize-none rounded-xl border bg-muted/30 px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all disabled:opacity-50 max-h-24"
-            style={{ minHeight: '40px' }}
+            className="flex-1 resize-none rounded-xl border bg-muted/30 px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-[height,background-color,border-color,box-shadow,opacity] disabled:opacity-50"
+            style={{ minHeight: '40px', maxHeight: '128px', overflowY: 'hidden' }}
           />
           <Button
             size="icon"
             className="h-10 w-10 rounded-xl shrink-0"
-            disabled={!inputValue.trim() || streaming}
+            disabled={!inputValue.trim() || streaming || inputReadOnly}
             onClick={onSend}
           >
             {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -783,11 +1555,10 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
     >
       <div
-        className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm whitespace-pre-wrap break-words ${
-          isUser
+        className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm whitespace-pre-wrap break-words ${isUser
             ? 'bg-primary text-primary-foreground rounded-br-md'
             : 'bg-muted/50 rounded-bl-md'
-        }`}
+          }`}
       >
         {message.content}
       </div>

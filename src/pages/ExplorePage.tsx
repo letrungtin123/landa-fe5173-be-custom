@@ -4,6 +4,7 @@
 // ============================================================
 
 import { useState, useMemo, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { storageUrl } from "@/utils/storageUrl";
 import { Search, Loader2, BookOpen, ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -21,9 +22,34 @@ import { UserProfileCard } from "@/components/dashboard/UserProfileCard";
 import { BadgeShowcase } from "@/components/badges/BadgeShowcase";
 import { useBranding } from "@/hooks/useBranding";
 import { ConfirmEnrollModal } from "@/components/explore/ConfirmEnrollModal";
+import { useAuthStore } from "@/stores/useAuthStore";
+import {
+  clearDemoIframeExploreCoursePending,
+  DEMO_IFRAME_EXPLORE_COURSE_EVENT,
+  DEMO_IFRAME_EXPLORE_COURSE_ID,
+  demoIframeExploreCourseKey,
+  demoIframeLessonVideoKey,
+  isDemoIframeExploreCoursePending,
+  markDemoIframeLessonVideoPending,
+  setDemoIframeFlowLock,
+} from "@/utils/demoIframeDashboardGuide";
+import { lockDemoIframeUserScroll } from "@/utils/demoIframeGuideLock";
+import {
+  DEMO_IFRAME_GUIDE_SCROLL_LONG_MS,
+  scrollDemoIframeElementToCenter,
+} from "@/utils/demoIframeSmoothScroll";
 
 // Filter types cho detail view
 type DetailFilter = 'all' | 'in_progress' | 'completed' | 'not_enrolled';
+const DEMO_IFRAME_FLOW_LOCK_EXPLORE = "explore-course";
+type DemoCourseGuideRect = {
+  top: number;
+  left: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+};
 
 function findCourseFocusElement(courseId: string): HTMLElement | null {
   const candidates = Array.from(
@@ -31,6 +57,23 @@ function findCourseFocusElement(courseId: string): HTMLElement | null {
   ).filter(element => element.dataset.exploreFocusCourse === courseId);
 
   return candidates.find(element => element.getClientRects().length > 0) || candidates[0] || null;
+}
+
+function getDemoCourseGuideRect(element: HTMLElement, padding = 0): DemoCourseGuideRect {
+  const rect = element.getBoundingClientRect();
+  const top = Math.max(0, rect.top - padding);
+  const left = Math.max(0, rect.left - padding);
+  const right = Math.min(window.innerWidth, rect.right + padding);
+  const bottom = Math.min(window.innerHeight, rect.bottom + padding);
+
+  return {
+    top,
+    left,
+    right,
+    bottom,
+    width: Math.max(0, right - left),
+    height: Math.max(0, bottom - top),
+  };
 }
 
 export function ExplorePage() {
@@ -42,10 +85,25 @@ export function ExplorePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [highlightCourseId, setHighlightCourseId] = useState<string | null>(null);
+  const [demoCourseGuideActive, setDemoCourseGuideActive] = useState(false);
+  const [demoCourseGuideRect, setDemoCourseGuideRect] = useState<DemoCourseGuideRect | null>(null);
+  const [demoConfirmEnrollGuideActive, setDemoConfirmEnrollGuideActive] = useState(false);
   const [pendingConfirmCourse, setPendingConfirmCourse] = useState<any | null>(null);
   const { data: courseData, isLoading } = useCourses(debouncedSearch || undefined);
   const { data: focusCourseDetail } = useCourse(focusCourseId);
   const { data: enrollments } = useMyEnrollments();
+  const sessionMode = useAuthStore((s) => s.sessionMode);
+  const userId = useAuthStore((s) => s.user?.id);
+  const loginSessionId = useAuthStore((s) => s.loginSessionId);
+  const isDemoIframe = sessionMode === "demo_iframe";
+  const demoExploreCourseGuideKey = useMemo(
+    () => demoIframeExploreCourseKey(userId, loginSessionId),
+    [loginSessionId, userId]
+  );
+  const demoLessonVideoGuideKey = useMemo(
+    () => demoIframeLessonVideoKey(userId, loginSessionId),
+    [loginSessionId, userId]
+  );
 
   // Dynamic explore hero card content
   const { branding } = useBranding();
@@ -119,8 +177,33 @@ export function ExplorePage() {
   const handleConfirmStartCourse = () => {
     if (!pendingConfirmCourse?.id) return;
     const targetPath = courseDetailPath(pendingConfirmCourse.id);
+    if (
+      isDemoIframe
+      && demoConfirmEnrollGuideActive
+      && pendingConfirmCourse.id === DEMO_IFRAME_EXPLORE_COURSE_ID
+      && demoLessonVideoGuideKey
+    ) {
+      markDemoIframeLessonVideoPending(demoLessonVideoGuideKey);
+    }
+    setDemoConfirmEnrollGuideActive(false);
     setPendingConfirmCourse(null);
     navigate(targetPath);
+  };
+
+  const clearDemoCourseGuide = () => {
+    if (demoExploreCourseGuideKey) {
+      clearDemoIframeExploreCoursePending(demoExploreCourseGuideKey);
+    }
+    setDemoCourseGuideActive(false);
+    setDemoCourseGuideRect(null);
+  };
+
+  const handleDemoCourseGuideCourseClick = (course: any, courseIsEnrolled: boolean) => {
+    if (!isDemoIframe || course?.id !== DEMO_IFRAME_EXPLORE_COURSE_ID) return;
+    clearDemoCourseGuide();
+    if (!courseIsEnrolled) {
+      setDemoConfirmEnrollGuideActive(true);
+    }
   };
 
   // Group courses by category
@@ -206,17 +289,16 @@ export function ExplorePage() {
     let cancelled = false;
     let attempts = 0;
     let hasScrolled = false;
+    let cancelGuideScroll: (() => void) | null = null;
     const timers: number[] = [];
 
     const scrollToFocusedCourse = () => {
       if (cancelled) return;
 
       const target = findCourseFocusElement(focusCourseId);
-      if (target) {
-        target.scrollIntoView({
-          behavior: hasScrolled ? "auto" : "smooth",
-          block: "center",
-          inline: "nearest",
+      if (target && !hasScrolled) {
+        cancelGuideScroll = scrollDemoIframeElementToCenter(target, {
+          durationMs: DEMO_IFRAME_GUIDE_SCROLL_LONG_MS,
         });
         hasScrolled = true;
       }
@@ -231,9 +313,121 @@ export function ExplorePage() {
 
     return () => {
       cancelled = true;
+      cancelGuideScroll?.();
       timers.forEach(timer => window.clearTimeout(timer));
     };
   }, [focusCourseId, focusCourse, isLoading, selectedCategoryDetail]);
+
+  useEffect(() => {
+    if (!isDemoIframe || !demoExploreCourseGuideKey) {
+      setDemoCourseGuideActive(false);
+      setDemoCourseGuideRect(null);
+      return;
+    }
+
+    if (
+      focusCourseId === DEMO_IFRAME_EXPLORE_COURSE_ID
+      && isDemoIframeExploreCoursePending(demoExploreCourseGuideKey)
+    ) {
+      setDemoCourseGuideActive(true);
+    }
+
+    const handleExploreCourseGuideStart = (event: Event) => {
+      const detail = (event as CustomEvent<{ key?: string; courseId?: string }>).detail;
+      if (detail?.key && detail.key !== demoExploreCourseGuideKey) return;
+      if (detail?.courseId && detail.courseId !== DEMO_IFRAME_EXPLORE_COURSE_ID) return;
+      if (focusCourseId !== DEMO_IFRAME_EXPLORE_COURSE_ID) return;
+      setDemoCourseGuideActive(true);
+    };
+
+    window.addEventListener(DEMO_IFRAME_EXPLORE_COURSE_EVENT, handleExploreCourseGuideStart);
+    return () => {
+      window.removeEventListener(DEMO_IFRAME_EXPLORE_COURSE_EVENT, handleExploreCourseGuideStart);
+    };
+  }, [demoExploreCourseGuideKey, focusCourseId, isDemoIframe]);
+
+  useEffect(() => {
+    if (!demoCourseGuideActive) {
+      setDemoCourseGuideRect(null);
+      return;
+    }
+
+    if (focusCourseId !== DEMO_IFRAME_EXPLORE_COURSE_ID) {
+      clearDemoCourseGuide();
+      return;
+    }
+
+    let cancelled = false;
+    let attempts = 0;
+    let hasScrolled = false;
+    let cancelGuideScroll: (() => void) | null = null;
+    const timers: number[] = [];
+
+    const updateGuideRect = () => {
+      if (cancelled) return;
+
+      const target = findCourseFocusElement(DEMO_IFRAME_EXPLORE_COURSE_ID);
+      if (!target) {
+        attempts += 1;
+        setDemoCourseGuideRect(null);
+        if (attempts < 30) {
+          timers.push(window.setTimeout(updateGuideRect, 125));
+        } else {
+          clearDemoCourseGuide();
+        }
+        return;
+      }
+
+      if (!hasScrolled) {
+        hasScrolled = true;
+        cancelGuideScroll = scrollDemoIframeElementToCenter(target, {
+          durationMs: DEMO_IFRAME_GUIDE_SCROLL_LONG_MS,
+          onUpdate: () => setDemoCourseGuideRect(getDemoCourseGuideRect(target)),
+          onComplete: updateGuideRect,
+        });
+        return;
+      }
+
+      setDemoCourseGuideRect(getDemoCourseGuideRect(target));
+      attempts += 1;
+      if (attempts < 8) {
+        timers.push(window.setTimeout(updateGuideRect, 240));
+      }
+    };
+
+    const handleViewportChange = () => {
+      window.requestAnimationFrame(updateGuideRect);
+    };
+
+    timers.push(window.setTimeout(updateGuideRect, 80));
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+
+    return () => {
+      cancelled = true;
+      cancelGuideScroll?.();
+      timers.forEach(timer => window.clearTimeout(timer));
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, [demoCourseGuideActive, focusCourseId]);
+
+  useEffect(() => {
+    const shouldLock = demoCourseGuideActive || demoConfirmEnrollGuideActive;
+    if (!shouldLock) return;
+
+    return lockDemoIframeUserScroll();
+  }, [demoConfirmEnrollGuideActive, demoCourseGuideActive]);
+
+  useEffect(() => {
+    const shouldLock = demoCourseGuideActive || demoConfirmEnrollGuideActive;
+    if (!shouldLock) return;
+
+    setDemoIframeFlowLock(DEMO_IFRAME_FLOW_LOCK_EXPLORE, true);
+    return () => {
+      setDemoIframeFlowLock(DEMO_IFRAME_FLOW_LOCK_EXPLORE, false);
+    };
+  }, [demoConfirmEnrollGuideActive, demoCourseGuideActive]);
 
 
 
@@ -286,6 +480,9 @@ export function ExplorePage() {
 
   return (
     <>
+    {demoCourseGuideActive && demoCourseGuideRect && typeof document !== "undefined" ? (
+      <DemoExploreCourseGuideOverlay rect={demoCourseGuideRect} />
+    ) : null}
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -700,7 +897,9 @@ export function ExplorePage() {
                         colorStyle={colorStyle}
                         categoryName={focusCourse.categories?.[0]?.name || "Khóa học"}
                         isHighlighted={highlightCourseId === focusCourse.id}
+                        isDemoGuideActive={demoCourseGuideActive && focusCourse.id === DEMO_IFRAME_EXPLORE_COURSE_ID}
                         onRequireConfirm={openEnrollConfirm}
+                        onCourseClick={handleDemoCourseGuideCourseClick}
                       />
                     </div>
                   </div>
@@ -778,7 +977,9 @@ export function ExplorePage() {
                                 colorStyle={colorStyle}
                                 categoryName={name}
                                 isHighlighted={highlightCourseId === course.id}
+                                isDemoGuideActive={demoCourseGuideActive && course.id === DEMO_IFRAME_EXPLORE_COURSE_ID}
                                 onRequireConfirm={openEnrollConfirm}
+                                onCourseClick={handleDemoCourseGuideCourseClick}
                               />
                             </div>
                           ))}
@@ -798,7 +999,9 @@ export function ExplorePage() {
                                 colorStyle={colorStyle}
                                 categoryName={name}
                                 isHighlighted={highlightCourseId === course.id}
+                                isDemoGuideActive={demoCourseGuideActive && course.id === DEMO_IFRAME_EXPLORE_COURSE_ID}
                                 onRequireConfirm={openEnrollConfirm}
+                                onCourseClick={handleDemoCourseGuideCourseClick}
                               />
                             </div>
                           ))}
@@ -954,7 +1157,9 @@ export function ExplorePage() {
                               isEnrolled={enrolledIds.has(course.id)}
                               colorStyle={colorStyle}
                               categoryName={selectedCategoryDetail.name}
+                              isDemoGuideActive={demoCourseGuideActive && course.id === DEMO_IFRAME_EXPLORE_COURSE_ID}
                               onRequireConfirm={openEnrollConfirm}
+                              onCourseClick={handleDemoCourseGuideCourseClick}
                             />
                           </div>
                         ))}
@@ -1008,11 +1213,80 @@ export function ExplorePage() {
         logoSrc={branding.squareIcon}
         tenantName={branding.tenantName}
         onOpenChange={(open) => {
-          if (!open) setPendingConfirmCourse(null);
+          if (!open && demoConfirmEnrollGuideActive) return;
+          if (!open) {
+            setDemoConfirmEnrollGuideActive(false);
+            setPendingConfirmCourse(null);
+          }
         }}
         onConfirm={handleConfirmStartCourse}
+        demoGuideActive={
+          demoConfirmEnrollGuideActive
+          && pendingConfirmCourse?.id === DEMO_IFRAME_EXPLORE_COURSE_ID
+        }
       />
     </>
+  );
+}
+
+function DemoExploreCourseGuideOverlay({ rect }: { rect: DemoCourseGuideRect }) {
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const radius = Math.min(28, rect.width / 2, rect.height / 2);
+  const blockerClass = "fixed z-[99961] cursor-default bg-transparent";
+
+  return createPortal(
+    <>
+      <svg
+        className="pointer-events-none fixed inset-0 z-[99960] h-screen w-screen"
+        width={viewportWidth}
+        height={viewportHeight}
+        viewBox={`0 0 ${viewportWidth} ${viewportHeight}`}
+        aria-hidden="true"
+      >
+        <defs>
+          <mask id="demo-explore-course-guide-mask">
+            <rect width={viewportWidth} height={viewportHeight} fill="white" />
+            <rect
+              x={rect.left}
+              y={rect.top}
+              width={rect.width}
+              height={rect.height}
+              rx={radius}
+              ry={radius}
+              fill="black"
+            />
+          </mask>
+        </defs>
+        <rect
+          width={viewportWidth}
+          height={viewportHeight}
+          className="demo-iframe-dark-mask-fill"
+          mask="url(#demo-explore-course-guide-mask)"
+        />
+      </svg>
+      <div
+        className={blockerClass}
+        style={{ left: 0, right: 0, top: 0, height: rect.top }}
+        aria-hidden="true"
+      />
+      <div
+        className={blockerClass}
+        style={{ left: 0, right: 0, top: rect.bottom, bottom: 0 }}
+        aria-hidden="true"
+      />
+      <div
+        className={blockerClass}
+        style={{ left: 0, top: rect.top, width: rect.left, height: rect.height }}
+        aria-hidden="true"
+      />
+      <div
+        className={blockerClass}
+        style={{ left: rect.right, right: 0, top: rect.top, height: rect.height }}
+        aria-hidden="true"
+      />
+    </>,
+    document.body
   );
 }
 
@@ -1023,14 +1297,18 @@ function ExploreCourseCard({
   colorStyle,
   categoryName,
   isHighlighted = false,
+  isDemoGuideActive = false,
   onRequireConfirm,
+  onCourseClick,
 }: {
   course: any;
   isEnrolled: boolean;
   colorStyle: string;
   categoryName?: string;
   isHighlighted?: boolean;
+  isDemoGuideActive?: boolean;
   onRequireConfirm?: (course: any) => void;
+  onCourseClick?: (course: any, isEnrolled: boolean) => void;
 }) {
   const imageUrl = storageUrl((course as any).image_url) || null;
 
@@ -1044,6 +1322,7 @@ function ExploreCourseCard({
     <Link
       to={`/courses/${encodeURIComponent(course.id)}/lessons/overview`}
       onClick={(event) => {
+        onCourseClick?.(course, isEnrolled);
         if (!isEnrolled) {
           event.preventDefault();
           onRequireConfirm?.(course);
@@ -1053,8 +1332,9 @@ function ExploreCourseCard({
     >
       <Card
         className={cn(
-          "group h-[330px] md:h-[420px] flex flex-col flex-1 w-full p-1.5 pb-4 md:pb-6 rounded-[24px] md:rounded-[28px] border-[1.5px] border-primary/55 bg-card shadow-sm transition-all hover:border-primary/80 hover:shadow-md hover:scale-[1.02]",
-          isHighlighted && "course-focus-highlight"
+          "group h-[330px] md:h-[420px] flex flex-col flex-1 w-full p-1.5 pb-4 md:pb-6 rounded-[24px] md:rounded-[28px] border-[1.5px] border-primary/55 bg-card shadow-sm transition-all",
+          !isDemoGuideActive && "hover:border-primary/80 hover:shadow-md hover:scale-[1.02]",
+          (isHighlighted || isDemoGuideActive) && "course-focus-highlight"
         )}
       >
         {/* Ảnh bìa khóa học */}
@@ -1091,7 +1371,12 @@ function ExploreCourseCard({
             </p>
           )}
 
-          <h3 className="mb-0 text-[16px] md:text-[20px] font-bold leading-[22px] md:leading-[26px] text-foreground group-hover:text-accent transition-colors line-clamp-2">
+          <h3
+            className={cn(
+              "mb-0 text-[16px] md:text-[20px] font-bold leading-[22px] md:leading-[26px] text-foreground transition-colors line-clamp-2",
+              !isDemoGuideActive && "group-hover:text-accent"
+            )}
+          >
             {course.display_name}
           </h3>
 
@@ -1110,7 +1395,14 @@ function ExploreCourseCard({
 
             {/* CTA button / link */}
             <div className="flex items-center justify-between gap-3 w-full">
-              {isEnrolled ? (
+              {isDemoGuideActive ? (
+                <span
+                  className="demo-iframe-hero-cta-guide-wave-only demo-iframe-hero-cta-guide-blue relative w-fit rounded-full bg-primary px-6 py-2 text-[14px] font-bold leading-[18px] text-white md:px-8 md:py-3 md:text-[15px]"
+                >
+                  <span className="demo-iframe-hero-cta-echo" aria-hidden="true" />
+                  <span className="relative z-10">Bắt đầu học</span>
+                </span>
+              ) : isEnrolled ? (
                 <div className="flex min-w-0 items-center gap-1.5 text-[14px] md:text-[15px] font-bold leading-[20px] text-primary">
                   {completionPercent === 100 ? (
                     <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
@@ -1131,7 +1423,7 @@ function ExploreCourseCard({
                   Bắt đầu học
                 </span>
               )}
-              {isEnrolled && typeof completionPercent === "number" && completionPercent < 100 && (
+              {!isDemoGuideActive && isEnrolled && typeof completionPercent === "number" && completionPercent < 100 && (
                 <span className="text-[12px] md:text-[13px] font-bold leading-[16px] text-foreground">
                   {displayPercent}%
                 </span>

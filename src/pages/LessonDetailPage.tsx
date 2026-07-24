@@ -37,6 +37,24 @@ import { SectionCompleteModal } from "@/components/lesson/SectionCompleteModal";
 import { useCourseCompletion } from "@/hooks/useProgress";
 import { useCourseModalConfig } from "@/hooks/useModalConfig";
 import { useBranding } from "@/hooks/useBranding";
+import {
+  clearDemoIframeLessonVideoPending,
+  DEMO_IFRAME_EXPLORE_COURSE_ID,
+  DEMO_IFRAME_LESSON_QUIZ_ASSIST_EVENT,
+  DEMO_IFRAME_LESSON_QUIZ_QUESTION,
+  DEMO_IFRAME_LESSON_QUIZ_GUIDE_EVENT,
+  DEMO_IFRAME_LESSON_QUIZ_HINT_TO_ANSWER_DELAY_MS,
+  demoIframeLessonVideoKey,
+  isDemoIframeLessonVideoPending,
+  setDemoIframeFlowLock,
+  type DemoIframeLessonQuizGuidePhase,
+} from "@/utils/demoIframeDashboardGuide";
+import { lockDemoIframeUserScroll } from "@/utils/demoIframeGuideLock";
+import {
+  DEMO_IFRAME_GUIDE_SCROLL_LONG_MS,
+  DEMO_IFRAME_GUIDE_SCROLL_SHORT_MS,
+  scrollDemoIframeElementToCenter,
+} from "@/utils/demoIframeSmoothScroll";
 
 // ── Badge component (declared outside render to satisfy React Compiler) ──
 const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
@@ -51,10 +69,48 @@ const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
 // Block types chỉ cần xem, không cần tương tác → auto-mark complete khi user navigate đến unit
 const PASSIVE_BLOCK_TYPES = ["html", "video", "la_diagram", "la_faq", "la_pdf"];
 const INTERACTIVE_BLOCK_TYPES = ["problem", "la_media_quiz", "la_crossword", "la_sortable"];
+const DEMO_IFRAME_LESSON_QUIZ_SCROLL_DELAY_MS = 11000;
+const DEMO_IFRAME_LESSON_QUIZ_SCROLL_DURATION_MS = 1800;
+const DEMO_IFRAME_LESSON_QUIZ_ASSIST_DELAY_MS = 2000;
+const DEMO_IFRAME_FLOW_LOCK_LESSON = "lesson-flow";
 
 const isStaticOnlyUnit = (unit: UnitDetail) =>
   unit.components.length > 0 &&
   unit.components.every((c) => PASSIVE_BLOCK_TYPES.includes(c.type));
+
+type DemoVideoGuideRect = {
+  top: number;
+  left: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+};
+
+function findDemoLessonVideoElement(): HTMLElement | null {
+  return document.querySelector<HTMLElement>('[data-demo-lesson-video-guide="true"]');
+}
+
+function findDemoLessonQuizElement(): HTMLElement | null {
+  return document.querySelector<HTMLElement>('[data-demo-lesson-quiz-guide="true"]');
+}
+
+function getDemoLessonVideoGuideRect(element: HTMLElement, padding = 0): DemoVideoGuideRect {
+  const rect = element.getBoundingClientRect();
+  const top = Math.max(0, rect.top - padding);
+  const left = Math.max(0, rect.left - padding);
+  const right = Math.min(window.innerWidth, rect.right + padding);
+  const bottom = Math.min(window.innerHeight, rect.bottom + padding);
+
+  return {
+    top,
+    left,
+    right,
+    bottom,
+    width: Math.max(0, right - left),
+    height: Math.max(0, bottom - top),
+  };
+}
 
 export function LessonDetailPage() {
   const { courseId } = useParams();
@@ -67,15 +123,33 @@ export function LessonDetailPage() {
   const nextUnit = useAppStore((s) => s.nextUnit);
   const prevUnit = useAppStore((s) => s.prevUnit);
   const setCurrentLesson = useAppStore((s) => s.setCurrentLesson);
+  const setUnitIndex = useAppStore((s) => s.setUnitIndex);
   const user = useAuthStore((s) => s.user);
+  const loginSessionId = useAuthStore((s) => s.loginSessionId);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
   const colorMode = useThemeStore((s) => s.colorMode);
   const qc = useQueryClient();
+  const [demoLessonVideoGuideActive, setDemoLessonVideoGuideActive] = useState(false);
+  const [demoLessonVideoGuideRect, setDemoLessonVideoGuideRect] = useState<DemoVideoGuideRect | null>(null);
+  const [demoLessonQuizScrollRequested, setDemoLessonQuizScrollRequested] = useState(false);
+  const [demoLessonPostVideoLockActive, setDemoLessonPostVideoLockActive] = useState(false);
+  const [demoLessonQuizGuidePhase, setDemoLessonQuizGuidePhase] = useState<DemoIframeLessonQuizGuidePhase>("idle");
+  const demoLessonQuizScrollTimerRef = useRef<number | null>(null);
+  const demoLessonQuizAssistTimerRef = useRef<number | null>(null);
+  const demoLessonQuizGuideAnswerTimerRef = useRef<number | null>(null);
+  const demoLessonQuizScrollAnimationRef = useRef<(() => void) | null>(null);
+  const demoLessonQuizScrollStartedRef = useRef(false);
   const { isLoading: pageLoading } = usePageLoading(800, currentLessonId);
   const { lesson, isLoading: dataLoading } = useLessonDetail(currentLessonId);
   const { data: courseDetail } = useCourse(courseId || "");
   const { data: courseTree } = useCourseStructure(courseId || "");
   const { data: refDocs = [] } = useCourseFiles(courseId || "");
   const { data: blocksData } = useCourseBlocksRaw(courseId || "");
+  const isDemoIframe = sessionMode === "demo_iframe";
+  const demoLessonVideoGuideKey = useMemo(
+    () => demoIframeLessonVideoKey(user?.id, loginSessionId),
+    [loginSessionId, user?.id]
+  );
 
   // Auto-select first lesson if none is selected or not in current course
   useEffect(() => {
@@ -227,6 +301,140 @@ export function LessonDetailPage() {
   const safeUnitIndex = totalUnits > 0 ? Math.min(currentUnitIndex, totalUnits - 1) : 0;
   const currentUnit = lesson?.units[safeUnitIndex] || null;
   const isLastUnit = safeUnitIndex >= totalUnits - 1;
+  const demoGuideVideoComponentId = useMemo(() => {
+    if (!currentUnit) return "";
+    return currentUnit.components.find((component) =>
+      component.type === "video" && Boolean(component.videoUrl)
+    )?.id || "";
+  }, [currentUnit]);
+  const demoGuideQuizComponentId = useMemo(() => {
+    if (!currentUnit) return "";
+    return currentUnit.components.find((component) =>
+      component.type === "problem" && Boolean(component.problemUsageKey)
+    )?.id || "";
+  }, [currentUnit]);
+
+  const clearDemoLessonVideoGuide = useCallback(() => {
+    if (demoLessonVideoGuideKey) {
+      clearDemoIframeLessonVideoPending(demoLessonVideoGuideKey);
+    }
+    setDemoLessonVideoGuideActive(false);
+    setDemoLessonVideoGuideRect(null);
+  }, [demoLessonVideoGuideKey]);
+
+  const clearDemoLessonQuizScrollTimer = useCallback(() => {
+    if (demoLessonQuizScrollTimerRef.current !== null) {
+      window.clearTimeout(demoLessonQuizScrollTimerRef.current);
+      demoLessonQuizScrollTimerRef.current = null;
+    }
+  }, []);
+
+  const clearDemoLessonQuizAssistTimer = useCallback(() => {
+    if (demoLessonQuizAssistTimerRef.current !== null) {
+      window.clearTimeout(demoLessonQuizAssistTimerRef.current);
+      demoLessonQuizAssistTimerRef.current = null;
+    }
+  }, []);
+
+  const clearDemoLessonQuizGuideAnswerTimer = useCallback(() => {
+    if (demoLessonQuizGuideAnswerTimerRef.current !== null) {
+      window.clearTimeout(demoLessonQuizGuideAnswerTimerRef.current);
+      demoLessonQuizGuideAnswerTimerRef.current = null;
+    }
+  }, []);
+
+  const clearDemoLessonQuizScrollAnimation = useCallback(() => {
+    if (demoLessonQuizScrollAnimationRef.current) {
+      demoLessonQuizScrollAnimationRef.current();
+      demoLessonQuizScrollAnimationRef.current = null;
+    }
+  }, []);
+
+  const scheduleDemoLessonQuizAssist = useCallback(() => {
+    clearDemoLessonQuizAssistTimer();
+    demoLessonQuizAssistTimerRef.current = window.setTimeout(() => {
+      demoLessonQuizAssistTimerRef.current = null;
+      window.dispatchEvent(
+        new CustomEvent(DEMO_IFRAME_LESSON_QUIZ_ASSIST_EVENT, {
+          detail: { question: DEMO_IFRAME_LESSON_QUIZ_QUESTION },
+        })
+      );
+    }, DEMO_IFRAME_LESSON_QUIZ_ASSIST_DELAY_MS);
+  }, [clearDemoLessonQuizAssistTimer]);
+
+  const startDemoLessonQuizGuide = useCallback(() => {
+    if (!isDemoIframe || courseId !== DEMO_IFRAME_EXPLORE_COURSE_ID || !demoGuideQuizComponentId) return;
+
+    clearDemoLessonQuizGuideAnswerTimer();
+    setDemoLessonPostVideoLockActive(true);
+    setDemoLessonQuizGuidePhase("hint");
+
+    window.requestAnimationFrame(() => {
+      const target = findDemoLessonQuizElement();
+      if (target) {
+        scrollDemoIframeElementToCenter(target, {
+          durationMs: DEMO_IFRAME_GUIDE_SCROLL_SHORT_MS,
+        });
+      }
+    });
+  }, [
+    clearDemoLessonQuizGuideAnswerTimer,
+    courseId,
+    demoGuideQuizComponentId,
+    isDemoIframe,
+  ]);
+
+  const handleDemoLessonQuizHintClick = useCallback(() => {
+    if (demoLessonQuizGuidePhase !== "hint") return;
+
+    clearDemoLessonQuizGuideAnswerTimer();
+    setDemoLessonQuizGuidePhase("hint-waiting");
+    demoLessonQuizGuideAnswerTimerRef.current = window.setTimeout(() => {
+      demoLessonQuizGuideAnswerTimerRef.current = null;
+      setDemoLessonQuizGuidePhase("answer");
+    }, DEMO_IFRAME_LESSON_QUIZ_HINT_TO_ANSWER_DELAY_MS);
+  }, [clearDemoLessonQuizGuideAnswerTimer, demoLessonQuizGuidePhase]);
+
+  const handleDemoLessonQuizAnswerSelected = useCallback(() => {
+    if (demoLessonQuizGuidePhase !== "answer") return;
+
+    clearDemoLessonQuizGuideAnswerTimer();
+    setDemoLessonQuizGuidePhase("submit");
+  }, [clearDemoLessonQuizGuideAnswerTimer, demoLessonQuizGuidePhase]);
+
+  const handleDemoLessonQuizSubmitComplete = useCallback(() => {
+    if (demoLessonQuizGuidePhase !== "submit") return;
+
+    clearDemoLessonQuizGuideAnswerTimer();
+    setDemoLessonQuizGuidePhase("idle");
+    setDemoLessonPostVideoLockActive(false);
+  }, [clearDemoLessonQuizGuideAnswerTimer, demoLessonQuizGuidePhase]);
+
+  const handleDemoLessonVideoPlay = useCallback(() => {
+    if (!demoLessonVideoGuideActive || demoLessonQuizScrollStartedRef.current) return;
+
+    demoLessonQuizScrollStartedRef.current = true;
+    clearDemoLessonVideoGuide();
+    setDemoLessonPostVideoLockActive(true);
+
+    if (!demoGuideQuizComponentId) {
+      setDemoLessonPostVideoLockActive(false);
+      return;
+    }
+
+    clearDemoLessonQuizScrollTimer();
+    clearDemoLessonQuizScrollAnimation();
+    demoLessonQuizScrollTimerRef.current = window.setTimeout(() => {
+      demoLessonQuizScrollTimerRef.current = null;
+      setDemoLessonQuizScrollRequested(true);
+    }, DEMO_IFRAME_LESSON_QUIZ_SCROLL_DELAY_MS);
+  }, [
+    clearDemoLessonQuizScrollAnimation,
+    clearDemoLessonQuizScrollTimer,
+    clearDemoLessonVideoGuide,
+    demoGuideQuizComponentId,
+    demoLessonVideoGuideActive,
+  ]);
 
   // Xác định next lesson & module trong toàn bộ course structure
   const { nextLessonId, nextModuleId } = useMemo(() => {
@@ -339,6 +547,247 @@ export function LessonDetailPage() {
     wasLoadingRef.current = isStillLoading;
   }, [isStillLoading]);
 
+  useEffect(() => {
+    return () => {
+      clearDemoLessonQuizScrollTimer();
+      clearDemoLessonQuizAssistTimer();
+      clearDemoLessonQuizGuideAnswerTimer();
+      clearDemoLessonQuizScrollAnimation();
+    };
+  }, [
+    clearDemoLessonQuizAssistTimer,
+    clearDemoLessonQuizGuideAnswerTimer,
+    clearDemoLessonQuizScrollAnimation,
+    clearDemoLessonQuizScrollTimer,
+  ]);
+
+  useEffect(() => {
+    clearDemoLessonQuizScrollTimer();
+    clearDemoLessonQuizAssistTimer();
+    clearDemoLessonQuizGuideAnswerTimer();
+    clearDemoLessonQuizScrollAnimation();
+    setDemoLessonQuizScrollRequested(false);
+    setDemoLessonPostVideoLockActive(false);
+    setDemoLessonQuizGuidePhase("idle");
+    demoLessonQuizScrollStartedRef.current = false;
+  }, [
+    clearDemoLessonQuizAssistTimer,
+    clearDemoLessonQuizGuideAnswerTimer,
+    clearDemoLessonQuizScrollAnimation,
+    clearDemoLessonQuizScrollTimer,
+    courseId,
+    currentLessonId,
+    currentUnitIndex,
+  ]);
+
+  useEffect(() => {
+    if (!isDemoIframe || courseId !== DEMO_IFRAME_EXPLORE_COURSE_ID || !demoLessonVideoGuideKey) {
+      clearDemoLessonQuizAssistTimer();
+      clearDemoLessonQuizGuideAnswerTimer();
+      setDemoLessonVideoGuideActive(false);
+      setDemoLessonVideoGuideRect(null);
+      setDemoLessonQuizScrollRequested(false);
+      setDemoLessonPostVideoLockActive(false);
+      setDemoLessonQuizGuidePhase("idle");
+      demoLessonQuizScrollStartedRef.current = false;
+      return;
+    }
+
+    if (isDemoIframeLessonVideoPending(demoLessonVideoGuideKey)) {
+      setDemoLessonVideoGuideActive(true);
+    }
+  }, [
+    clearDemoLessonQuizAssistTimer,
+    clearDemoLessonQuizGuideAnswerTimer,
+    courseId,
+    demoLessonVideoGuideKey,
+    isDemoIframe,
+  ]);
+
+  useEffect(() => {
+    if (!isDemoIframe || courseId !== DEMO_IFRAME_EXPLORE_COURSE_ID || !demoGuideQuizComponentId) return;
+
+    const handleDemoLessonQuizGuideStart = () => {
+      startDemoLessonQuizGuide();
+    };
+
+    window.addEventListener(DEMO_IFRAME_LESSON_QUIZ_GUIDE_EVENT, handleDemoLessonQuizGuideStart);
+    return () => {
+      window.removeEventListener(DEMO_IFRAME_LESSON_QUIZ_GUIDE_EVENT, handleDemoLessonQuizGuideStart);
+    };
+  }, [
+    courseId,
+    demoGuideQuizComponentId,
+    isDemoIframe,
+    startDemoLessonQuizGuide,
+  ]);
+
+  useEffect(() => {
+    if (!demoLessonVideoGuideActive || !courseTree?.modules?.length) return;
+
+    const firstModule = courseTree.modules[0];
+    const firstLesson = firstModule?.lessons?.[0];
+    if (!firstModule || !firstLesson) {
+      clearDemoLessonVideoGuide();
+      return;
+    }
+
+    if (currentLessonId !== firstLesson.id) {
+      setCurrentLesson(firstModule.id, firstLesson.id);
+      return;
+    }
+
+    if (currentUnitIndex !== 0) {
+      setUnitIndex(0);
+    }
+  }, [
+    clearDemoLessonVideoGuide,
+    courseTree,
+    currentLessonId,
+    currentUnitIndex,
+    demoLessonVideoGuideActive,
+    setCurrentLesson,
+    setUnitIndex,
+  ]);
+
+  useEffect(() => {
+    if (!demoLessonVideoGuideActive) {
+      setDemoLessonVideoGuideRect(null);
+      return;
+    }
+
+    let cancelled = false;
+    let attempts = 0;
+    let hasScrolled = false;
+    let cancelGuideScroll: (() => void) | null = null;
+    const timers: number[] = [];
+
+    const updateGuideRect = () => {
+      if (cancelled) return;
+
+      const target = findDemoLessonVideoElement();
+      if (!target || !demoGuideVideoComponentId) {
+        attempts += 1;
+        setDemoLessonVideoGuideRect(null);
+        if (attempts < 36) {
+          timers.push(window.setTimeout(updateGuideRect, 125));
+        } else {
+          clearDemoLessonVideoGuide();
+        }
+        return;
+      }
+
+      if (!hasScrolled) {
+        hasScrolled = true;
+        cancelGuideScroll = scrollDemoIframeElementToCenter(target, {
+          durationMs: DEMO_IFRAME_GUIDE_SCROLL_LONG_MS,
+          onUpdate: () => setDemoLessonVideoGuideRect(getDemoLessonVideoGuideRect(target)),
+          onComplete: updateGuideRect,
+        });
+        return;
+      }
+
+      setDemoLessonVideoGuideRect(getDemoLessonVideoGuideRect(target));
+      attempts += 1;
+      if (attempts < 8) {
+        timers.push(window.setTimeout(updateGuideRect, 240));
+      }
+    };
+
+    const handleViewportChange = () => {
+      window.requestAnimationFrame(updateGuideRect);
+    };
+
+    timers.push(window.setTimeout(updateGuideRect, 120));
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+
+    return () => {
+      cancelled = true;
+      cancelGuideScroll?.();
+      timers.forEach(timer => window.clearTimeout(timer));
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, [
+    clearDemoLessonVideoGuide,
+    demoGuideVideoComponentId,
+    demoLessonVideoGuideActive,
+  ]);
+
+  useEffect(() => {
+    const shouldLock = demoLessonVideoGuideActive || demoLessonPostVideoLockActive || demoLessonQuizGuidePhase !== "idle";
+    if (!shouldLock) return;
+
+    setDemoIframeFlowLock(DEMO_IFRAME_FLOW_LOCK_LESSON, true);
+    return () => {
+      setDemoIframeFlowLock(DEMO_IFRAME_FLOW_LOCK_LESSON, false);
+    };
+  }, [demoLessonPostVideoLockActive, demoLessonQuizGuidePhase, demoLessonVideoGuideActive]);
+
+  useEffect(() => {
+    const shouldLock = demoLessonVideoGuideActive || demoLessonPostVideoLockActive || demoLessonQuizGuidePhase !== "idle";
+    if (!shouldLock) return;
+
+    return lockDemoIframeUserScroll();
+  }, [demoLessonPostVideoLockActive, demoLessonQuizGuidePhase, demoLessonVideoGuideActive]);
+
+  useEffect(() => {
+    if (!demoLessonQuizScrollRequested) return;
+
+    if (!isDemoIframe || courseId !== DEMO_IFRAME_EXPLORE_COURSE_ID || !demoGuideQuizComponentId) {
+      setDemoLessonQuizScrollRequested(false);
+      return;
+    }
+
+    let cancelled = false;
+    let attempts = 0;
+    const timers: number[] = [];
+
+    const scrollToQuiz = () => {
+      if (cancelled) return;
+
+      const target = findDemoLessonQuizElement();
+      if (!target) {
+        attempts += 1;
+        if (attempts < 36) {
+          timers.push(window.setTimeout(scrollToQuiz, 125));
+        } else {
+          setDemoLessonQuizScrollRequested(false);
+          setDemoLessonPostVideoLockActive(false);
+        }
+        return;
+      }
+
+      clearDemoLessonQuizScrollAnimation();
+      demoLessonQuizScrollAnimationRef.current = scrollDemoIframeElementToCenter(
+        target,
+        {
+          durationMs: DEMO_IFRAME_LESSON_QUIZ_SCROLL_DURATION_MS,
+          onComplete: () => {
+            demoLessonQuizScrollAnimationRef.current = null;
+            setDemoLessonQuizScrollRequested(false);
+            scheduleDemoLessonQuizAssist();
+          },
+        }
+      );
+    };
+
+    timers.push(window.setTimeout(scrollToQuiz, 80));
+
+    return () => {
+      cancelled = true;
+      timers.forEach(timer => window.clearTimeout(timer));
+    };
+  }, [
+    clearDemoLessonQuizScrollAnimation,
+    courseId,
+    demoGuideQuizComponentId,
+    demoLessonQuizScrollRequested,
+    isDemoIframe,
+    scheduleDemoLessonQuizAssist,
+  ]);
+
   if (isStillLoading) {
     return <LessonSkeleton />;
   }
@@ -370,6 +819,12 @@ export function LessonDetailPage() {
 
   return (
     <div className="flex min-h-full w-full flex-col">
+      {demoLessonVideoGuideActive && demoLessonVideoGuideRect && typeof document !== "undefined" ? (
+        <DemoLessonVideoGuideOverlay rect={demoLessonVideoGuideRect} />
+      ) : null}
+      {(demoLessonPostVideoLockActive || demoLessonQuizGuidePhase !== "idle") && typeof document !== "undefined" ? (
+        <DemoLessonPostVideoInteractionLock />
+      ) : null}
       {/* Main Area */}
       <div className="flex flex-1">
         {/* ── Left: Main Content ── */}
@@ -427,9 +882,19 @@ export function LessonDetailPage() {
                 {/* Render current Unit components */}
                 {currentUnit?.components.map((comp) => {
                   if (comp.type === "video" && comp.videoUrl) {
+                    const isDemoGuideVideo = demoLessonVideoGuideActive && comp.id === demoGuideVideoComponentId;
                     return (
-                      <div key={comp.id}>
-                        <VideoPlayer lesson={lesson} videoUrl={comp.videoUrl} />
+                      <div
+                        key={comp.id}
+                        data-demo-lesson-video-guide={isDemoGuideVideo ? "true" : undefined}
+                        className={cn(isDemoGuideVideo && "relative z-[99970]")}
+                      >
+                        <VideoPlayer
+                          lesson={lesson}
+                          videoUrl={comp.videoUrl}
+                          demoGuideActive={isDemoGuideVideo}
+                          onDemoGuidePlay={isDemoGuideVideo ? handleDemoLessonVideoPlay : undefined}
+                        />
                       </div>
                     );
                   }
@@ -448,13 +913,25 @@ export function LessonDetailPage() {
 
 
                   if (comp.type === "problem" && comp.problemUsageKey) {
+                    const isDemoGuideQuiz = isDemoIframe &&
+                      courseId === DEMO_IFRAME_EXPLORE_COURSE_ID &&
+                      comp.id === demoGuideQuizComponentId;
+
                     return (
-                      <QuizContent
+                      <div
                         key={comp.id}
-                        problemUsageKey={comp.problemUsageKey}
-                        problemMedia={comp.problemMedia}
-                        onImageClick={(src) => setLightboxSrc(src)}
-                      />
+                        data-demo-lesson-quiz-guide={isDemoGuideQuiz ? "true" : undefined}
+                      >
+                        <QuizContent
+                          problemUsageKey={comp.problemUsageKey}
+                          problemMedia={comp.problemMedia}
+                          onImageClick={(src) => setLightboxSrc(src)}
+                          demoGuidePhase={isDemoGuideQuiz ? demoLessonQuizGuidePhase : "idle"}
+                          onDemoGuideHintClick={isDemoGuideQuiz ? handleDemoLessonQuizHintClick : undefined}
+                          onDemoGuideAnswerSelected={isDemoGuideQuiz ? handleDemoLessonQuizAnswerSelected : undefined}
+                          onDemoGuideSubmitComplete={isDemoGuideQuiz ? handleDemoLessonQuizSubmitComplete : undefined}
+                        />
+                      </div>
                     );
                   }
 
@@ -690,5 +1167,106 @@ export function LessonDetailPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function DemoLessonVideoGuideOverlay({ rect }: { rect: DemoVideoGuideRect }) {
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const radius = Math.min(16, rect.width / 2, rect.height / 2);
+  const blockerClass = "fixed z-[99961] cursor-default bg-transparent";
+  const playCenterX = rect.left + rect.width / 2;
+  const playCenterY = rect.top + rect.height / 2;
+  const bubbleWidth = Math.min(292, Math.max(220, viewportWidth - 32));
+  const bubbleLeft = Math.min(
+    Math.max(16, playCenterX - bubbleWidth / 2),
+    Math.max(16, viewportWidth - bubbleWidth - 16)
+  );
+  const bubbleTop = Math.min(
+    Math.max(18, playCenterY + 56),
+    Math.max(18, viewportHeight - 86)
+  );
+  const bubbleTailLeft = Math.min(Math.max(28, playCenterX - bubbleLeft), bubbleWidth - 28);
+  const bubbleConnectorHeight = Math.max(16, bubbleTop - playCenterY - 10);
+
+  return createPortal(
+    <>
+      <svg
+        className="pointer-events-none fixed inset-0 z-[99960] h-screen w-screen"
+        width={viewportWidth}
+        height={viewportHeight}
+        viewBox={`0 0 ${viewportWidth} ${viewportHeight}`}
+        aria-hidden="true"
+      >
+        <defs>
+          <mask id="demo-lesson-video-guide-mask">
+            <rect width={viewportWidth} height={viewportHeight} fill="white" />
+            <rect
+              x={rect.left}
+              y={rect.top}
+              width={rect.width}
+              height={rect.height}
+              rx={radius}
+              ry={radius}
+              fill="black"
+            />
+          </mask>
+        </defs>
+        <rect
+          width={viewportWidth}
+          height={viewportHeight}
+          className="demo-iframe-dark-mask-fill"
+          mask="url(#demo-lesson-video-guide-mask)"
+        />
+      </svg>
+      <div
+        className={blockerClass}
+        style={{ left: 0, right: 0, top: 0, height: rect.top }}
+        aria-hidden="true"
+      />
+      <div
+        className={blockerClass}
+        style={{ left: 0, right: 0, top: rect.bottom, bottom: 0 }}
+        aria-hidden="true"
+      />
+      <div
+        className={blockerClass}
+        style={{ left: 0, top: rect.top, width: rect.left, height: rect.height }}
+        aria-hidden="true"
+      />
+      <div
+        className={blockerClass}
+        style={{ left: rect.right, right: 0, top: rect.top, height: rect.height }}
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none fixed z-[99972]"
+        style={{ left: bubbleLeft, top: bubbleTop, width: bubbleWidth }}
+        aria-hidden="true"
+      >
+        <div
+          className="absolute bottom-full w-px bg-white/85 shadow-[0_0_12px_rgba(255,255,255,0.75)]"
+          style={{ left: bubbleTailLeft, height: bubbleConnectorHeight }}
+        />
+        <div
+          className="absolute h-2.5 w-2.5 rounded-full border border-white bg-white shadow-[0_0_18px_rgba(255,255,255,0.9)]"
+          style={{ left: bubbleTailLeft - 5, bottom: `calc(100% + ${bubbleConnectorHeight - 1}px)` }}
+        />
+        <div className="demo-iframe-play-bubble rounded-2xl border border-white/80 bg-white px-4 py-3 text-center text-[14px] font-semibold leading-[18px] text-slate-900 shadow-[0_18px_50px_rgba(0,0,0,0.28)]">
+          Nhấn play để bắt đầu bài học
+        </div>
+      </div>
+    </>,
+    document.body
+  );
+}
+
+function DemoLessonPostVideoInteractionLock() {
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[99980] cursor-default bg-transparent"
+      aria-hidden="true"
+    />,
+    document.body
   );
 }

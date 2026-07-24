@@ -8,7 +8,16 @@
 
 import { apiClient } from "./client";
 import { enrollCourse } from "./courses";
+import { useAuthStore } from "@/stores/useAuthStore";
+import {
+  getDemoIframeCourseProgress,
+  markDemoIframeBlocksComplete,
+} from "@/stores/demoIframeLearningStore";
 import type { ApiResponse, CourseProgress } from "./types";
+
+function isDemoIframeSession(): boolean {
+  return useAuthStore.getState().sessionMode === "demo_iframe";
+}
 
 /**
  * Mark nhiều blocks hoàn thành cùng lúc (batch).
@@ -21,6 +30,9 @@ export async function markBlocksComplete(
   blockIds: string[]
 ): Promise<unknown> {
   if (blockIds.length === 0) return null;
+  if (isDemoIframeSession()) {
+    return markDemoIframeBlocksComplete(courseId, blockIds);
+  }
 
   try {
     const { data } = await apiClient.post<ApiResponse<{ marked: number }>>(
@@ -58,6 +70,9 @@ export async function markBlockComplete(
  * Lấy progress chi tiết cho 1 khóa học.
  */
 export async function getMyCourseProgress(courseId: string): Promise<number> {
+  if (isDemoIframeSession()) {
+    return getDemoIframeCourseProgress(courseId).progress;
+  }
   try {
     const { data } = await apiClient.get<ApiResponse<CourseProgress>>(
       `/api/learner/progress/${encodeURIComponent(courseId)}`
@@ -72,6 +87,9 @@ export async function getMyCourseProgress(courseId: string): Promise<number> {
  * Lấy progress đầy đủ (bao gồm is_completed, completed_at).
  */
 export async function getCourseProgressDetail(courseId: string): Promise<CourseProgress> {
+  if (isDemoIframeSession()) {
+    return getDemoIframeCourseProgress(courseId);
+  }
   const { data } = await apiClient.get<ApiResponse<CourseProgress>>(
     `/api/learner/progress/${encodeURIComponent(courseId)}`
   );
@@ -85,6 +103,9 @@ export async function getBatchCourseProgress(
   courseIds: string[]
 ): Promise<Record<string, { progress: number; is_completed: boolean; completed_at: string | null }>> {
   if (courseIds.length === 0) return {};
+  if (isDemoIframeSession()) {
+    return Object.fromEntries(courseIds.map((courseId) => [courseId, getDemoIframeCourseProgress(courseId)]));
+  }
   try {
     const { data } = await apiClient.get<ApiResponse<{
       progress: Record<string, { progress: number; is_completed: boolean; completed_at: string | null }>;

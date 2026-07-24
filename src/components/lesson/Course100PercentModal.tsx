@@ -14,6 +14,7 @@ import InstagramIcon from "@/assets/SocialIcon/instagram.png";
 import { useNavigate } from "react-router-dom";
 import type { CourseModalConfigData } from "@/api/modalConfig";
 import { useAppStore } from "@/stores/useAppStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCourseModalState, updateCourseModalState } from "@/api/modalState";
 
@@ -77,6 +78,7 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
   const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
   const confirmJustClosed = useAppStore((s) => s.confirmJustClosed);
   const setConfirmJustClosed = useAppStore((s) => s.setConfirmJustClosed);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
 
   // Nếu admin tắt completion modal → không render
   const isEnabled = config?.completion_enabled === true;
@@ -116,7 +118,7 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
   const queryClient = useQueryClient();
 
   const { data: modalState, isLoading: isModalStateLoading } = useQuery({
-    queryKey: ["courseModalState", courseId],
+    queryKey: ["courseModalState", courseId, sessionMode],
     queryFn: () => getCourseModalState(courseId),
     enabled: !!courseId && !isLoading,
     staleTime: 5 * 60 * 1000,
@@ -126,7 +128,7 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
     mutationFn: (updates: { welcome_shown?: boolean; confirm_shown?: boolean; complete_shown?: boolean }) => 
       updateCourseModalState(courseId, updates),
     onSuccess: (data) => {
-      queryClient.setQueryData(["courseModalState", courseId], data);
+      queryClient.setQueryData(["courseModalState", courseId, sessionMode], data);
     }
   });
 

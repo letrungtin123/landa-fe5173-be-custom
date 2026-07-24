@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSectionModalConfigs, getSectionModalShown, markSectionModalShown } from "@/api/sectionModalConfig";
 import type { Module } from "@/data/types";
 import { useAppStore } from "@/stores/useAppStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import flyElementUrl from "@/assets/EncourageModal/Fly_element.png";
 import flyElementMobileUrl from "@/assets/EncourageModal/fly-element-mobile.png";
 import letterUrl from "@/assets/EncourageModal/letter.png";
@@ -71,6 +72,7 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
   const [currentConfig, setCurrentConfig] = useState<{ section_id: string; title: string; description: string } | null>(null);
   const queryClient = useQueryClient();
   const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
 
   useEffect(() => {
     setCourseModalActive(open);
@@ -85,7 +87,7 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
   });
 
   const { data: shownData } = useQuery({
-    queryKey: ["sectionModalShown", courseId],
+    queryKey: ["sectionModalShown", courseId, sessionMode],
     queryFn: () => getSectionModalShown(courseId),
     enabled: !!courseId,
     staleTime: 2 * 60 * 1000,
@@ -94,7 +96,7 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
   const { mutate: markShown } = useMutation({
     mutationFn: (sectionId: string) => markSectionModalShown(courseId, sectionId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sectionModalShown", courseId] });
+      queryClient.invalidateQueries({ queryKey: ["sectionModalShown", courseId, sessionMode] });
     },
   });
 

@@ -12,6 +12,7 @@ export interface ApiResponse<T = unknown> {
 
 export type UserRole = 'learner' | 'learner_plus' | 'staff' | 'superuser' | 'superadmin';
 export type RoleLabelMap = Partial<Record<UserRole, string>>;
+export type SessionMode = 'normal' | 'demo_iframe';
 
 // ── Xác thực ──
 
@@ -19,6 +20,7 @@ export interface LoginResponse {
   access_token: string;
   refresh_token: string;
   expires_in: number; // seconds
+  session_mode?: SessionMode;
   user: AuthUserInfo;
   permissions: PermissionsMap;
   tenant_modules: string[];
@@ -36,6 +38,7 @@ export interface AuthUserInfo {
   role: UserRole;
   tenant_id: string | null;
   tenant_name: string | null;
+  session_mode?: SessionMode;
 }
 
 export interface TenantBasic {

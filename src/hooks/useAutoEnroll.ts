@@ -18,6 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
  */
 export function useAutoEnroll() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
   const { data: enrollments, isLoading: enrollLoading } = useMyEnrollments();
   const { data: coursesData, isLoading: coursesLoading } = useCourses();
   const qc = useQueryClient();
@@ -25,7 +26,7 @@ export function useAutoEnroll() {
 
   useEffect(() => {
     // Chỉ chạy 1 lần per session, khi đã có cả 2 data
-    if (!isAuthenticated || enrollLoading || coursesLoading) return;
+    if (!isAuthenticated || sessionMode === "demo_iframe" || enrollLoading || coursesLoading) return;
     if (hasRun.current) return;
     if (!coursesData?.data) return;
 
@@ -55,5 +56,5 @@ export function useAutoEnroll() {
       // Refresh enrollment data
       qc.invalidateQueries({ queryKey: ["enrollments"] });
     });
-  }, [isAuthenticated, enrollments, coursesData, enrollLoading, coursesLoading, qc]);
+  }, [isAuthenticated, sessionMode, enrollments, coursesData, enrollLoading, coursesLoading, qc]);
 }

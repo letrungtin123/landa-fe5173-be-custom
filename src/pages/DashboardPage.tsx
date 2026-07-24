@@ -2,6 +2,8 @@
 // DashboardPage — Trang chính learner (dữ liệu thật từ API)
 // ============================================================
 
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { UserProfileCard } from "@/components/dashboard/UserProfileCard";
 import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
@@ -13,11 +15,38 @@ import { BadgeShowcase } from "@/components/badges/BadgeShowcase";
 import { usePageLoading } from "@/hooks/usePageLoading";
 import { useMyEnrollments, useCourses } from "@/hooks/useCourses";
 import { useAverageCourseCompletion } from "@/hooks/useProgress";
+import { useAuthStore } from "@/stores/useAuthStore";
+import {
+  clearDemoIframeDashboardCtaPending,
+  DEMO_IFRAME_DASHBOARD_CTA_EVENT,
+  DEMO_IFRAME_COMPANION_WIDGET_EVENT,
+  demoIframeCompanionWidgetKey,
+  demoIframeDashboardCtaKey,
+  isDemoIframeDashboardCtaPending,
+  markDemoIframeCompanionWidgetPending,
+  setDemoIframeFlowLock,
+} from "@/utils/demoIframeDashboardGuide";
+import { lockDemoIframeUserScroll } from "@/utils/demoIframeGuideLock";
+
+const DEMO_IFRAME_FLOW_LOCK_DASHBOARD_CTA = "dashboard-cta";
 
 export function DashboardPage() {
   const { isLoading: pageLoading } = usePageLoading(1000);
   const { data: enrollments } = useMyEnrollments();
   const { data: courseList } = useCourses();
+  const sessionMode = useAuthStore((s) => s.sessionMode);
+  const userId = useAuthStore((s) => s.user?.id);
+  const loginSessionId = useAuthStore((s) => s.loginSessionId);
+  const isDemoIframe = sessionMode === "demo_iframe";
+  const demoCtaGuideKey = useMemo(
+    () => demoIframeDashboardCtaKey(userId, loginSessionId),
+    [loginSessionId, userId]
+  );
+  const demoCompanionWidgetKey = useMemo(
+    () => demoIframeCompanionWidgetKey(userId, loginSessionId),
+    [loginSessionId, userId]
+  );
+  const [demoCtaGuideActive, setDemoCtaGuideActive] = useState(false);
 
   // Chỉ lấy enrollment có course trong danh sách public (đã filter bởi BE)
   const publicCourseIds = new Set((courseList?.data || []).map((c: any) => c.id));
@@ -29,12 +58,67 @@ export function DashboardPage() {
   const enrolledCourseIds = visibleEnrollments.map((e: any) => e.course_id);
   const { data: averagePercent } = useAverageCourseCompletion(enrolledCourseIds);
 
+  useEffect(() => {
+    if (!isDemoIframe || !demoCtaGuideKey) {
+      setDemoCtaGuideActive(false);
+      return;
+    }
+
+    if (isDemoIframeDashboardCtaPending(demoCtaGuideKey)) {
+      setDemoCtaGuideActive(true);
+    }
+
+    const handleGuideReady = (event: Event) => {
+      const detail = (event as CustomEvent<{ key?: string }>).detail;
+      if (detail?.key && detail.key !== demoCtaGuideKey) return;
+      setDemoCtaGuideActive(true);
+    };
+
+    window.addEventListener(DEMO_IFRAME_DASHBOARD_CTA_EVENT, handleGuideReady);
+    return () => {
+      window.removeEventListener(DEMO_IFRAME_DASHBOARD_CTA_EVENT, handleGuideReady);
+    };
+  }, [demoCtaGuideKey, isDemoIframe]);
+
+  const handleDemoCtaClick = useCallback(() => {
+    clearDemoIframeDashboardCtaPending(demoCtaGuideKey);
+    if (isDemoIframe && demoCompanionWidgetKey) {
+      markDemoIframeCompanionWidgetPending(demoCompanionWidgetKey);
+      window.dispatchEvent(
+        new CustomEvent(DEMO_IFRAME_COMPANION_WIDGET_EVENT, {
+          detail: { key: demoCompanionWidgetKey },
+        })
+      );
+    }
+    setDemoCtaGuideActive(false);
+  }, [demoCompanionWidgetKey, demoCtaGuideKey, isDemoIframe]);
+
+  useEffect(() => {
+    if (!demoCtaGuideActive) return;
+    setDemoIframeFlowLock(DEMO_IFRAME_FLOW_LOCK_DASHBOARD_CTA, true);
+    const unlockScroll = lockDemoIframeUserScroll({ lockOverflow: false });
+
+    return () => {
+      setDemoIframeFlowLock(DEMO_IFRAME_FLOW_LOCK_DASHBOARD_CTA, false);
+      unlockScroll();
+    };
+  }, [demoCtaGuideActive]);
+
   if (pageLoading) {
     return <DashboardSkeleton />;
   }
 
   return (
     <>
+      {demoCtaGuideActive && typeof document !== "undefined"
+        ? createPortal(
+          <div
+            className="demo-iframe-dark-lock-overlay fixed inset-0 z-[99970] cursor-default"
+            aria-hidden="true"
+          />,
+          document.body
+        )
+        : null}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -86,7 +170,10 @@ export function DashboardPage() {
 
             {/* Đề xuất dành cho bạn */}
             <div className="w-full pb-8">
-              <RecommendedSection />
+              <RecommendedSection
+                demoCtaGuideActive={demoCtaGuideActive}
+                onDemoCtaGuideClick={handleDemoCtaClick}
+              />
             </div>
           </div>
         </div>
