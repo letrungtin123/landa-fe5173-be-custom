@@ -24,17 +24,20 @@ const DEFAULT_TIPS = [
 ];
 
 const DEFAULT_BADGE = "SKILLS";
-const DEMO_IFRAME_DASHBOARD_CTA_MOBILE_SCROLL_MS = 980;
+const DEMO_IFRAME_DASHBOARD_CTA_MOBILE_SCROLL_MS = 1220;
+const DEMO_IFRAME_DASHBOARD_CTA_MOBILE_SCROLL_START_DELAY_MS = 220;
 const DEFAULT_TITLE = "Khai phá tiềm năng từ kho tri thức đặc biệt";
 
 interface RecommendedSectionProps {
   demoCtaGuideActive?: boolean;
   onDemoCtaGuideClick?: () => void;
+  onDemoCtaGuideVisibleChange?: (visible: boolean) => void;
 }
 
 export function RecommendedSection({
   demoCtaGuideActive = false,
   onDemoCtaGuideClick,
+  onDemoCtaGuideVisibleChange,
 }: RecommendedSectionProps) {
   const [currentTip, setCurrentTip] = useState(0);
   const [floatingCtaRect, setFloatingCtaRect] = useState<{
@@ -83,12 +86,15 @@ export function RecommendedSection({
   useEffect(() => {
     if (!demoCtaGuideActive) {
       setFloatingCtaRect(null);
+      onDemoCtaGuideVisibleChange?.(false);
       return;
     }
 
     let rafId = 0;
     let cancelGuideScroll: (() => void) | null = null;
     const timers: number[] = [];
+    let attempts = 0;
+    let finished = false;
     const updateFloatingRect = () => {
       const rect = demoCtaRef.current?.getBoundingClientRect();
       if (!rect) return;
@@ -98,6 +104,7 @@ export function RecommendedSection({
         width: rect.width,
         height: rect.height,
       });
+      onDemoCtaGuideVisibleChange?.(true);
     };
     const scheduleFloatingRectUpdate = () => {
       if (rafId) window.cancelAnimationFrame(rafId);
@@ -109,25 +116,42 @@ export function RecommendedSection({
       ? DEMO_IFRAME_DASHBOARD_CTA_MOBILE_SCROLL_MS
       : DEMO_IFRAME_GUIDE_SCROLL_LONG_MS;
 
-    if (isMobileViewport) {
-      setFloatingCtaRect(null);
-    }
+    const startGuideScroll = () => {
+      const target = demoCtaRef.current;
+      if (!target) {
+        attempts += 1;
+        if (attempts < 10) {
+          timers.push(window.setTimeout(startGuideScroll, 120));
+        }
+        return;
+      }
 
-    if (demoCtaRef.current) {
-      cancelGuideScroll = scrollDemoIframeElementToCenter(demoCtaRef.current, {
+      if (isMobileViewport) {
+        setFloatingCtaRect(null);
+        onDemoCtaGuideVisibleChange?.(false);
+      }
+
+      cancelGuideScroll = scrollDemoIframeElementToCenter(target, {
         durationMs: scrollDurationMs,
         easing: isMobileViewport ? "sine" : "cubic",
+        driver: isMobileViewport ? "native" : "raf",
         onUpdate: isMobileViewport ? undefined : updateFloatingRect,
-        onComplete: updateFloatingRect,
+        onComplete: () => {
+          finished = true;
+          updateFloatingRect();
+        },
       });
-    }
+    };
+
     if (isMobileViewport) {
       timers.push(
-        window.setTimeout(updateFloatingRect, scrollDurationMs + 80),
-        window.setTimeout(updateFloatingRect, scrollDurationMs + 260)
+        window.setTimeout(startGuideScroll, DEMO_IFRAME_DASHBOARD_CTA_MOBILE_SCROLL_START_DELAY_MS),
+        window.setTimeout(() => {
+          if (!finished) updateFloatingRect();
+        }, DEMO_IFRAME_DASHBOARD_CTA_MOBILE_SCROLL_START_DELAY_MS + scrollDurationMs + 260)
       );
     } else {
-      updateFloatingRect();
+      startGuideScroll();
       timers.push(
         window.setTimeout(updateFloatingRect, 120),
         window.setTimeout(updateFloatingRect, 420),
@@ -152,12 +176,14 @@ export function RecommendedSection({
       window.removeEventListener("resize", scheduleFloatingRectUpdate);
       window.removeEventListener("scroll", scheduleFloatingRectUpdate, true);
     };
-  }, [demoCtaGuideActive]);
+  }, [demoCtaGuideActive, onDemoCtaGuideVisibleChange]);
 
+  const isFloatingCtaMobile = typeof window !== "undefined"
+    && window.matchMedia("(max-width: 767px)").matches;
   const floatingCtaSize = floatingCtaRect
     ? {
-      width: Math.max(floatingCtaRect.width, 188),
-      height: Math.max(floatingCtaRect.height, 48),
+      width: Math.max(floatingCtaRect.width, isFloatingCtaMobile ? 164 : 188),
+      height: Math.max(floatingCtaRect.height, isFloatingCtaMobile ? 42 : 48),
     }
     : null;
   const floatingCtaPosition = floatingCtaRect && floatingCtaSize && typeof window !== "undefined"
@@ -286,7 +312,7 @@ export function RecommendedSection({
           to="/explore"
           onClick={onDemoCtaGuideClick}
           aria-label="Bắt đầu ngay"
-          className="demo-iframe-hero-cta-guide fixed z-[99990] inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-6 text-sm font-semibold leading-none text-[#075985] outline-none focus-visible:ring-2 focus-visible:ring-[#38bdf8] focus-visible:ring-offset-2"
+          className="demo-iframe-hero-cta-guide fixed z-[99990] inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-[13px] font-semibold leading-none text-[#075985] outline-none focus-visible:ring-2 focus-visible:ring-[#38bdf8] focus-visible:ring-offset-2 md:gap-2 md:px-6 md:text-sm"
           style={{
             left: `${floatingCtaPosition.left}px`,
             top: `${floatingCtaPosition.top}px`,
@@ -296,7 +322,7 @@ export function RecommendedSection({
         >
           <span className="demo-iframe-hero-cta-echo" aria-hidden="true" />
           <span className="relative z-10">Bắt đầu ngay</span>
-          <ArrowRight className="relative z-10 h-4 w-4" />
+          <ArrowRight className="relative z-10 h-3.5 w-3.5 md:h-4 md:w-4" />
         </Link>,
         document.body
       )

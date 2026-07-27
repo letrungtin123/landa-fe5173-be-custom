@@ -47,6 +47,7 @@ export function DashboardPage() {
     [loginSessionId, userId]
   );
   const [demoCtaGuideActive, setDemoCtaGuideActive] = useState(false);
+  const [demoCtaGuideOverlayVisible, setDemoCtaGuideOverlayVisible] = useState(false);
 
   // Chỉ lấy enrollment có course trong danh sách public (đã filter bởi BE)
   const publicCourseIds = new Set((courseList?.data || []).map((c: any) => c.id));
@@ -100,6 +101,7 @@ export function DashboardPage() {
 
     return () => {
       setDemoIframeFlowLock(DEMO_IFRAME_FLOW_LOCK_DASHBOARD_CTA, false);
+      setDemoCtaGuideOverlayVisible(false);
       unlockScroll();
     };
   }, [demoCtaGuideActive]);
@@ -113,7 +115,7 @@ export function DashboardPage() {
       {demoCtaGuideActive && typeof document !== "undefined"
         ? createPortal(
           <div
-            className="demo-iframe-dark-lock-overlay fixed inset-0 z-[99970] cursor-default"
+            className={`${demoCtaGuideOverlayVisible ? "demo-iframe-dark-lock-overlay" : "bg-transparent"} fixed inset-0 z-[99970] cursor-default`}
             aria-hidden="true"
           />,
           document.body
@@ -173,6 +175,7 @@ export function DashboardPage() {
               <RecommendedSection
                 demoCtaGuideActive={demoCtaGuideActive}
                 onDemoCtaGuideClick={handleDemoCtaClick}
+                onDemoCtaGuideVisibleChange={setDemoCtaGuideOverlayVisible}
               />
             </div>
           </div>

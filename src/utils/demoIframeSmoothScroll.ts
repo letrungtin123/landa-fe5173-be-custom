@@ -5,6 +5,7 @@ type DemoIframeSmoothScrollOptions = {
   durationMs?: number;
   container?: HTMLElement | null;
   easing?: "cubic" | "sine";
+  driver?: "raf" | "native";
   onUpdate?: () => void;
   onComplete?: () => void;
 };
@@ -36,12 +37,32 @@ export function scrollDemoIframeElementToCenter(
     durationMs = DEMO_IFRAME_GUIDE_SCROLL_LONG_MS,
     container,
     easing = "cubic",
+    driver = "raf",
     onUpdate,
     onComplete,
   } = options;
   const scrollEl = getScrollContainer(element, container);
   const startTime = window.performance.now();
   let frameId = 0;
+
+  if (driver === "native") {
+    let cancelled = false;
+    const finishTimer = window.setTimeout(() => {
+      if (cancelled) return;
+      onUpdate?.();
+      onComplete?.();
+    }, durationMs);
+
+    window.requestAnimationFrame(() => {
+      if (cancelled) return;
+      element.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+    });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(finishTimer);
+    };
+  }
 
   const getScrollTarget = () => {
     if (scrollEl) {
