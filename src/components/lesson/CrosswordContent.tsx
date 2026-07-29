@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getBlockDetail, submitCrosswordAnswer } from "@/api/blocks";
-import { CheckCircle2, ChevronRight, Lightbulb, Loader2, Play, XCircle } from "lucide-react";
+import { ChevronRight, Lightbulb, Loader2, Play, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -321,20 +321,14 @@ export function CrosswordContent({ usageKey, problemMedia, onImageClick }: Cross
   }
 
   let resultBlock = null;
-  if (resultMessage) {
+  if (resultMessage && isCorrect !== true) {
     let wrapperClass = "mb-4 w-full max-w-sm flex items-center gap-3 rounded-xl p-4 ";
     let textClass = "font-medium ";
     let icon = null;
 
-    if (isCorrect) {
-      wrapperClass += "bg-success/10 border border-success/20";
-      textClass += "text-foreground text-[14px]";
-      icon = <CheckCircle2 className="h-6 w-6 text-success shrink-0" />;
-    } else {
-      wrapperClass += "bg-destructive/10 border border-destructive/20";
-      textClass += "text-foreground text-[14px]";
-      icon = <XCircle className="h-6 w-6 text-destructive shrink-0" />;
-    }
+    wrapperClass += "bg-destructive/10 border border-destructive/20";
+    textClass += "text-foreground text-[14px]";
+    icon = <XCircle className="h-6 w-6 text-destructive shrink-0" />;
 
     resultBlock = (
       <div className={wrapperClass}>

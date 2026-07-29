@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getBlockDetail, submitSortableAnswer } from "@/api/blocks";
-import { CheckCircle2, GripVertical, Loader2, XCircle, Play } from "lucide-react";
+import { GripVertical, Loader2, XCircle, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
@@ -312,20 +312,14 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
 
   // ── Result Block ──
   let resultBlock = null;
-  if (resultMessage) {
+  if (resultMessage && isCorrect !== true) {
     let wrapperClass = "mb-4 w-full max-w-sm flex items-center gap-3 rounded-xl p-4 ";
     let textClass = "font-medium ";
     let icon = null;
 
-    if (isCorrect) {
-      wrapperClass += "bg-success/10 border border-success/20";
-      textClass += "text-foreground text-[14px]";
-      icon = <CheckCircle2 className="h-6 w-6 text-success shrink-0" />;
-    } else {
-      wrapperClass += "bg-destructive/10 border border-destructive/20";
-      textClass += "text-foreground text-[14px]";
-      icon = <XCircle className="h-6 w-6 text-destructive shrink-0" />;
-    }
+    wrapperClass += "bg-destructive/10 border border-destructive/20";
+    textClass += "text-foreground text-[14px]";
+    icon = <XCircle className="h-6 w-6 text-destructive shrink-0" />;
 
     resultBlock = (
       <div className={wrapperClass}>

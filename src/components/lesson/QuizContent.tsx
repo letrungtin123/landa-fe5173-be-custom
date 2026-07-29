@@ -638,18 +638,11 @@ export function QuizContent({
         ))}
 
         {/* Kết quả sau khi nộp */}
-        {resultMessage && (
+        {resultMessage && isCorrect !== true && (
           <div
-            className={`mt-6 flex items-center gap-3 rounded-xl p-4 ${isCorrect
-              ? "bg-success/10 border border-success/20"
-              : "bg-destructive/10 border border-destructive/20"
-              }`}
+            className="mt-6 flex items-center gap-3 rounded-xl bg-destructive/10 border border-destructive/20 p-4"
           >
-            {isCorrect ? (
-              <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
-            ) : (
-              <XCircle className="h-5 w-5 text-destructive shrink-0" />
-            )}
+            <XCircle className="h-5 w-5 text-destructive shrink-0" />
             <p className="text-sm font-medium text-foreground">
               {DOMPurify.sanitize(resultMessage).replace(/(<([^>]+)>)/gi, "")}
             </p>
