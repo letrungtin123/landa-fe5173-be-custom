@@ -65,6 +65,7 @@ export interface CourseInfo {
   start_date: string | null;
   end_date: string | null;
   visible_to_staff_only: boolean;
+  is_public: boolean;
   created_at: string;
   /** Categories — optional, chưa implement trên custom BE */
   categories?: Array<{ id: number; name: string; slug: string }>;
@@ -162,8 +163,10 @@ export interface UserBadge {
 /** Badge definition trả về từ API — kèm image URLs */
 export interface BadgeDefinitionFromAPI {
   id: string;
-  name: string;
-  description: string;
+  name?: string | null;
+  title?: string | null;
+  description?: string | null;
+  desc?: string | null;
   image_key: string;
   card_image_url: string | null;
   icon_image_url: string | null;

@@ -18,6 +18,7 @@ import {
 } from "@/lib/problemMedia";
 import { storageUrl } from "@/utils/storageUrl";
 import { LessonImageCarousel } from "./LessonImageCarousel";
+import { LessonUploadedVideo } from "./LessonUploadedVideo";
 
 interface CrosswordWord {
   id: number;
@@ -507,14 +508,7 @@ function CrosswordMediaBlock({ media, onImageClick }: { media?: ProblemMedia | n
     <div className="-mx-6 md:-mx-10 -mt-6 md:-mt-10 mb-8 overflow-hidden rounded-t-[1.35rem] bg-muted/10 border-b-2 border-primary/10 flex flex-col gap-1">
       {/* Uploaded video (takes priority over YouTube) */}
       {normalized.video_storage_path && (
-        <div className="relative overflow-hidden w-full aspect-video">
-          <video
-            src={storageUrl(normalized.video_storage_path)}
-            controls
-            className="h-full w-full object-contain"
-            preload="metadata"
-          />
-        </div>
+        <LessonUploadedVideo storagePath={normalized.video_storage_path} className="relative overflow-hidden w-full aspect-video" />
       )}
 
       {/* YouTube embed (only if no uploaded video) */}

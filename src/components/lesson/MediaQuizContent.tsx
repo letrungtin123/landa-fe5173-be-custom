@@ -14,6 +14,7 @@ import {
   type MediaQuizData,
   type MediaQuizQuestion,
 } from "@/lib/mediaQuiz";
+import { LessonUploadedVideo } from "./LessonUploadedVideo";
 
 interface MediaQuizContentProps {
   usageKey: string;
@@ -61,9 +62,7 @@ function renderQuestionMedia(question: MediaQuizQuestion, onImageClick?: (src: s
   const mediaUrl = resolveMediaQuizMediaUrl(question.media.storage_path);
   if (question.media.type === "video") {
     return (
-      <div className="overflow-hidden rounded-2xl bg-[#0d1117] aspect-video shadow-lg">
-        <video src={mediaUrl} controls className="h-full w-full object-contain" preload="metadata" />
-      </div>
+      <LessonUploadedVideo src={mediaUrl} className="overflow-hidden rounded-2xl bg-[#0d1117] aspect-video shadow-lg" />
     );
   }
 

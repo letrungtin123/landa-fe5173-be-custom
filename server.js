@@ -11,6 +11,7 @@ import { readFileSync, existsSync, statSync, createReadStream } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Readable } from "node:stream";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const DIST_DIR = join(__dirname, "dist");
@@ -115,6 +116,15 @@ function shouldProxy(pathname) {
   return PROXY_PATHS.some((prefix) => pathname.startsWith(prefix));
 }
 
+function pipeProxyResponse(webBody, res) {
+  const readable = Readable.fromWeb(webBody);
+  readable.on("error", (err) => {
+    console.error("[proxy] Response stream error:", err.message);
+    if (!res.destroyed) res.destroy(err);
+  });
+  readable.pipe(res);
+}
+
 function frameAwareHeaders(pathname, headers) {
   if (pathname !== "/demo-embed") return headers;
   const next = { ...headers };
@@ -152,14 +162,17 @@ async function proxyToBackend(req, res) {
     // Forward status and headers
     const resHeaders = { ...SECURITY_HEADERS };
     proxyRes.headers.forEach((value, key) => {
-      // Skip transfer-encoding since we send complete body
+      // Node will set transfer-encoding for streamed responses when needed
       if (key.toLowerCase() === "transfer-encoding") return;
       resHeaders[key] = value;
     });
 
     res.writeHead(proxyRes.status, resHeaders);
-    const resBody = Buffer.from(await proxyRes.arrayBuffer());
-    res.end(resBody);
+    if (req.method === "HEAD" || !proxyRes.body) {
+      res.end();
+      return;
+    }
+    pipeProxyResponse(proxyRes.body, res);
   } catch (err) {
     console.error(`[proxy] Error proxying ${req.method} ${req.url}:`, err.message);
     res.writeHead(502, { "Content-Type": "application/json" });

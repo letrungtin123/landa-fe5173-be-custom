@@ -20,6 +20,7 @@ import { refetchProgressWithRetry } from "@/lib/progressRefetch";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
 import { LessonImageCarousel } from "./LessonImageCarousel";
+import { LessonUploadedVideo } from "./LessonUploadedVideo";
 import {
   hasProblemMedia,
   normalizeProblemMedia,
@@ -139,14 +140,7 @@ function ProblemMediaBlock({
     <div className="mb-8 space-y-5">
       {/* Uploaded video (takes priority over YouTube) */}
       {normalized.video_storage_path && (
-        <div className="relative overflow-hidden rounded-2xl bg-[#0d1117] aspect-video shadow-lg">
-          <video
-            src={storageUrl(normalized.video_storage_path)}
-            controls
-            className="h-full w-full object-contain"
-            preload="metadata"
-          />
-        </div>
+        <LessonUploadedVideo storagePath={normalized.video_storage_path} />
       )}
 
       {/* YouTube embed (only if no uploaded video) */}

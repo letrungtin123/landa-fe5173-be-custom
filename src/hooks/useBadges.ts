@@ -38,6 +38,22 @@ export interface UseBadgesResult {
   /** Map badge_id → { cardUrl, iconUrl } — dynamic images from API */
   badgeImageMap: BadgeImageMap;
   badgeProgressMap: BadgeProgressMap;
+  badgeDefinitions: BadgeDefinition[];
+}
+function cleanBadgeDisplayText(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const text = value.trim();
+  return text ? text : null;
+}
+
+function mergeBadgeDefinition(defaultBadge: BadgeDefinition, apiBadge?: BadgeDefinitionFromAPI): BadgeDefinition {
+  if (!apiBadge) return defaultBadge;
+
+  return {
+    ...defaultBadge,
+    name: cleanBadgeDisplayText(apiBadge.title) || cleanBadgeDisplayText(apiBadge.name) || defaultBadge.name,
+    description: cleanBadgeDisplayText(apiBadge.desc) || cleanBadgeDisplayText(apiBadge.description) || defaultBadge.description,
+  };
 }
 
 /**
@@ -91,6 +107,23 @@ export function useBadges(): UseBadgesResult {
     if (!activeBadgeDefs) return undefined;
     return activeBadgeDefs.map((b: BadgeDefinitionFromAPI) => b.id);
   }, [activeBadgeDefs]);
+
+  const activeBadgeById = useMemo(() => {
+    const map = new Map<string, BadgeDefinitionFromAPI>();
+    if (!activeBadgeDefs) return map;
+    for (const badge of activeBadgeDefs) {
+      map.set(badge.id, badge);
+    }
+    return map;
+  }, [activeBadgeDefs]);
+
+  const badgeDefinitions = useMemo(() => {
+    return BADGE_DEFINITIONS.map((badge) => mergeBadgeDefinition(badge, activeBadgeById.get(badge.id)));
+  }, [activeBadgeById]);
+
+  const badgeDefinitionMap = useMemo(() => {
+    return new Map(badgeDefinitions.map((badge) => [badge.id, badge]));
+  }, [badgeDefinitions]);
 
   // Build badge image map — memoized, chỉ tính lại khi activeBadgeDefs thay đổi
   const badgeImageMap = useMemo<BadgeImageMap>(() => {
@@ -170,22 +203,27 @@ export function useBadges(): UseBadgesResult {
   // Evaluate badges
   const earnedBadges = useMemo(() => {
     if (!enrollments || !isBeBadgesLoaded || !isActiveBadgesLoaded) return []; // Phải đợi BE load xong để localStorage có date đúng, tránh ghi đè
-    return evaluateBadges({
+    const evaluated = evaluateBadges({
       enrollments,
       certificates: certificates || [],
       courseCompletions,
       courseGrades,
       profile,
     }, username, activeBadgeIds, { transient: isDemoIframe });
+
+    return evaluated.map((earned) => ({
+      ...earned,
+      badge: badgeDefinitionMap.get(earned.badge.id) || earned.badge,
+    }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enrollments, certificates, courseCompletions, courseGrades, profile, profileUpdateTrigger, username, isBeBadgesLoaded, isActiveBadgesLoaded, activeBadgeIds, isDemoIframe]);
+  }, [enrollments, certificates, courseCompletions, courseGrades, profile, profileUpdateTrigger, username, isBeBadgesLoaded, isActiveBadgesLoaded, activeBadgeIds, isDemoIframe, badgeDefinitionMap]);
 
   const unearnedBadges = useMemo(() => {
     if (!activeBadgeIds) return [];
     const earnedIds = new Set(earnedBadges.map((b) => b.badge.id));
     const activeSet = new Set(activeBadgeIds);
-    return BADGE_DEFINITIONS.filter((b) => !earnedIds.has(b.id) && activeSet.has(b.id));
-  }, [earnedBadges, activeBadgeIds]);
+    return badgeDefinitions.filter((b) => !earnedIds.has(b.id) && activeSet.has(b.id));
+  }, [earnedBadges, activeBadgeIds, badgeDefinitions]);
 
   const badgeProgressMap = useMemo(() => {
     if (!enrollments) return {};
@@ -324,5 +362,6 @@ export function useBadges(): UseBadgesResult {
     activeBadgeIds,
     badgeImageMap,
     badgeProgressMap,
+    badgeDefinitions,
   };
 }

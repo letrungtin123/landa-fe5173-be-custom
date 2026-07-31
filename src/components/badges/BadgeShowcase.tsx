@@ -14,12 +14,11 @@ import { Trophy, ChevronRight, X } from "lucide-react";
 import { useBadges } from "@/hooks/useBadges";
 import { BadgeCard } from "./BadgeCard";
 import { BadgeIcon } from "./BadgeIcon";
-import { BADGE_DEFINITIONS } from "@/data/badgeConfig";
 import { BADGE_CARD_IMAGES, BADGE_MOBILE_CARD_IMAGES } from "@/data/badgeImages";
 import type { EarnedBadge } from "@/lib/badgeEvaluator";
 
 export function BadgeShowcase() {
-  const { earnedBadges, totalBadges, earnedCount, isLoading, badgeImageMap } = useBadges();
+  const { earnedBadges, totalBadges, earnedCount, isLoading, badgeImageMap, activeBadgeIds, badgeDefinitions } = useBadges();
   const [selectedBadge, setSelectedBadge] = useState<EarnedBadge | null>(null);
 
   if (isLoading) {
@@ -44,8 +43,9 @@ export function BadgeShowcase() {
     .slice(0, 3);
 
   // Next badge chưa earned (badge đầu tiên chưa có)
-  const nextBadge = BADGE_DEFINITIONS.find(
-    b => !earnedBadges.some(eb => eb.badge.id === b.id)
+  const activeBadgeIdSet = activeBadgeIds ? new Set(activeBadgeIds) : null;
+  const nextBadge = badgeDefinitions.find(
+    b => (!activeBadgeIdSet || activeBadgeIdSet.has(b.id)) && !earnedBadges.some(eb => eb.badge.id === b.id)
   );
 
   const selectedImgSrc = selectedBadge

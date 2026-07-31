@@ -4,7 +4,15 @@
 // Tự động đánh dấu hoàn thành khi xem ≥90%
 // ============================================================
 
-import { useRef, useState, useCallback, useEffect } from "react";
+import {
+  useRef,
+  useState,
+  useCallback,
+  useEffect,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import {
   Play,
   Pause,
@@ -49,12 +57,14 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSeeking, setIsSeeking] = useState(false);
   const hasMarkedComplete = useRef(false);
 
   const { courseId } = useParams();
@@ -91,8 +101,9 @@ export function VideoPlayer({
 
   // Format thời gian mm:ss
   const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
+    const safeSeconds = Number.isFinite(s) && s > 0 ? s : 0;
+    const m = Math.floor(safeSeconds / 60);
+    const sec = Math.floor(safeSeconds % 60);
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
@@ -128,12 +139,70 @@ export function VideoPlayer({
     }
   };
 
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+  const seekToTime = useCallback((nextTime: number) => {
     const v = videoRef.current;
-    if (!v || !duration) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = (e.clientX - rect.left) / rect.width;
-    v.currentTime = ratio * duration;
+    if (!v || !Number.isFinite(duration) || duration <= 0) return;
+    const clampedTime = Math.min(duration, Math.max(0, nextTime));
+    v.currentTime = clampedTime;
+    setCurrentTime(clampedTime);
+  }, [duration]);
+
+  const seekToClientX = useCallback((clientX: number) => {
+    const track = progressRef.current;
+    if (!track || !Number.isFinite(duration) || duration <= 0) return;
+    const rect = track.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    seekToTime(ratio * duration);
+  }, [duration, seekToTime]);
+
+  const handleSeekPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || !Number.isFinite(duration) || duration <= 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setIsSeeking(true);
+    seekToClientX(e.clientX);
+  };
+
+  const handleSeekPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!isSeeking) return;
+    e.preventDefault();
+    seekToClientX(e.clientX);
+  };
+
+  const endSeek = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!isSeeking) return;
+    e.preventDefault();
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    seekToClientX(e.clientX);
+    setIsSeeking(false);
+  };
+
+  const handleSeekKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (!Number.isFinite(duration) || duration <= 0) return;
+
+    const baseTime = videoRef.current?.currentTime ?? currentTime;
+    let nextTime: number | null = null;
+
+    if (e.key === "ArrowLeft") nextTime = baseTime - 5;
+    if (e.key === "ArrowRight") nextTime = baseTime + 5;
+    if (e.key === "Home") nextTime = 0;
+    if (e.key === "End") nextTime = duration;
+
+    if (nextTime === null) return;
+    e.preventDefault();
+    seekToTime(nextTime);
+  };
+
+  const handleSurfaceClick = () => {
+    togglePlay();
+  };
+
+  const handleOverlayPlayClick = (e: ReactMouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    togglePlay();
   };
 
   // ── Không có video URL → placeholder ──
@@ -198,19 +267,21 @@ export function VideoPlayer({
   }
 
   // ── Video trực tiếp (MP4/WebM/HLS) → dùng <video> ──
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const canSeek = Number.isFinite(duration) && duration > 0;
+  const progress = canSeek ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;
 
   return (
     <div
       ref={containerRef}
       className="relative overflow-hidden rounded-2xl bg-[#0d1117] aspect-video shadow-lg group"
+      onClick={handleSurfaceClick}
     >
       <video
         ref={videoRef}
         src={videoUrl}
         className={cn("h-full w-full object-contain", isLoading ? "invisible" : "")}
         onLoadedMetadata={(e) => {
-          setDuration(e.currentTarget.duration);
+          setDuration(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0);
           setIsLoading(false);
         }}
         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
@@ -219,6 +290,7 @@ export function VideoPlayer({
         onWaiting={() => setIsLoading(true)}
         onCanPlay={() => setIsLoading(false)}
         onEnded={() => setIsPlaying(false)}
+        preload="metadata"
         playsInline
       />
 
@@ -230,8 +302,10 @@ export function VideoPlayer({
       {/* Nút play giữa màn hình */}
       {!isPlaying && !isLoading && (
         <button
-          onClick={togglePlay}
+          type="button"
+          onClick={handleOverlayPlayClick}
           className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 transition-opacity"
+          aria-label="Play video"
         >
           <div
             className={cn(
@@ -248,30 +322,70 @@ export function VideoPlayer({
       )}
 
       {/* Thanh điều khiển */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={cn(
+          "absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 transition-opacity",
+          !isPlaying || isSeeking
+            ? "opacity-100"
+            : "opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100"
+        )}
+      >
         <div
-          className="mb-3 h-1.5 w-full cursor-pointer rounded-full bg-white/20 overflow-hidden"
-          onClick={handleSeek}
+          ref={progressRef}
+          role="slider"
+          tabIndex={0}
+          aria-label="Video progress"
+          aria-valuemin={0}
+          aria-valuemax={Math.floor(duration || 0)}
+          aria-valuenow={Math.floor(currentTime || 0)}
+          aria-valuetext={`${formatTime(currentTime)} / ${formatTime(duration)}`}
+          className={cn(
+            "relative mb-3 h-5 w-full touch-none rounded-full outline-none",
+            canSeek ? "cursor-pointer" : "cursor-not-allowed opacity-60"
+          )}
+          onPointerDown={handleSeekPointerDown}
+          onPointerMove={handleSeekPointerMove}
+          onPointerUp={endSeek}
+          onPointerCancel={endSeek}
+          onKeyDown={handleSeekKeyDown}
         >
           <div
-            className="h-full rounded-full bg-primary transition-[width] duration-100"
+            className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-white/20"
+            aria-hidden="true"
+          />
+          <div
+            className={cn(
+              "absolute left-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-primary",
+              isSeeking ? "" : "transition-[width] duration-100"
+            )}
             style={{ width: `${progress}%` }}
+            aria-hidden="true"
+          />
+          <div
+            className={cn(
+              "absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-primary shadow-lg shadow-black/30 transition-transform",
+              canSeek ? "scale-100" : "scale-0",
+              isSeeking ? "scale-125" : "group-hover:scale-125"
+            )}
+            style={{ left: `${progress}%` }}
+            aria-hidden="true"
           />
         </div>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={togglePlay} className="text-white hover:text-white/80 transition-colors">
+            <button type="button" onClick={togglePlay} className="text-white hover:text-white/80 transition-colors" aria-label={isPlaying ? "Pause video" : "Play video"}>
               {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
             </button>
-            <button onClick={toggleMute} className="text-white hover:text-white/80 transition-colors">
+            <button type="button" onClick={toggleMute} className="text-white hover:text-white/80 transition-colors" aria-label={isMuted ? "Unmute video" : "Mute video"}>
               {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
             </button>
             <span className="text-xs text-white/70">
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
           </div>
-          <button onClick={toggleFullscreen} className="text-white hover:text-white/80 transition-colors">
+          <button type="button" onClick={toggleFullscreen} className="text-white hover:text-white/80 transition-colors" aria-label="Fullscreen">
             <Maximize className="h-5 w-5" />
           </button>
         </div>

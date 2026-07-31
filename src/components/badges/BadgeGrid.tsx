@@ -22,6 +22,7 @@ interface BadgeGridProps {
   /** Dynamic badge image map from API */
   badgeImageMap?: BadgeImageMap;
   badgeProgressMap?: BadgeProgressMap;
+  badgeDefinitions?: BadgeDefinition[];
 }
 
 type FilterType = "all" | "earned" | "locked" | BadgeCategory;
@@ -35,7 +36,7 @@ const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: "innovation", label: CATEGORY_LABELS.innovation },
 ];
 
-export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageMap, badgeProgressMap }: BadgeGridProps) {
+export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageMap, badgeProgressMap, badgeDefinitions }: BadgeGridProps) {
   const [filter, setFilter] = useState<FilterType>("all");
   const [selectedBadge, setSelectedBadge] = useState<{ badge: BadgeDefinition; earned: EarnedBadge } | null>(null);
 
@@ -50,8 +51,9 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageM
   const activeBadgesDef = useMemo(() => {
     if (!activeBadgeIds) return [];
     const activeSet = new Set(activeBadgeIds);
-    return BADGE_DEFINITIONS.filter(b => activeSet.has(b.id));
-  }, [activeBadgeIds]);
+    const sourceBadges = badgeDefinitions || BADGE_DEFINITIONS;
+    return sourceBadges.filter(b => activeSet.has(b.id));
+  }, [activeBadgeIds, badgeDefinitions]);
 
   const filteredBadges = useMemo(() => {
     let badges = [...activeBadgesDef];

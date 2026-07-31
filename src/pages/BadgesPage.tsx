@@ -20,6 +20,7 @@ export function BadgesPage() {
     activeBadgeIds,
     badgeImageMap,
     badgeProgressMap,
+    badgeDefinitions,
   } = useBadges();
 
   const progressPercent = totalBadges ? Math.round((earnedCount / totalBadges) * 100) : 0;
@@ -141,6 +142,7 @@ export function BadgesPage() {
             activeBadgeIds={activeBadgeIds}
             badgeImageMap={badgeImageMap}
             badgeProgressMap={badgeProgressMap}
+            badgeDefinitions={badgeDefinitions}
           />
         </motion.div>
       </motion.div>
