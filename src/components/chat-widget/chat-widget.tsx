@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageCircle, X, Plus, ArrowLeft, Send, Trash2,
   Loader2, Bot, Sparkles, Clock, Maximize2, Minimize2, AlertTriangle,
+  Mic, MicOff, Volume2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -51,6 +52,31 @@ type WidgetState = 'loading' | 'no-bot' | 'persona-picker' | 'conversations' | '
 type DemoCompanionPhase = 'idle' | 'waiting' | 'focus';
 type DemoQuizAssistPhase = 'idle' | 'typing' | 'thinking' | 'streaming' | 'done';
 type DemoSurveyAnswerKey = 'A' | 'B' | 'C' | 'D';
+type VoiceCaptureState = 'idle' | 'requesting' | 'listening';
+type SendSource = 'text' | 'voice';
+type BrowserSpeechRecognitionResult = { isFinal: boolean; 0?: { transcript?: string } };
+type BrowserSpeechRecognitionEvent = Event & {
+  resultIndex: number;
+  results: { length: number; [index: number]: BrowserSpeechRecognitionResult };
+};
+type BrowserSpeechRecognitionErrorEvent = Event & { error?: string; message?: string };
+type BrowserSpeechRecognition = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((event: BrowserSpeechRecognitionEvent) => void) | null;
+  onerror: ((event: BrowserSpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort?: () => void;
+};
+type BrowserSpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
+type SpeechWindow = Window & {
+  SpeechRecognition?: BrowserSpeechRecognitionConstructor;
+  webkitSpeechRecognition?: BrowserSpeechRecognitionConstructor;
+};
 const DEMO_IFRAME_FLOW_LOCK_COMPANION = 'companion-widget';
 const DEMO_IFRAME_FLOW_LOCK_QUIZ_ASSIST = 'quiz-assist-widget';
 const DEMO_QUIZ_ASSIST_TYPE_CHAR_MS = 30;
@@ -58,6 +84,56 @@ const DEMO_QUIZ_ASSIST_TYPE_PUNCTUATION_MS = 120;
 const DEMO_QUIZ_ASSIST_STREAM_CHUNK_MS = 44;
 const DEMO_QUIZ_ASSIST_STREAM_PUNCTUATION_MS = 150;
 const DEMO_QUIZ_ASSIST_THINKING_MS = 2000;
+const VOICE_LANG = 'vi-VN';
+const VOICE_MAX_LISTEN_MS = 15_000;
+const VOICE_SPEAK_MIN_CHARS = 80;
+const VOICE_SPEAK_MAX_CHARS = 180;
+
+function getSpeechRecognitionCtor(): BrowserSpeechRecognitionConstructor | null {
+  if (typeof window === 'undefined') return null;
+  const speechWindow = window as SpeechWindow;
+  return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
+}
+
+function canSpeakBotText(): boolean {
+  return typeof window !== 'undefined'
+    && 'speechSynthesis' in window
+    && typeof SpeechSynthesisUtterance !== 'undefined';
+}
+
+function isVietnameseSpeechVoice(voice: SpeechSynthesisVoice): boolean {
+  const lang = voice.lang.toLowerCase().replace('_', '-');
+  const name = voice.name.toLowerCase();
+  return lang === VOICE_LANG.toLowerCase()
+    || lang.startsWith('vi')
+    || name.includes('vietnam')
+    || name.includes('viet')
+    || name.includes('tiếng việt')
+    || name.includes('tieng viet');
+}
+
+function getVietnameseSpeechVoice(): SpeechSynthesisVoice | null {
+  if (!canSpeakBotText()) return null;
+  const voices = window.speechSynthesis.getVoices();
+  const exactVoice = voices.find(voice => voice.lang.toLowerCase().replace('_', '-') === VOICE_LANG.toLowerCase());
+  return exactVoice ?? voices.find(isVietnameseSpeechVoice) ?? null;
+}
+
+function getVoiceErrorMessage(error?: string): string {
+  if (error === 'not-allowed' || error === 'service-not-allowed') return 'Trình duyệt chưa được cấp quyền micro.';
+  if (error === 'no-speech') return 'Không nghe rõ câu nói. Vui lòng thử lại.';
+  if (error === 'audio-capture') return 'Không tìm thấy micro khả dụng.';
+  if (error === 'network') return 'Nhận diện giọng nói đang bị gián đoạn.';
+  return 'Trình duyệt này chưa hỗ trợ nhận diện giọng nói.';
+}
+
+function findSpeechBoundary(value: string): number {
+  let lastIndex = -1;
+  for (let index = 0; index < value.length; index += 1) {
+    if ('.!?;:\n'.includes(value[index])) lastIndex = index;
+  }
+  return lastIndex;
+}
 
 function getDemoQuizAssistStepDelay(chars: string[], nextIndex: number, baseDelayMs: number, punctuationDelayMs: number) {
   const previousChar = chars[Math.max(0, nextIndex - 1)];
@@ -142,7 +218,18 @@ export default function ChatWidget() {
   const [demoCompanionPhase, setDemoCompanionPhase] = useState<DemoCompanionPhase>('idle');
   const [demoQuizAssistPhase, setDemoQuizAssistPhase] = useState<DemoQuizAssistPhase>('idle');
   const [selectedDemoCompanionPersona, setSelectedDemoCompanionPersona] = useState<BotPersona | null>(null);
+  const [voiceCaptureState, setVoiceCaptureState] = useState<VoiceCaptureState>('idle');
+  const [botSpeaking, setBotSpeaking] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
+  const voiceTranscriptRef = useRef('');
+  const voicePreviewRef = useRef('');
+  const voiceDiscardRef = useRef(false);
+  const voiceErrorRef = useRef(false);
+  const voiceListenTimerRef = useRef<number | null>(null);
+  const vietnameseVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+  const speakThisTurnRef = useRef(false);
+  const speechBufferRef = useRef('');
   const demoCompanionTimerRef = useRef<number | null>(null);
   const demoCompanionCloseTimerRef = useRef<number | null>(null);
   const demoQuizAssistTimersRef = useRef<number[]>([]);
@@ -169,6 +256,122 @@ export default function ChatWidget() {
     });
   }, []);
 
+  const clearVoiceListenTimer = useCallback(() => {
+    if (voiceListenTimerRef.current) {
+      window.clearTimeout(voiceListenTimerRef.current);
+      voiceListenTimerRef.current = null;
+    }
+  }, []);
+
+  const cancelBotSpeech = useCallback(() => {
+    speakThisTurnRef.current = false;
+    speechBufferRef.current = '';
+    if (canSpeakBotText()) window.speechSynthesis.cancel();
+    setBotSpeaking(false);
+  }, []);
+
+  const stopVoiceCapture = useCallback((discard = false) => {
+    if (discard) voiceDiscardRef.current = true;
+    clearVoiceListenTimer();
+    const recognition = recognitionRef.current;
+    if (recognition) {
+      try {
+        if (discard && recognition.abort) recognition.abort();
+        else recognition.stop();
+      } catch {
+        // Browser may throw if recognition has already stopped.
+      }
+    }
+    setVoiceCaptureState('idle');
+  }, [clearVoiceListenTimer]);
+
+  const resolveVietnameseSpeechVoice = useCallback(() => {
+    const voice = vietnameseVoiceRef.current ?? getVietnameseSpeechVoice();
+    if (voice) vietnameseVoiceRef.current = voice;
+    return voice;
+  }, []);
+
+  const speakBotText = useCallback((text: string) => {
+    const cleaned = text.replace(/\s+/g, ' ').trim();
+    if (!cleaned || !canSpeakBotText()) return false;
+
+    const voice = resolveVietnameseSpeechVoice();
+    if (!voice) return false;
+
+    const utterance = new SpeechSynthesisUtterance(cleaned);
+    utterance.voice = voice;
+    utterance.lang = voice.lang || VOICE_LANG;
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.onstart = () => setBotSpeaking(true);
+    const markDone = () => {
+      window.setTimeout(() => {
+        if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) setBotSpeaking(false);
+      }, 0);
+    };
+    utterance.onend = markDone;
+    utterance.onerror = markDone;
+    window.speechSynthesis.speak(utterance);
+    return true;
+  }, [resolveVietnameseSpeechVoice]);
+
+  useEffect(() => {
+    if (!canSpeakBotText()) return;
+    const synth = window.speechSynthesis;
+    const handleVoicesChanged = () => {
+      if (!resolveVietnameseSpeechVoice()) return;
+      const pendingText = speechBufferRef.current;
+      if (!pendingText.trim()) return;
+      speechBufferRef.current = '';
+      speakBotText(pendingText);
+    };
+
+    handleVoicesChanged();
+    synth.addEventListener?.('voiceschanged', handleVoicesChanged);
+    return () => synth.removeEventListener?.('voiceschanged', handleVoicesChanged);
+  }, [resolveVietnameseSpeechVoice, speakBotText]);
+
+  const flushSpeechBuffer = useCallback((force = false) => {
+    if (!speakThisTurnRef.current || !canSpeakBotText()) return;
+    if (!resolveVietnameseSpeechVoice()) return;
+    const buffer = speechBufferRef.current;
+    if (!buffer.trim()) return;
+
+    if (force) {
+      if (speakBotText(buffer)) speechBufferRef.current = '';
+      return;
+    }
+
+    const boundary = findSpeechBoundary(buffer);
+    if (boundary >= VOICE_SPEAK_MIN_CHARS) {
+      if (speakBotText(buffer.slice(0, boundary + 1))) {
+        speechBufferRef.current = buffer.slice(boundary + 1);
+      }
+      return;
+    }
+
+    if (buffer.length >= VOICE_SPEAK_MAX_CHARS) {
+      if (speakBotText(buffer)) speechBufferRef.current = '';
+    }
+  }, [resolveVietnameseSpeechVoice, speakBotText]);
+
+  const queueSpeechChunk = useCallback((text: string) => {
+    if (!speakThisTurnRef.current || !text) return;
+    speechBufferRef.current += text;
+    flushSpeechBuffer(false);
+  }, [flushSpeechBuffer]);
+
+  useEffect(() => () => {
+    stopVoiceCapture(true);
+    cancelBotSpeech();
+  }, [cancelBotSpeech, stopVoiceCapture]);
+
+  useEffect(() => {
+    if (!open) {
+      stopVoiceCapture(true);
+      cancelBotSpeech();
+    }
+  }, [cancelBotSpeech, open, stopVoiceCapture]);
   // ── FAB drag ref ──
   const fabRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef({ sx: 0, sy: 0, sl: 0, st: 0, active: false, moved: false });
@@ -751,10 +954,15 @@ export default function ChatWidget() {
   };
 
   // ── Send message ──
-  const handleSend = () => {
+  const sendUserMessage = useCallback((rawContent: string, source: SendSource = 'text') => {
     if (isDemoIframe) return;
-    if (!currentConv || !inputValue.trim() || streaming) return;
-    const content = inputValue.trim();
+    if (!currentConv || !rawContent.trim() || streaming) return;
+    const content = rawContent.trim();
+
+    stopVoiceCapture(true);
+    cancelBotSpeech();
+    speakThisTurnRef.current = source === 'voice' && canSpeakBotText();
+    speechBufferRef.current = '';
     setInputValue('');
 
     const userMsg: ChatMessage = {
@@ -762,7 +970,7 @@ export default function ChatWidget() {
       conversation_id: currentConv.id,
       role: 'user',
       content,
-      metadata: {},
+      metadata: source === 'voice' ? { input_mode: 'voice' } : {},
       created_at: new Date().toISOString(),
     };
     setMessages(prev => [...prev, userMsg]);
@@ -777,11 +985,14 @@ export default function ChatWidget() {
       courseId,
       (text) => {
         streamAccRef.current += text;
+        queueSpeechChunk(text);
         setStreamText(streamAccRef.current);
         setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 10);
       },
       () => {
         const full = streamAccRef.current;
+        flushSpeechBuffer(true);
+        speakThisTurnRef.current = false;
         if (full) {
           const assistantMsg: ChatMessage = {
             id: 'resp-' + Date.now(),
@@ -798,19 +1009,119 @@ export default function ChatWidget() {
         setStreaming(false);
       },
       (message) => {
+        cancelBotSpeech();
         showToast(message);
         setStreaming(false);
         setStreamText('');
         streamAccRef.current = '';
       },
     );
+  }, [cancelBotSpeech, courseId, currentConv, flushSpeechBuffer, isDemoIframe, queueSpeechChunk, stopVoiceCapture, streaming]);
+
+  const handleSend = () => {
+    sendUserMessage(inputValue, 'text');
   };
+
+  const handleVoiceToggle = useCallback(async () => {
+    if (voiceCaptureState === 'listening') {
+      stopVoiceCapture(false);
+      return;
+    }
+    if (voiceCaptureState === 'requesting' || streaming) return;
+    if (isDemoIframe) return;
+    if (!currentConv) {
+      showToast('Vui lòng tạo hội thoại trước khi dùng micro.');
+      return;
+    }
+
+    const SpeechRecognition = getSpeechRecognitionCtor();
+    if (!SpeechRecognition) {
+      showToast('Trình duyệt này chưa hỗ trợ nhận diện giọng nói.');
+      return;
+    }
+
+    setVoiceCaptureState('requesting');
+    try {
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+      }
+    } catch {
+      setVoiceCaptureState('idle');
+      showToast('Trình duyệt chưa được cấp quyền micro.');
+      return;
+    }
+
+    cancelBotSpeech();
+    voiceTranscriptRef.current = '';
+    voicePreviewRef.current = '';
+    voiceDiscardRef.current = false;
+    voiceErrorRef.current = false;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = VOICE_LANG;
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (event) => {
+      let finalText = '';
+      let interimText = '';
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const result = event.results[index];
+        const transcript = result?.[0]?.transcript?.trim() ?? '';
+        if (!transcript) continue;
+        if (result.isFinal) finalText = `${finalText} ${transcript}`.trim();
+        else interimText = `${interimText} ${transcript}`.trim();
+      }
+      if (finalText) voiceTranscriptRef.current = `${voiceTranscriptRef.current} ${finalText}`.trim();
+      const preview = `${voiceTranscriptRef.current} ${interimText}`.trim();
+      voicePreviewRef.current = preview;
+      if (preview) setInputValue(preview);
+    };
+    recognition.onerror = (event) => {
+      voiceErrorRef.current = true;
+      clearVoiceListenTimer();
+      setVoiceCaptureState('idle');
+      showToast(getVoiceErrorMessage(event.error));
+    };
+    recognition.onend = () => {
+      clearVoiceListenTimer();
+      setVoiceCaptureState('idle');
+      recognitionRef.current = null;
+      if (voiceDiscardRef.current) {
+        voiceDiscardRef.current = false;
+        return;
+      }
+      const transcript = (voiceTranscriptRef.current || voicePreviewRef.current).trim();
+      if (!transcript) {
+        if (!voiceErrorRef.current) showToast('Không nghe rõ câu nói. Vui lòng thử lại.');
+        return;
+      }
+      setInputValue(transcript);
+      window.setTimeout(() => sendUserMessage(transcript, 'voice'), 0);
+    };
+
+    try {
+      recognitionRef.current = recognition;
+      recognition.start();
+      setVoiceCaptureState('listening');
+      voiceListenTimerRef.current = window.setTimeout(() => {
+        try { recognition.stop(); } catch {}
+      }, VOICE_MAX_LISTEN_MS);
+    } catch {
+      recognitionRef.current = null;
+      setVoiceCaptureState('idle');
+      showToast('Không thể bật micro trên trình duyệt này.');
+    }
+  }, [cancelBotSpeech, clearVoiceListenTimer, currentConv, isDemoIframe, sendUserMessage, stopVoiceCapture, streaming, voiceCaptureState]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
   const handleBack = () => {
+    stopVoiceCapture(true);
+    cancelBotSpeech();
     if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
     setStreaming(false);
     setStreamText('');
@@ -981,6 +1292,9 @@ export default function ChatWidget() {
                   onInputChange={setInputValue}
                   onSend={handleSend}
                   onKeyDown={handleKeyDown}
+                  voiceCaptureState={voiceCaptureState}
+                  botSpeaking={botSpeaking}
+                  onVoiceToggle={handleVoiceToggle}
                   scrollRef={scrollRef}
                   inputRef={inputRef}
                   inputReadOnly={isDemoQuizAssistActive}
@@ -1427,7 +1741,7 @@ function ConversationList({ conversations, loading, onOpen, onDelete, onNew }: {
   );
 }
 
-function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMore, onLoadMore, inputValue, onInputChange, onSend, onKeyDown, scrollRef, inputRef, inputReadOnly = false }: {
+function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMore, onLoadMore, inputValue, onInputChange, onSend, onKeyDown, voiceCaptureState, botSpeaking, onVoiceToggle, scrollRef, inputRef, inputReadOnly = false }: {
   messages: ChatMessage[];
   streamText: string;
   streaming: boolean;
@@ -1439,6 +1753,9 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
   onInputChange: (v: string) => void;
   onSend: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
+  voiceCaptureState: VoiceCaptureState;
+  botSpeaking: boolean;
+  onVoiceToggle: () => void;
   scrollRef: React.RefObject<HTMLDivElement | null>;
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
   inputReadOnly?: boolean;
@@ -1464,6 +1781,16 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
     input.style.overflowY = input.scrollHeight > maxHeight ? 'auto' : 'hidden';
     input.scrollTop = input.scrollHeight;
   }, [inputRef, inputValue]);
+
+  const isVoiceListening = voiceCaptureState === 'listening';
+  const isVoiceRequesting = voiceCaptureState === 'requesting';
+  const voiceButtonTitle = isVoiceListening
+    ? 'Dừng nghe'
+    : isVoiceRequesting
+      ? 'Đang xin quyền micro...'
+      : botSpeaking
+        ? 'Bot đang nói'
+        : 'Nói bằng micro';
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -1500,6 +1827,7 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
                 <div className="max-w-[85%] px-3.5 py-2.5 rounded-2xl rounded-bl-md bg-muted/50 text-sm whitespace-pre-wrap break-words">
                   {streamText}
                   <span className="inline-block w-1.5 h-4 bg-primary/60 ml-0.5 animate-pulse rounded-sm" />
+                  {botSpeaking && <Volume2 className="ml-1 inline-block h-3.5 w-3.5 animate-pulse text-primary" />}
                 </div>
               </div>
             )}
@@ -1520,18 +1848,31 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
 
       <div className="border-t px-3 py-2.5 bg-background/50">
         <div className="flex items-end gap-2">
-          <textarea
-            ref={inputRef}
-            value={inputValue}
-            onChange={e => onInputChange(e.target.value)}
-            onKeyDown={inputReadOnly ? undefined : onKeyDown}
-            placeholder="Nhập tin nhắn..."
-            readOnly={inputReadOnly}
-            disabled={streaming}
-            rows={1}
-            className="flex-1 resize-none rounded-xl border bg-muted/30 px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-[height,background-color,border-color,box-shadow,opacity] disabled:opacity-50"
-            style={{ minHeight: '40px', maxHeight: '128px', overflowY: 'hidden' }}
-          />
+          <div className="relative flex-1">
+            <textarea
+              ref={inputRef}
+              value={inputValue}
+              onChange={e => onInputChange(e.target.value)}
+              onKeyDown={inputReadOnly ? undefined : onKeyDown}
+              placeholder="Nhập tin nhắn..."
+              readOnly={inputReadOnly}
+              disabled={streaming}
+              rows={1}
+              className="w-full resize-none rounded-xl border bg-muted/30 px-3.5 py-2.5 pr-12 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-[height,background-color,border-color,box-shadow,opacity] disabled:opacity-50"
+              style={{ minHeight: '40px', maxHeight: '128px', overflowY: 'hidden' }}
+            />
+            <Button
+              type="button"
+              variant={isVoiceListening ? 'default' : 'ghost'}
+              size="icon"
+              className={`absolute bottom-1.5 right-1.5 h-7 w-7 rounded-lg ${isVoiceListening ? 'bg-red-500 text-white hover:bg-red-600' : botSpeaking ? 'text-primary' : 'text-muted-foreground'}`}
+              disabled={inputReadOnly || streaming || isVoiceRequesting}
+              onClick={onVoiceToggle}
+              title={voiceButtonTitle}
+            >
+              {isVoiceRequesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isVoiceListening ? <MicOff className="h-3.5 w-3.5" /> : botSpeaking ? <Volume2 className="h-3.5 w-3.5 animate-pulse" /> : <Mic className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
           <Button
             size="icon"
             className="h-10 w-10 rounded-xl shrink-0"

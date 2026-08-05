@@ -38,7 +38,6 @@ export interface LearnerAssignment {
   title: string;
   question: string;
   sort_order: number;
-  is_published: boolean;
   allow_resubmission: boolean;
   deadline_enabled: boolean;
   deadline_mode: AssignmentDeadlineMode;
