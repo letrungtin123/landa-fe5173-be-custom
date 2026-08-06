@@ -96,6 +96,41 @@ export async function fetchMessages(conversationId: string, cursor?: string): Pr
   return data.data;
 }
 
+async function readChatSpeechError(response: Response, fallback: string): Promise<string> {
+  try {
+    const payload = await response.json();
+    return payload?.message || payload?.error || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function generateChatSpeech(text: string, conversationId?: string): Promise<Blob> {
+  const content = text.trim();
+  if (!content) throw new Error('Nội dung giọng bot không được để trống');
+
+  const { accessToken, user } = useAuthStore.getState();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${accessToken}`,
+  };
+  if (user?.role === 'superadmin' && user?.tenantId) {
+    headers['X-Tenant-Id'] = user.tenantId;
+  }
+
+  const response = await fetch(`${config.apiBaseUrl}/api/ai-chatbot/chat/tts`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ text: content, ...(conversationId ? { conversation_id: conversationId } : {}) }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readChatSpeechError(response, 'Không tạo được giọng bot'));
+  }
+
+  return response.blob();
+}
+
 /**
  * Send message and stream SSE response.
  * Returns an AbortController so caller can cancel.
@@ -104,6 +139,7 @@ export function sendMessageStream(
   conversationId: string,
   content: string,
   courseId: string | undefined,
+  inputMode: 'text' | 'voice',
   onChunk: (text: string) => void,
   onDone: () => void,
   onError: (message: string) => void,
@@ -126,7 +162,7 @@ export function sendMessageStream(
       const response = await fetch(url, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ content, target: 'learner', ...(courseId ? { courseId } : {}) }),
+        body: JSON.stringify({ content, target: 'learner', input_mode: inputMode, ...(courseId ? { courseId } : {}) }),
         signal: controller.signal,
       });
 
