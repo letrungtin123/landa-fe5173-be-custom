@@ -1,5 +1,5 @@
 // ============================================================
-// PdfContent — Hiển thị tài liệu PDF nhúng từ Google Drive
+// PdfContent — Hiển thị tài liệu PDF upload hoặc nhúng từ Google Drive
 //
 // Passive block: completion được FE tự mark khi learner vào unit.
 // Layout clean với header bar + fullscreen toggle.
@@ -12,25 +12,13 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { resolvePdfEmbedUrl, resolvePdfFileUrl } from "@/utils/pdfUrl";
 
 interface PdfData {
   display_name: string;
   pdf_url: string;
 }
 
-/**
- * Chuyển Google Drive share link → embed preview link.
- * Với URL trực tiếp (asset), ẩn toolbar mặc định của trình duyệt.
- */
-function toEmbedUrl(url: string): string {
-  if (!url.trim()) return "";
-  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
-  if (driveMatch) {
-    return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
-  }
-  // Ẩn toolbar mặc định của browser PDF viewer
-  return url.trim() + "#toolbar=0&navpanes=0";
-}
 
 export function PdfContent({ usageKey }: { usageKey: string }) {
   const username = useAuthStore((s) => s.user?.username);
@@ -45,6 +33,9 @@ export function PdfContent({ usageKey }: { usageKey: string }) {
   });
 
   const svd = blockData?.student_view_data as unknown as PdfData | undefined;
+  const pdfUrl = svd?.pdf_url || "";
+  const embedUrl = resolvePdfEmbedUrl(pdfUrl);
+  const fileUrl = resolvePdfFileUrl(pdfUrl);
 
   const toggleFullscreen = useCallback(() => {
     const el = containerRef.current;
@@ -64,6 +55,10 @@ export function PdfContent({ usageKey }: { usageKey: string }) {
     document.addEventListener("fullscreenchange", handler);
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
+
+  useEffect(() => {
+    setIsLoading(true);
+  }, [embedUrl]);
 
   // ── Loading ──
   if (isQueryLoading) {
@@ -85,9 +80,8 @@ export function PdfContent({ usageKey }: { usageKey: string }) {
     );
   }
 
-  const embedUrl = toEmbedUrl(svd.pdf_url);
-
   return (
+
     <div
       ref={containerRef}
       className={cn(
@@ -110,7 +104,7 @@ export function PdfContent({ usageKey }: { usageKey: string }) {
         <div className="flex items-center gap-1 shrink-0">
           {/* Mở trong tab mới */}
           <a
-            href={svd.pdf_url}
+            href={fileUrl || pdfUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center w-8 h-8 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
