@@ -42,7 +42,7 @@ import {
 import { lockDemoIframeUserScroll } from '@/utils/demoIframeGuideLock';
 import {
   fetchActiveBot, fetchConversations, createConversation,
-  deleteConversation, fetchMessages, sendMessageStream, generateChatSpeech,
+  deleteConversation, fetchMessages, sendMessageStream,
   type ActiveBot, type ChatConversation, type ChatMessage,
 } from '@/api/chat';
 import { fetchBotPersonas, fetchDemoIframeChatbotPreview, type BotPersona } from '@/api/chatbot';
@@ -405,118 +405,9 @@ export default function ChatWidget() {
     setBotSpeechText('');
   }, [stopBotAudioSource]);
 
-  const playBotSpeech = useCallback(async (text: string, conversationId?: string) => {
-    const cleaned = text.replace(/\s+/g, ' ').trim();
-    if (!cleaned || typeof Audio === 'undefined') return;
-
+  const playBotSpeech = useCallback(async () => {
     cancelBotSpeech();
-    const requestId = botSpeechRequestIdRef.current + 1;
-    botSpeechRequestIdRef.current = requestId;
-    setBotSpeechText(cleaned);
-    setBotSpeechLoading(true);
-    setBotSpeechNeedsTap(false);
-    setBotSpeaking(false);
-
-    const finishSpeech = () => {
-      setBotSpeechLoading(false);
-      setBotSpeechNeedsTap(false);
-      setBotSpeaking(false);
-      setBotSpeechText('');
-    };
-
-    try {
-      const blob = await generateChatSpeech(cleaned, conversationId);
-      if (botSpeechRequestIdRef.current !== requestId) return;
-
-      const context = ensureBotAudioContext();
-      if (context) {
-        try {
-          if (context.state === 'suspended') await context.resume();
-          const audioBuffer = await decodeChatAudioData(context, await blob.arrayBuffer());
-          if (botSpeechRequestIdRef.current !== requestId) return;
-
-          stopBotAudioSource();
-          const source = context.createBufferSource();
-          source.buffer = audioBuffer;
-          source.connect(botAudioGainRef.current ?? context.destination);
-          botAudioSourceRef.current = source;
-          source.onended = () => {
-            if (botAudioSourceRef.current === source) {
-              source.onended = null;
-              try { source.disconnect(); } catch {}
-              botAudioSourceRef.current = null;
-            }
-            finishSpeech();
-            scheduleVoiceAutoListen(350);
-          };
-          source.start(0);
-          setBotSpeechLoading(false);
-          setBotSpeechNeedsTap(false);
-          setBotSpeaking(true);
-          return;
-        } catch {
-          stopBotAudioSource();
-        }
-      }
-
-      const url = URL.createObjectURL(blob);
-      const audio = ensureBotAudioElement();
-      if (!audio) return;
-      audio.pause();
-      audio.src = url;
-      audio.muted = false;
-      audio.volume = 1;
-      try { audio.load(); } catch {}
-      botAudioRef.current = audio;
-      botAudioUrlRef.current = url;
-
-      const cleanup = () => {
-        if (botAudioRef.current === audio) {
-          audio.onplay = null;
-          audio.onended = null;
-          audio.onerror = null;
-          audio.pause();
-          audio.removeAttribute('src');
-          try { audio.load(); } catch {}
-        }
-        if (botAudioUrlRef.current === url) {
-          URL.revokeObjectURL(url);
-          botAudioUrlRef.current = null;
-        }
-        finishSpeech();
-      };
-
-      audio.onplay = () => {
-        setBotSpeechLoading(false);
-        setBotSpeechNeedsTap(false);
-        setBotSpeaking(true);
-      };
-      audio.onended = () => {
-        cleanup();
-        scheduleVoiceAutoListen(350);
-      };
-      audio.onerror = () => {
-        cleanup();
-        showToast('Không phát được giọng bot. Vui lòng thử lại.');
-      };
-
-      try {
-        await audio.play();
-      } catch {
-        if (botAudioRef.current !== audio) return;
-        setBotSpeechLoading(false);
-        setBotSpeaking(false);
-        setBotSpeechNeedsTap(true);
-      }
-    } catch (err: any) {
-      if (botSpeechRequestIdRef.current !== requestId) return;
-      setBotSpeechLoading(false);
-      setBotSpeechNeedsTap(false);
-      setBotSpeaking(false);
-      setBotSpeechText('');
-      showToast(err?.message || 'Không tạo được giọng bot');
-    }
-  }, [cancelBotSpeech, ensureBotAudioContext, ensureBotAudioElement, scheduleVoiceAutoListen, stopBotAudioSource]);
+  }, [cancelBotSpeech]);
 
   const handleResumeBotSpeech = useCallback(async () => {
     const context = ensureBotAudioContext();
@@ -1171,13 +1062,15 @@ export default function ChatWidget() {
     if (isDemoIframe) return;
     if (!currentConv || !rawContent.trim() || streaming) return;
     const content = rawContent.trim();
-    const shouldUseVoicePlayback = source === 'voice' || voiceModeActive;
-    const inputMode = shouldUseVoicePlayback ? 'voice' : 'text';
-    if (shouldUseVoicePlayback) {
-      voiceCallActiveRef.current = true;
-      setVoiceModeActive(true);
-      setVoiceCallStartedAt(prev => prev ?? Date.now());
-      setVoiceModeTranscript(content);
+    const isVoiceTurn = source === 'voice' || voiceModeActive;
+    const inputMode = isVoiceTurn ? 'voice' : 'text';
+    if (isVoiceTurn) {
+      voiceCallActiveRef.current = false;
+      voiceCallMutedRef.current = false;
+      setVoiceModeActive(false);
+      setVoiceModeTranscript('');
+      setVoiceCallStartedAt(null);
+      setVoiceCallMuted(false);
     }
 
     stopVoiceCapture(true);
@@ -1220,7 +1113,6 @@ export default function ChatWidget() {
             created_at: new Date().toISOString(),
           };
           setMessages(msgs => [...msgs, assistantMsg]);
-          if (shouldUseVoicePlayback) void playBotSpeech(full, currentConv.id);
         }
         setStreamText('');
         streamAccRef.current = '';
@@ -1234,7 +1126,7 @@ export default function ChatWidget() {
         streamAccRef.current = '';
       },
     );
-  }, [cancelBotSpeech, courseId, currentConv, isDemoIframe, playBotSpeech, stopVoiceCapture, streaming, voiceModeActive]);
+  }, [cancelBotSpeech, courseId, currentConv, isDemoIframe, stopVoiceCapture, streaming, voiceModeActive]);
 
   const handleSend = () => {
     sendUserMessage(inputValue, 'text');
