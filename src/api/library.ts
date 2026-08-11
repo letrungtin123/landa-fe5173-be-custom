@@ -5,7 +5,7 @@
 //   GET /api/learner/library/documents?page=1&category=...&search=...
 //   GET /api/learner/library/categories
 //
-// Team-scoped: learner chỉ thấy docs từ categories assign cho team mình.
+// Team-scoped + public bucket: learner thấy docs từ category được team assign và tài liệu công khai.
 // ============================================================
 
 import { apiClient } from "@/api/client";
@@ -25,8 +25,10 @@ export interface LibraryDocument {
   title: string;
   extension: string;
   file_size: number;
+  category_id: string | null;
   category_name: string;
   category_slug: string;
+  is_public: boolean;
   download_url: string;
   uploaded_by_name: string;
   created_at: string;

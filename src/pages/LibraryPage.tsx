@@ -69,6 +69,13 @@ const EXTENSION_COLORS: Record<string, string> = {
   png: "#0d9488",
 };
 
+const PUBLIC_LIBRARY_CATEGORY_NAME = "Tài liệu công khai";
+
+function getLibraryDocumentCategoryName(doc: LibraryDocument): string {
+  if (doc.is_public && !doc.category_id) return PUBLIC_LIBRARY_CATEGORY_NAME;
+  return doc.category_name || "—";
+}
+
 // Palette 16 màu phân biệt rõ ràng, gán theo index → không trùng
 const CATEGORY_COLORS = [
   "#ea4335", // đỏ
@@ -720,9 +727,9 @@ export function LibraryPage() {
                             <td className="px-4 xl:px-6 py-4">
                               <span
                                 className="text-[13px] font-medium leading-[18px] text-muted-foreground truncate block max-w-full"
-                                title={doc.category_name}
+                                title={getLibraryDocumentCategoryName(doc)}
                               >
-                                {doc.category_name || "—"}
+                                {getLibraryDocumentCategoryName(doc)}
                               </span>
                             </td>
                             <td className="hidden md:table-cell px-4 xl:px-6 py-4">
