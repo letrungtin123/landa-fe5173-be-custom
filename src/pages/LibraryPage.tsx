@@ -69,10 +69,7 @@ const EXTENSION_COLORS: Record<string, string> = {
   png: "#0d9488",
 };
 
-const PUBLIC_LIBRARY_CATEGORY_NAME = "Tài liệu công khai";
-
 function getLibraryDocumentCategoryName(doc: LibraryDocument): string {
-  if (doc.is_public && !doc.category_id) return PUBLIC_LIBRARY_CATEGORY_NAME;
   return doc.category_name || "—";
 }
 

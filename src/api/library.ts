@@ -5,7 +5,7 @@
 //   GET /api/learner/library/documents?page=1&category=...&search=...
 //   GET /api/learner/library/categories
 //
-// Team-scoped + public bucket: learner thấy docs từ category được team assign và tài liệu công khai.
+// Learner thấy tài liệu từ danh mục được team phân hoặc danh mục công khai.
 // ============================================================
 
 import { apiClient } from "@/api/client";
