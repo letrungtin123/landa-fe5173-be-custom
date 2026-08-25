@@ -4,7 +4,6 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { bootstrapDemoIframeApi } from "@/api/auth";
 import { resetDemoCourseModalStates } from "@/api/modalState";
 import { resetDemoSectionModalStates } from "@/api/sectionModalConfig";
-import { resetTransientBadgeStorage } from "@/lib/badgeEvaluator";
 import { resetDemoIframeLearning } from "@/stores/demoIframeLearningStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 
@@ -62,7 +61,6 @@ export function DemoIframeEmbedPage() {
         resetDemoIframeLearning();
         resetDemoCourseModalStates();
         resetDemoSectionModalStates();
-        resetTransientBadgeStorage();
         await setSession(session);
         if (cancelled) return;
         navigate(nextPath, { replace: true });

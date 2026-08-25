@@ -1,9 +1,9 @@
-import { useEffect, useState, type KeyboardEvent } from "react";
+import { useState, type KeyboardEvent } from "react";
 import { motion } from "framer-motion";
 import { Lock } from "lucide-react";
 import { BadgeIcon } from "./BadgeIcon";
 import { TIER_CONFIG, type BadgeDefinition } from "@/data/badgeConfig";
-import type { BadgeProgressInfo, EarnedBadge } from "@/lib/badgeEvaluator";
+import type { BadgeProgressInfo, EarnedBadge } from "@/types/badges";
 import { cn } from "@/lib/utils";
 import { BADGE_CARD_IMAGES, BADGE_MOBILE_CARD_IMAGES } from "@/data/badgeImages";
 
@@ -36,15 +36,16 @@ export function BadgeCard({
   const tierStyle = TIER_CONFIG[badge.tier];
   const canFlipLocked = !isEarned && !compact && enableLockedFlip;
   const isInteractive = canFlipLocked || !!onClick;
-  const [isFlipped, setIsFlipped] = useState(false);
-
-  useEffect(() => {
-    setIsFlipped(false);
-  }, [badge.id, isEarned]);
+  const flipScope = `${badge.id}:${isEarned}`;
+  const [flipState, setFlipState] = useState({ scope: flipScope, isFlipped: false });
+  const isFlipped = flipState.scope === flipScope && flipState.isFlipped;
 
   const handleCardClick = () => {
     if (canFlipLocked) {
-      setIsFlipped(prev => !prev);
+      setFlipState((current) => ({
+        scope: flipScope,
+        isFlipped: current.scope === flipScope ? !current.isFlipped : true,
+      }));
       return;
     }
 

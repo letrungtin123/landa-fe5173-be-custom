@@ -114,7 +114,7 @@ export interface CourseListResponse {
 export interface CourseBlock {
   id: string;
   parent_id: string | null;
-  block_type: 'course' | 'chapter' | 'sequential' | 'vertical' | 'video' | 'html' | 'problem' | 'la_media_quiz' | 'la_crossword' | 'la_sortable' | 'la_diagram' | 'la_faq' | 'la_pdf';
+  block_type: 'course' | 'chapter' | 'sequential' | 'vertical' | 'video' | 'html' | 'problem' | 'la_media_quiz' | 'la_scenario_chat' | 'la_crossword' | 'la_sortable' | 'la_diagram' | 'la_faq' | 'la_pdf';
   display_name: string;
   data: Record<string, unknown>;
   metadata: Record<string, unknown>;
@@ -168,6 +168,7 @@ export interface BadgeDefinitionFromAPI {
   description?: string | null;
   desc?: string | null;
   image_key: string;
+  sort_order: number;
   card_image_url: string | null;
   icon_image_url: string | null;
   mobile_card_image_url: string | null;

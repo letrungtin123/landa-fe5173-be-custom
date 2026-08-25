@@ -152,6 +152,8 @@ function PageLoader() {
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const sessionMode = useAuthStore((s) => s.sessionMode);
+  const tenantModules = useAuthStore((s) => s.tenantModules);
+  const badgesEnabled = tenantModules.includes("badge_management") && sessionMode !== "demo_iframe";
   const location = useLocation();
   if (!isAuthenticated) {
     const next = `${location.pathname}${location.search}${location.hash}`;
@@ -161,7 +163,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     <>
       <WelcomeInitModal />
       {/* Global badge watcher — hiện modal khi earn badge mới bất kể đang ở route nào */}
-      <GlobalBadgeWatcher />
+      {badgesEnabled ? <GlobalBadgeWatcher /> : null}
       {/* Global study time tracker — đếm giờ học ngay khi login, mọi route */}
       {sessionMode !== "demo_iframe" ? <StudyTimeTracker /> : null}
       {/* AI Chat Widget — hiện FAB chat trên mọi trang */}
@@ -170,6 +172,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     </>
   );
 }
+function BadgeRoute() {
+  const enabled = useAuthStore((state) => state.tenantModules.includes("badge_management"));
+  const sessionMode = useAuthStore((state) => state.sessionMode);
+  return enabled && sessionMode !== "demo_iframe"
+    ? <BadgesPage />
+    : <Navigate to="/dashboard" replace />;
+}
+
 /**
  * Gate chặn render routes cho đến khi OTT exchange hoàn tất.
  * Nếu không có OTT pending → render ngay.
@@ -219,7 +229,7 @@ function App() {
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/explore" element={<ExplorePage />} />
                   <Route path="/library" element={<LibraryPage />} />
-                  <Route path="/badges" element={<BadgesPage />} />
+                  <Route path="/badges" element={<BadgeRoute />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/courses" element={<CoursesPage />} />
 

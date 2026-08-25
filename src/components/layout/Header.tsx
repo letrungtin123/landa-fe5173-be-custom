@@ -68,6 +68,8 @@ export function Header() {
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
   const managedTenants = useAuthStore((s) => s.managedTenants);
+  const tenantModules = useAuthStore((s) => s.tenantModules);
+  const sessionMode = useAuthStore((s) => s.sessionMode);
   const navigate = useNavigate();
   const { count: unreadCount } = useUnreadNotificationCount();
   const { notifications, isLoading } = useNotifications();
@@ -99,6 +101,11 @@ export function Header() {
   const isCourseRoute = location.pathname.includes("/courses/");
   const isSearchableRoute = ['/dashboard', '/explore', '/library'].includes(location.pathname);
   const { globalSearchTerm, setGlobalSearchTerm, isSearchOpen, setSearchOpen } = useSearchStore();
+  const badgeManagementEnabled = tenantModules.includes("badge_management") && sessionMode !== "demo_iframe";
+  const visibleNavItems = useMemo(
+    () => NAV_ITEMS.filter((item) => item.path !== "/badges" || badgeManagementEnabled),
+    [badgeManagementEnabled],
+  );
 
   // Reset search term on mobile when route changes
   useEffect(() => {
@@ -172,7 +179,7 @@ export function Header() {
 
         {/* Nav Links */}
         <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex">
-          {NAV_ITEMS.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive =
               location.pathname === item.path ||
               (item.path !== "/" &&

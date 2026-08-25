@@ -62,8 +62,7 @@ export function useUpdateProfile() {
          updateStore({ fullName: updatedProfile.full_name });
       }
 
-      localStorage.setItem(`la_profile_updated_${username}`, "true");
-      window.dispatchEvent(new Event("la_profile_updated"));
+      queryClient.invalidateQueries({ queryKey: ["badge-overview"] });
     },
   });
 }

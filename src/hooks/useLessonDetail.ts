@@ -12,6 +12,7 @@ import { rewriteStaticUrls, sanitizeUrlToRelative } from "@/transformers/staticU
 import { normalizeHtmlMediaImages } from "@/lib/htmlMedia";
 import { normalizeProblemMedia } from "@/lib/problemMedia";
 import { normalizeMediaQuizData } from "@/lib/mediaQuiz";
+import { normalizeScenarioChatData } from "@/lib/scenarioChat";
 import { storageUrl } from "@/utils/storageUrl";
 
 /**
@@ -163,6 +164,14 @@ function buildComponent(
     comp.mediaQuizData = normalizeMediaQuizData(svd?.media_quiz_data || svd);
   }
 
+  if (block.type === "la_scenario_chat") {
+    comp.scenarioChatUsageKey = block.id;
+    const svd = block.student_view_data as Record<string, unknown> | undefined;
+    const scenarioData = normalizeScenarioChatData(svd?.scenario_chat_data || svd);
+    if (typeof svd?.display_name === "string") scenarioData.display_name = svd.display_name;
+    comp.scenarioChatData = scenarioData;
+  }
+
   if (block.type === "la_crossword") {
     comp.crosswordUsageKey = block.id;
     const svd = block.student_view_data as Record<string, unknown> | undefined;
@@ -241,6 +250,7 @@ function determineLessonType(
     if (c.type === "video") return "video";
     if (c.type === "problem") return "quiz";
     if (c.type === "la_media_quiz") return "quiz";
+    if (c.type === "la_scenario_chat") return "quiz";
     if (c.type === "la_crossword") return "quiz";
     if (c.type === "la_sortable") return "quiz";
     if (c.type === "la_diagram") return "quiz";

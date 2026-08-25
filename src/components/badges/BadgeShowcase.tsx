@@ -11,15 +11,17 @@ import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Trophy, ChevronRight, X } from "lucide-react";
-import { useBadges } from "@/hooks/useBadges";
+import { useBadges } from "@/hooks/useBackendBadges";
 import { BadgeCard } from "./BadgeCard";
 import { BadgeIcon } from "./BadgeIcon";
 import { BADGE_CARD_IMAGES, BADGE_MOBILE_CARD_IMAGES } from "@/data/badgeImages";
-import type { EarnedBadge } from "@/lib/badgeEvaluator";
+import type { EarnedBadge } from "@/types/badges";
 
 export function BadgeShowcase() {
-  const { earnedBadges, totalBadges, earnedCount, isLoading, badgeImageMap, activeBadgeIds, badgeDefinitions } = useBadges();
+  const { earnedBadges, totalBadges, earnedCount, isLoading, isEnabled, badgeImageMap, activeBadgeIds, badgeDefinitions } = useBadges();
   const [selectedBadge, setSelectedBadge] = useState<EarnedBadge | null>(null);
+
+  if (!isEnabled) return null;
 
   if (isLoading) {
     return (
@@ -80,7 +82,7 @@ export function BadgeShowcase() {
             <motion.div
               className="h-full rounded-full bg-[#0062DF]"
               initial={{ width: 0 }}
-              animate={{ width: `${(earnedCount / totalBadges) * 100}%` }}
+              animate={{ width: `${totalBadges > 0 ? (earnedCount / totalBadges) * 100 : 0}%` }}
               transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
             />
           </div>

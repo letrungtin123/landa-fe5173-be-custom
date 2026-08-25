@@ -28,6 +28,15 @@ interface BlockSubmitResult {
   activeIndex?: number;
   completedQuestionIds?: string[];
   blockCompleted?: boolean;
+  // Giao tiếp tình huống: lưu lịch sử chat trong phiên xem course.
+  scenarioChatHistory?: unknown[];
+  started?: boolean;
+  visibleChoices?: boolean;
+  awaitingRetry?: boolean;
+  awaitingNextRound?: boolean;
+  scenarioChatRetryHistoryLength?: number | null;
+  scenarioChatRoundState?: unknown;
+  scenarioChatTransientHistory?: unknown[];
 }
 
 interface BlockSubmitStore {

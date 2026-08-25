@@ -75,7 +75,7 @@ const Confetti = () => {
 export function Course100PercentModal({ courseId, completionPercent, isLoading, config }: Course100PercentModalProps) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
+  const setBlockingModalActive = useAppStore((s) => s.setBlockingModalActive);
   const confirmJustClosed = useAppStore((s) => s.confirmJustClosed);
   const setConfirmJustClosed = useAppStore((s) => s.setConfirmJustClosed);
   const sessionMode = useAuthStore((s) => s.sessionMode);
@@ -111,9 +111,9 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
   }, [open]);
 
   useEffect(() => {
-    setCourseModalActive(open || isPending);
-    return () => setCourseModalActive(false);
-  }, [open, isPending, setCourseModalActive]);
+    setBlockingModalActive(`course-completion:${courseId}`, open || isPending);
+    return () => setBlockingModalActive(`course-completion:${courseId}`, false);
+  }, [courseId, open, isPending, setBlockingModalActive]);
 
   const queryClient = useQueryClient();
 

@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 import dashboardIcon from "@/assets/MobileRouteIcon/dashboard-icon.png";
 import exploreIcon from "@/assets/MobileRouteIcon/explore-icon.png";
@@ -15,9 +16,14 @@ const NAV_ITEMS = [
 
 export function BottomNav() {
   const location = useLocation();
+  const tenantModules = useAuthStore((state) => state.tenantModules);
+  const sessionMode = useAuthStore((state) => state.sessionMode);
+  const badgeManagementEnabled = tenantModules.includes("badge_management") && sessionMode !== "demo_iframe";
+  const visibleItems = NAV_ITEMS.filter((item) => item.path !== "/badges" || badgeManagementEnabled);
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 bg-background/95 backdrop-blur border-t border-border lg:hidden px-2 pb-safe">
-      {NAV_ITEMS.map((item) => {
+      {visibleItems.map((item) => {
         const isActive =
           location.pathname === item.path ||
           (item.path !== "/" && location.pathname.startsWith(item.path));

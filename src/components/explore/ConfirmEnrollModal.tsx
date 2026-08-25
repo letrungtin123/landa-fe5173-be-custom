@@ -28,12 +28,12 @@ export function ConfirmEnrollModal({
 }: ConfirmEnrollModalProps) {
   const displayCourseName = courseName || tenantName || "Khóa học";
 
-  const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
+  const setBlockingModalActive = useAppStore((s) => s.setBlockingModalActive);
 
   useEffect(() => {
-    setCourseModalActive(open);
-    return () => setCourseModalActive(false);
-  }, [open, setCourseModalActive]);
+    setBlockingModalActive("confirm-enroll", open);
+    return () => setBlockingModalActive("confirm-enroll", false);
+  }, [open, setBlockingModalActive]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (demoGuideActive && !nextOpen) return;

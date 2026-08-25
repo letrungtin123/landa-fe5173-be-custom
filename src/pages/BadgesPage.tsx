@@ -9,7 +9,7 @@
 import { motion } from "framer-motion";
 import { Trophy } from "lucide-react";
 import { BadgeGrid } from "@/components/badges/BadgeGrid";
-import { useBadges } from "@/hooks/useBadges";
+import { useBadges } from "@/hooks/useBackendBadges";
 
 export function BadgesPage() {
   const {

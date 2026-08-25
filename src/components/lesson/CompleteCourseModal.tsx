@@ -20,7 +20,7 @@ interface CompleteCourseModalProps {
 export function CompleteCourseModal({ courseId, completionPercent, isLoading, config }: CompleteCourseModalProps) {
   const [open, setOpen] = useState(false);
   const [checked, setChecked] = useState(false);
-  const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
+  const setBlockingModalActive = useAppStore((s) => s.setBlockingModalActive);
   const setConfirmJustClosed = useAppStore((s) => s.setConfirmJustClosed);
   const sessionMode = useAuthStore((s) => s.sessionMode);
 
@@ -32,9 +32,9 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
   const hasResetRef = useRef(false);
 
   useEffect(() => {
-    setCourseModalActive(open || isPending);
-    return () => setCourseModalActive(false);
-  }, [open, isPending, setCourseModalActive]);
+    setBlockingModalActive(`course-confirm:${courseId}`, open || isPending);
+    return () => setBlockingModalActive(`course-confirm:${courseId}`, false);
+  }, [courseId, open, isPending, setBlockingModalActive]);
 
   const queryClient = useQueryClient();
 

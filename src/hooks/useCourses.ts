@@ -17,6 +17,7 @@ import type { CourseBlocksResponse, CourseBlock, BlocksResponse, Block } from "@
 import { normalizeHtmlMediaImages } from "@/lib/htmlMedia";
 import { normalizeProblemMedia } from "@/lib/problemMedia";
 import { normalizeMediaQuizData } from "@/lib/mediaQuiz";
+import { normalizeScenarioChatData } from "@/lib/scenarioChat";
 
 /**
  * Adapter: chuyển CourseBlocksResponse (flat array) → BlocksResponse (map format).
@@ -127,6 +128,12 @@ function buildStudentViewData(cb: CourseBlock): Record<string, unknown> {
       return {
         display_name: cb.display_name,
         media_quiz_data: normalizeMediaQuizData(data),
+      };
+
+    case 'la_scenario_chat':
+      return {
+        display_name: cb.display_name,
+        scenario_chat_data: normalizeScenarioChatData(data),
       };
 
     default:

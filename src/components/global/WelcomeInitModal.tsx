@@ -45,7 +45,7 @@ function getDisplayName(fullName?: string | null, username?: string | null): str
 export function WelcomeInitModal() {
   const queryClient = useQueryClient();
   const { branding } = useBranding();
-  const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
+  const setBlockingModalActive = useAppStore((s) => s.setBlockingModalActive);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const loginSessionId = useAuthStore((s) => s.loginSessionId);
@@ -92,9 +92,9 @@ export function WelcomeInitModal() {
   }, [sessionKey]);
 
   useEffect(() => {
-    setCourseModalActive(open);
-    return () => setCourseModalActive(false);
-  }, [open, setCourseModalActive]);
+    setBlockingModalActive("welcome-init", open);
+    return () => setBlockingModalActive("welcome-init", false);
+  }, [open, setBlockingModalActive]);
 
   useEffect(() => {
     if (!state || state.setup_required) {

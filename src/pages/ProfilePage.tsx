@@ -107,7 +107,10 @@ export function ProfilePage() {
       if (newAvatarUrl) {
         updateUser({ avatar: avatarUrl(newAvatarUrl) });
       }
-      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] }),
+        queryClient.invalidateQueries({ queryKey: ["badge-overview"] }),
+      ]);
       setToast({ message: "Cập nhật ảnh đại diện thành công!", type: "success" });
       setTimeout(() => setToast(null), 3000);
     } catch {

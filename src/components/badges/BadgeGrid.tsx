@@ -3,11 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { BadgeCard } from "./BadgeCard";
 import { BADGE_DEFINITIONS, CATEGORY_LABELS, type BadgeCategory, type BadgeDefinition } from "@/data/badgeConfig";
-import type { EarnedBadge } from "@/lib/badgeEvaluator";
 import { cn } from "@/lib/utils";
 import { BADGE_CARD_IMAGES, BADGE_MOBILE_CARD_IMAGES } from "@/data/badgeImages";
-import type { BadgeImageMap } from "@/hooks/useBadges";
-import type { BadgeProgressMap } from "@/lib/badgeEvaluator";
+import type { BadgeImageMap } from "@/hooks/useBackendBadges";
+import type { BadgeProgressMap, EarnedBadge } from "@/types/badges";
 import {
   DropdownMenu,
   DropdownMenuContent,

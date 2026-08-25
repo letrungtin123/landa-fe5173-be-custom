@@ -1,12 +1,16 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
+const MODAL_RELEASE_DELAY_MS = 1_000;
+let modalReleaseTimer: ReturnType<typeof setTimeout> | null = null;
+
 interface AppState {
   sidebarOpen: boolean;
   currentModuleId: string;
   currentLessonId: string;
   currentUnitIndex: number;
   isCourseModalActive: boolean;
+  blockingModalIds: string[];
   confirmJustClosed: boolean;
 
   toggleSidebar: () => void;
@@ -15,7 +19,7 @@ interface AppState {
   setUnitIndex: (index: number) => void;
   nextUnit: (totalUnits: number) => boolean; // returns false if already at last
   prevUnit: () => boolean; // returns false if already at first
-  setCourseModalActive: (active: boolean) => void;
+  setBlockingModalActive: (modalId: string, active: boolean) => void;
   setConfirmJustClosed: (v: boolean) => void;
 }
 
@@ -27,6 +31,7 @@ export const useAppStore = create<AppState>()(
       currentLessonId: "",
       currentUnitIndex: 0,
       isCourseModalActive: false,
+      blockingModalIds: [],
       confirmJustClosed: false,
 
       toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
@@ -46,7 +51,36 @@ export const useAppStore = create<AppState>()(
         set({ currentUnitIndex: current - 1 });
         return true;
       },
-      setCourseModalActive: (active) => set({ isCourseModalActive: active }),
+      setBlockingModalActive: (modalId, active) => {
+        const currentIds = get().blockingModalIds;
+        const isRegistered = currentIds.includes(modalId);
+
+        if (active) {
+          if (modalReleaseTimer) {
+            clearTimeout(modalReleaseTimer);
+            modalReleaseTimer = null;
+          }
+          if (isRegistered) {
+            if (!get().isCourseModalActive) set({ isCourseModalActive: true });
+            return;
+          }
+          set({ blockingModalIds: [...currentIds, modalId], isCourseModalActive: true });
+          return;
+        }
+
+        if (!isRegistered) return;
+        const nextIds = currentIds.filter((id) => id !== modalId);
+        set({ blockingModalIds: nextIds, isCourseModalActive: true });
+        if (nextIds.length > 0) return;
+
+        if (modalReleaseTimer) clearTimeout(modalReleaseTimer);
+        modalReleaseTimer = setTimeout(() => {
+          modalReleaseTimer = null;
+          if (get().blockingModalIds.length === 0) {
+            set({ isCourseModalActive: false });
+          }
+        }, MODAL_RELEASE_DELAY_MS);
+      },
       setConfirmJustClosed: (v) => set({ confirmJustClosed: v }),
     }),
     {

@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { EarnedBadge } from "@/lib/badgeEvaluator";
+import type { EarnedBadge } from "@/types/badges";
 import { BADGE_CARD_IMAGES } from "@/data/badgeImages";
 import { X } from "lucide-react";
 
@@ -10,6 +10,45 @@ interface BadgeUnlockModalProps {
   /** Dynamic card image URL from API */
   cardImageUrl?: string | null;
 }
+
+const CONFETTI_COLORS = ["#fbbf24", "#f59e0b", "#ef4444", "#ec4899", "#8b5cf6", "#3b82f6", "#10b981", "#f97316"];
+
+function deterministicUnit(index: number, salt: number): number {
+  const value = Math.sin(index * 127.1 + salt * 311.7) * 43758.5453123;
+  return value - Math.floor(value);
+}
+
+const CONFETTI_PARTICLES = Array.from({ length: 96 }, (_, index) => {
+  const sideBias = index % 4;
+  const startX = sideBias === 0
+    ? 8 + deterministicUnit(index, 1) * 22
+    : sideBias === 1
+      ? 70 + deterministicUnit(index, 2) * 22
+      : 18 + deterministicUnit(index, 3) * 64;
+  const startY = -14 - deterministicUnit(index, 4) * 18;
+  const midX = Math.max(4, Math.min(96, startX + (deterministicUnit(index, 5) - 0.5) * 44));
+  const endX = Math.max(2, Math.min(98, startX + (deterministicUnit(index, 6) - 0.5) * 72));
+  const size = 5 + deterministicUnit(index, 7) * 7;
+
+  return {
+    id: index,
+    color: CONFETTI_COLORS[index % CONFETTI_COLORS.length],
+    startX,
+    startY,
+    midX,
+    midY: 24 + deterministicUnit(index, 8) * 34,
+    endX,
+    endY: 105 + deterministicUnit(index, 9) * 20,
+    delay: deterministicUnit(index, 10) * 0.75,
+    duration: 3.2 + deterministicUnit(index, 11) * 1.8,
+    width: size,
+    height: Math.max(3, size * (0.36 + deterministicUnit(index, 12) * 0.32)),
+    rotateStart: deterministicUnit(index, 13) * 180,
+    rotateMid: 220 + deterministicUnit(index, 14) * 420,
+    rotateEnd: 620 + deterministicUnit(index, 15) * 520,
+    borderRadius: deterministicUnit(index, 16) > 0.72 ? 999 : 2,
+  };
+});
 
 export function BadgeUnlockModal({ badge, onDismiss, cardImageUrl }: BadgeUnlockModalProps) {
   useEffect(() => {
@@ -111,39 +150,39 @@ export function BadgeUnlockModal({ badge, onDismiss, cardImageUrl }: BadgeUnlock
 }
 
 function ConfettiEffect() {
-  const colors = ["#fbbf24", "#f59e0b", "#ef4444", "#ec4899", "#8b5cf6", "#3b82f6", "#10b981", "#f97316"];
-  const particles = Array.from({ length: 80 }, (_, i) => ({
-    id: i,
-    color: colors[i % colors.length],
-    x: Math.random() * 100, // percentage across screen width
-    delay: Math.random() * 2,
-    duration: 3 + Math.random() * 3,
-    size: 6 + Math.random() * 6,
-  }));
-
   return (
     <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-      {particles.map((p) => (
+      {CONFETTI_PARTICLES.map((p) => (
         <motion.div
           key={p.id}
-          className="absolute rounded-sm shadow-sm"
+          className="absolute shadow-sm will-change-transform"
           style={{
-            left: `${p.x}vw`,
-            top: -20,
-            width: p.size,
-            height: p.size * 0.5,
+            left: 0,
+            top: 0,
+            width: p.width,
+            height: p.height,
+            borderRadius: p.borderRadius,
             backgroundColor: p.color,
           }}
+          initial={{
+            x: `${p.startX}vw`,
+            y: `${p.startY}vh`,
+            rotate: p.rotateStart,
+            opacity: 0,
+            scale: 0.8,
+          }}
           animate={{
-            y: ["0vh", "110vh"],
-            rotate: [0, 360 + Math.random() * 360],
-            x: [0, (Math.random() - 0.5) * 100],
+            x: [`${p.startX}vw`, `${p.midX}vw`, `${p.endX}vw`],
+            y: [`${p.startY}vh`, `${p.midY}vh`, `${p.endY}vh`],
+            rotate: [p.rotateStart, p.rotateMid, p.rotateEnd],
+            opacity: [0, 1, 1, 0],
+            scale: [0.8, 1, 1, 0.75],
           }}
           transition={{
             duration: p.duration,
-            repeat: Infinity,
-            ease: "linear",
             delay: p.delay,
+            ease: "easeOut",
+            times: [0, 0.18, 0.78, 1],
           }}
         />
       ))}

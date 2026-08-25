@@ -6,27 +6,16 @@
 // bất kể đang ở route nào.
 // ============================================================
 
-import { useState, useEffect } from "react";
 import { BadgeUnlockModal } from "@/components/badges/BadgeUnlockModal";
-import { useBadges } from "@/hooks/useBadges";
+import { useBadges } from "@/hooks/useBackendBadges";
 import { useAppStore } from "@/stores/useAppStore";
 
 export function GlobalBadgeWatcher() {
   const { newlyEarned, dismissNewBadge, badgeImageMap } = useBadges();
   const isCourseModalActive = useAppStore((s) => s.isCourseModalActive);
-  const [debouncedActive, setDebouncedActive] = useState(isCourseModalActive);
-
-  useEffect(() => {
-    if (isCourseModalActive) {
-      setDebouncedActive(true);
-    } else {
-      const t = setTimeout(() => setDebouncedActive(false), 1000); // Đợi 1s để chắc chắn không có modal course nào khác nối tiếp
-      return () => clearTimeout(t);
-    }
-  }, [isCourseModalActive]);
 
   // Nếu đang có course modal, chặn hoàn toàn không cho render badge modal
-  if (debouncedActive) return null;
+  if (isCourseModalActive) return null;
 
   const cardUrl = newlyEarned ? badgeImageMap[newlyEarned.badge.id]?.cardUrl : null;
 

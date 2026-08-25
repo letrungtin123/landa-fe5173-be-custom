@@ -7,6 +7,7 @@ import type { Block } from "./types";
 import { normalizeHtmlMediaImages } from "@/lib/htmlMedia";
 import { normalizeProblemMedia } from "@/lib/problemMedia";
 import { normalizeMediaQuizData } from "@/lib/mediaQuiz";
+import { normalizeScenarioChatData } from "@/lib/scenarioChat";
 
 /**
  * Lấy chi tiết block đơn lẻ.
@@ -170,6 +171,12 @@ function buildBlockStudentViewData(
         media_quiz_data: normalizeMediaQuizData(rawData),
       };
 
+    case 'la_scenario_chat':
+      return {
+        display_name: displayName,
+        scenario_chat_data: normalizeScenarioChatData(rawData),
+      };
+
     default:
       return { ...(rawData as Record<string, unknown>), ...meta };
   }
@@ -228,6 +235,22 @@ export async function submitMediaQuizAnswer(
     const { data } = await apiClient.post(
       `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
       { question_id: questionId, answer }
+    );
+    return (data as any).data || data;
+  } catch {
+    return { status: 'error', message: 'Chưa thể gửi câu trả lời' };
+  }
+}
+
+export async function submitScenarioChatAnswer(
+  usageKey: string,
+  roundId: string,
+  choiceId: string
+): Promise<Record<string, unknown>> {
+  try {
+    const { data } = await apiClient.post(
+      `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
+      { round_id: roundId, choice_id: choiceId }
     );
     return (data as any).data || data;
   } catch {

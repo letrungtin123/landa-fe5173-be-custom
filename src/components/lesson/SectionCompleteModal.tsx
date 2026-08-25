@@ -71,13 +71,13 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
   const [open, setOpen] = useState(false);
   const [currentConfig, setCurrentConfig] = useState<{ section_id: string; title: string; description: string } | null>(null);
   const queryClient = useQueryClient();
-  const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
+  const setBlockingModalActive = useAppStore((s) => s.setBlockingModalActive);
   const sessionMode = useAuthStore((s) => s.sessionMode);
 
   useEffect(() => {
-    setCourseModalActive(open);
-    return () => setCourseModalActive(false);
-  }, [open, setCourseModalActive]);
+    setBlockingModalActive(`section-completion:${courseId}`, open);
+    return () => setBlockingModalActive(`section-completion:${courseId}`, false);
+  }, [courseId, open, setBlockingModalActive]);
 
   const { data: configs } = useQuery({
     queryKey: ["sectionModalConfigs", courseId],

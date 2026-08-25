@@ -18,15 +18,15 @@ interface WelcomeCourseModalProps {
 
 export function WelcomeCourseModal({ courseId, completionPercent, isLoading, config }: WelcomeCourseModalProps) {
   const [open, setOpen] = useState(false);
-  const setCourseModalActive = useAppStore((s) => s.setCourseModalActive);
+  const setBlockingModalActive = useAppStore((s) => s.setBlockingModalActive);
   const sessionMode = useAuthStore((s) => s.sessionMode);
 
   const isEnabled = config?.welcome_enabled === true;
 
   useEffect(() => {
-    setCourseModalActive(open);
-    return () => setCourseModalActive(false);
-  }, [open, setCourseModalActive]);
+    setBlockingModalActive(`course-welcome:${courseId}`, open);
+    return () => setBlockingModalActive(`course-welcome:${courseId}`, false);
+  }, [courseId, open, setBlockingModalActive]);
 
   const queryClient = useQueryClient();
 

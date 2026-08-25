@@ -1,9 +1,8 @@
 // ============================================================
-// Badge Definitions & Configuration
+// Badge presentation metadata
 //
-// Tất cả badge definitions được quản lý tập trung ở đây.
-// Để thêm badge mới → thêm vào BADGE_DEFINITIONS array.
-// Logic evaluate nằm ở lib/badgeEvaluator.ts
+// Điều kiện đạt và danh sách badge khả dụng do backend quản lý.
+// File này chỉ giữ metadata hiển thị đặc thù của learner FE.
 // ============================================================
 
 export type BadgeCategory = "introduction" | "expertise" | "innovation";

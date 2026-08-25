@@ -20,14 +20,13 @@ export function refetchProgressWithRetry(
       qc.invalidateQueries({ queryKey: ["course-blocks", courseId] });
       qc.invalidateQueries({ queryKey: ["course-completion-fast", courseId] });
       qc.invalidateQueries({ queryKey: ["course-assignments", courseId] });
-      qc.invalidateQueries({ queryKey: ["badge-blocks", courseId] });
     }
 
     qc.invalidateQueries({ queryKey: ["batch-course-progress"] });
     qc.invalidateQueries({ queryKey: ["course-completion-fast"] });
     qc.invalidateQueries({ queryKey: ["enrollments"] });
     qc.invalidateQueries({ queryKey: ["assignment"] });
-    qc.invalidateQueries({ queryKey: ["badge-progress-batch"] });
+    qc.invalidateQueries({ queryKey: ["badge-overview"] });
   }, 250);
 
   pendingTimers.set(timerKey, timer);
