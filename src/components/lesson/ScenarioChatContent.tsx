@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, CheckCircle2, Loader2, MessageSquareText, Play, RotateCcw } from "lucide-react";
+import { Check, CheckCircle2, Eye, Loader2, MessageSquareText, Play, RotateCcw } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { submitScenarioChatAnswer } from "@/api/blocks";
@@ -234,6 +234,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
   const [blockCompleted, setBlockCompleted] = useState(false);
   const [roundState, setRoundState] = useState<ScenarioChatRoundViewStateMap>({});
   const [transientHistory, setTransientHistory] = useState<ChatHistoryItem[] | null>(null);
+  const [showExplorationChoices, setShowExplorationChoices] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const requestSeqRef = useRef(0);
   const mountedRef = useRef(true);
@@ -256,6 +257,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
       setRetryHistoryLength(typeof cached.scenarioChatRetryHistoryLength === "number" ? cached.scenarioChatRetryHistoryLength : null);
       setBlockCompleted(cached.blockCompleted === true);
       setRoundState(safeScenarioChatRoundState(cached.scenarioChatRoundState));
+      setShowExplorationChoices(cached.scenarioChatShowExplorationChoices === true);
       const cachedTransientHistory = safeHistory(cached.scenarioChatTransientHistory);
       setTransientHistory(cachedTransientHistory.length > 0 ? cachedTransientHistory : null);
       setPendingTyping(null);
@@ -274,6 +276,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
     setBlockCompleted(false);
     setRoundState({});
     setTransientHistory(null);
+    setShowExplorationChoices(false);
   }, [usageKey, contentFingerprint, scenario.rounds.length]);
 
   useEffect(() => {
@@ -292,8 +295,9 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
       scenarioChatRetryHistoryLength: retryHistoryLength,
       scenarioChatRoundState: roundState,
       scenarioChatTransientHistory: transientHistory || undefined,
+      scenarioChatShowExplorationChoices: showExplorationChoices,
     });
-  }, [activeIndex, awaitingNextRound, awaitingRetry, blockCompleted, contentFingerprint, history, retryHistoryLength, roundState, started, transientHistory, usageKey, visibleChoices]);
+  }, [activeIndex, awaitingNextRound, awaitingRetry, blockCompleted, contentFingerprint, history, retryHistoryLength, roundState, showExplorationChoices, started, transientHistory, usageKey, visibleChoices]);
 
   const displayedHistory = transientHistory || history;
 
@@ -313,7 +317,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
       window.cancelAnimationFrame(frame);
       window.clearTimeout(timeout);
     };
-  }, [awaitingNextRound, awaitingRetry, blockCompleted, displayedHistory.length, pendingTyping, started, transientHistory, visibleChoices]);
+  }, [awaitingNextRound, awaitingRetry, blockCompleted, displayedHistory.length, pendingTyping, showExplorationChoices, started, transientHistory, visibleChoices]);
 
   const currentRound = scenario.rounds[activeIndex];
   const currentRoundState = currentRound ? roundState[currentRound.id] : undefined;
@@ -340,6 +344,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
     setAwaitingNextRound(false);
     setRetryHistoryLength(null);
     setTransientHistory(null);
+    setShowExplorationChoices(false);
     setPendingTyping("scenario");
 
     await wait(TYPING_DELAY_MS);
@@ -362,6 +367,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
     setBlockCompleted(false);
     setRoundState({});
     setTransientHistory(null);
+    setShowExplorationChoices(false);
     void revealScenarioRound(0);
   };
 
@@ -395,8 +401,10 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
     if (!isExploration) {
       setAwaitingNextRound(false);
       setTransientHistory(null);
+      setShowExplorationChoices(false);
     } else {
       setTransientHistory(explorationBase || []);
+      setShowExplorationChoices(true);
     }
     setRetryHistoryLength(null);
     appendChatItem({
@@ -502,17 +510,23 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
     setAwaitingRetry(false);
     setAwaitingNextRound(false);
     setPendingTyping(null);
+    setShowExplorationChoices(false);
     setVisibleChoices(true);
   };
 
   const handleNextRound = () => {
     const nextIndex = Math.min(activeIndex + 1, scenario.rounds.length - 1);
     setTransientHistory(null);
+    setShowExplorationChoices(false);
     void revealScenarioRound(nextIndex);
   };
 
   const handleShowCorrectBranch = () => {
     setTransientHistory(null);
+  };
+
+  const handleShowExplorationChoices = () => {
+    setShowExplorationChoices(true);
   };
 
   if (!currentRound) {
@@ -608,19 +622,18 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
               </div>
             )}
 
-            {hasCorrectChoiceForRound && !pendingTyping && !awaitingRetry && (
-              <div className="mb-3 rounded-2xl border border-green-200 bg-green-50/80 p-3 shadow-sm dark:border-green-500/20 dark:bg-green-500/10">
+            {hasCorrectChoiceForRound && showExplorationChoices && !pendingTyping && !awaitingRetry && (
+              <div className="mb-3 rounded-2xl border border-red-200 bg-red-50/80 p-3 shadow-sm dark:border-red-500/25 dark:bg-red-500/10">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-3 py-1 text-xs font-bold text-white">
-                    <Check className="h-3.5 w-3.5 stroke-[3]" />
-                    Đã chọn đúng
+                  <div className="text-sm font-bold text-red-700 dark:text-red-300">
+                    Xem các câu khác
                   </div>
-                  <div className="text-xs font-semibold text-green-700 dark:text-green-300">
+                  <div className="text-xs font-semibold text-red-700 dark:text-red-300">
                     {explorationChoices.length > 0 ? `Còn ${explorationChoices.length} phản hồi khác` : "Đã xem đủ kịch bản lượt này"}
                   </div>
                 </div>
 
-                {explorationChoices.length > 0 && (
+                {explorationChoices.length > 0 ? (
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">
                     {explorationChoices.map((choice) => {
                       const optionIndex = currentRound.choices.findIndex(item => item.id === choice.id);
@@ -630,9 +643,9 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
                           type="button"
                           onClick={() => void appendResponse(choice.id)}
                           disabled={submitMutation.isPending}
-                          className="group flex min-h-[56px] w-full items-start gap-2.5 rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-left shadow-sm transition-all hover:border-amber-400 hover:bg-amber-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-amber-500/25 dark:bg-slate-950 dark:hover:bg-amber-500/10"
+                          className="group flex min-h-[56px] w-full items-start gap-2.5 rounded-xl border border-red-200 bg-white px-3 py-2.5 text-left shadow-sm transition-all hover:border-red-400 hover:bg-red-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-500/25 dark:bg-slate-950 dark:hover:bg-red-500/10"
                         >
-                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-xs font-bold text-amber-800 group-hover:bg-amber-400 group-hover:text-amber-950 dark:bg-amber-500/20 dark:text-amber-200">
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-100 text-xs font-bold text-red-700 group-hover:bg-red-500 group-hover:text-white dark:bg-red-500/20 dark:text-red-200">
                             {String.fromCharCode(65 + Math.max(optionIndex, 0))}
                           </span>
                           <span className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm font-semibold leading-relaxed text-foreground">
@@ -641,6 +654,10 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
                         </button>
                       );
                     })}
+                  </div>
+                ) : (
+                  <div className="mt-3 rounded-xl border border-red-200 bg-white/70 px-3 py-2 text-sm font-semibold text-red-700 dark:border-red-500/25 dark:bg-slate-950/70 dark:text-red-300">
+                    Đã xem đủ các phản hồi khác của lượt này.
                   </div>
                 )}
               </div>
@@ -666,7 +683,17 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
             )}
 
             {awaitingNextRound && !pendingTyping && (
-              <div className="flex justify-end">
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {explorationChoices.length > 0 && !showExplorationChoices && (
+                  <button
+                    type="button"
+                    onClick={handleShowExplorationChoices}
+                    className="inline-flex h-11 items-center gap-2 rounded-full border border-red-200 bg-red-50 px-5 text-sm font-bold text-red-700 shadow-sm transition-all hover:bg-red-100 active:scale-[0.97] dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/15"
+                  >
+                    <Eye className="h-4 w-4" />
+                    Xem các câu khác
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={handleNextRound}
@@ -686,6 +713,16 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
                     className="h-10 rounded-full border border-green-200 bg-white px-4 text-sm font-bold text-green-700 shadow-sm transition-all hover:bg-green-50 active:scale-[0.97] dark:border-green-500/25 dark:bg-slate-950 dark:text-green-300 dark:hover:bg-green-500/10"
                   >
                     Xem đáp án đúng
+                  </button>
+                )}
+                {explorationChoices.length > 0 && !showExplorationChoices && (
+                  <button
+                    type="button"
+                    onClick={handleShowExplorationChoices}
+                    className="inline-flex h-10 items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 text-sm font-bold text-red-700 shadow-sm transition-all hover:bg-red-100 active:scale-[0.97] dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/15"
+                  >
+                    <Eye className="h-4 w-4" />
+                    Xem các câu khác
                   </button>
                 )}
                 <Check className="h-5 w-5 stroke-[3]" />

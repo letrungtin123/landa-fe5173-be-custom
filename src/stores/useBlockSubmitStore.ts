@@ -37,6 +37,7 @@ interface BlockSubmitResult {
   scenarioChatRetryHistoryLength?: number | null;
   scenarioChatRoundState?: unknown;
   scenarioChatTransientHistory?: unknown[];
+  scenarioChatShowExplorationChoices?: boolean;
 }
 
 interface BlockSubmitStore {
