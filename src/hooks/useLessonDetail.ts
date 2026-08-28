@@ -12,6 +12,7 @@ import { rewriteStaticUrls, sanitizeUrlToRelative } from "@/transformers/staticU
 import { normalizeHtmlMediaImages } from "@/lib/htmlMedia";
 import { normalizeProblemMedia } from "@/lib/problemMedia";
 import { normalizeMediaQuizData } from "@/lib/mediaQuiz";
+import { normalizeImageChoiceQuizData } from "@/lib/imageChoiceQuiz";
 import { normalizeScenarioChatData } from "@/lib/scenarioChat";
 import { storageUrl } from "@/utils/storageUrl";
 
@@ -164,6 +165,12 @@ function buildComponent(
     comp.mediaQuizData = normalizeMediaQuizData(svd?.media_quiz_data || svd);
   }
 
+  if (block.type === "la_image_choice_quiz") {
+    comp.imageChoiceQuizUsageKey = block.id;
+    const svd = block.student_view_data as Record<string, unknown> | undefined;
+    comp.imageChoiceQuizData = normalizeImageChoiceQuizData(svd?.image_choice_quiz_data || svd);
+  }
+
   if (block.type === "la_scenario_chat") {
     comp.scenarioChatUsageKey = block.id;
     const svd = block.student_view_data as Record<string, unknown> | undefined;
@@ -250,6 +257,7 @@ function determineLessonType(
     if (c.type === "video") return "video";
     if (c.type === "problem") return "quiz";
     if (c.type === "la_media_quiz") return "quiz";
+    if (c.type === "la_image_choice_quiz") return "quiz";
     if (c.type === "la_scenario_chat") return "quiz";
     if (c.type === "la_crossword") return "quiz";
     if (c.type === "la_sortable") return "quiz";

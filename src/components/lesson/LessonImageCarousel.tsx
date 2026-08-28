@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface LessonImageCarouselProps {
@@ -8,28 +8,107 @@ interface LessonImageCarouselProps {
 
 export function LessonImageCarousel({ images, onImageClick }: LessonImageCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const swipeRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
+  const ignoreClickRef = useRef(false);
+  const imageCount = images?.length ?? 0;
 
-  if (!images || images.length === 0) return null;
+  useEffect(() => {
+    if (imageCount === 0) {
+      setCurrentIndex(0);
+      return;
+    }
+    setCurrentIndex((i) => Math.min(i, imageCount - 1));
+  }, [imageCount]);
+
+  if (!images || imageCount === 0) return null;
+
+  const goNext = () => {
+    setCurrentIndex((i) => (i + 1) % images.length);
+  };
+
+  const goPrev = () => {
+    setCurrentIndex((i) => (i - 1 + images.length) % images.length);
+  };
 
   const next = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentIndex((i) => (i + 1) % images.length);
+    goNext();
   };
 
   const prev = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentIndex((i) => (i - 1 + images.length) % images.length);
+    goPrev();
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (images.length <= 1 || !e.isPrimary || e.button !== 0) return;
+    if ((e.target as HTMLElement).closest('button')) return;
+    swipeRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+    };
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Pointer capture is best-effort on older mobile webviews.
+    }
+  };
+
+  const handlePointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    const swipe = swipeRef.current;
+    if (!swipe || swipe.pointerId !== e.pointerId) return;
+
+    swipeRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // No-op if the pointer was already released by the browser.
+    }
+
+    const deltaX = e.clientX - swipe.startX;
+    const deltaY = e.clientY - swipe.startY;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+    const isHorizontalSwipe = absX >= 45 && absX > absY * 1.2;
+    if (!isHorizontalSwipe) return;
+
+    ignoreClickRef.current = true;
+    if (deltaX < 0) goNext();
+    else goPrev();
+    window.setTimeout(() => {
+      ignoreClickRef.current = false;
+    }, 0);
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (swipeRef.current?.pointerId === e.pointerId) {
+      swipeRef.current = null;
+    }
+  };
+
+  const handleCarouselClick = () => {
+    if (ignoreClickRef.current) return;
+    onImageClick?.(images[currentIndex].src);
   };
 
   return (
     <div
-      className="relative w-full h-[350px] md:h-[450px] 2xl:h-[550px] group overflow-hidden cursor-zoom-in flex items-center"
-      onClick={() => onImageClick?.(images[currentIndex].src)}
+      className="relative w-full h-[350px] md:h-[450px] 2xl:h-[550px] group overflow-hidden cursor-zoom-in flex items-center touch-pan-y select-none"
+      onClick={handleCarouselClick}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerEnd}
+      onPointerCancel={handlePointerCancel}
     >
       <img
         src={images[currentIndex].src}
         alt={images[currentIndex].alt || `Image ${currentIndex + 1}`}
         className="w-full max-h-full object-contain transition-opacity duration-300"
+        draggable={false}
       />
 
       {/* Nút điều hướng */}

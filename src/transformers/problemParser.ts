@@ -12,6 +12,7 @@ export type ProblemType =
 export interface ProblemOption {
   id: string; // The "value" of the input
   text: string; // The label or text
+  html?: string; // Rich label for display, preserving <br>/<p> line breaks
 }
 
 export interface ParsedProblem {
@@ -23,6 +24,85 @@ export interface ParsedProblem {
   hintHtml?: string; // Gợi ý
   correctAnswerHtml?: string; // Đáp án đúng
   hasHints: boolean; // true nếu quiz có cấu hình demand hint trong Studio
+}
+
+const TEXT_BLOCK_BREAK_TAGS = new Set([
+  "address",
+  "blockquote",
+  "div",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "li",
+  "ol",
+  "p",
+  "pre",
+  "section",
+  "table",
+  "tr",
+  "ul",
+]);
+
+function normalizeDisplayText(value: string, fallback = ""): string {
+  const normalized = value
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return normalized || fallback;
+}
+
+function cloneOptionLabel(el: Element): HTMLElement {
+  const clone = el.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll("input, script, style, .status, .indicator-container").forEach((node) => node.remove());
+  return clone;
+}
+
+function textWithLineBreaks(node: Node): string {
+  const parts: string[] = [];
+
+  const visit = (current: Node) => {
+    if (current.nodeType === Node.TEXT_NODE) {
+      parts.push(current.textContent || "");
+      return;
+    }
+    if (current.nodeType !== Node.ELEMENT_NODE) return;
+
+    const el = current as Element;
+    const tag = el.tagName.toLowerCase();
+    if (tag === "br") {
+      parts.push("\n");
+      return;
+    }
+
+    const startLength = parts.join("").length;
+    Array.from(el.childNodes).forEach(visit);
+    const endText = parts.join("");
+    if (TEXT_BLOCK_BREAK_TAGS.has(tag) && endText.length > startLength && !endText.endsWith("\n")) {
+      parts.push("\n");
+    }
+  };
+
+  Array.from(node.childNodes).forEach(visit);
+  return normalizeDisplayText(parts.join(""));
+}
+
+function optionFromElement(id: string, el: Element | null, fallback: string): ProblemOption {
+  if (!el) return { id, text: normalizeDisplayText(fallback, id) };
+
+  const clone = cloneOptionLabel(el);
+  const text = normalizeDisplayText(textWithLineBreaks(clone), fallback || id);
+  const html = clone.innerHTML.trim();
+
+  return html ? { id, text, html } : { id, text };
+}
+
+function textOption(id: string, text: string): ProblemOption {
+  return { id, text: normalizeDisplayText(text, id) };
 }
 
 /**
@@ -88,8 +168,7 @@ export function parseProblemHtml(html: string): ParsedProblem[] {
         const labelEl = radioId
           ? wrapper.querySelector(`label[for='${radioId}']`)
           : radio.closest(".field")?.querySelector("label");
-        const text = labelEl?.textContent?.trim() || val;
-        options.push({ id: val, text });
+        options.push(optionFromElement(val, labelEl ?? null, val));
       });
     }
 
@@ -104,8 +183,7 @@ export function parseProblemHtml(html: string): ParsedProblem[] {
         const labelEl = cbId
           ? wrapper.querySelector(`label[for='${cbId}']`)
           : cb.closest(".field")?.querySelector("label");
-        const text = labelEl?.textContent?.trim() || val;
-        options.push({ id: val, text });
+        options.push(optionFromElement(val, labelEl ?? null, val));
       });
     }
 
@@ -118,7 +196,7 @@ export function parseProblemHtml(html: string): ParsedProblem[] {
       opts.forEach((opt) => {
         const val = opt.getAttribute("value") || "";
         if (val) {
-          options.push({ id: val, text: opt.textContent?.trim() || val });
+          options.push(textOption(val, opt.textContent || val));
         }
       });
     }
@@ -192,7 +270,7 @@ export function parseProblemHtml(html: string): ParsedProblem[] {
         // </div>
         // Lúc này question nằm chung trong topLevelContainer. Tìm tất cả nội dung phía TRƯỚC input bên trong nó
         const allInnerNodes = Array.from(topLevelContainer.childNodes);
-        const innerInputIdx = allInnerNodes.findIndex(n => n.contains && (n as Element).contains(inputContainer));
+        const innerInputIdx = allInnerNodes.findIndex(n => n.nodeType === Node.ELEMENT_NODE && (n as Element).contains(inputContainer));
         if (innerInputIdx > 0) {
           const questionInnerNodes = allInnerNodes.slice(0, innerInputIdx);
           questionHtml = questionInnerNodes
@@ -462,11 +540,12 @@ function parseOlxProblem(xml: string): ParsedProblem[] {
     const options: ProblemOption[] = [];
     let correctAnswerHtml = "";
     resp.querySelectorAll("choice").forEach((choice, i) => {
-      const text = choice.textContent?.trim() || "";
+      const html = choice.innerHTML.trim();
+      const text = normalizeDisplayText(textWithLineBreaks(choice), html || `choice_${i}`);
       const id = `choice_${i}`;
-      options.push({ id, text });
+      options.push(html ? { id, text, html } : { id, text });
       if (choice.getAttribute("correct") === "true") {
-        correctAnswerHtml = text;
+        correctAnswerHtml = html || text;
       }
     });
     problems.push({
@@ -486,11 +565,12 @@ function parseOlxProblem(xml: string): ParsedProblem[] {
     const options: ProblemOption[] = [];
     let correctParts: string[] = [];
     resp.querySelectorAll("choice").forEach((choice, i) => {
-      const text = choice.textContent?.trim() || "";
+      const html = choice.innerHTML.trim();
+      const text = normalizeDisplayText(textWithLineBreaks(choice), html || `choice_${i}`);
       const id = `choice_${i}`;
-      options.push({ id, text });
+      options.push(html ? { id, text, html } : { id, text });
       if (choice.getAttribute("correct") === "true") {
-        correctParts.push(text);
+        correctParts.push(html || text);
       }
     });
     problems.push({
@@ -500,7 +580,7 @@ function parseOlxProblem(xml: string): ParsedProblem[] {
       options,
       explanationHtml: explanationHtml || undefined,
       hintHtml: hintHtml || undefined,
-      correctAnswerHtml: correctParts.join(" ; ") || undefined,
+      correctAnswerHtml: correctParts.join("<br/>") || undefined,
       hasHints,
     });
   });
@@ -515,18 +595,35 @@ function parseOlxProblem(xml: string): ParsedProblem[] {
       if (optionsAttr) {
         const matches = optionsAttr.match(/'([^']+)'/g);
         if (matches) {
-          matches.forEach((m, i) => {
+          matches.forEach((m) => {
             const text = m.replace(/'/g, "");
-            options.push({ id: text, text });
+            options.push(textOption(text, text));
           });
         }
       }
+      let correctFromOption = "";
       optionInput.querySelectorAll("option").forEach((opt) => {
-        const text = opt.textContent?.trim() || "";
-        if (text) options.push({ id: text, text });
+        const text = normalizeDisplayText(opt.textContent || "");
+        if (text) {
+          options.push({ id: text, text });
+          if (opt.getAttribute("correct")?.toLowerCase() === "true") {
+            correctFromOption = text;
+          }
+        }
       });
+      const correct = optionInput.getAttribute("correct") || correctFromOption;
+      problems.push({
+        id: `olx_dropdown_${problemIndex++}`,
+        type: "dropdown",
+        questionHtml: questionHtml || "Chọn đáp án từ danh sách:",
+        options,
+        explanationHtml: explanationHtml || undefined,
+        hintHtml: hintHtml || undefined,
+        correctAnswerHtml: correct || undefined,
+        hasHints,
+      });
+      return;
     }
-    const correct = optionInput?.getAttribute("correct") || "";
     problems.push({
       id: `olx_dropdown_${problemIndex++}`,
       type: "dropdown",
@@ -534,7 +631,7 @@ function parseOlxProblem(xml: string): ParsedProblem[] {
       options,
       explanationHtml: explanationHtml || undefined,
       hintHtml: hintHtml || undefined,
-      correctAnswerHtml: correct || undefined,
+      correctAnswerHtml: undefined,
       hasHints,
     });
   });

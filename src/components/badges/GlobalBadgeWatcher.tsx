@@ -6,13 +6,26 @@
 // bất kể đang ở route nào.
 // ============================================================
 
+import { useEffect, useRef } from "react";
 import { BadgeUnlockModal } from "@/components/badges/BadgeUnlockModal";
 import { useBadges } from "@/hooks/useBackendBadges";
 import { useAppStore } from "@/stores/useAppStore";
 
 export function GlobalBadgeWatcher() {
-  const { newlyEarned, dismissNewBadge, badgeImageMap } = useBadges();
+  const { newlyEarned, dismissNewBadge, badgeImageMap, refetch } = useBadges();
   const isCourseModalActive = useAppStore((s) => s.isCourseModalActive);
+  const wasBlockedRef = useRef(false);
+
+  useEffect(() => {
+    if (isCourseModalActive) {
+      wasBlockedRef.current = true;
+      return;
+    }
+
+    if (!wasBlockedRef.current) return;
+    wasBlockedRef.current = false;
+    void refetch();
+  }, [isCourseModalActive, refetch]);
 
   // Nếu đang có course modal, chặn hoàn toàn không cho render badge modal
   if (isCourseModalActive) return null;

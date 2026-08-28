@@ -22,6 +22,10 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
   const [checked, setChecked] = useState(false);
   const setBlockingModalActive = useAppStore((s) => s.setBlockingModalActive);
   const setConfirmJustClosed = useAppStore((s) => s.setConfirmJustClosed);
+  const modalId = `course-confirm:${courseId}`;
+  const otherBlockingModalCount = useAppStore((s) =>
+    s.blockingModalIds.filter((id) => id !== modalId).length
+  );
   const sessionMode = useAuthStore((s) => s.sessionMode);
 
   const [isPending, setIsPending] = useState(false);
@@ -32,9 +36,9 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
   const hasResetRef = useRef(false);
 
   useEffect(() => {
-    setBlockingModalActive(`course-confirm:${courseId}`, open || isPending);
-    return () => setBlockingModalActive(`course-confirm:${courseId}`, false);
-  }, [courseId, open, isPending, setBlockingModalActive]);
+    setBlockingModalActive(modalId, open || isPending);
+    return () => setBlockingModalActive(modalId, false);
+  }, [modalId, open, isPending, setBlockingModalActive]);
 
   const queryClient = useQueryClient();
 
@@ -71,6 +75,8 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
     const isConfirmed = modalState.confirm_shown;
     // Chỉ hiển thị modal khi tiến độ = 100%, chưa confirm và admin bật
     if (!isConfirmed && completionPercent === 100 && isEnabled) {
+      if (otherBlockingModalCount > 0) return;
+
       setIsPending(true);
       // Delay một chút để progress bar kịp chạy tới 100%
       const timer = setTimeout(() => {
@@ -82,7 +88,7 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
         setIsPending(false);
       }
     }
-  }, [courseId, isLoading, completionPercent, isEnabled, config, isModalStateLoading, modalState]);
+  }, [courseId, isLoading, completionPercent, isEnabled, config, isModalStateLoading, modalState, otherBlockingModalCount]);
 
   const handleContinue = () => {
     if (!checked) return;
@@ -91,8 +97,6 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
     // Thông báo cho Complete modal qua Zustand store (thay vì DOM event)
     setConfirmJustClosed(true);
   };
-
-  const [scale, setScale] = useState(1);
 
   return (
     <Dialog open={open} onOpenChange={() => { }}>

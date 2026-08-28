@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getBlockDetail, submitSortableAnswer } from "@/api/blocks";
-import { GripVertical, Loader2, XCircle, Play } from "lucide-react";
+import { CheckCircle2, GripVertical, Loader2, XCircle, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
@@ -14,7 +14,6 @@ import {
   resolveProblemMediaImageUrl,
   type ProblemMedia,
 } from "@/lib/problemMedia";
-import { storageUrl } from "@/utils/storageUrl";
 import { LessonImageCarousel } from "./LessonImageCarousel";
 import { LessonUploadedVideo } from "./LessonUploadedVideo";
 
@@ -53,7 +52,7 @@ interface SortableData {
 
 // ── Draggable Item Component ──
 
-function SortableRow({ item, index }: { item: SortableItem; index: number }) {
+function SortableRow({ item, index, disabled = false }: { item: SortableItem; index: number; disabled?: boolean }) {
   const {
     attributes,
     listeners,
@@ -61,7 +60,7 @@ function SortableRow({ item, index }: { item: SortableItem; index: number }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: item.id });
+  } = useSortable({ id: item.id, disabled });
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -74,6 +73,8 @@ function SortableRow({ item, index }: { item: SortableItem; index: number }) {
   if (isDragging) {
     wrapperClass +=
       "border-primary shadow-xl opacity-90 z-50 ring-2 ring-primary/20 ";
+  } else if (disabled) {
+    wrapperClass += "border-success/30 ";
   } else {
     wrapperClass +=
       "border-primary/20 hover:border-primary/40 ";
@@ -84,7 +85,12 @@ function SortableRow({ item, index }: { item: SortableItem; index: number }) {
       {/* Drag handle */}
       <button
         type="button"
-        className="cursor-grab active:cursor-grabbing touch-none p-1 rounded-lg hover:bg-primary/10 text-muted-foreground"
+        disabled={disabled}
+        className={`touch-none p-1 rounded-lg text-muted-foreground ${
+          disabled
+            ? "cursor-default opacity-50"
+            : "cursor-grab active:cursor-grabbing hover:bg-primary/10"
+        }`}
         {...attributes}
         {...listeners}
       >
@@ -209,18 +215,20 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
   const submitMutation = useMutation({
     mutationFn: (answer: number[]) => submitSortableAnswer(usageKey, answer),
     onSuccess: (data) => {
-      if (data.status === "correct") {
+      const correct = data.status === "correct" || data.status === "already_completed";
+      if (correct) {
+        const successMessage = data.message || "Chính xác! Bạn đã hoàn thành phần này.";
         setIsCorrect(true);
-        setResultMessage(data.message);
+        setResultMessage(successMessage);
         // Lưu vào session store (kèm fingerprint)
         const fp = svd ? JSON.stringify(svd.items.map(i => i.text)) : '';
         useBlockSubmitStore.getState().setResult(usageKey, {
-          resultMessage: data.message,
+          resultMessage: successMessage,
           isCorrect: true,
           contentFingerprint: fp,
         });
         // Mark block complete (giống edX: chỉ khi đúng)
-        if (courseId) {
+        if (data.status === "correct" && courseId) {
           markBlockComplete(courseId, usageKey)
             .catch((e) => console.error('Failed to mark sortable complete:', e));
         }
@@ -228,8 +236,9 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
         // Refetch progress với retry để bắt kịp backend aggregation
         refetchProgressWithRetry(qc, courseId);
       } else {
+        const retryMessage = data.message || "Chưa đúng, hãy thử lại.";
         setIsCorrect(false);
-        setResultMessage(data.message);
+        setResultMessage(retryMessage);
       }
     },
     onError: () => {
@@ -243,6 +252,11 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
     setIsCorrect(null);
     const answer = items.map((item) => item.id);
     submitMutation.mutate(answer);
+  };
+
+  const handleRetry = () => {
+    setResultMessage(null);
+    setIsCorrect(null);
   };
 
   // ── Render States ──
@@ -313,14 +327,20 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
 
   // ── Result Block ──
   let resultBlock = null;
-  if (resultMessage && isCorrect !== true) {
-    let wrapperClass = "mb-4 w-full max-w-sm flex items-center gap-3 rounded-xl p-4 ";
+  if (resultMessage) {
+    let wrapperClass = "mb-4 w-full max-w-sm flex items-center gap-3 rounded-xl border p-4 ";
     let textClass = "font-medium ";
     let icon = null;
 
-    wrapperClass += "bg-destructive/10 border border-destructive/20";
-    textClass += "text-foreground text-[14px]";
-    icon = <XCircle className="h-6 w-6 text-destructive shrink-0" />;
+    if (isCorrect === true) {
+      wrapperClass += "justify-center bg-success/10 border-success/20 text-center";
+      textClass += "text-success text-[14px]";
+      icon = <CheckCircle2 className="h-6 w-6 text-success shrink-0" />;
+    } else {
+      wrapperClass += "bg-destructive/10 border-destructive/20";
+      textClass += "text-destructive text-[14px]";
+      icon = <XCircle className="h-6 w-6 text-destructive shrink-0" />;
+    }
 
     resultBlock = (
       <div className={wrapperClass}>
@@ -334,6 +354,31 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
   let spinner = null;
   if (submitMutation.isPending) {
     spinner = <Loader2 className="mr-2 h-5 w-5 animate-spin" />;
+  }
+
+  let actionArea = null;
+  if (!resultMessage) {
+    actionArea = (
+      <Button
+        onClick={handleSubmit}
+        disabled={submitMutation.isPending}
+        className="h-12 w-full max-w-sm rounded-full font-bold text-[15px] shadow-lg"
+      >
+        {spinner}
+        Nộp bài chấm điểm
+      </Button>
+    );
+  } else if (isCorrect === false) {
+    actionArea = (
+      <Button
+        onClick={handleRetry}
+        disabled={submitMutation.isPending}
+        variant="secondary"
+        className="h-12 w-full max-w-sm rounded-full font-bold text-[15px] shadow-sm"
+      >
+        Thử lại
+      </Button>
+    );
   }
 
   // ── Main Render ──
@@ -358,7 +403,7 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
       {/* Question text */}
       {svd.question_text && (
         <div className="mb-8 pl-4 border-l-4 border-primary">
-          <p className="text-[15px] text-foreground/80 leading-relaxed">
+          <p className="whitespace-pre-wrap break-words text-[15px] text-foreground/80 leading-relaxed">
             {svd.question_text}
           </p>
         </div>
@@ -377,7 +422,12 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
           >
             <div className="flex flex-col gap-3">
               {items.map((item, index) => (
-                <SortableRow key={item.id} item={item} index={index} />
+                <SortableRow
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  disabled={isCorrect === true || submitMutation.isPending}
+                />
               ))}
             </div>
           </SortableContext>
@@ -387,16 +437,7 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
       {/* Submit area */}
       <div className="flex flex-col items-center justify-center relative z-10 border-t border-primary/10 pt-6 mt-4">
         {resultBlock}
-        {isCorrect !== true && (
-          <Button
-            onClick={handleSubmit}
-            disabled={submitMutation.isPending}
-            className="h-12 w-full max-w-sm rounded-full font-bold text-[15px] shadow-lg"
-          >
-            {spinner}
-            Nộp bài chấm điểm
-          </Button>
-        )}
+        {actionArea}
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ import type { CourseBlocksResponse, CourseBlock, BlocksResponse, Block } from "@
 import { normalizeHtmlMediaImages } from "@/lib/htmlMedia";
 import { normalizeProblemMedia } from "@/lib/problemMedia";
 import { normalizeMediaQuizData } from "@/lib/mediaQuiz";
+import { normalizeImageChoiceQuizData } from "@/lib/imageChoiceQuiz";
 import { normalizeScenarioChatData } from "@/lib/scenarioChat";
 
 /**
@@ -128,6 +129,12 @@ function buildStudentViewData(cb: CourseBlock): Record<string, unknown> {
       return {
         display_name: cb.display_name,
         media_quiz_data: normalizeMediaQuizData(data),
+      };
+
+    case 'la_image_choice_quiz':
+      return {
+        display_name: cb.display_name,
+        image_choice_quiz_data: normalizeImageChoiceQuizData(data),
       };
 
     case 'la_scenario_chat':

@@ -12,7 +12,7 @@ import { Loader2, CheckCircle2, XCircle, ChevronDown, Info, Lightbulb } from "lu
 import { getXBlockHtml, fetchExplanation } from "@/api/blocks";
 import { useSubmitQuiz, parseQuizResult } from "@/hooks/useQuiz";
 import { parseProblemHtml } from "@/transformers/problemParser";
-import type { ParsedProblem } from "@/transformers/problemParser";
+import type { ParsedProblem, ProblemOption } from "@/transformers/problemParser";
 import { useParams } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { markBlockComplete } from "@/api/progress";
@@ -27,12 +27,31 @@ import {
   resolveProblemMediaImageUrl,
   type ProblemMedia,
 } from "@/lib/problemMedia";
-import { storageUrl } from "@/utils/storageUrl";
 import type { DemoIframeLessonQuizGuidePhase } from "@/utils/demoIframeDashboardGuide";
 import {
   DEMO_IFRAME_GUIDE_SCROLL_SHORT_MS,
   scrollDemoIframeElementToCenter,
 } from "@/utils/demoIframeSmoothScroll";
+
+function OptionLabel({
+  option,
+  className = "",
+}: {
+  option: Pick<ProblemOption, "text" | "html">;
+  className?: string;
+}) {
+  const baseClass = `whitespace-pre-wrap break-words [&_br]:block [&_p]:my-0 ${className}`;
+  if (option.html) {
+    return (
+      <div
+        className={baseClass}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(option.html) }}
+      />
+    );
+  }
+
+  return <span className={baseClass}>{option.text}</span>;
+}
 
 // ── Custom Dropdown cho Problem Type: Dropdown ──
 function CustomDropdown({
@@ -41,7 +60,7 @@ function CustomDropdown({
   onChange,
   disabled,
 }: {
-  options: { id: string; text: string }[];
+  options: ProblemOption[];
   value: string;
   onChange: (val: string) => void;
   disabled: boolean;
@@ -74,12 +93,16 @@ function CustomDropdown({
             : "border-border bg-background hover:bg-muted/20 text-foreground"
           }`}
       >
-        <span
-          className={`text-[15px] font-medium leading-relaxed ${value ? "text-primary" : "text-muted-foreground"
+        <div
+          className={`min-w-0 flex-1 text-[15px] font-medium leading-relaxed ${value ? "text-primary" : "text-muted-foreground"
             }`}
         >
-          {selectedOption ? selectedOption.text : "-- Kết quả chọn --"}
-        </span>
+          {selectedOption ? (
+            <OptionLabel option={selectedOption} />
+          ) : (
+            "-- Kết quả chọn --"
+          )}
+        </div>
         <ChevronDown
           className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180 text-primary" : ""
             } ${value && !isOpen ? "text-primary" : ""}`}
@@ -101,7 +124,7 @@ function CustomDropdown({
                 : "text-foreground hover:bg-muted/80 hover:text-foreground font-medium"
                 }`}
             >
-              <span className="text-[14px]">{opt.text}</span>
+              <OptionLabel option={opt} className="min-w-0 flex-1 text-[14px]" />
             </button>
           ))}
         </div>
@@ -231,7 +254,7 @@ export function QuizContent({
     const problems = parseProblemHtml(quizHtml);
 
     // Tạo fingerprint từ nội dung quiz hiện tại
-    const currentFingerprint = JSON.stringify(problems.map(p => p.type + '|' + (p.options?.map(o => o.text).join(',') || '')));
+    const currentFingerprint = JSON.stringify(problems.map(p => p.type + '|' + (p.options?.map(o => `${o.text}|${o.html || ""}`).join(',') || '')));
 
     // Kiểm tra cache với fingerprint
     const cached = useBlockSubmitStore.getState().getResult(problemUsageKey);
@@ -308,7 +331,7 @@ export function QuizContent({
       }
 
       // Lưu kết quả vào session store (kèm fingerprint để phát hiện content thay đổi)
-      const fp = JSON.stringify(parsedProblems.map(p => p.type + '|' + (p.options?.map(o => o.text).join(',') || '')));
+      const fp = JSON.stringify(parsedProblems.map(p => p.type + '|' + (p.options?.map(o => `${o.text}|${o.html || ""}`).join(',') || '')));
       useBlockSubmitStore.getState().setResult(problemUsageKey, {
         resultMessage: result.message,
         isCorrect: result.correct,
@@ -429,7 +452,7 @@ export function QuizContent({
 
             {/* Câu hỏi HTML */}
             <div
-              className="mb-8 text-[20px] md:text-[24px] font-bold leading-snug text-foreground"
+              className="mb-8 whitespace-pre-wrap break-words text-[20px] md:text-[24px] font-bold leading-snug text-foreground [&_br]:block [&_p]:my-0"
               dangerouslySetInnerHTML={{
                 __html: DOMPurify.sanitize(prob.questionHtml),
               }}
@@ -493,9 +516,7 @@ export function QuizContent({
                         {labelLetter}
                       </div>
 
-                      <span className="flex-1 text-[15px] font-medium leading-relaxed text-foreground">
-                        {opt.text}
-                      </span>
+                      <OptionLabel option={opt} className="min-w-0 flex-1 text-[15px] font-medium leading-relaxed text-foreground" />
 
                       {/* Checkmark */}
                       {isSelected && (
@@ -543,9 +564,7 @@ export function QuizContent({
                         {labelLetter}
                       </div>
 
-                      <span className="flex-1 text-[15px] font-medium leading-relaxed text-foreground">
-                        {opt.text}
-                      </span>
+                      <OptionLabel option={opt} className="min-w-0 flex-1 text-[15px] font-medium leading-relaxed text-foreground" />
 
                       {/* Checkmark */}
                       {isSelected && (
@@ -596,7 +615,7 @@ export function QuizContent({
                         Đáp án đúng:
                       </span>
                       <div
-                        className="text-[15px] font-bold text-foreground"
+                        className="whitespace-pre-wrap break-words text-[15px] font-bold text-foreground [&_br]:block [&_p]:my-0"
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((prob.correctAnswerHtml || answers[prob.id]) as string) }}
                       />
                     </div>

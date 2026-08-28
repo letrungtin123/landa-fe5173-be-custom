@@ -24,7 +24,7 @@ interface MediaQuizContentProps {
 
 type MediaQuizAnswer = string | string[];
 
-function answerHasValue(answer: MediaQuizAnswer | undefined): boolean {
+function answerHasValue(answer: MediaQuizAnswer | undefined): answer is MediaQuizAnswer {
   return Array.isArray(answer) ? answer.length > 0 : !!answer;
 }
 
@@ -333,7 +333,7 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
         </div>
 
         <div
-          className="mb-8 text-[20px] md:text-[24px] font-bold leading-snug text-foreground"
+          className="mb-8 whitespace-pre-wrap break-words text-[20px] md:text-[24px] font-bold leading-snug text-foreground [&_br]:block [&_p]:my-0"
           dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentQuestion.prompt_html) }}
         />
 

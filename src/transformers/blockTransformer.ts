@@ -89,7 +89,7 @@ function getChildrenOfType(
  *
  * Một sequential "hoàn thành" khi tất cả leaf blocks đều completion = 1.0
  */
-const LEAF_TYPES = new Set(["html", "video", "problem", "la_media_quiz", "la_scenario_chat", "la_crossword", "la_sortable", "la_diagram", "la_faq", "la_pdf", "discussion", "done"]);
+const LEAF_TYPES = new Set(["html", "video", "problem", "la_media_quiz", "la_image_choice_quiz", "la_scenario_chat", "la_crossword", "la_sortable", "la_diagram", "la_faq", "la_pdf", "discussion", "done"]);
 
 function calcAggregatedCompletion(
   block: Block,
@@ -173,6 +173,7 @@ function detectLessonType(
       if (c.type === "video") return "video";
       if (c.type === "problem") return "quiz";
       if (c.type === "la_media_quiz") return "quiz";
+      if (c.type === "la_image_choice_quiz") return "quiz";
       if (c.type === "la_scenario_chat") return "quiz";
       if (c.type === "la_crossword") return "quiz";
       if (c.type === "la_sortable") return "quiz";

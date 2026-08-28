@@ -2,6 +2,7 @@ import { VideoPlayer } from "@/components/lesson/VideoPlayer";
 import { LessonSkeleton } from "@/components/skeletons/LessonSkeleton";
 import { QuizContent } from "@/components/lesson/QuizContent";
 import { MediaQuizContent } from "@/components/lesson/MediaQuizContent";
+import { ImageChoiceQuizContent } from "@/components/lesson/ImageChoiceQuizContent";
 import { ScenarioChatContent } from "@/components/lesson/ScenarioChatContent";
 import { UnitNavButtons } from "@/components/lesson/UnitNavButtons";
 import { usePageLoading } from "@/hooks/usePageLoading";
@@ -69,7 +70,7 @@ const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
 
 // Block types chỉ cần xem, không cần tương tác → auto-mark complete khi user navigate đến unit
 const PASSIVE_BLOCK_TYPES = ["html", "video", "la_diagram", "la_faq", "la_pdf"];
-const INTERACTIVE_BLOCK_TYPES = ["problem", "la_media_quiz", "la_scenario_chat", "la_crossword", "la_sortable"];
+const INTERACTIVE_BLOCK_TYPES = ["problem", "la_media_quiz", "la_image_choice_quiz", "la_scenario_chat", "la_crossword", "la_sortable"];
 const DEMO_IFRAME_LESSON_QUIZ_SCROLL_DELAY_MS = 11000;
 const DEMO_IFRAME_LESSON_QUIZ_SCROLL_DURATION_MS = 1800;
 const DEMO_IFRAME_LESSON_QUIZ_ASSIST_DELAY_MS = 2000;
@@ -943,6 +944,16 @@ export function LessonDetailPage() {
                         usageKey={comp.mediaQuizUsageKey}
                         mediaQuizData={comp.mediaQuizData}
                         onImageClick={(src) => setLightboxSrc(src)}
+                      />
+                    );
+                  }
+
+                  if (comp.type === "la_image_choice_quiz" && comp.imageChoiceQuizUsageKey && comp.imageChoiceQuizData) {
+                    return (
+                      <ImageChoiceQuizContent
+                        key={comp.id}
+                        usageKey={comp.imageChoiceQuizUsageKey}
+                        imageChoiceQuizData={comp.imageChoiceQuizData}
                       />
                     );
                   }

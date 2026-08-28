@@ -81,13 +81,15 @@ export async function createConversation(personaId: string): Promise<ChatConvers
 }
 
 export async function deleteConversation(id: string): Promise<void> {
-  await apiClient.delete(`/api/ai-chatbot/chat/conversations/${id}`);
+  await apiClient.delete(`/api/ai-chatbot/chat/conversations/${id}`, {
+    params: { target: 'learner' },
+  });
 }
 
 // ── Messages (cursor-based pagination) ──
 
 export async function fetchMessages(conversationId: string, cursor?: string): Promise<PaginatedMessages> {
-  const params: Record<string, string> = {};
+  const params: Record<string, string> = { target: 'learner' };
   if (cursor) params.cursor = cursor;
   const { data } = await apiClient.get<ApiResponse<PaginatedMessages>>(
     `/api/ai-chatbot/chat/conversations/${conversationId}/messages`,

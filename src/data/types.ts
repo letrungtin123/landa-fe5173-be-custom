@@ -6,6 +6,7 @@
 import type { ProblemMedia } from "@/lib/problemMedia";
 import type { HtmlMediaImage } from "@/lib/htmlMedia";
 import type { MediaQuizData } from "@/lib/mediaQuiz";
+import type { ImageChoiceQuizData } from "@/lib/imageChoiceQuiz";
 import type { ScenarioChatData } from "@/lib/scenarioChat";
 
 export interface User {
@@ -61,6 +62,8 @@ export interface UnitComponent {
   problemMedia?: ProblemMedia | null;
   mediaQuizUsageKey?: string | null;
   mediaQuizData?: MediaQuizData | null;
+  imageChoiceQuizUsageKey?: string | null;
+  imageChoiceQuizData?: ImageChoiceQuizData | null;
   scenarioChatUsageKey?: string | null;
   scenarioChatData?: ScenarioChatData | null;
   crosswordUsageKey?: string | null;

@@ -28,6 +28,7 @@ export interface UseBadgesResult {
   badgeImageMap: BadgeImageMap;
   badgeProgressMap: BadgeProgressMap;
   badgeDefinitions: BadgeDefinition[];
+  refetch: () => Promise<unknown>;
 }
 
 function text(value: unknown): string | null {
@@ -156,5 +157,6 @@ export function useBadges(): UseBadgesResult {
     badgeImageMap,
     badgeProgressMap,
     badgeDefinitions,
+    refetch: overviewQuery.refetch,
   };
 }

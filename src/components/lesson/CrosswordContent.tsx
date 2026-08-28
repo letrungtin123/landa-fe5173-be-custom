@@ -1,10 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getBlockDetail, submitCrosswordAnswer } from "@/api/blocks";
-import { ChevronRight, Lightbulb, Loader2, Play, XCircle } from "lucide-react";
+import { Lightbulb, Loader2, Play, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
 import { markBlockComplete } from "@/api/progress";
@@ -16,7 +15,6 @@ import {
   resolveProblemMediaImageUrl,
   type ProblemMedia,
 } from "@/lib/problemMedia";
-import { storageUrl } from "@/utils/storageUrl";
 import { LessonImageCarousel } from "./LessonImageCarousel";
 import { LessonUploadedVideo } from "./LessonUploadedVideo";
 
@@ -345,7 +343,7 @@ export function CrosswordContent({ usageKey, problemMedia, onImageClick }: Cross
       <CrosswordMediaBlock media={effectiveMedia} onImageClick={onImageClick} />
       {/* Khung gợi ý câu hỏi nổi bật */}
       <div className="mb-10 rounded-2xl border-2 border-primary/30 bg-white dark:bg-slate-800 p-6 shadow-sm text-center relative z-10 transition-all duration-300 transform">
-        <h4 className="text-lg md:text-xl font-bold text-foreground">
+        <h4 className="whitespace-pre-wrap break-words text-lg md:text-xl font-bold text-foreground">
           {clueBoxTitle}
         </h4>
       </div>
@@ -478,7 +476,7 @@ export function CrosswordContent({ usageKey, problemMedia, onImageClick }: Cross
                 onClick={() => setActiveWordId(w.id)}
               >
                 <span className="font-black text-primary text-base min-w-[28px] mt-0.5">{w.id}.</span>
-                <span className={`text-[15px] leading-relaxed ${activeWordId === w.id ? 'font-bold text-foreground' : 'text-foreground/80 font-medium'}`}>{w.clue}</span>
+                <span className={`whitespace-pre-wrap break-words text-[15px] leading-relaxed ${activeWordId === w.id ? 'font-bold text-foreground' : 'text-foreground/80 font-medium'}`}>{w.clue}</span>
               </li>
           ))}
         </ul>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSectionModalConfigs, getSectionModalShown, markSectionModalShown } from "@/api/sectionModalConfig";
@@ -70,9 +70,18 @@ interface SectionCompleteModalProps {
 export function SectionCompleteModal({ courseId, modules }: SectionCompleteModalProps) {
   const [open, setOpen] = useState(false);
   const [currentConfig, setCurrentConfig] = useState<{ section_id: string; title: string; description: string } | null>(null);
+  const [locallyDismissedSections, setLocallyDismissedSections] = useState<Set<string>>(() => new Set());
   const queryClient = useQueryClient();
   const setBlockingModalActive = useAppStore((s) => s.setBlockingModalActive);
   const sessionMode = useAuthStore((s) => s.sessionMode);
+  const shownQueryKey = useMemo(
+    () => ["sectionModalShown", courseId, sessionMode] as const,
+    [courseId, sessionMode],
+  );
+
+  useEffect(() => {
+    setLocallyDismissedSections(new Set());
+  }, [courseId, sessionMode]);
 
   useEffect(() => {
     setBlockingModalActive(`section-completion:${courseId}`, open);
@@ -87,7 +96,7 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
   });
 
   const { data: shownData } = useQuery({
-    queryKey: ["sectionModalShown", courseId, sessionMode],
+    queryKey: shownQueryKey,
     queryFn: () => getSectionModalShown(courseId),
     enabled: !!courseId,
     staleTime: 2 * 60 * 1000,
@@ -95,15 +104,30 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
 
   const { mutate: markShown } = useMutation({
     mutationFn: (sectionId: string) => markSectionModalShown(courseId, sectionId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sectionModalShown", courseId, sessionMode] });
+    onMutate: async (sectionId) => {
+      await queryClient.cancelQueries({ queryKey: shownQueryKey });
+      queryClient.setQueryData<{ shown_sections: string[] }>(shownQueryKey, (current) => {
+        const next = new Set(current?.shown_sections || []);
+        next.add(sectionId);
+        return { shown_sections: Array.from(next) };
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to mark section modal shown:", error);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: shownQueryKey });
     },
   });
 
   useEffect(() => {
     if (!configs || configs.length === 0 || !shownData || !modules || modules.length === 0) return;
+    if (open || currentConfig) return;
 
-    const shownSet = new Set(shownData.shown_sections);
+    const shownSet = new Set([
+      ...shownData.shown_sections,
+      ...locallyDismissedSections,
+    ]);
     const configMap = new Map(configs.map((config) => [config.section_id, config]));
 
     for (const mod of modules) {
@@ -114,15 +138,27 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
         return;
       }
     }
-  }, [configs, shownData, modules]);
+  }, [configs, currentConfig, locallyDismissedSections, modules, open, shownData]);
 
-  const handleDismiss = () => {
+  const handleDismiss = useCallback(() => {
     if (currentConfig) {
+      const sectionId = currentConfig.section_id;
+      setLocallyDismissedSections((current) => {
+        if (current.has(sectionId)) return current;
+        const next = new Set(current);
+        next.add(sectionId);
+        return next;
+      });
+      queryClient.setQueryData<{ shown_sections: string[] }>(shownQueryKey, (current) => {
+        const next = new Set(current?.shown_sections || []);
+        next.add(sectionId);
+        return { shown_sections: Array.from(next) };
+      });
       markShown(currentConfig.section_id);
     }
     setOpen(false);
     setCurrentConfig(null);
-  };
+  }, [currentConfig, markShown, queryClient, shownQueryKey]);
 
   if (!currentConfig) return null;
 
@@ -132,7 +168,7 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) handleDismiss(); }}>
       <DialogContent
-        className="z-[10000] w-auto max-w-none overflow-visible border-none bg-transparent p-0 shadow-none outline-none [&>button]:hidden"
+        className="z-[10000] w-auto max-w-none overflow-visible border-none bg-transparent p-0 shadow-none outline-none pointer-events-auto [&>button]:hidden"
         style={{ zIndex: 10000 }}
       >
         <DialogTitle className="sr-only">{title}</DialogTitle>
@@ -251,7 +287,7 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
         </style>
 
         <div
-          className="section-complete-encourage-card relative isolate overflow-hidden rounded-[18px] shadow-2xl md:rounded-[28px]"
+          className="section-complete-encourage-card relative isolate overflow-hidden rounded-[18px] shadow-2xl pointer-events-auto md:rounded-[28px]"
           style={{
             background:
               "radial-gradient(circle at 50% 39%, #0A74FF 0%, #005FE8 50%, #0034C3 100%), #005FE8",
@@ -316,8 +352,11 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
 
           <button
             type="button"
-            onClick={handleDismiss}
-            className="section-complete-action absolute left-1/2 z-50 flex -translate-x-1/2 items-center justify-center rounded-full bg-[#0062DF] px-5 font-semibold leading-none tracking-normal text-white shadow-[0_10px_24px_rgba(0,52,195,0.28)] transition hover:bg-[#0054C8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-[#005FE8]"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDismiss();
+            }}
+            className="section-complete-action absolute left-1/2 z-50 flex -translate-x-1/2 items-center justify-center rounded-full bg-[#0062DF] px-5 font-semibold leading-none tracking-normal text-white shadow-[0_10px_24px_rgba(0,52,195,0.28)] transition pointer-events-auto hover:bg-[#0054C8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-[#005FE8]"
             style={{ backgroundColor: "#0062DF", fontWeight: 600 }}
           >
             Tiếp tục

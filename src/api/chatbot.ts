@@ -25,8 +25,11 @@ export interface DemoIframeChatbotPreview {
   personas: BotPersona[];
 }
 
-export async function fetchBotPersonas(botId: string): Promise<BotPersona[]> {
-  const { data } = await apiClient.get<ApiResponse<BotPersona[]>>(`/api/ai-chatbot/bots/${botId}/personas`);
+export async function fetchBotPersonas(_botId: string): Promise<BotPersona[]> {
+  const { data } = await apiClient.get<ApiResponse<BotPersona[]>>(
+    "/api/ai-chatbot/chat/active-bot/personas",
+    { params: { target: "learner" } },
+  );
   return data.data;
 }
 

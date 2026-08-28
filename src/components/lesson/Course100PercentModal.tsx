@@ -78,6 +78,10 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
   const setBlockingModalActive = useAppStore((s) => s.setBlockingModalActive);
   const confirmJustClosed = useAppStore((s) => s.confirmJustClosed);
   const setConfirmJustClosed = useAppStore((s) => s.setConfirmJustClosed);
+  const modalId = `course-completion:${courseId}`;
+  const otherBlockingModalCount = useAppStore((s) =>
+    s.blockingModalIds.filter((id) => id !== modalId).length
+  );
   const sessionMode = useAuthStore((s) => s.sessionMode);
 
   // Nếu admin tắt completion modal → không render
@@ -111,9 +115,9 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
   }, [open]);
 
   useEffect(() => {
-    setBlockingModalActive(`course-completion:${courseId}`, open || isPending);
-    return () => setBlockingModalActive(`course-completion:${courseId}`, false);
-  }, [courseId, open, isPending, setBlockingModalActive]);
+    setBlockingModalActive(modalId, open || isPending);
+    return () => setBlockingModalActive(modalId, false);
+  }, [modalId, open, isPending, setBlockingModalActive]);
 
   const queryClient = useQueryClient();
 
@@ -150,6 +154,7 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
     // - Nếu course BẬT confirm → cần confirm_shown = true HOẶC confirmJustClosed = true
     const confirmSatisfied = !requiresConfirm || modalState.confirm_shown || confirmJustClosed;
     if (!confirmSatisfied) return;
+    if (otherBlockingModalCount > 0) return;
 
     setIsPending(true);
     // Delay ngắn nếu confirm vừa đóng (chain nối tiếp), delay dài hơn nếu hiện trực tiếp
@@ -168,7 +173,7 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
       clearTimeout(timer);
       setIsPending(false);
     };
-  }, [courseId, completionPercent, isLoading, isEnabled, requiresConfirm, confirmJustClosed, config, isModalStateLoading, modalState]);
+  }, [courseId, completionPercent, isLoading, isEnabled, requiresConfirm, confirmJustClosed, config, isModalStateLoading, modalState, otherBlockingModalCount]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
