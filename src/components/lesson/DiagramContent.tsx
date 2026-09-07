@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ReactFlow, Controls, Background, useNodesState, useEdgesState, ConnectionMode } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -36,6 +37,7 @@ interface DiagramContentProps {
 }
 
 export default function DiagramContent({ data, onComplete }: DiagramContentProps) {
+  const { t } = useTranslation();
   const { colorMode } = useThemeStore();
   const diagrams = data?.diagrams || [];
   const startDiagramId = data?.start_diagram_id || (diagrams.length > 0 ? diagrams[0].id : null);
@@ -66,7 +68,7 @@ export default function DiagramContent({ data, onComplete }: DiagramContentProps
   if (!activeDiagram || activeDiagram.nodes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 rounded-xl border-2 border-dashed border-border text-muted-foreground text-sm">
-        Sơ đồ chưa có dữ liệu hoặc đã bị xóa.
+        {t('lesson.diagramUnavailable')}
       </div>
     );
   }
@@ -104,6 +106,7 @@ function DiagramRenderer({
   onNodeClick: (event: React.MouseEvent, node: Node) => void;
   onGoBack: () => void;
 }) {
+  const { t } = useTranslation();
   const [nodes, setNodes, onNodesChange] = useNodesState(
     activeDiagram.nodes.map((n) => ({ ...n, draggable: false, selectable: false, connectable: false, data: { ...n.data, hidePorts: true } }))
   );
@@ -173,7 +176,7 @@ function DiagramRenderer({
         <div className="flex items-center gap-3">
           {history.length > 1 && (
             <Button variant="outline" size="sm" onClick={onGoBack} className="h-8 gap-1 text-xs">
-              <ArrowLeft className="w-3.5 h-3.5" /> Quay lại
+              <ArrowLeft className="w-3.5 h-3.5" /> {t('lesson.diagramBack')}
             </Button>
           )}
           <h3 className="font-semibold text-primary">{activeDiagram.name}</h3>

@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getBlockDetail, submitSortableAnswer } from "@/api/blocks";
 import { CheckCircle2, GripVertical, Loader2, XCircle, Play } from "lucide-react";
@@ -134,6 +135,7 @@ interface SortableContentProps {
 }
 
 export function SortableContent({ usageKey, problemMedia, onImageClick }: SortableContentProps) {
+  const { t } = useTranslation();
   const { courseId } = useParams();
   const qc = useQueryClient();
   const [items, setItems] = useState<SortableItem[]>([]);
@@ -217,7 +219,7 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
     onSuccess: (data) => {
       const correct = data.status === "correct" || data.status === "already_completed";
       if (correct) {
-        const successMessage = data.message || "Chính xác! Bạn đã hoàn thành phần này.";
+        const successMessage = data.message || t("quiz.correctComplete");
         setIsCorrect(true);
         setResultMessage(successMessage);
         // Lưu vào session store (kèm fingerprint)
@@ -236,14 +238,14 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
         // Refetch progress với retry để bắt kịp backend aggregation
         refetchProgressWithRetry(qc, courseId);
       } else {
-        const retryMessage = data.message || "Chưa đúng, hãy thử lại.";
+        const retryMessage = data.message || t("quiz.incorrect");
         setIsCorrect(false);
         setResultMessage(retryMessage);
       }
     },
     onError: () => {
       setIsCorrect(false);
-      setResultMessage("Không thể kết nối đến máy chủ.");
+      setResultMessage(t("sortable.connectionFailed"));
     },
   });
 
@@ -272,7 +274,7 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
   if (!svd) {
     return (
       <div className="text-center p-10 mt-6 rounded-2xl border border-muted bg-muted/20">
-        <p className="text-muted-foreground">Không tải được dữ liệu bài tập sắp xếp.</p>
+        <p className="text-muted-foreground">{t("sortable.unavailable")}</p>
       </div>
     );
   }
@@ -293,24 +295,24 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
             className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-widest"
             style={{ backgroundColor: "#43FDD7", color: "#000" }}
           >
-            Sắp xếp
+            {t("sortable.badge")}
           </span>
         </div>
         <h2 className="mb-8 text-[28px] 2xl:text-[34px] font-semibold leading-[36px] 2xl:leading-[42px] text-foreground">
-          {svd.display_name || "Sắp xếp đúng thứ tự"}
+          {svd.display_name || t("sortable.fallbackTitle")}
         </h2>
 
         <div className="mb-8 pl-4 border-l-4 border-primary">
-          <h3 className="text-xl font-bold mb-4">Hướng dẫn</h3>
+          <h3 className="text-xl font-bold mb-4">{t("sortable.guideTitle")}</h3>
           <ul className="space-y-3 text-[14px]">
             <li>
-              <b>1. Đọc kỹ:</b> Xem xét thứ tự logic hoặc quy trình đúng của các mục.
+              {t("sortable.guideOne")}
             </li>
             <li>
-              <b>2. Thao tác:</b> Nhấn vào thanh cầm chốt bên trái và kéo thả mục lên/xuống để thay đổi vị trí.
+              {t("sortable.guideTwo")}
             </li>
             <li>
-              <b>3. Kiểm tra:</b> Sau khi bạn hài lòng với thứ tự, nhấn xác nhận để hệ thống chấm điểm bài của bạn.
+              {t("sortable.guideThree")}
             </li>
           </ul>
         </div>
@@ -319,7 +321,7 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
           onClick={() => setStarted(true)}
           className="h-12 rounded-full px-8 font-bold text-[15px] shadow-lg transition-transform hover:scale-105"
         >
-          Bắt đầu <Play className="ml-2 h-4 w-4" />
+          {t("sortable.start")} <Play className="ml-2 h-4 w-4" />
         </Button>
       </div>
     );
@@ -365,7 +367,7 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
         className="h-12 w-full max-w-sm rounded-full font-bold text-[15px] shadow-lg"
       >
         {spinner}
-        Nộp bài chấm điểm
+        {t("sortable.submit")}
       </Button>
     );
   } else if (isCorrect === false) {
@@ -376,7 +378,7 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
         variant="secondary"
         className="h-12 w-full max-w-sm rounded-full font-bold text-[15px] shadow-sm"
       >
-        Thử lại
+        {t("sortable.retry")}
       </Button>
     );
   }
@@ -391,13 +393,13 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
           className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider"
           style={{ backgroundColor: "#43FDD7", color: "#000" }}
         >
-          Sắp xếp
+          {t("sortable.badge")}
         </span>
       </div>
 
       {/* Title */}
       <h2 className="mb-4 text-[28px] 2xl:text-[34px] font-semibold leading-[36px] 2xl:leading-[42px] text-foreground">
-        {svd.display_name || "Sắp xếp đúng thứ tự"}
+        {svd.display_name || t("sortable.fallbackTitle")}
       </h2>
 
       {/* Question text */}

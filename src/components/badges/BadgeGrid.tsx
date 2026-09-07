@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { BadgeCard } from "./BadgeCard";
-import { BADGE_DEFINITIONS, CATEGORY_LABELS, type BadgeCategory, type BadgeDefinition } from "@/data/badgeConfig";
+import { BADGE_DEFINITIONS, type BadgeCategory, type BadgeDefinition } from "@/data/badgeConfig";
 import { cn } from "@/lib/utils";
 import { BADGE_CARD_IMAGES, BADGE_MOBILE_CARD_IMAGES } from "@/data/badgeImages";
 import type { BadgeImageMap } from "@/hooks/useBackendBadges";
@@ -13,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useTranslation } from "react-i18next";
 
 interface BadgeGridProps {
   earnedBadges: EarnedBadge[];
@@ -26,18 +27,18 @@ interface BadgeGridProps {
 
 type FilterType = "all" | "earned" | "locked" | BadgeCategory;
 
-const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
-  { value: "all", label: "Tất cả" },
-  { value: "earned", label: "Đã đạt" },
-  { value: "locked", label: "Chưa đạt" },
-  { value: "introduction", label: CATEGORY_LABELS.introduction },
-  { value: "expertise", label: CATEGORY_LABELS.expertise },
-  { value: "innovation", label: CATEGORY_LABELS.innovation },
-];
-
 export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageMap, badgeProgressMap, badgeDefinitions }: BadgeGridProps) {
+  const { t } = useTranslation();
   const [filter, setFilter] = useState<FilterType>("all");
   const [selectedBadge, setSelectedBadge] = useState<{ badge: BadgeDefinition; earned: EarnedBadge } | null>(null);
+  const filterOptions = useMemo<{ value: FilterType; label: string }[]>(() => [
+    { value: "all", label: t("filters.all") },
+    { value: "earned", label: t("filters.earned") },
+    { value: "locked", label: t("filters.locked") },
+    { value: "introduction", label: t("badges.categories.introduction") },
+    { value: "expertise", label: t("badges.categories.expertise") },
+    { value: "innovation", label: t("badges.categories.innovation") },
+  ], [t]);
 
   const earnedMap = useMemo(() => {
     const map = new Map<string, EarnedBadge>();
@@ -87,7 +88,7 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageM
   const selectedMobileImgSrc = selectedBadge
     ? (getMobileCardUrl(selectedBadge.badge.id) || BADGE_MOBILE_CARD_IMAGES[selectedBadge.badge.id] || BADGE_MOBILE_CARD_IMAGES["onboarding_warrior"])
     : "";
-  const selectedFilterLabel = FILTER_OPTIONS.find(opt => opt.value === filter)?.label || FILTER_OPTIONS[0].label;
+  const selectedFilterLabel = filterOptions.find(opt => opt.value === filter)?.label || filterOptions[0].label;
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -104,7 +105,7 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageM
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-[calc(100vw-2rem)] max-w-[360px] rounded-xl p-1.5">
-            {FILTER_OPTIONS.map(opt => (
+            {filterOptions.map(opt => (
               <DropdownMenuItem
                 key={opt.value}
                 onSelect={() => setFilter(opt.value)}
@@ -123,7 +124,7 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageM
       </div>
 
       <div className="hidden flex-wrap gap-2 md:flex">
-        {FILTER_OPTIONS.map(opt => (
+        {filterOptions.map(opt => (
           <button
             key={opt.value}
             onClick={() => setFilter(opt.value)}
@@ -190,7 +191,7 @@ export function BadgeGrid({ earnedBadges, activeBadgeIds, className, badgeImageM
               exit={{ opacity: 0 }}
               className="flex flex-col items-center justify-center py-12 text-muted-foreground w-full"
             >
-              <p className="text-sm">Không có danh hiệu nào phù hợp với bộ lọc</p>
+              <p className="text-sm">{t("badge.noResults")}</p>
             </motion.div>
           )}
         </AnimatePresence>

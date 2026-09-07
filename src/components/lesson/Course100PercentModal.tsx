@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,7 @@ const Confetti = () => {
 };
 
 export function Course100PercentModal({ courseId, completionPercent, isLoading, config }: Course100PercentModalProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const setBlockingModalActive = useAppStore((s) => s.setBlockingModalActive);
@@ -225,18 +227,18 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
             {/* PC Text Area (Fixed px, anchored to center of 1920x945) */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 mt-[200px] w-full max-w-[800px] flex-col items-center justify-start z-20 flex pointer-events-auto">
               <h1 className="text-foreground text-[42px] font-bold mb-3 tracking-tight">
-                {config?.completion_title || 'Congratulations!'}
+                {config?.completion_title || t("courseModal.completionFallbackTitle")}
               </h1>
               <p className="text-foreground/80 font-medium text-[16px] max-w-[600px] text-center leading-relaxed mb-8 px-4">
-                {config?.completion_description || 'Trở thành đối tác chiến lược giúp khách hàng tối ưu hiệu suất nhân lực để phát triển bền vững.'}
+                {config?.completion_description || t("courseModal.completionFallbackDescription")}
               </p>
 
               <div className="flex flex-row items-center justify-center gap-4">
                 <Button onClick={() => { setOpen(false); navigate("/dashboard"); }} className="bg-[#0057e7] hover:bg-[#0046b8] text-white rounded-full px-10 py-6 text-[15px] font-semibold shadow-md">
-                  Trang chủ
+                  {t("courseModal.home")}
                 </Button>
                 <Button onClick={() => { setOpen(false); navigate("/explore"); }} variant="outline" className="rounded-full px-10 py-6 text-[15px] font-semibold bg-transparent border-muted-foreground/30 text-foreground hover:bg-black/5 dark:hover:bg-white/10 hover:text-foreground">
-                  Các khoá học khác
+                  {t("courseModal.otherCourses")}
                 </Button>
                 {config?.completion_social_link && (
                   <a
@@ -291,17 +293,17 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
         {/* Mobile White Card */}
         <div className="md:hidden absolute top-1/2 left-1/2 -translate-x-1/2 mt-[60px] w-[90vw] max-w-[400px] bg-card rounded-[28px] p-6 z-20 shadow-2xl flex flex-col items-center text-center">
           <h1 className="text-[#0062ff] dark:text-primary text-[24px] font-bold mb-2">
-            {config?.completion_title || 'Congratulations!'}
+            {config?.completion_title || t("courseModal.completionFallbackTitle")}
           </h1>
           <p className="text-foreground text-[14px] leading-relaxed mb-6 font-medium px-2">
-            {config?.completion_description || 'Trở thành đối tác chiến lược giúp khách hàng tối ưu hiệu suất nhân lực để phát triển bền vững.'}
+            {config?.completion_description || t("courseModal.completionFallbackDescription")}
           </p>
           <div className="flex flex-row items-center justify-center gap-2 w-full">
             <Button onClick={() => { setOpen(false); navigate("/dashboard"); }} className="bg-[#0062ff] dark:bg-primary hover:bg-[#0052cc] text-white rounded-full px-5 h-11 text-[13px] font-semibold flex-shrink-0">
-              Trang chủ
+              {t("courseModal.home")}
             </Button>
             <Button onClick={() => { setOpen(false); navigate("/explore"); }} variant="outline" className="rounded-full px-4 h-11 text-[13px] font-semibold flex-1 border-muted-foreground/30 text-foreground hover:bg-black/5 dark:hover:bg-white/10 hover:text-foreground">
-              Các khoá học khác
+              {t("courseModal.otherCourses")}
             </Button>
             {config?.completion_social_link && (
               <a

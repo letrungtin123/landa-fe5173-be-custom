@@ -4,6 +4,7 @@
 
 import { cn } from "@/lib/utils";
 import type { CourseCategoryInfo } from "@/api/types";
+import { useTranslation } from "react-i18next";
 
 export type CourseFilter = 'all' | 'completed' | 'in_progress' | number;
 
@@ -31,16 +32,17 @@ export function CourseFilterBar({
   showOnlyStatus = false,
   className,
 }: Props) {
+  const { t } = useTranslation();
   const pills: Array<{ key: CourseFilter; label: string; count: number }> = showOnlyStatus
     ? [
-        { key: 'all', label: 'Tất cả', count: totalCount },
-        { key: 'in_progress', label: 'Đang học', count: inProgressCount },
-        { key: 'completed', label: 'Đã học', count: completedCount },
+        { key: 'all', label: t("filters.all"), count: totalCount },
+        { key: 'in_progress', label: t("filters.inProgress"), count: inProgressCount },
+        { key: 'completed', label: t("filters.completedLearning"), count: completedCount },
       ]
     : [
-        { key: 'all', label: 'Tất cả', count: totalCount },
-        { key: 'completed', label: 'Đã đạt', count: completedCount },
-        { key: 'in_progress', label: 'Chưa đạt', count: inProgressCount },
+        { key: 'all', label: t("filters.all"), count: totalCount },
+        { key: 'completed', label: t("filters.earned"), count: completedCount },
+        { key: 'in_progress', label: t("filters.locked"), count: inProgressCount },
         ...categories.map(cat => ({
           key: cat.id as CourseFilter,
           label: cat.name,

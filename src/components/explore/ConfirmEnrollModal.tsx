@@ -6,6 +6,7 @@ import lineIcon from "@/assets/InitConfirmEnrollModal/line-icon.png";
 import roundIcon from "@/assets/InitConfirmEnrollModal/round-icon.png";
 import { useAppStore } from "@/stores/useAppStore";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface ConfirmEnrollModalProps {
   open: boolean;
@@ -26,7 +27,8 @@ export function ConfirmEnrollModal({
   onConfirm,
   demoGuideActive = false,
 }: ConfirmEnrollModalProps) {
-  const displayCourseName = courseName || tenantName || "Khóa học";
+  const { t } = useTranslation();
+  const displayCourseName = courseName || tenantName || t("enrollment.courseFallback");
 
   const setBlockingModalActive = useAppStore((s) => s.setBlockingModalActive);
 
@@ -51,10 +53,10 @@ export function ConfirmEnrollModal({
           className="fixed left-1/2 top-1/2 z-50 h-[462px] max-h-[calc(100dvh-24px)] w-[375px] max-w-[100vw] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[24px] border-[6px] border-white bg-card p-0 shadow-[0_24px_80px_rgba(15,23,42,0.32)] outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 dark:border-border dark:shadow-[0_24px_90px_rgba(0,0,0,0.68)] md:h-[517px] md:w-[847px] md:max-w-[calc(100vw-64px)] md:rounded-[30px] md:border-[9px]"
         >
           <DialogPrimitive.Title className="sr-only">
-            Xác nhận bắt đầu khóa học {displayCourseName}
+            {t("enrollment.dialogTitle", { course: displayCourseName })}
           </DialogPrimitive.Title>
           <DialogPrimitive.Description className="sr-only">
-            Xác nhận bạn đã sẵn sàng trước khi vào trang chi tiết khóa học.
+            {t("enrollment.dialogDescription")}
           </DialogPrimitive.Description>
 
           <div className="relative flex h-full flex-col items-center overflow-hidden rounded-[18px] bg-[linear-gradient(180deg,hsl(var(--primary)/0.46)_0%,hsl(var(--accent)/0.20)_48%,hsl(var(--card))_100%)] px-5 text-center text-foreground dark:bg-[linear-gradient(180deg,hsl(var(--primary)/0.30)_0%,hsl(var(--accent)/0.16)_48%,hsl(var(--card))_100%)] md:rounded-[21px]">
@@ -79,16 +81,16 @@ export function ConfirmEnrollModal({
 
             <h2 className="mt-[18px] max-w-[300px] text-[28px] font-semibold leading-[32px] tracking-normal text-[color-mix(in_srgb,hsl(var(--foreground))_62%,hsl(var(--primary))_38%)] dark:text-[color-mix(in_srgb,hsl(var(--foreground))_72%,hsl(var(--primary))_28%)] md:mt-[20px] md:max-w-[620px] md:text-[43px] md:leading-[52px]">
               <span className="block">
-                Bạn đã <span className="font-bold text-primary">sẵn sàng</span>
+                {t("enrollment.readyPrefix")} <span className="font-bold text-primary">{t("enrollment.readyEmphasis")}</span>
               </span>
               <span className="flex items-center justify-center whitespace-nowrap">
-                <span>bắt đầu</span>
+                <span>{t("enrollment.readyStart")}</span>
                 <img
                   src={clockIcon}
                   alt=""
                   className="mx-[2px] h-[29px] w-[29px] shrink-0 object-contain drop-shadow-[0_8px_12px_hsl(var(--primary)/0.22)] md:mx-1 md:h-[40px] md:w-[40px]"
                 />
-                <span>khóa học?</span>
+                <span>{t("enrollment.readyCourse")}</span>
               </span>
             </h2>
 
@@ -103,18 +105,12 @@ export function ConfirmEnrollModal({
             <div className="mt-[11px] text-center font-normal italic text-foreground/80 md:mt-[17px]">
               <p className="max-w-[285px] text-[10px] leading-[12px] md:hidden">
                 <span className="block">
-                  Hệ thống sẽ bắt đầu tính thời gian làm bài ngay khi
-                </span>
-                <span className="block">
-                  bạn xác nhận. Hãy đảm bảo bạn đã sẵn sàng nhé!
+                  {t("enrollment.timeNotice")}
                 </span>
               </p>
               <p className="hidden max-w-[360px] text-[12px] leading-[14px] md:block">
                 <span className="block">
-                  Hệ thống sẽ bắt đầu tính thời gian làm bài ngay khi
-                </span>
-                <span className="block">
-                  bạn xác nhận. Hãy đảm bảo bạn đã sẵn sàng nhé!
+                  {t("enrollment.timeNotice")}
                 </span>
               </p>
             </div>
@@ -130,7 +126,7 @@ export function ConfirmEnrollModal({
               )}
             >
               {demoGuideActive && <span className="demo-iframe-hero-cta-echo" aria-hidden="true" />}
-              <span className="relative z-10">Bắt đầu học ngay</span>
+              <span className="relative z-10">{t("enrollment.startLearning")}</span>
             </button>
           </div>
         </DialogPrimitive.Content>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, CheckCircle2, Eye, Loader2, MessageSquareText, Play, RotateCcw } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
@@ -155,10 +156,11 @@ function buildScenarioIntroItems(round: ScenarioChatRound, scenario: ScenarioCha
 }
 
 function TypingIndicator({ name }: { name: string }) {
+  const { t } = useTranslation();
   return (
     <div className="max-w-[90%] sm:max-w-[72%]">
       <div className="inline-flex max-w-full items-center gap-2 rounded-2xl rounded-bl-md bg-white px-3 py-2 shadow-sm ring-1 ring-border dark:bg-slate-900">
-        <span className="min-w-0 truncate text-xs font-semibold text-muted-foreground">{name} đang nhập</span>
+        <span className="min-w-0 truncate text-xs font-semibold text-muted-foreground">{t("scenario.typing", { name })}</span>
         <span className="flex shrink-0 items-center gap-1">
           <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/70 [animation-delay:-0.2s]" />
           <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/70 [animation-delay:-0.1s]" />
@@ -170,6 +172,7 @@ function TypingIndicator({ name }: { name: string }) {
 }
 
 function ChatItemView({ item }: { item: ChatHistoryItem }) {
+  const { t } = useTranslation();
   if (item.kind === "status") {
     return (
       <div className="flex justify-center px-2 py-1">
@@ -190,7 +193,7 @@ function ChatItemView({ item }: { item: ChatHistoryItem }) {
       )}>
         <div className="mb-1 flex items-center gap-2 text-xs font-bold uppercase">
           {item.status === "correct" ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <RotateCcw className="h-4 w-4 shrink-0" />}
-          <span>Giải thích</span>
+          <span>{t("scenario.explanation")}</span>
         </div>
         <div className="whitespace-pre-wrap break-words">{item.text}</div>
       </div>
@@ -218,6 +221,7 @@ function ChatItemView({ item }: { item: ChatHistoryItem }) {
 }
 
 export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChatContentProps) {
+  const { t } = useTranslation();
   const { courseId } = useParams();
   const qc = useQueryClient();
   const user = useAuthStore((s) => s.user);
@@ -282,7 +286,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
   useEffect(() => {
     if (!started) return;
     useBlockSubmitStore.getState().setResult(usageKey, {
-      resultMessage: blockCompleted ? "Đã hoàn thành" : "",
+      resultMessage: blockCompleted ? t("scenario.completed") : "",
       isCorrect: blockCompleted || awaitingNextRound,
       contentFingerprint,
       activeIndex,
@@ -297,7 +301,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
       scenarioChatTransientHistory: transientHistory || undefined,
       scenarioChatShowExplorationChoices: showExplorationChoices,
     });
-  }, [activeIndex, awaitingNextRound, awaitingRetry, blockCompleted, contentFingerprint, history, retryHistoryLength, roundState, showExplorationChoices, started, transientHistory, usageKey, visibleChoices]);
+  }, [activeIndex, awaitingNextRound, awaitingRetry, blockCompleted, contentFingerprint, history, retryHistoryLength, roundState, showExplorationChoices, started, t, transientHistory, usageKey, visibleChoices]);
 
   const displayedHistory = transientHistory || history;
 
@@ -432,7 +436,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
         side: "left",
         name: scenario.participant.name,
         description: data.response_description || scenario.participant.description,
-        text: data.response_message || data.message || (correct ? "Chính xác!" : "Chưa đúng, hãy thử lại."),
+        text: data.response_message || data.message || (correct ? t("scenario.correct") : t("scenario.incorrect")),
       });
 
       if (characterStatus) {
@@ -450,7 +454,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
         id: `${currentRound.id}-${choice.id}-explain-${Date.now()}`,
         kind: "explanation",
         status: correct ? "correct" : "incorrect",
-        text: data.explanation || (correct ? "Câu trả lời này phù hợp với tình huống." : "Câu trả lời này chưa phù hợp, hãy thử lại."),
+        text: data.explanation || (correct ? t("scenario.suitableAnswer") : t("scenario.unsuitableAnswer")),
       });
       setPendingTyping(null);
 
@@ -491,7 +495,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
         id: `${currentRound.id}-${choice.id}-error-${Date.now()}`,
         kind: "explanation",
         status: "incorrect",
-        text: "Chưa thể gửi câu trả lời lúc này. Hãy thử lại.",
+        text: t("scenario.submitUnavailable"),
       });
 
       if (isExploration) {
@@ -532,8 +536,8 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
   if (!currentRound) {
     return (
       <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
-        <h2 className="text-lg font-bold text-foreground">Giao tiếp tình huống chưa sẵn sàng</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Component này chưa có lượt hội thoại.</p>
+        <h2 className="text-lg font-bold text-foreground">{t("scenario.unavailableTitle")}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{t("scenario.unavailableDescription")}</p>
       </div>
     );
   }
@@ -547,15 +551,15 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
           </span>
         </div>
         <h2 className="mb-6 break-words text-[26px] font-semibold leading-[34px] text-foreground 2xl:text-[32px] 2xl:leading-[40px]">
-          {scenario.display_name || "Giao tiếp tình huống"}
+          {scenario.display_name || t("scenario.fallbackTitle")}
         </h2>
 
         <div className="mb-7 border-l-4 border-primary pl-4">
-          <h3 className="mb-3 text-lg font-bold">Hướng dẫn</h3>
+          <h3 className="mb-3 text-lg font-bold">{t("scenario.guideTitle")}</h3>
           <ul className="space-y-2 text-[14px] leading-relaxed text-foreground">
-            <li><b>1. Đọc tình huống:</b> Theo dõi bong bóng chat từ nhân vật.</li>
-            <li><b>2. Chọn phản hồi:</b> Mỗi lượt có đúng 3 lựa chọn.</li>
-            <li><b>3. Hoàn thành:</b> Trả lời đúng toàn bộ lượt để qua phần này.</li>
+            <li>{t("scenario.guideOne")}</li>
+            <li>{t("scenario.guideTwo")}</li>
+            <li>{t("scenario.guideThree")}</li>
           </ul>
         </div>
 
@@ -564,7 +568,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
           onClick={handleStart}
           className="inline-flex h-12 items-center justify-center rounded-full bg-primary px-8 text-[15px] font-bold text-primary-foreground shadow-lg transition-transform hover:scale-105 hover:bg-primary/90 active:scale-[0.98]"
         >
-          Bắt đầu <Play className="ml-2 h-4 w-4" />
+          {t("scenario.start")} <Play className="ml-2 h-4 w-4" />
         </button>
       </div>
     );
@@ -581,11 +585,11 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
               </div>
               <div className="min-w-0">
                 <div className="truncate text-sm font-bold text-foreground">{scenario.participant.name}</div>
-                <div className="truncate text-xs text-muted-foreground">{scenario.participant.description || "Chat tình huống"}</div>
+                <div className="truncate text-xs text-muted-foreground">{scenario.participant.description || t("scenario.fallbackDescription")}</div>
               </div>
             </div>
             <div className="shrink-0 rounded-full bg-[#43FDD7] px-3 py-1 text-xs font-bold text-black">
-              Lượt {activeIndex + 1}/{scenario.rounds.length}
+              {t("scenario.round", { current: activeIndex + 1, total: scenario.rounds.length })}
             </div>
           </div>
         </div>
@@ -626,10 +630,10 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
               <div className="mb-3 rounded-2xl border border-red-200 bg-red-50/80 p-3 shadow-sm dark:border-red-500/25 dark:bg-red-500/10">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="text-sm font-bold text-red-700 dark:text-red-300">
-                    Xem các câu khác
+                    {t("scenario.viewAlternatives")}
                   </div>
                   <div className="text-xs font-semibold text-red-700 dark:text-red-300">
-                    {explorationChoices.length > 0 ? `Còn ${explorationChoices.length} phản hồi khác` : "Đã xem đủ kịch bản lượt này"}
+                    {explorationChoices.length > 0 ? t("scenario.alternativesRemaining", { count: explorationChoices.length }) : t("scenario.alternativesViewed")}
                   </div>
                 </div>
 
@@ -657,7 +661,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
                   </div>
                 ) : (
                   <div className="mt-3 rounded-xl border border-red-200 bg-white/70 px-3 py-2 text-sm font-semibold text-red-700 dark:border-red-500/25 dark:bg-slate-950/70 dark:text-red-300">
-                    Đã xem đủ các phản hồi khác của lượt này.
+                    {t("scenario.allAlternativesViewed")}
                   </div>
                 )}
               </div>
@@ -665,7 +669,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
             {pendingTyping && (
               <div className="flex items-center justify-center gap-2 py-3 text-sm font-semibold text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                {pendingTyping === "status" ? "Đang cập nhật trạng thái..." : "Đang chờ phản hồi..."}
+                {pendingTyping === "status" ? t("scenario.updatingStatus") : t("scenario.waitingResponse")}
               </div>
             )}
 
@@ -677,7 +681,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
                   className="inline-flex h-11 items-center gap-2 rounded-full bg-secondary px-6 text-sm font-bold text-secondary-foreground shadow-sm transition-all hover:bg-secondary/80 active:scale-[0.97]"
                 >
                   <RotateCcw className="h-4 w-4" />
-                  Thử lại
+                  {t("scenario.retry")}
                 </button>
               </div>
             )}
@@ -691,7 +695,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
                     className="inline-flex h-11 items-center gap-2 rounded-full border border-red-200 bg-red-50 px-5 text-sm font-bold text-red-700 shadow-sm transition-all hover:bg-red-100 active:scale-[0.97] dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/15"
                   >
                     <Eye className="h-4 w-4" />
-                    Xem các câu khác
+                    {t("scenario.viewAlternatives")}
                   </button>
                 )}
                 <button
@@ -699,7 +703,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
                   onClick={handleNextRound}
                   className="h-11 rounded-full bg-primary px-6 text-sm font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97]"
                 >
-                  Tiếp tục
+                  {t("scenario.continue")}
                 </button>
               </div>
             )}
@@ -712,7 +716,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
                     onClick={handleShowCorrectBranch}
                     className="h-10 rounded-full border border-green-200 bg-white px-4 text-sm font-bold text-green-700 shadow-sm transition-all hover:bg-green-50 active:scale-[0.97] dark:border-green-500/25 dark:bg-slate-950 dark:text-green-300 dark:hover:bg-green-500/10"
                   >
-                    Xem đáp án đúng
+                    {t("scenario.viewCorrectAnswer")}
                   </button>
                 )}
                 {explorationChoices.length > 0 && !showExplorationChoices && (
@@ -722,11 +726,11 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
                     className="inline-flex h-10 items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 text-sm font-bold text-red-700 shadow-sm transition-all hover:bg-red-100 active:scale-[0.97] dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/15"
                   >
                     <Eye className="h-4 w-4" />
-                    Xem các câu khác
+                    {t("scenario.viewAlternatives")}
                   </button>
                 )}
                 <Check className="h-5 w-5 stroke-[3]" />
-                <span className="text-sm font-bold">Đã hoàn thành</span>
+                <span className="text-sm font-bold">{t("scenario.completed")}</span>
               </div>
             )}
           </div>

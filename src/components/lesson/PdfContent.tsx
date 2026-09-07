@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { resolvePdfEmbedUrl, resolvePdfFileUrl } from "@/utils/pdfUrl";
+import { useTranslation } from "react-i18next";
 
 interface PdfData {
   display_name: string;
@@ -21,6 +22,7 @@ interface PdfData {
 
 
 export function PdfContent({ usageKey }: { usageKey: string }) {
+  const { t } = useTranslation();
   const username = useAuthStore((s) => s.user?.username);
   const [isLoading, setIsLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -73,8 +75,8 @@ export function PdfContent({ usageKey }: { usageKey: string }) {
           <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted/60">
             <FileText className="h-8 w-8 text-muted-foreground/50" />
           </div>
-          <p className="text-sm font-medium">Tài liệu PDF</p>
-          <p className="mt-1 text-xs text-muted-foreground/60">Chưa có tài liệu nào được cấu hình</p>
+          <p className="text-sm font-medium">{t("lesson.pdfDocument")}</p>
+          <p className="mt-1 text-xs text-muted-foreground/60">{t("lesson.noPdf")}</p>
         </div>
       </div>
     );
@@ -97,7 +99,7 @@ export function PdfContent({ usageKey }: { usageKey: string }) {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-white truncate">{svd.display_name}</p>
-            <p className="text-[11px] text-white/40 font-medium">Hãy ấn đè phím Ctrl và rê chuột để phóng to</p>
+            <p className="text-[11px] text-white/40 font-medium">{t("lesson.pdfZoomHint")}</p>
           </div>
         </div>
 
@@ -108,7 +110,7 @@ export function PdfContent({ usageKey }: { usageKey: string }) {
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center w-8 h-8 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-            title="Mở trong tab mới"
+            title={t("lesson.openNewTab")}
           >
             <ExternalLink className="h-4 w-4" />
           </a>
@@ -117,7 +119,7 @@ export function PdfContent({ usageKey }: { usageKey: string }) {
           <button
             onClick={toggleFullscreen}
             className="flex items-center justify-center w-8 h-8 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-            title={isFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}
+            title={isFullscreen ? t("lesson.exitFullscreen") : t("lesson.fullscreen")}
           >
             {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
           </button>
@@ -133,7 +135,7 @@ export function PdfContent({ usageKey }: { usageKey: string }) {
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white dark:bg-slate-900">
             <div className="flex flex-col items-center gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground font-medium">Đang tải tài liệu...</p>
+              <p className="text-sm text-muted-foreground font-medium">{t("lesson.loadingDocument")}</p>
             </div>
           </div>
         )}

@@ -17,6 +17,7 @@ import { BookOpen, Download, FileText, FileSpreadsheet, Presentation, CheckCircl
 import { MentorSidebar } from "@/components/lesson/MentorSidebar";
 import { LessonImageCarousel } from "@/components/lesson/LessonImageCarousel";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -115,6 +116,7 @@ function getDemoLessonVideoGuideRect(element: HTMLElement, padding = 0): DemoVid
 }
 
 export function LessonDetailPage() {
+  const { t } = useTranslation();
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { completionPercent, isLoading: isProgressLoading } = useCourseCompletion(courseId);
@@ -801,11 +803,10 @@ export function LessonDetailPage() {
           <BookOpen className="h-8 w-8 text-muted-foreground/50" />
         </div>
         <h2 className="mb-2 text-[20px] font-bold leading-[24px] text-foreground">
-          Nội dung chưa sẵn sàng
+          {t("lesson.unavailableTitle")}
         </h2>
         <p className="text-[14px] font-normal leading-[18px] text-muted-foreground max-w-md">
-          Bài học này chưa có nội dung. Vui lòng chọn bài học khác hoặc liên hệ
-          giảng viên.
+          {t("lesson.unavailableDescription")}
         </p>
       </div>
     );
@@ -844,7 +845,7 @@ export function LessonDetailPage() {
                     {lesson.moduleTag}
                   </span>
                   <span className="text-[14px] 2xl:text-[16px] font-normal leading-[18px] 2xl:leading-[22px] text-muted-foreground">
-                    Lesson {Math.min(currentUnitIndex + 1, totalUnits)} of {totalUnits}
+                    {t("lesson.unitOf", { current: Math.min(currentUnitIndex + 1, totalUnits), total: totalUnits })}
                   </span>
                 </div>
 
@@ -858,7 +859,7 @@ export function LessonDetailPage() {
               {totalUnits > 1 && (
                 <div className="w-full md:w-auto flex flex-row md:flex-col items-center md:items-end justify-between md:justify-end shrink-0 gap-2 md:gap-0 mt-2 md:mt-0">
                   <div className="text-[14px] md:text-[14px] font-semibold leading-[18px] text-foreground order-1 md:order-2 md:mt-2">
-                    Phần đã hoàn thành
+                    {t("lesson.unitsCompleted")}
                   </div>
                   <div className="text-[20px] md:text-[24px] font-semibold leading-[24px] md:leading-[28px] text-primary tracking-tight order-2 md:order-1">
                     {Math.min(currentUnitIndex + 1, totalUnits)}/{totalUnits}
@@ -1022,7 +1023,7 @@ export function LessonDetailPage() {
                 {/* Fallback: Unit has no renderable component */}
                 {currentUnit && currentUnit.components.length === 0 && (
                   <div className="rounded-3xl border border-dashed border-border px-8 py-7 text-center text-[14px] font-normal leading-[18px] text-muted-foreground">
-                    Phần này chưa có nội dung.
+                    {t("lesson.unitNoContent")}
                   </div>
                 )}
 
@@ -1054,7 +1055,7 @@ export function LessonDetailPage() {
                   <div className="px-8 pt-7 pb-2">
                     <BadgeCyan>Mentor</BadgeCyan>
                     <h3 className="mb-1 mt-1 text-[20px] font-semibold leading-[28px] text-foreground">
-                      Người hướng dẫn
+                      {t("lesson.instructorHeading")}
                     </h3>
                   </div>
                   <MentorSidebar mentors={mentors} companyLogo={mentorSectionLogo} />
@@ -1079,13 +1080,13 @@ export function LessonDetailPage() {
                           </p>
                         ) : (
                           <p className="text-[14px] font-normal leading-[18px] text-muted-foreground italic">
-                            Chưa có thông tin
+                            {t("lesson.noInformation")}
                           </p>
                         )}
                       </>
                     ) : (
                       <p className="text-[14px] font-normal leading-[18px] text-muted-foreground italic">
-                        Chưa có thông tin
+                        {t("lesson.noInformation")}
                       </p>
                     )}
                   </div>
@@ -1094,7 +1095,7 @@ export function LessonDetailPage() {
                 {/* Tài liệu tham khảo — LANDA API: file unlocked trên Studio */}
                 <div className="rounded-3xl bg-primary p-8 text-primary-foreground shadow-sm">
                   <h3 className="mb-4 text-[20px] font-semibold leading-[24px]">
-                    Tài liệu tham khảo
+                    {t("course.referenceDocuments")}
                   </h3>
                   {refDocs.length > 0 ? (
                     <div className="flex flex-col gap-2">
@@ -1117,13 +1118,13 @@ export function LessonDetailPage() {
                       })}
                       {refDocs.length > 8 && (
                         <p className="mt-1 text-center text-[10px] font-semibold leading-[14px] text-primary-foreground/60">
-                          +{refDocs.length - 8} tài liệu khác
+                          {t("lesson.moreDocuments", { count: refDocs.length - 8 })}
                         </p>
                       )}
                     </div>
                   ) : (
                     <p className="text-[14px] font-normal leading-[18px] text-primary-foreground/60 italic">
-                      Chưa có tài liệu...
+                      {t("course.noDocuments")}
                     </p>
                   )}
                 </div>
@@ -1148,7 +1149,7 @@ export function LessonDetailPage() {
               "flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-lg transition-all hover:scale-110",
               showScrollTop ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0 pointer-events-none"
             )}
-            title="Lên đầu trang"
+            title={t("lesson.scrollToTop")}
           >
             <ChevronUp className="h-6 w-6" />
           </button>
@@ -1182,7 +1183,7 @@ export function LessonDetailPage() {
           <button
             className="absolute top-5 right-6 text-white/70 hover:text-white text-[32px] leading-none font-light transition-colors"
             onClick={() => setLightboxSrc(null)}
-            aria-label="Đóng"
+            aria-label={t("lesson.close")}
           >
             ×
           </button>
@@ -1193,6 +1194,7 @@ export function LessonDetailPage() {
 }
 
 function DemoLessonVideoGuideOverlay({ rect }: { rect: DemoVideoGuideRect }) {
+  const { t } = useTranslation();
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
   const radius = Math.min(16, rect.width / 2, rect.height / 2);
@@ -1275,7 +1277,7 @@ function DemoLessonVideoGuideOverlay({ rect }: { rect: DemoVideoGuideRect }) {
           style={{ left: bubbleTailLeft - 5, bottom: `calc(100% + ${bubbleConnectorHeight - 1}px)` }}
         />
         <div className="demo-iframe-play-bubble rounded-2xl border border-white/80 bg-white px-4 py-3 text-center text-[14px] font-semibold leading-[18px] text-slate-900 shadow-[0_18px_50px_rgba(0,0,0,0.28)]">
-          Nhấn play để bắt đầu bài học
+          {t("lesson.pressPlayToStart")}
         </div>
       </div>
     </>,

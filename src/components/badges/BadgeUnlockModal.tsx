@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import type { EarnedBadge } from "@/types/badges";
 import { BADGE_CARD_IMAGES } from "@/data/badgeImages";
@@ -51,6 +52,7 @@ const CONFETTI_PARTICLES = Array.from({ length: 96 }, (_, index) => {
 });
 
 export function BadgeUnlockModal({ badge, onDismiss, cardImageUrl }: BadgeUnlockModalProps) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!badge) return;
     const timer = setTimeout(onDismiss, 8000);
@@ -137,7 +139,7 @@ export function BadgeUnlockModal({ badge, onDismiss, cardImageUrl }: BadgeUnlock
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
                   >
-                    Tuyệt vời! 🎉
+                    {t("badge.unlockedConfirm")}
                   </motion.button>
                 </div>
               )}

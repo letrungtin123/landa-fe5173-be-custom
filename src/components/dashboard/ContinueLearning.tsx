@@ -5,6 +5,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { storageUrl } from "@/utils/storageUrl";
 import { Link } from "react-router-dom";
 import { useSearchStore } from "@/stores/useSearchStore";
@@ -23,6 +24,7 @@ type ContinueLearningCourse = ContinueCourse & {
 
 /** Card hiển thị 1 khóa học đang học kèm progress bar */
 function CourseCard({ course, completionPercent }: { course: ContinueCourse; completionPercent: number }) {
+  const { t } = useTranslation();
   const { colorStyle } = useThemeStore();
   const displayPercent = Math.floor(Math.round(completionPercent * 100) / 10 + 0.4) / 10;
 
@@ -76,7 +78,7 @@ function CourseCard({ course, completionPercent }: { course: ContinueCourse; com
               <span className="truncate">
                 {course.categories && course.categories.length > 0
                   ? course.categories.map((c) => c.name).join(" • ")
-                  : "Khóa học"}
+                  : t("dashboard.course")}
               </span>
             </div>
 
@@ -103,11 +105,11 @@ function CourseCard({ course, completionPercent }: { course: ContinueCourse; com
                   {completionPercent === 100 ? (
                     <div className="flex items-center gap-2 md:gap-1.5 text-green-600 dark:text-green-400">
                       <Check className="h-4 w-4 md:h-4 md:w-4 stroke-[3]" />
-                      <span className="text-[14px] md:text-[13px] font-bold text-green-600 dark:text-green-400">Đã hoàn thành</span>
+                      <span className="text-[14px] md:text-[13px] font-bold text-green-600 dark:text-green-400">{t("dashboard.completed")}</span>
                     </div>
                   ) : (
                     <>
-                      Tiếp tục học
+                      {t("dashboard.continueLearning")}
                       <ArrowRight className="h-3.5 w-3.5 md:h-3.5 md:w-3.5" />
                     </>
                   )}
@@ -127,6 +129,7 @@ function CourseCard({ course, completionPercent }: { course: ContinueCourse; com
 }
 
 export function ContinueLearning() {
+  const { t } = useTranslation();
   const { data: enrollments, isLoading: enrollLoading, error } = useMyEnrollments();
   const { data: courseList, isLoading: coursesLoading } = useCourses();
   const [activeFilter] = useState<CourseFilter>('all');
@@ -256,7 +259,7 @@ export function ContinueLearning() {
     <div id="continue-learning-section" className="scroll-mt-24">
       {/* Tiêu đề + Search + Xem tất cả */}
       <div className="mb-6 flex items-center gap-4">
-        <h2 className="text-xl md:text-2xl font-bold tracking-tight text-foreground whitespace-nowrap shrink-0">Tiếp tục học</h2>
+        <h2 className="text-xl md:text-2xl font-bold tracking-tight text-foreground whitespace-nowrap shrink-0">{t("dashboard.continueLearningTitle")}</h2>
 
         {/* Search bar — giữa */}
         {allCourses.length > 0 && (
@@ -264,7 +267,7 @@ export function ContinueLearning() {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Tìm kiếm khóa học..."
+              placeholder={t("dashboard.searchCourses")}
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-full outline-none focus:border-primary transition-colors text-[13px] font-normal leading-[18px] shadow-sm"
@@ -277,7 +280,7 @@ export function ContinueLearning() {
           to="/explore"
           className="flex items-center gap-1 text-sm font-medium text-accent transition-colors hover:text-accent/80 whitespace-nowrap shrink-0 ml-auto"
         >
-          Xem tất cả
+          {t("dashboard.viewAll")}
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
@@ -306,7 +309,7 @@ export function ContinueLearning() {
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
             <BookOpen className="h-6 w-6 text-destructive/60" />
           </div>
-          <p className="text-sm text-muted-foreground">Không thể tải dữ liệu khóa học.</p>
+          <p className="text-sm text-muted-foreground">{t("dashboard.coursesLoadFailed")}</p>
         </div>
       )}
 
@@ -321,15 +324,15 @@ export function ContinueLearning() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <BookOpen className="h-8 w-8 text-primary/50" />
           </div>
-          <h3 className="mb-2 text-base font-bold text-foreground">Chưa có khóa học nào</h3>
+          <h3 className="mb-2 text-base font-bold text-foreground">{t("dashboard.noCourses")}</h3>
           <p className="mb-4 text-sm text-muted-foreground">
-            Bạn chưa đăng ký khóa học nào. Hãy khám phá các khóa học có sẵn!
+            {t("dashboard.noEnrollmentYet")}
           </p>
           <Link
             to="/explore"
             className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-primary/90 active:scale-[0.98]"
           >
-            Khám phá khóa học
+            {t("dashboard.exploreCourses")}
             <ArrowRight className="h-4 w-4" />
           </Link>
         </motion.div>
@@ -353,7 +356,7 @@ export function ContinueLearning() {
                 onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                 disabled={currentPage <= 1}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                aria-label="Trang trước"
+                aria-label={t("dashboard.previousPage")}
               >
                 <ChevronLeft className="h-4 w-4 text-muted-foreground" />
               </button>
@@ -378,14 +381,14 @@ export function ContinueLearning() {
                 onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage >= totalPages}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                aria-label="Trang sau"
+                aria-label={t("dashboard.nextPage")}
               >
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </button>
 
               {/* Page size selector — custom dropdown */}
               <div className="ml-4 flex items-center gap-1.5 border-l border-border pl-4">
-                <span className="text-[12px] text-muted-foreground whitespace-nowrap">Hiển thị</span>
+                <span className="text-[12px] text-muted-foreground whitespace-nowrap">{t("dashboard.show")}</span>
                 <div className="relative" ref={pageSizeRef}>
                   <button
                     onClick={() => setPageSizeOpen(prev => !prev)}

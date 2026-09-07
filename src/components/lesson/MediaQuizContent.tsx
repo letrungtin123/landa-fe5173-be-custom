@@ -15,6 +15,8 @@ import {
   type MediaQuizQuestion,
 } from "@/lib/mediaQuiz";
 import { LessonUploadedVideo } from "./LessonUploadedVideo";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 interface MediaQuizContentProps {
   usageKey: string;
@@ -50,11 +52,11 @@ function buildMediaQuizFingerprint(quiz: MediaQuizData): string {
   );
 }
 
-function renderQuestionMedia(question: MediaQuizQuestion, onImageClick?: (src: string) => void) {
+function renderQuestionMedia(question: MediaQuizQuestion, t: TFunction, onImageClick?: (src: string) => void) {
   if (!question.media?.storage_path) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
-        Media của câu hỏi này chưa sẵn sàng.
+        {t("quiz.mediaUnavailable")}
       </div>
     );
   }
@@ -73,7 +75,7 @@ function renderQuestionMedia(question: MediaQuizQuestion, onImageClick?: (src: s
     >
       <img
         src={mediaUrl}
-        alt={question.media.alt || "Ảnh câu hỏi kèm media"}
+        alt={question.media.alt || t("quiz.mediaQuestionImage")}
         className="max-h-[450px] w-full object-contain"
       />
     </div>
@@ -81,6 +83,7 @@ function renderQuestionMedia(question: MediaQuizQuestion, onImageClick?: (src: s
 }
 
 export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: MediaQuizContentProps) {
+  const { t } = useTranslation();
   const { courseId } = useParams();
   const qc = useQueryClient();
   const user = useAuthStore((s) => s.user);
@@ -167,8 +170,8 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
       const responseExplanation = typeof data.explanation_html === "string" ? data.explanation_html : "";
       const nextExplanationHtml = correct ? (responseExplanation || answeredQuestion?.explanation_html || "") : "";
       const nextResultMessage = correct
-        ? (isLast ? "Chính xác! Bạn đã hoàn thành phần này." : "Chính xác! Bạn có thể xem câu tiếp theo.")
-        : "Chưa đúng, hãy thử lại.";
+        ? (isLast ? t("quiz.correctComplete") : t("quiz.correctNext"))
+        : t("quiz.incorrect");
 
       setIsCorrect(correct);
       setResultMessage(nextResultMessage);
@@ -204,7 +207,7 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
       }
     },
     onError: () => {
-      const nextResultMessage = "Chưa thể gửi câu trả lời lúc này.";
+      const nextResultMessage = t("quiz.submitUnavailable");
       setIsCorrect(false);
       setResultMessage(nextResultMessage);
       if (currentQuestion) {
@@ -223,8 +226,8 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
   if (!currentQuestion) {
     return (
       <div className="w-full py-12 text-center">
-        <h2 className="mb-2 text-lg font-bold text-foreground">Câu hỏi kèm media chưa sẵn sàng</h2>
-        <p className="text-sm text-muted-foreground">Component này chưa có câu hỏi.</p>
+        <h2 className="mb-2 text-lg font-bold text-foreground">{t("quiz.mediaQuizUnavailable")}</h2>
+        <p className="text-sm text-muted-foreground">{t("quiz.mediaQuizNoQuestion")}</p>
       </div>
     );
   }
@@ -282,9 +285,9 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
 
     const nextQuestionCompleted = completedQuestionIds.has(nextQuestion.id);
     const nextResultMessage = nextQuestionCompleted
-      ? (boundedIndex >= quiz.questions.length - 1 && blockCompleted
-        ? "Chính xác! Bạn đã hoàn thành phần này."
-        : "Chính xác! Bạn có thể xem câu tiếp theo.")
+        ? (boundedIndex >= quiz.questions.length - 1 && blockCompleted
+          ? t("quiz.correctComplete")
+          : t("quiz.correctNext"))
       : "";
 
     setActiveIndex(boundedIndex);
@@ -323,13 +326,13 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
         <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="text-[20px] font-bold text-foreground">
-              Câu hỏi {activeIndex + 1}/{quiz.questions.length}
+              {t("quiz.questionNumber", { current: activeIndex + 1, total: quiz.questions.length })}
             </div>
           </div>
         </div>
 
         <div className="mb-8">
-          {renderQuestionMedia(currentQuestion, onImageClick)}
+          {renderQuestionMedia(currentQuestion, t, onImageClick)}
         </div>
 
         <div
@@ -341,8 +344,8 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
           <Info className="h-4 w-4 text-muted-foreground" />
           <span>
             {currentQuestion.mode === "multiple_select"
-              ? "Chọn tất cả đáp án đúng để mở media tiếp theo."
-              : "Chọn một đáp án đúng để mở media tiếp theo."}
+              ? t("quiz.chooseAllToProceed")
+              : t("quiz.chooseOneToProceed")}
           </span>
         </div>
 
@@ -401,12 +404,12 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
           <div className="mt-4 rounded-xl bg-warning/10 border border-warning/20 p-5">
             <div className="flex items-center gap-2 mb-3 text-warning">
               <Lightbulb className="h-5 w-5" />
-              <span className="font-bold text-sm tracking-wide uppercase">Gợi ý</span>
+              <span className="font-bold text-sm tracking-wide uppercase">{t("quiz.hint")}</span>
             </div>
             <div className="space-y-3">
               {currentHints.map((hint, index) => (
                 <div key={`${currentQuestion.id}-hint-${index}`} className="prose prose-sm prose-warning dark:prose-invert max-w-none text-[14px] leading-relaxed text-foreground/90">
-                  <div className="font-semibold">Gợi ý {index + 1}:</div>
+                  <div className="font-semibold">{t("quiz.hintNumber", { index: index + 1 })}</div>
                   <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(hint) }} />
                 </div>
               ))}
@@ -431,7 +434,7 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
           <div className="mt-4 rounded-xl bg-success/10 border border-success/20 p-5">
             <div className="flex items-center gap-2 mb-3 text-success">
               <Info className="h-5 w-5" />
-              <span className="font-bold text-sm tracking-wide uppercase">Giải thích</span>
+              <span className="font-bold text-sm tracking-wide uppercase">{t("quiz.explanation")}</span>
             </div>
             <div
               className="prose prose-sm prose-success dark:prose-invert max-w-none text-[14px] leading-relaxed text-foreground/90"
@@ -452,7 +455,7 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
                 className="flex items-center gap-2 rounded-full bg-transparent px-0 py-3 text-[14px] font-bold text-muted-foreground transition-all hover:text-foreground active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Quay lại
+                {t("course.back")}
               </button>
             )}
             {currentHints.length > 0 && isCorrect !== true && !blockCompleted ? (
@@ -462,7 +465,7 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
                 className="flex items-center gap-2 rounded-full border-2 border-warning/30 bg-warning/5 px-5 py-2.5 text-[13px] font-semibold text-warning transition-all hover:bg-warning/10 active:scale-[0.97]"
               >
                 <Lightbulb className="h-4 w-4" />
-                {showHint ? "Ẩn gợi ý" : "Xem gợi ý"}
+                {showHint ? t("quiz.hideHint") : t("quiz.showHint")}
               </button>
             ) : null}
           </div>
@@ -475,7 +478,7 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
                 className="rounded-full bg-primary px-8 py-3 text-[14px] font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-2"
               >
                 {submitMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                Xác nhận
+                  {t("quiz.confirm")}
               </button>
             ) : !isCorrect ? (
               <button
@@ -483,7 +486,7 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
                 onClick={handleRetry}
                 className="rounded-full bg-secondary text-secondary-foreground px-8 py-3 text-[14px] font-bold shadow-sm transition-all hover:bg-secondary/80 active:scale-[0.97] flex items-center gap-2"
               >
-                Thử lại
+                  {t("quiz.retry")}
               </button>
             ) : null}
             {isCorrect === true && canGoNextMedia && (
@@ -500,7 +503,7 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
             {isFinalQuestionCompleted && (
               <div className="flex items-center gap-1.5 px-4 py-3 text-green-600 dark:text-green-400">
                 <Check className="h-5 w-5 shrink-0 stroke-[3]" />
-                <span className="text-[14px] font-bold whitespace-nowrap">Đã hoàn thành</span>
+                <span className="text-[14px] font-bold whitespace-nowrap">{t("quiz.completed")}</span>
               </div>
             )}
           </div>

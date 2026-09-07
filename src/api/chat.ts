@@ -134,7 +134,14 @@ export function sendMessageStream(
       });
 
       if (!response.ok || !response.body) {
-        onError('Không thể kết nối đến server');
+        let message = 'Không thể kết nối đến server';
+        try {
+          const payload = await response.json();
+          message = payload?.message || payload?.error || message;
+        } catch {
+          // Keep fallback message.
+        }
+        onError(message);
         return;
       }
 
@@ -143,6 +150,17 @@ export function sendMessageStream(
       let buffer = '';
       let receivedDone = false;
       let receivedError = false;
+      const processLine = (line: string) => {
+        if (!line.startsWith('data: ')) return;
+        try {
+          const event = JSON.parse(line.slice(6));
+          if (event.type === 'chunk' && typeof event.text === 'string') onChunk(event.text);
+          else if (event.type === 'done' && !receivedDone) { receivedDone = true; onDone(); }
+          else if (event.type === 'error' && !receivedError) { receivedError = true; onError(event.message || 'Lỗi không xác định'); }
+        } catch {
+          // Skip malformed SSE lines.
+        }
+      };
 
       while (true) {
         const { done, value } = await reader.read();
@@ -153,14 +171,13 @@ export function sendMessageStream(
         buffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-            if (event.type === 'chunk') onChunk(event.text);
-            else if (event.type === 'done') { receivedDone = true; onDone(); }
-            else if (event.type === 'error') { receivedError = true; onError(event.message || 'Lỗi không xác định'); }
-          } catch { /* skip malformed line */ }
+          processLine(line);
         }
+      }
+
+      buffer += decoder.decode();
+      if (buffer.trim()) {
+        for (const line of buffer.split('\n')) processLine(line.trimEnd());
       }
 
       if (!receivedDone && !receivedError) onDone();

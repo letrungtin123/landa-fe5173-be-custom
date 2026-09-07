@@ -15,6 +15,7 @@ import { useNotifications, useMarkAllRead, useMarkNotificationRead } from "@/hoo
 import type { Notification } from "@/data/types";
 import { cn } from "@/lib/utils";
 import { AssignmentFeedbackNotificationDialog } from "./AssignmentFeedbackNotificationDialog";
+import { useTranslation } from "react-i18next";
 
 const ICON_MAP: Record<Notification["icon"], React.ElementType> = {
   badge: Shield,
@@ -28,6 +29,7 @@ interface NotificationModalProps {
 }
 
 export function NotificationModal({ open, onOpenChange }: NotificationModalProps) {
+  const { t } = useTranslation();
   const [feedbackNotification, setFeedbackNotification] = useState<Notification | null>(null);
   const { notifications, isLoading, unreadCount } = useNotifications();
   const markAllRead = useMarkAllRead();
@@ -60,10 +62,10 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
         <DialogHeader className="border-b border-border bg-muted/10 px-4 pb-3 pl-4 pr-12 pt-5 text-left sm:px-5 sm:pr-12">
           <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <DialogTitle className="text-base">Tất cả thông báo</DialogTitle>
+              <DialogTitle className="text-base">{t("notifications.allTitle")}</DialogTitle>
               {unreadCount > 0 && (
                 <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                  {unreadCount} chưa đọc
+                  {t("notifications.unreadCount", { count: unreadCount })}
                 </span>
               )}
             </div>
@@ -76,12 +78,12 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
                 disabled={markAllRead.isPending}
               >
                 <CheckCheck className="h-3.5 w-3.5" />
-                Đánh dấu đã đọc
+                {t("notifications.markAllRead")}
               </Button>
             )}
           </div>
           <DialogDescription className="text-left text-xs">
-            Các thông báo cập nhật từ khóa học và hệ thống
+            {t("notifications.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -110,10 +112,10 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
                 <Bell className="h-6 w-6 text-muted-foreground/40" />
               </div>
               <p className="text-sm font-medium text-muted-foreground">
-                Chưa có thông báo nào
+                {t("notifications.emptyTitle")}
               </p>
               <p className="mt-1 text-xs text-muted-foreground/70">
-                Thông báo mới sẽ xuất hiện ở đây
+                {t("notifications.emptyDescription")}
               </p>
             </div>
           )}

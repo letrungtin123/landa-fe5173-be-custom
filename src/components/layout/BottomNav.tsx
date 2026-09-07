@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useTranslation } from "react-i18next";
 
 import dashboardIcon from "@/assets/MobileRouteIcon/dashboard-icon.png";
 import exploreIcon from "@/assets/MobileRouteIcon/explore-icon.png";
@@ -8,13 +9,14 @@ import libraryIcon from "@/assets/MobileRouteIcon/library-icon.png";
 import badgeIcon from "@/assets/MobileRouteIcon/badge-icon.png";
 
 const NAV_ITEMS = [
-  { label: "Khám phá", path: "/dashboard", iconSrc: dashboardIcon },
-  { label: "Khóa học", path: "/explore", iconSrc: exploreIcon },
-  { label: "Thư viện", path: "/library", iconSrc: libraryIcon },
-  { label: "Danh hiệu", path: "/badges", iconSrc: badgeIcon },
+  { labelKey: "nav.dashboard", path: "/dashboard", iconSrc: dashboardIcon },
+  { labelKey: "nav.courses", path: "/explore", iconSrc: exploreIcon },
+  { labelKey: "nav.library", path: "/library", iconSrc: libraryIcon },
+  { labelKey: "nav.badges", path: "/badges", iconSrc: badgeIcon },
 ];
 
 export function BottomNav() {
+  const { t } = useTranslation();
   const location = useLocation();
   const tenantModules = useAuthStore((state) => state.tenantModules);
   const sessionMode = useAuthStore((state) => state.sessionMode);
@@ -39,7 +41,7 @@ export function BottomNav() {
             )}
             <img
               src={item.iconSrc}
-              alt={item.label}
+              alt={t(item.labelKey)}
               className={cn(
                 "h-5 w-5 object-contain transition-opacity",
                 isActive ? "opacity-100" : "opacity-50"
@@ -51,7 +53,7 @@ export function BottomNav() {
                 isActive ? "text-foreground" : "text-muted-foreground"
               )}
             >
-              {item.label}
+              {t(item.labelKey)}
             </span>
           </Link>
         );

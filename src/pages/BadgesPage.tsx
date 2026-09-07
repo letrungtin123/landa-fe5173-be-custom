@@ -10,8 +10,10 @@ import { motion } from "framer-motion";
 import { Trophy } from "lucide-react";
 import { BadgeGrid } from "@/components/badges/BadgeGrid";
 import { useBadges } from "@/hooks/useBackendBadges";
+import { useTranslation } from "react-i18next";
 
 export function BadgesPage() {
+  const { t } = useTranslation();
   const {
     earnedBadges,
     totalBadges,
@@ -97,10 +99,10 @@ export function BadgesPage() {
             </div>
             <div>
               <h1 className="text-2xl font-extrabold text-foreground">
-                Danh Hiệu Của Bạn
+                {t("badges.title")}
               </h1>
               <p className="text-sm text-muted-foreground">
-                Hoàn thành các mục tiêu để mở khóa danh hiệu mới
+                {t("badges.subtitle")}
               </p>
             </div>
           </div>
@@ -108,9 +110,9 @@ export function BadgesPage() {
           {/* Overall progress */}
           <div className="mt-6 rounded-2xl border border-border/50 bg-card p-5">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-foreground">Tiến độ tổng thể</span>
+              <span className="text-sm font-semibold text-foreground">{t("badges.overallProgress")}</span>
               <span className="text-sm font-bold text-accent">
-                {earnedCount}/{totalBadges} danh hiệu
+                {t("badges.count", { earned: earnedCount, total: totalBadges })}
               </span>
             </div>
             <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
@@ -122,10 +124,12 @@ export function BadgesPage() {
               />
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              {progressPercent}% hoàn thành — {earnedCount === totalBadges
-                ? "Bạn đã đạt tất cả! 🎉"
-                : `Còn ${totalBadges - earnedCount} danh hiệu nữa`
-              }
+              {t("badges.completionSummary", {
+                percent: progressPercent,
+                detail: earnedCount === totalBadges
+                  ? t("badges.completeAll")
+                  : t("badges.remaining", { count: totalBadges - earnedCount }),
+              })}
             </p>
           </div>
         </motion.div>

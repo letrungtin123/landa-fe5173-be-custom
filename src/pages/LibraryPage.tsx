@@ -34,6 +34,7 @@ import { useSearchStore } from "@/stores/useSearchStore";
 import { usePageLoading } from "@/hooks/usePageLoading";
 import { useLibraryCategories, useLibraryDocuments } from "@/hooks/useLibrary";
 import { type LibraryDocument, type DocumentCategory, handleSecureDownload } from "@/api/library";
+import { useTranslation } from "react-i18next";
 
 // ── Icon helpers ──
 
@@ -105,6 +106,7 @@ const formatFileSize = (bytes: number): string => {
 };
 
 export function LibraryPage() {
+  const { t } = useTranslation();
   const { isLoading: pageLoading } = usePageLoading(1000);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("");
@@ -183,10 +185,10 @@ export function LibraryPage() {
     <div className={`flex flex-col sm:flex-row sm:items-center justify-between pt-4 gap-3 sm:gap-0 transition-opacity duration-300 ${docLoading ? 'opacity-50 pointer-events-none' : ''}`}>
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="text-[14px] font-normal leading-[18px] text-muted-foreground">
-          Trang {currentPage} / {totalPages} ({totalCount} tài liệu)
+          {t("library.pageSummary", { page: currentPage, total: totalPages, count: totalCount })}
         </div>
         <div className="flex items-center gap-2 text-[14px] font-normal leading-[18px] text-muted-foreground">
-          <span>Hiển thị:</span>
+          <span>{t("library.show")}</span>
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button 
@@ -194,7 +196,7 @@ export function LibraryPage() {
                 size="sm" 
                 className="h-8 w-[110px] justify-between text-[14px] font-semibold leading-[18px]"
               >
-                {pageSize} / trang
+                {t("library.perPage", { count: pageSize })}
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
@@ -208,7 +210,7 @@ export function LibraryPage() {
                   }}
                   className={`text-[14px] font-normal leading-[18px] cursor-pointer justify-between ${pageSize === size ? 'bg-primary/10 text-primary font-semibold' : ''}`}
                 >
-                  {size} / trang
+                  {t("library.perPage", { count: size })}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -282,14 +284,14 @@ export function LibraryPage() {
               <button onClick={() => { setShowAllCategories(false); setMobileCatSearch(""); }} className="h-10 w-10 flex items-center justify-center rounded-full bg-accent/10 text-foreground">
                 <ChevronLeft className="h-6 w-6" />
               </button>
-              <h2 className="text-[18px] font-bold text-foreground">Tất cả danh mục</h2>
+              <h2 className="text-[18px] font-bold text-foreground">{t("library.allCategories")}</h2>
             </div>
             <div className="p-4 border-b border-border bg-card shadow-sm shrink-0">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Tìm kiếm danh mục..."
+                  placeholder={t("library.searchCategories")}
                   value={mobileCatSearch}
                   onChange={(e) => setMobileCatSearch(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 bg-accent/5 border border-border rounded-xl outline-none focus:border-primary transition-colors text-[14px]"
@@ -330,7 +332,7 @@ export function LibraryPage() {
                             {cat.name}
                           </h3>
                           <div className="text-[10px] font-semibold leading-[14px] opacity-90">
-                            {cat.count} tài liệu
+                            {t("library.documentCount", { count: cat.count })}
                           </div>
                         </div>
                       </CardContent>
@@ -366,7 +368,7 @@ export function LibraryPage() {
               </div>
 
               <h1 className="text-[36px] font-semibold leading-[40px] text-foreground uppercase tracking-tight">
-                {categoriesData?.categories?.find(c => c.id === activeCategory)?.name || "Danh mục"}
+                {categoriesData?.categories?.find(c => c.id === activeCategory)?.name || t("library.category")}
               </h1>
 
               <div className="flex flex-col sm:flex-row gap-4 sm:items-center pt-2 pb-4">
@@ -385,12 +387,12 @@ export function LibraryPage() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="hidden rounded-full bg-card h-10 px-6 border-border shadow-sm text-[14px] font-semibold leading-[18px] md:inline-flex">
                       <Filter className="h-4 w-4 mr-2 text-muted-foreground" /> 
-                      {activeExtension ? activeExtension.toUpperCase() : "Lọc"}
+                      {activeExtension ? activeExtension.toUpperCase() : t("library.filter")}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-40 rounded-xl">
                     <DropdownMenuItem onClick={() => handleExtensionClick("")} className={!activeExtension ? "font-bold text-primary" : ""}>
-                      Tất cả định dạng
+                      {t("library.allFormats")}
                     </DropdownMenuItem>
                     {Object.keys(EXTENSION_COLORS).filter(k => !['jpeg', 'jpg'].includes(k)).map(ext => (
                       <DropdownMenuItem key={ext} onClick={() => handleExtensionClick(ext)} className={activeExtension === ext ? "font-bold text-primary" : ""}>
@@ -457,8 +459,8 @@ export function LibraryPage() {
                       <FileText className="h-8 w-8 opacity-20" />
                       <p className="text-[14px] font-normal leading-[18px]">
                         {searchTerm
-                          ? `Không tìm thấy tài liệu "${searchTerm}"`
-                          : "Chưa có tài liệu nào."}
+                          ? t("library.noDocumentsFound", { query: searchTerm })
+                          : t("library.noDocuments")}
                       </p>
                     </div>
                   </div>
@@ -496,7 +498,7 @@ export function LibraryPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Tìm kiếm tài liệu..."
+                  placeholder={t("library.searchDocuments")}
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 bg-card border border-border rounded-full outline-none focus:border-primary transition-colors text-[14px] font-normal leading-[18px]"
@@ -533,7 +535,7 @@ export function LibraryPage() {
           <div className="space-y-3 md:space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-[20px] font-bold leading-[24px] text-foreground">
-                Danh mục tài liệu
+                {t("library.documentCategories")}
               </h2>
               {categories.length > 4 && (
                 <button
@@ -584,7 +586,7 @@ export function LibraryPage() {
                               {cat.name}
                             </h3>
                             <div className="text-[10px] font-semibold leading-[14px] opacity-90">
-                              {cat.count} tài liệu
+                              {t("library.documentCount", { count: cat.count })}
                             </div>
                           </div>
                         </CardContent>
@@ -602,7 +604,7 @@ export function LibraryPage() {
                     }
                   }}
                   className="hidden absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 lg:flex h-10 w-10 items-center justify-center rounded-full bg-background border shadow-md hover:scale-105 text-foreground opacity-0 group-hover:opacity-100 transition-all duration-200"
-                  aria-label="Trước"
+                  aria-label={t("library.previous")}
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
@@ -616,7 +618,7 @@ export function LibraryPage() {
                     }
                   }}
                   className="hidden absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 lg:flex h-10 w-10 items-center justify-center rounded-full bg-background border shadow-md hover:scale-105 text-foreground opacity-0 group-hover:opacity-100 transition-all duration-200"
-                  aria-label="Sau"
+                  aria-label={t("library.next")}
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
@@ -634,7 +636,7 @@ export function LibraryPage() {
               <h2 className="text-[20px] font-bold leading-[24px] text-foreground">
                 {activeCategory
                   ? `Tài liệu: ${categories.find((c: DocumentCategory) => c.id === activeCategory)?.name || ""}`
-                  : "Tất cả tài liệu"}
+                  : t("library.allDocuments")}
               </h2>
               {activeCategory && (
                 <button
@@ -653,10 +655,10 @@ export function LibraryPage() {
                   <thead className="bg-[#f8fafc]/80 dark:bg-accent/5 backdrop-blur-sm border-b border-border/50">
                       <tr className="text-left text-[10px] font-bold leading-[14px] text-muted-foreground uppercase tracking-wider">
                         <th className="px-4 xl:px-6 py-4 w-[32%]">
-                          Tên tài liệu
+                          {t("library.documentName")}
                         </th>
                         <th className="px-4 xl:px-6 py-4 w-[18%]">
-                          Danh mục
+                          {t("library.category")}
                         </th>
                         <th className="hidden md:table-cell px-4 xl:px-6 py-4 w-[10%]">
                           Loại
@@ -774,8 +776,8 @@ export function LibraryPage() {
                               <FileText className="h-8 w-8 opacity-20" />
                               <p>
                                 {searchTerm
-                                  ? `Không tìm thấy tài liệu "${searchTerm}"`
-                                  : "Chưa có tài liệu nào."}
+                                  ? t("library.noDocumentsFound", { query: searchTerm })
+                                  : t("library.noDocuments")}
                               </p>
                             </div>
                           </td>
@@ -852,8 +854,8 @@ export function LibraryPage() {
                       <FileText className="h-8 w-8 opacity-20" />
                       <p className="text-[14px] font-normal leading-[18px]">
                         {searchTerm
-                          ? `Không tìm thấy tài liệu "${searchTerm}"`
-                          : "Chưa có tài liệu nào."}
+                          ? t("library.noDocumentsFound", { query: searchTerm })
+                          : t("library.noDocuments")}
                       </p>
                     </div>
                   </div>

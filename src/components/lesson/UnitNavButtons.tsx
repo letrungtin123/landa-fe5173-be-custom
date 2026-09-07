@@ -4,6 +4,7 @@
 // ============================================================
 
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface UnitNavButtonsProps {
   currentIndex: number;
@@ -33,6 +34,7 @@ export function UnitNavButtons({
   onNextLesson,
   hasNextLesson = false,
 }: UnitNavButtonsProps) {
+  const { t } = useTranslation();
   const isFirst = currentIndex === 0;
 
   return (
@@ -48,7 +50,7 @@ export function UnitNavButtons({
         }`}
       >
         <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-        Quay lại
+        {t("course.back")}
       </button>
 
       {/* Tiếp tục / Hoàn thành */}
@@ -61,7 +63,7 @@ export function UnitNavButtons({
               isCompleted ? (
                 <div className="flex items-center gap-1 sm:gap-1.5 text-green-600 dark:text-green-400 px-2 sm:px-4 py-2 sm:py-2.5">
                   <Check className="h-4 w-4 sm:h-5 sm:w-5 stroke-[3]" />
-                  <span className="text-[11px] sm:text-[14px] font-bold whitespace-nowrap">Đã hoàn thành</span>
+                  <span className="text-[11px] sm:text-[14px] font-bold whitespace-nowrap">{t("course.completed")}</span>
                 </div>
               ) : (
                 <button
@@ -76,7 +78,7 @@ export function UnitNavButtons({
                   ) : (
                     <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   )}
-                  Hoàn thành
+                  {t("course.complete")}
                 </button>
               )
             )}
@@ -86,7 +88,7 @@ export function UnitNavButtons({
                 onClick={onNextLesson}
                 className="inline-flex min-w-[112px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[11px] font-semibold leading-[18px] text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97] whitespace-nowrap sm:min-w-[132px] sm:gap-2 sm:px-6 sm:py-2.5 sm:text-[14px]"
               >
-                Tiếp tục
+                {t("course.continue")}
                 <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
             )}
@@ -96,7 +98,7 @@ export function UnitNavButtons({
             onClick={onNext}
             className="inline-flex min-w-[112px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[11px] font-semibold leading-[18px] text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97] whitespace-nowrap sm:min-w-[132px] sm:gap-2 sm:px-6 sm:py-2.5 sm:text-[14px]"
           >
-            Tiếp tục
+            {t("course.continue")}
             <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </button>
         )}

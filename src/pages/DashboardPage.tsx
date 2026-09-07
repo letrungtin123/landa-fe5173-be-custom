@@ -16,6 +16,7 @@ import { usePageLoading } from "@/hooks/usePageLoading";
 import { useMyEnrollments, useCourses } from "@/hooks/useCourses";
 import { useAverageCourseCompletion } from "@/hooks/useProgress";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useTranslation } from "react-i18next";
 import {
   clearDemoIframeDashboardCtaPending,
   DEMO_IFRAME_DASHBOARD_CTA_EVENT,
@@ -31,6 +32,7 @@ import { lockDemoIframeUserScroll } from "@/utils/demoIframeGuideLock";
 const DEMO_IFRAME_FLOW_LOCK_DASHBOARD_CTA = "dashboard-cta";
 
 export function DashboardPage() {
+  const { t } = useTranslation();
   const { isLoading: pageLoading } = usePageLoading(1000);
   const { data: enrollments } = useMyEnrollments();
   const { data: courseList } = useCourses();
@@ -151,7 +153,7 @@ export function DashboardPage() {
                 <div className="h-[79px] mb-2 w-full pointer-events-none" />
                 <ProgressRing
                   progress={averagePercent}
-                  courseTitle="Tất cả khóa học"
+                  courseTitle={t("courses.title")}
                   courseLink="/explore"
                 />
               </div>
@@ -160,7 +162,7 @@ export function DashboardPage() {
             {/* <div className="hidden">
               <ProgressRing
                 progress={averagePercent}
-                courseTitle="Tất cả khóa học"
+                courseTitle={t("courses.title")}
                 courseLink="/explore"
               />
             </div> */}

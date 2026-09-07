@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { registerAccount } from "@/api/register";
 import { useBranding, type BrandingImages } from "@/hooks/useBranding";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 export function RegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { branding, isLoading: brandingLoading } = useBranding();
 
@@ -22,25 +25,25 @@ export function RegisterPage() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!lastName.trim()) newErrors.last_name = "Vui lòng nhập họ";
-    if (!firstName.trim()) newErrors.first_name = "Vui lòng nhập tên";
+    if (!lastName.trim()) newErrors.last_name = t("auth.lastNameRequired");
+    if (!firstName.trim()) newErrors.first_name = t("auth.firstNameRequired");
     if (!email.trim()) {
-      newErrors.email = "Vui lòng nhập email";
+      newErrors.email = t("auth.emailRequired");
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = "Email không hợp lệ";
+      newErrors.email = t("auth.invalidEmail");
     }
     if (!password) {
-      newErrors.password = "Vui lòng nhập mật khẩu";
+      newErrors.password = t("auth.passwordRequired");
     } else if (password.length < 8) {
-      newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự";
+      newErrors.password = t("auth.passwordMinLength", { count: 8 });
     }
     if (!confirmPassword) {
-      newErrors.confirm = "Vui lòng xác nhận mật khẩu";
+      newErrors.confirm = t("auth.passwordConfirmationRequired");
     } else if (password !== confirmPassword) {
-      newErrors.confirm = "Mật khẩu xác nhận không khớp";
+      newErrors.confirm = t("auth.passwordsDoNotMatch");
     }
     if (!agreedTerms) {
-      newErrors.terms = "Bạn cần đồng ý với điều khoản";
+      newErrors.terms = t("auth.termsRequired");
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -76,7 +79,10 @@ export function RegisterPage() {
   // ── Màn hình thành công ──
   if (isSuccess) {
     return (
-      <div className="min-h-screen w-full bg-white text-black flex items-center justify-center">
+      <div className="relative min-h-screen w-full bg-white text-black flex items-center justify-center">
+        <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+          <LanguageSwitcher variant="public" />
+        </div>
         <div className="flex h-screen w-full max-w-[1440px] overflow-hidden bg-white">
           {/* Left Panel */}
           <LeftPanel branding={branding} isLoading={brandingLoading} />
@@ -88,17 +94,16 @@ export function RegisterPage() {
                 <CheckCircle2 className="h-8 w-8 text-emerald-500" />
               </div>
               <h2 className="mb-3 text-[24px] font-bold tracking-tight text-[#1a1a1a]">
-                Đăng ký thành công!
+                {t("auth.registrationSuccess")}
               </h2>
               <p className="mb-8 text-[14px] text-[#888] leading-relaxed max-w-[340px] mx-auto">
-                Tài khoản của bạn đã được tạo và đang chờ quản trị viên duyệt.
-                Bạn sẽ có thể đăng nhập sau khi tài khoản được phê duyệt.
+                {t("auth.registrationSuccessDescription")}
               </p>
               <button
                 onClick={() => navigate("/login")}
                 className="w-full rounded-full bg-[#1877F2] py-3 text-[15px] font-semibold text-white transition-all hover:bg-[#1466d8] active:scale-[0.98]"
               >
-                Quay về đăng nhập
+                {t("auth.backToSignIn")}
               </button>
             </div>
           </div>
@@ -109,7 +114,10 @@ export function RegisterPage() {
 
   // ── Form đăng ký ──
   return (
-    <div className="min-h-screen w-full bg-white text-black flex items-center justify-center">
+    <div className="relative min-h-screen w-full bg-white text-black flex items-center justify-center">
+      <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+        <LanguageSwitcher variant="public" />
+      </div>
       <div className="flex h-screen w-full max-w-[1440px] overflow-hidden bg-white">
         {/* Left Panel */}
         <LeftPanel branding={branding} isLoading={brandingLoading} />
@@ -125,7 +133,7 @@ export function RegisterPage() {
               className="flex items-center gap-2 text-sm font-normal text-[#8f8f8f] hover:text-neutral-600 transition-colors mb-6 w-fit"
             >
               <ArrowLeft className="h-4 w-4" />
-              Quay lại
+              {t("auth.back")}
             </button>
 
             <div className="w-full">
@@ -134,17 +142,17 @@ export function RegisterPage() {
                 <div className="size-15 relative rounded-xl flex items-center justify-center mb-3">
                   <img
                     src={branding.squareIcon}
-                    alt="E-learning"
+                    alt={t("common.logo")}
                     className={`w-12 h-12 object-contain transition-opacity duration-200 ${brandingLoading ? 'opacity-0' : 'opacity-100'}`}
                   />
                 </div>
 
                 <div className="flex flex-col items-center lg:items-start text-center lg:text-left gap-1 mb-6">
                   <h2 className="text-[28px] font-semibold text-black tracking-[0] leading-[35px]">
-                    Đăng ký tài khoản
+                    {t("auth.registerTitle")}
                   </h2>
                   <p className="hidden lg:block text-sm font-normal text-[#8f8f8f] tracking-[0] leading-5">
-                    Đăng ký ngay để bắt đầu hành trình học tập của bạn.
+                    {t("auth.registerSubtitle")}
                   </p>
                 </div>
               </div>
@@ -161,7 +169,7 @@ export function RegisterPage() {
                 <div className="flex gap-[10px]">
                   <div className="flex-1 flex flex-col gap-2">
                     <label htmlFor="reg-lastname" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px]">
-                      <span className="text-black">Họ</span><span className="text-[#e9252f]">*</span>
+                      <span className="text-black">{t("auth.lastName")}</span><span className="text-[#e9252f]">*</span>
                     </label>
                     <div className="relative w-full h-[38px] rounded-[10px] border border-solid border-[#ebeaea] bg-white transition-colors focus-within:border-[#0052d0]">
                       <input
@@ -177,7 +185,7 @@ export function RegisterPage() {
                   </div>
                   <div className="flex-1 flex flex-col gap-2">
                     <label htmlFor="reg-firstname" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px]">
-                      <span className="text-black">Tên</span><span className="text-[#e9252f]">*</span>
+                      <span className="text-black">{t("auth.firstName")}</span><span className="text-[#e9252f]">*</span>
                     </label>
                     <div className="relative w-full h-[38px] rounded-[10px] border border-solid border-[#ebeaea] bg-white transition-colors focus-within:border-[#0052d0]">
                       <input
@@ -196,7 +204,7 @@ export function RegisterPage() {
                 {/* Email */}
                 <div className="flex flex-col gap-2">
                   <label htmlFor="reg-email" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px]">
-                    <span className="text-black">Địa chỉ email</span><span className="text-[#e9252f]">*</span>
+                    <span className="text-black">{t("auth.emailAddress")}</span><span className="text-[#e9252f]">*</span>
                   </label>
                   <div className="relative w-full h-[38px] rounded-[10px] border border-solid border-[#ebeaea] bg-white transition-colors focus-within:border-[#0052d0]">
                     <input
@@ -214,7 +222,7 @@ export function RegisterPage() {
                 {/* Mật khẩu */}
                 <div className="flex flex-col gap-2">
                   <label htmlFor="reg-password" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px]">
-                    <span className="text-black">Mật khẩu</span><span className="text-[#e9252f]">*</span>
+                    <span className="text-black">{t("auth.password")}</span><span className="text-[#e9252f]">*</span>
                   </label>
                   <div className={`relative w-full flex items-center h-[38px] rounded-[10px] border border-solid bg-white transition-colors focus-within:border-[#0052d0] ${errors.password ? "border-[#e9252f]" : "border-[#ebeaea]"}`}>
                     <input
@@ -240,7 +248,7 @@ export function RegisterPage() {
                 {/* Xác nhận mật khẩu */}
                 <div className="flex flex-col gap-2">
                   <label htmlFor="reg-confirm" className="flex items-center text-sm font-medium text-transparent tracking-[0] leading-[14px]">
-                    <span className="text-black">Xác nhận mật khẩu</span><span className="text-[#e9252f]">*</span>
+                    <span className="text-black">{t("auth.confirmPassword")}</span><span className="text-[#e9252f]">*</span>
                   </label>
                   <div className={`relative w-full flex items-center h-[38px] rounded-[10px] border border-solid bg-white transition-colors focus-within:border-[#0052d0] ${errors.confirm ? "border-[#e9252f]" : "border-[#ebeaea]"}`}>
                     <input
@@ -276,11 +284,11 @@ export function RegisterPage() {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                         </svg>
-                        Đang đăng ký…
+                        {t("auth.signingUp")}
                       </span>
                     ) : (
                       <span className="flex items-center justify-center font-normal text-white text-sm text-center tracking-[0] leading-[14px]">
-                        Đăng ký
+                        {t("auth.signUp")}
                       </span>
                     )}
                   </button>
@@ -300,10 +308,10 @@ export function RegisterPage() {
                   <svg className="pointer-events-none absolute left-0 top-[0px] hidden h-3.5 w-3.5 p-[2px] text-white peer-checked:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </div>
                 <label htmlFor="reg-terms" className="flex flex-wrap font-normal text-[#8f8f8f] text-xs tracking-[0] leading-4 cursor-pointer">
-                  <span>Bằng việc đăng ký, bạn đã xác nhận đồng ý với các </span>
-                  <span className="underline hover:text-neutral-600 transition-colors mx-1">Điều khoản</span>
-                  <span> và </span>
-                  <span className="underline hover:text-neutral-600 transition-colors ml-1">Chính sách của công ty.</span>
+                  <span>{t("auth.termsPrefix", { action: t("auth.signUp").toLocaleLowerCase() })} </span>
+                  <span className="underline hover:text-neutral-600 transition-colors mx-1">{t("auth.terms")}</span>
+                  <span> {t("auth.and")} </span>
+                  <span className="underline hover:text-neutral-600 transition-colors ml-1">{t("auth.privacy")}</span>
                 </label>
               </div>
               {errors.terms && <p className="mt-1 text-[12px] text-red-600">{errors.terms}</p>}

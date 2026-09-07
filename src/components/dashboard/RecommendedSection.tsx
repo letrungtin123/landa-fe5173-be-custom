@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Lightbulb } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useBranding } from "@/hooks/useBranding";
 import { cn } from "@/lib/utils";
 import {
@@ -12,21 +13,9 @@ import {
 
 import heroImg from "@/assets/DasboardPage/hero-card-dashboard.png";
 
-const DEFAULT_TIPS = [
-  {
-    quote: "“Hãy là sự thay đổi mà bạn muốn thấy ở thế giới này”",
-    author: "Mahatma Gandhi"
-  },
-  {
-    quote: "“Cách tốt nhất để dự đoán tương lai là tự mình tạo ra nó”",
-    author: "Abraham Lincoln"
-  }
-];
-
 const DEFAULT_BADGE = "SKILLS";
 const DEMO_IFRAME_DASHBOARD_CTA_MOBILE_SCROLL_MS = 1220;
 const DEMO_IFRAME_DASHBOARD_CTA_MOBILE_SCROLL_START_DELAY_MS = 220;
-const DEFAULT_TITLE = "Khai phá tiềm năng từ kho tri thức đặc biệt";
 
 interface RecommendedSectionProps {
   demoCtaGuideActive?: boolean;
@@ -39,6 +28,7 @@ export function RecommendedSection({
   onDemoCtaGuideClick,
   onDemoCtaGuideVisibleChange,
 }: RecommendedSectionProps) {
+  const { t } = useTranslation();
   const [currentTip, setCurrentTip] = useState(0);
   const [floatingCtaRect, setFloatingCtaRect] = useState<{
     top: number;
@@ -53,10 +43,13 @@ export function RecommendedSection({
 
   // Dynamic data with fallbacks
   const badge = dc?.hero_badge || DEFAULT_BADGE;
-  const title = dc?.hero_title || DEFAULT_TITLE;
+  const title = dc?.hero_title || t("dashboard.defaultHeroTitle");
   const tips = dc?.tips?.length
     ? dc.tips.map(t => ({ quote: t.title, author: t.desc }))
-    : DEFAULT_TIPS;
+    : [
+      { quote: t("dashboard.defaultTipOne"), author: "Mahatma Gandhi" },
+      { quote: t("dashboard.defaultTipTwo"), author: "Abraham Lincoln" },
+    ];
 
   const goToTip = (direction: 1 | -1) => {
     if (tips.length <= 1) return;
@@ -207,10 +200,10 @@ export function RecommendedSection({
     <div className="w-full mt-10">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-          Đề xuất dành cho bạn
+          {t("dashboard.recommendedForYou")}
         </h2>
         <Link onClick={() => window.scrollTo(0, 0)} to="/explore" className="text-sm font-medium text-primary hover:underline">
-          Xem tất cả
+          {t("dashboard.viewAll")}
         </Link>
       </div>
 
@@ -239,13 +232,13 @@ export function RecommendedSection({
             ref={demoCtaRef}
             to="/explore"
             onClick={demoCtaGuideActive ? onDemoCtaGuideClick : undefined}
-            aria-label="Bắt đầu ngay"
+            aria-label={t("dashboard.startNow")}
             className={cn(
               "relative z-10 mt-auto inline-flex w-fit items-center gap-1 text-sm font-semibold text-primary outline-none transition hover:underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
               demoCtaGuideActive && "pointer-events-none opacity-0"
             )}
           >
-            Bắt đầu ngay <ArrowRight className="w-4 h-4" />
+            {t("dashboard.startNow")} <ArrowRight className="w-4 h-4" />
           </Link>
 
           {/* Image */}
@@ -268,7 +261,7 @@ export function RecommendedSection({
           {/* Header */}
           <div className="flex items-center gap-2 mb-4 lg:mb-6 text-foreground">
             <Lightbulb className="w-6 h-6" strokeWidth={2.2} />
-            <h3 className="text-xl font-bold">Tips</h3>
+            <h3 className="text-xl font-bold">{t("dashboard.tips")}</h3>
           </div>
 
           {/* Content (Quote + Author) */}
@@ -299,7 +292,7 @@ export function RecommendedSection({
                 key={idx}
                 onClick={() => setCurrentTip(idx)}
                 className={`w-1.5 h-1.5 rounded-full transition-colors ${currentTip === idx ? "bg-primary" : "bg-primary/20 hover:bg-primary/40"}`}
-                aria-label={`Go to tip ${idx + 1}`}
+                aria-label={t("dashboard.tipNavigation", { index: idx + 1 })}
               />
             ))}
           </div>
@@ -311,7 +304,7 @@ export function RecommendedSection({
         <Link
           to="/explore"
           onClick={onDemoCtaGuideClick}
-          aria-label="Bắt đầu ngay"
+          aria-label={t("dashboard.startNow")}
           className="demo-iframe-hero-cta-guide fixed z-[99990] inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-[13px] font-semibold leading-none text-[#075985] outline-none focus-visible:ring-2 focus-visible:ring-[#38bdf8] focus-visible:ring-offset-2 md:gap-2 md:px-6 md:text-sm"
           style={{
             left: `${floatingCtaPosition.left}px`,
@@ -321,7 +314,7 @@ export function RecommendedSection({
           }}
         >
           <span className="demo-iframe-hero-cta-echo" aria-hidden="true" />
-          <span className="relative z-10">Bắt đầu ngay</span>
+          <span className="relative z-10">{t("dashboard.startNow")}</span>
           <ArrowRight className="relative z-10 h-3.5 w-3.5 md:h-4 md:w-4" />
         </Link>,
         document.body

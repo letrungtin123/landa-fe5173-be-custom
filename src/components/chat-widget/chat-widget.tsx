@@ -6,6 +6,8 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageCircle, X, Plus, ArrowLeft, Send, Trash2,
@@ -88,7 +90,6 @@ const DEMO_QUIZ_ASSIST_TYPE_PUNCTUATION_MS = 120;
 const DEMO_QUIZ_ASSIST_STREAM_CHUNK_MS = 44;
 const DEMO_QUIZ_ASSIST_STREAM_PUNCTUATION_MS = 150;
 const DEMO_QUIZ_ASSIST_THINKING_MS = 2000;
-const VOICE_LANG = 'vi-VN';
 const VOICE_MAX_LISTEN_MS = 15_000;
 const SILENT_AUDIO_DATA_URI = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQQAAAAAAA==';
 
@@ -114,12 +115,12 @@ function decodeChatAudioData(context: AudioContext, audioData: ArrayBuffer): Pro
 }
 
 
-function getVoiceErrorMessage(error?: string): string {
-  if (error === 'not-allowed' || error === 'service-not-allowed') return 'Trình duyệt chưa được cấp quyền micro.';
-  if (error === 'no-speech') return 'Không nghe rõ câu nói. Vui lòng thử lại.';
-  if (error === 'audio-capture') return 'Không tìm thấy micro khả dụng.';
-  if (error === 'network') return 'Nhận diện giọng nói đang bị gián đoạn.';
-  return 'Trình duyệt này chưa hỗ trợ nhận diện giọng nói.';
+function getVoiceErrorMessage(error: string | undefined, t: TFunction): string {
+  if (error === 'not-allowed' || error === 'service-not-allowed') return t('chat.voice.permissionDenied');
+  if (error === 'no-speech') return t('chat.voice.notHeard');
+  if (error === 'audio-capture') return t('chat.voice.noMicrophone');
+  if (error === 'network') return t('chat.voice.networkInterrupted');
+  return t('chat.voice.unsupported');
 }
 function formatCallDuration(totalSeconds: number): string {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
@@ -134,42 +135,44 @@ function getDemoQuizAssistStepDelay(chars: string[], nextIndex: number, baseDela
   return /[,.!?;:]/.test(previousChar) ? punctuationDelayMs : baseDelayMs;
 }
 
-const DEMO_COMPANION_SURVEY_QUESTIONS: Array<{
+function getDemoCompanionSurveyQuestions(t: TFunction): Array<{
   question: string;
   correct: DemoSurveyAnswerKey;
   answers: Array<{ key: DemoSurveyAnswerKey; text: string }>;
-}> = [
+}> {
+  return [
     {
-      question: 'Khi tham gia một buổi networking, bạn thường làm gì?',
+      question: t('chat.survey.q1'),
       correct: 'B',
       answers: [
-        { key: 'A', text: 'Chủ động tìm người có giá trị để kết nối?' },
-        { key: 'B', text: 'Đi khắp nơi trò chuyện, làm quen với nhiều người và tạo không khí vui vẻ.' },
-        { key: 'C', text: 'Ở cùng những người quen và trò chuyện nhẹ nhàng.' },
-        { key: 'D', text: 'Quan sát trước rồi mới bắt chuyện khi cần' },
+        { key: 'A', text: t('chat.survey.q1a') },
+        { key: 'B', text: t('chat.survey.q1b') },
+        { key: 'C', text: t('chat.survey.q1c') },
+        { key: 'D', text: t('chat.survey.q1d') },
       ],
     },
     {
-      question: 'Khi làm việc nhóm, bạn thích vai trò nào nhất?',
+      question: t('chat.survey.q2'),
       correct: 'B',
       answers: [
-        { key: 'A', text: 'Lãnh đạo và đưa ra quyết định.' },
-        { key: 'B', text: 'Truyền cảm hứng, giao tiếp và kết nối mọi người.' },
-        { key: 'C', text: 'Hỗ trợ, phối hợp để cả nhóm làm việc hài hòa.' },
-        { key: 'D', text: 'Lập kế hoạch, kiểm tra chi tiết và chất lượng.' },
+        { key: 'A', text: t('chat.survey.q2a') },
+        { key: 'B', text: t('chat.survey.q2b') },
+        { key: 'C', text: t('chat.survey.q2c') },
+        { key: 'D', text: t('chat.survey.q2d') },
       ],
     },
     {
-      question: 'Điều gì khiến bạn cảm thấy hứng thú nhất trong công việc?',
+      question: t('chat.survey.q3'),
       correct: 'D',
       answers: [
-        { key: 'A', text: 'Đạt mục tiêu và chiến thắng thử thách.' },
-        { key: 'B', text: 'Giải quyết vấn đề bằng logic và độ chính xác.' },
-        { key: 'C', text: 'Xây dựng mối quan hệ lâu dài với đồng nghiệp.' },
-        { key: 'D', text: 'Được giao tiếp, thuyết trình, gặp gỡ nhiều người và nhận sự ghi nhận.' },
+        { key: 'A', text: t('chat.survey.q3a') },
+        { key: 'B', text: t('chat.survey.q3b') },
+        { key: 'C', text: t('chat.survey.q3c') },
+        { key: 'D', text: t('chat.survey.q3d') },
       ],
     },
   ];
+}
 
 function getPersonaDisplayName(persona?: BotPersona | null): string {
   return persona?.custom_name || persona?.template_name || '';
@@ -191,6 +194,7 @@ function showToast(message: string, type: 'success' | 'error' = 'error') {
 
 // ── Main Component ──
 export default function ChatWidget() {
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [state, setState] = useState<WidgetState>('loading');
@@ -244,6 +248,7 @@ export default function ChatWidget() {
   const demoQuizAssistTimersRef = useRef<number[]>([]);
   const demoQuizAssistCaretFrameRef = useRef<number | null>(null);
   const demoCompanionStartedRef = useRef(false);
+  const currentConvIdRef = useRef<string | null>(null);
 
   // Detect courseId from URL: /courses/:courseId/...
   const location = useLocation();
@@ -264,6 +269,10 @@ export default function ChatWidget() {
       window.setTimeout(() => el.scrollTo({ top: el.scrollHeight, behavior }), 0);
     });
   }, []);
+
+  useEffect(() => {
+    currentConvIdRef.current = currentConv?.id ?? null;
+  }, [currentConv?.id]);
 
   const clearVoiceListenTimer = useCallback(() => {
     if (voiceListenTimerRef.current) {
@@ -418,7 +427,7 @@ export default function ChatWidget() {
     const audio = botAudioRef.current;
     if (!audio || !audio.src) {
       setBotSpeechNeedsTap(false);
-      showToast('Không tìm thấy audio bot. Vui lòng gửi lại tin nhắn.');
+      showToast(t('chat.botAudioUnavailable'));
       return;
     }
 
@@ -430,9 +439,9 @@ export default function ChatWidget() {
     } catch {
       setBotSpeechNeedsTap(true);
       setBotSpeaking(false);
-      showToast('Trình duyệt vẫn đang chặn phát audio. Vui lòng thử lại.');
+      showToast(t('chat.audioPlaybackBlocked'));
     }
-  }, [ensureBotAudioContext]);
+  }, [ensureBotAudioContext, t]);
   const stopVoiceCapture = useCallback((discard = false) => {
     if (discard) voiceDiscardRef.current = true;
     clearVoiceListenTimer();
@@ -975,7 +984,7 @@ export default function ChatWidget() {
       setMessages(result.messages);
       setHasMore(result.has_more);
       setNextCursor(result.next_cursor);
-    } catch { showToast('Không tải được tin nhắn'); }
+    } catch { showToast(t('chat.messagesLoadFailed')); }
     setLoadingMessages(false);
     scrollChatToBottom('auto');
   };
@@ -990,7 +999,7 @@ export default function ChatWidget() {
       setMessages(prev => [...result.messages, ...prev]);
       setHasMore(result.has_more);
       setNextCursor(result.next_cursor);
-    } catch { showToast('Lỗi tải thêm tin nhắn'); }
+    } catch { showToast(t('chat.moreMessagesLoadFailed')); }
     setLoadingMore(false);
   };
 
@@ -1011,7 +1020,7 @@ export default function ChatWidget() {
       setState('persona-picker');
     } catch {
       setState('conversations');
-      showToast('Không tải được nhân cách');
+      showToast(t('chat.personasLoadFailed'));
     }
   };
 
@@ -1032,8 +1041,8 @@ export default function ChatWidget() {
       } else if (currentConv?.id === confirmDeleteId) {
         setState('conversations');
       }
-      showToast('Đã xoá', 'success');
-    } catch { showToast('Lỗi khi xoá'); }
+      showToast(t('chat.deleted'), 'success');
+    } catch { showToast(t('chat.deleteFailed')); }
     finally { setDeleting(false); setConfirmDeleteId(null); }
   };
 
@@ -1046,21 +1055,22 @@ export default function ChatWidget() {
         setActiveBot(preview.bot);
         setPersonas(preview.personas);
         setState('persona-picker');
-      } catch { showToast('Không tải được nhân cách'); }
+      } catch { showToast(t('chat.personasLoadFailed')); }
       return;
     }
-    if (conversations.length >= 10) { showToast('Tối đa 10 cuộc hội thoại'); return; }
+    if (conversations.length >= 10) { showToast(t('chat.maxConversations')); return; }
     try {
       const p = await fetchBotPersonas(activeBot.bot_id);
       setPersonas(p);
       setState('persona-picker');
-    } catch { showToast('Không tải được nhân cách'); }
+    } catch { showToast(t('chat.personasLoadFailed')); }
   };
 
   // ── Send message ──
   const sendUserMessage = useCallback((rawContent: string, source: SendSource = 'text') => {
     if (isDemoIframe) return;
     if (!currentConv || !rawContent.trim() || streaming) return;
+    const conversationId = currentConv.id;
     const content = rawContent.trim();
     const isVoiceTurn = source === 'voice' || voiceModeActive;
     const inputMode = isVoiceTurn ? 'voice' : 'text';
@@ -1079,7 +1089,7 @@ export default function ChatWidget() {
 
     const userMsg: ChatMessage = {
       id: 'temp-' + Date.now(),
-      conversation_id: currentConv.id,
+      conversation_id: conversationId,
       role: 'user',
       content,
       metadata: inputMode === 'voice' ? { input_mode: 'voice' } : {},
@@ -1091,8 +1101,76 @@ export default function ChatWidget() {
     streamAccRef.current = '';
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 50);
 
+    const refreshConversations = async () => {
+      try {
+        const convs = await fetchConversations();
+        setConversations(convs);
+      } catch {
+        // Conversation list freshness is non-blocking for the active chat UI.
+      }
+    };
+
+    const finishStream = async (fallbackText: string, toastMessage?: string) => {
+      try {
+        const result = await fetchMessages(conversationId);
+        if (currentConvIdRef.current === conversationId) {
+          const normalizedFallback = fallbackText.trim();
+          const hasFallbackInServer = normalizedFallback
+            ? result.messages.some(message => message.role === 'assistant' && message.content.trim() === normalizedFallback)
+            : true;
+          const nextMessages = normalizedFallback && !hasFallbackInServer
+            ? [
+                ...result.messages,
+                {
+                  id: 'resp-' + Date.now(),
+                  conversation_id: conversationId,
+                  role: 'assistant' as const,
+                  content: normalizedFallback,
+                  metadata: {},
+                  created_at: new Date().toISOString(),
+                },
+              ]
+            : result.messages;
+          setMessages(nextMessages);
+          setHasMore(result.has_more);
+          setNextCursor(result.next_cursor);
+          scrollChatToBottom('smooth');
+        }
+      } catch {
+        if (fallbackText.trim() && currentConvIdRef.current === conversationId) {
+          const fallbackContent = fallbackText.trim();
+          setMessages(msgs => {
+            const alreadyRendered = msgs.some(message => message.role === 'assistant' && message.content.trim() === fallbackContent);
+            if (alreadyRendered) return msgs;
+            return [
+              ...msgs,
+              {
+                id: 'resp-' + Date.now(),
+                conversation_id: conversationId,
+                role: 'assistant' as const,
+                content: fallbackContent,
+                metadata: {},
+                created_at: new Date().toISOString(),
+              },
+            ];
+          });
+        } else if (!toastMessage) {
+          showToast(t('chat.latestMessagesSyncFailed'));
+        }
+      } finally {
+        if (currentConvIdRef.current === conversationId) {
+          setStreamText('');
+          setStreaming(false);
+        }
+        streamAccRef.current = '';
+        abortRef.current = null;
+        if (toastMessage) showToast(toastMessage);
+        await refreshConversations();
+      }
+    };
+
     abortRef.current = sendMessageStream(
-      currentConv.id,
+      conversationId,
       content,
       courseId,
       inputMode,
@@ -1102,31 +1180,14 @@ export default function ChatWidget() {
         setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 10);
       },
       () => {
-        const full = streamAccRef.current;
-        if (full) {
-          const assistantMsg: ChatMessage = {
-            id: 'resp-' + Date.now(),
-            conversation_id: currentConv.id,
-            role: 'assistant',
-            content: full,
-            metadata: {},
-            created_at: new Date().toISOString(),
-          };
-          setMessages(msgs => [...msgs, assistantMsg]);
-        }
-        setStreamText('');
-        streamAccRef.current = '';
-        setStreaming(false);
+        void finishStream(streamAccRef.current);
       },
       (message) => {
         cancelBotSpeech();
-        showToast(message);
-        setStreaming(false);
-        setStreamText('');
-        streamAccRef.current = '';
+        void finishStream(streamAccRef.current, message);
       },
     );
-  }, [cancelBotSpeech, courseId, currentConv, isDemoIframe, stopVoiceCapture, streaming, voiceModeActive]);
+  }, [cancelBotSpeech, courseId, currentConv, isDemoIframe, scrollChatToBottom, stopVoiceCapture, streaming, t, voiceModeActive]);
 
   const handleSend = () => {
     sendUserMessage(inputValue, 'text');
@@ -1142,13 +1203,13 @@ export default function ChatWidget() {
     primeBotAudioPlayback();
     if (isDemoIframe) return;
     if (!currentConv) {
-      showToast('Vui lòng tạo hội thoại trước khi dùng micro.');
+      showToast(t('chat.createConversationBeforeVoice'));
       return;
     }
 
     const SpeechRecognition = getSpeechRecognitionCtor();
     if (!SpeechRecognition) {
-      showToast('Trình duyệt này chưa hỗ trợ nhận diện giọng nói.');
+      showToast(t('chat.voice.unsupported'));
       return;
     }
 
@@ -1171,7 +1232,7 @@ export default function ChatWidget() {
       setVoiceModeTranscript('');
       setVoiceCallStartedAt(null);
       setVoiceCallMuted(false);
-      showToast('Trình duyệt chưa được cấp quyền micro.');
+      showToast(t('chat.voice.permissionDenied'));
       return;
     }
 
@@ -1182,7 +1243,7 @@ export default function ChatWidget() {
     voiceErrorRef.current = false;
 
     const recognition = new SpeechRecognition();
-    recognition.lang = VOICE_LANG;
+    recognition.lang = i18n.language === 'en' ? 'en-US' : 'vi-VN';
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
@@ -1224,7 +1285,7 @@ export default function ChatWidget() {
         setVoiceCallMuted(true);
       }
       setVoiceModeTranscript('');
-      showToast(getVoiceErrorMessage(event.error));
+      showToast(getVoiceErrorMessage(event.error, t));
     };
     recognition.onend = () => {
       clearVoiceListenTimer();
@@ -1239,7 +1300,7 @@ export default function ChatWidget() {
         voiceCallMutedRef.current = true;
         setVoiceCallMuted(true);
         setVoiceModeTranscript('');
-        if (!voiceErrorRef.current) showToast('Không nghe rõ câu nói. Vui lòng thử lại.');
+        if (!voiceErrorRef.current) showToast(t('chat.voice.notHeard'));
         return;
       }
       setInputValue(transcript);
@@ -1263,9 +1324,9 @@ export default function ChatWidget() {
       setVoiceModeTranscript('');
       setVoiceCallStartedAt(null);
       setVoiceCallMuted(false);
-      showToast('Không thể bật micro trên trình duyệt này.');
+      showToast(t('chat.microphoneUnavailable'));
     }
-  }, [cancelBotSpeech, clearVoiceAutoListenTimer, clearVoiceListenTimer, currentConv, isDemoIframe, primeBotAudioPlayback, sendUserMessage, stopVoiceCapture, streaming, voiceCaptureState]);
+  }, [cancelBotSpeech, clearVoiceAutoListenTimer, clearVoiceListenTimer, currentConv, i18n.language, isDemoIframe, primeBotAudioPlayback, sendUserMessage, stopVoiceCapture, streaming, t, voiceCaptureState]);
 
   useEffect(() => {
     voiceAutoListenCallbackRef.current = () => { void handleVoiceToggle(); };
@@ -1356,10 +1417,10 @@ export default function ChatWidget() {
     ? storageUrl(demoHeaderPersona.template_avatar_url)
     : null;
   const botAvatarSrc = demoHeaderPersonaAvatarSrc || (activeBot?.bot_avatar_url ? storageUrl(activeBot.bot_avatar_url) : null);
-  const widgetHeaderTitle = demoHeaderPersonaName || activeBot?.bot_name || 'AI Assistant';
+  const widgetHeaderTitle = demoHeaderPersonaName || activeBot?.bot_name || t('chat.assistantFallback');
   const widgetHeaderSubtitle = demoHeaderPersonaName
-    ? `${demoHeaderPersonaName} là bạn đồng hành của bạn!`
-    : streaming ? 'Đang trả lời...' : 'Online';
+    ? t('chat.companionOf', { name: demoHeaderPersonaName })
+    : streaming ? t('chat.streaming') : t('chat.online');
 
   return (
     <>
@@ -1396,7 +1457,7 @@ export default function ChatWidget() {
           onPointerUp={onFabPointerUp}
           style={{ position: 'fixed', zIndex: isDemoIframe ? 9997 : 40, touchAction: 'none' }}
           className="bottom-[85px] md:bottom-6 right-6 h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/25 flex items-center justify-center hover:shadow-xl hover:shadow-primary/30 cursor-grab active:cursor-grabbing select-none"
-          title="Chat với AI"
+          title={t('chat.chatWithAi')}
         >
           {botAvatarSrc ? (
             <img src={botAvatarSrc} alt="" className="h-9 w-9 rounded-full object-cover pointer-events-none" draggable={false} />
@@ -1442,7 +1503,7 @@ export default function ChatWidget() {
               <div className="flex items-center gap-1">
                 {!isDemoWidgetLocked && (
                   <>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setFullscreen(f => !f)} title={fullscreen ? 'Thu nhỏ' : 'Phóng to'}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setFullscreen(f => !f)} title={fullscreen ? t('chat.minimize') : t('chat.maximize')}>
                       {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setOpen(false); setFullscreen(false); }}>
@@ -1539,15 +1600,15 @@ export default function ChatWidget() {
                   <AlertTriangle className="h-5 w-5 text-destructive" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sm">Xoá hội thoại</h4>
-                  <p className="text-xs text-muted-foreground mt-0.5">Tin nhắn sẽ bị xoá vĩnh viễn và không thể khôi phục.</p>
+                  <h4 className="font-semibold text-sm">{t('chat.deleteConversation')}</h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t('chat.deleteConversationDescription')}</p>
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-1">
-                <Button variant="outline" size="sm" onClick={() => setConfirmDeleteId(null)} disabled={deleting}>Huỷ</Button>
+                <Button variant="outline" size="sm" onClick={() => setConfirmDeleteId(null)} disabled={deleting}>{t('chat.cancel')}</Button>
                 <Button variant="destructive" size="sm" onClick={confirmDelete} disabled={deleting} className="gap-1.5">
                   {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                  Xoá
+                  {t('chat.delete')}
                 </Button>
               </div>
             </motion.div>
@@ -1563,22 +1624,24 @@ export default function ChatWidget() {
 // ═══════════════════════════════════════════════════════════════
 
 function LoadingState() {
+  const { t } = useTranslation();
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6">
       <Loader2 className="h-8 w-8 animate-spin text-primary/60" />
-      <p className="text-sm text-muted-foreground">Đang kết nối...</p>
+      <p className="text-sm text-muted-foreground">{t('chat.connecting')}</p>
     </div>
   );
 }
 
 function NoBotState() {
+  const { t } = useTranslation();
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
       <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center">
         <Bot className="h-8 w-8 text-muted-foreground/50" />
       </div>
-      <p className="text-sm text-muted-foreground">Chưa có trợ lý AI nào được kích hoạt.</p>
-      <p className="text-xs text-muted-foreground/60">Vui lòng liên hệ quản trị viên để được hỗ trợ.</p>
+      <p className="text-sm text-muted-foreground">{t('chat.noAssistant')}</p>
+      <p className="text-xs text-muted-foreground/60">{t('chat.contactAdministrator')}</p>
     </div>
   );
 }
@@ -1592,10 +1655,12 @@ function PersonaPicker({ personas, onSelect, onBack, readOnly = false, showSurve
   demoContactLogoSrc?: string;
   onDemoCompanionSurveyComplete?: (persona: BotPersona | null) => void;
 }) {
+  const { t } = useTranslation();
   const [selecting, setSelecting] = useState<string | null>(null);
   const [surveyStarted, setSurveyStarted] = useState(false);
   const [currentSurveyQuestion, setCurrentSurveyQuestion] = useState(0);
   const influencePersona = useMemo(() => findDemoInfluencePersona(personas), [personas]);
+  const surveyQuestions = useMemo(() => getDemoCompanionSurveyQuestions(t), [t]);
 
   const handleSelect = async (id: string) => {
     if (readOnly || !onSelect) return;
@@ -1612,14 +1677,14 @@ function PersonaPicker({ personas, onSelect, onBack, readOnly = false, showSurve
   }, [showSurveyCta]);
 
   const handleSurveyCorrect = () => {
-    const isLastQuestion = currentSurveyQuestion >= DEMO_COMPANION_SURVEY_QUESTIONS.length - 1;
+    const isLastQuestion = currentSurveyQuestion >= surveyQuestions.length - 1;
     if (isLastQuestion) {
       onDemoCompanionSurveyComplete?.(influencePersona);
-      setCurrentSurveyQuestion(DEMO_COMPANION_SURVEY_QUESTIONS.length);
+      setCurrentSurveyQuestion(surveyQuestions.length);
       return;
     }
 
-    setCurrentSurveyQuestion(index => Math.min(index + 1, DEMO_COMPANION_SURVEY_QUESTIONS.length));
+    setCurrentSurveyQuestion(index => Math.min(index + 1, surveyQuestions.length));
   };
 
   if (showSurveyCta && surveyStarted) {
@@ -1628,6 +1693,7 @@ function PersonaPicker({ personas, onSelect, onBack, readOnly = false, showSurve
         currentQuestionIndex={currentSurveyQuestion}
         companionPersona={influencePersona}
         onCorrectAnswer={handleSurveyCorrect}
+        questions={surveyQuestions}
       />
     );
   }
@@ -1703,7 +1769,7 @@ function PersonaPicker({ personas, onSelect, onBack, readOnly = false, showSurve
           >
             <span className="demo-iframe-hero-cta-echo" aria-hidden="true" />
             <Sparkles className="relative z-10 h-4 w-4" />
-            <span className="relative z-10">Khảo sát chọn bạn đồng hành</span>
+            <span className="relative z-10">{t('chat.selectCompanion')}</span>
           </button>
         </div>
       )}
@@ -1723,7 +1789,7 @@ function PersonaPicker({ personas, onSelect, onBack, readOnly = false, showSurve
               </div>
             )}
             <p className="text-[13px] font-semibold leading-[18px] text-foreground">
-              Liên hệ Nesso để được tư vấn miễn phí
+              {t('chat.contactNesso')}
             </p>
           </div>
         </div>
@@ -1736,17 +1802,20 @@ function DemoCompanionSurvey({
   currentQuestionIndex,
   companionPersona,
   onCorrectAnswer,
+  questions,
 }: {
   currentQuestionIndex: number;
   companionPersona: BotPersona | null;
   onCorrectAnswer: () => void;
+  questions: ReturnType<typeof getDemoCompanionSurveyQuestions>;
 }) {
-  const question = DEMO_COMPANION_SURVEY_QUESTIONS[currentQuestionIndex];
-  const isComplete = currentQuestionIndex >= DEMO_COMPANION_SURVEY_QUESTIONS.length;
+  const { t } = useTranslation();
+  const question = questions[currentQuestionIndex];
+  const isComplete = currentQuestionIndex >= questions.length;
   const companionName = getPersonaDisplayName(companionPersona) || 'Influence';
   const companionAvatarSrc = companionPersona?.template_avatar_url ? storageUrl(companionPersona.template_avatar_url) : null;
   const companionFullbodySrc = companionPersona?.template_fullbody_url ? storageUrl(companionPersona.template_fullbody_url) : null;
-  const companionDescription = 'Sau bài khảo sát, hệ thống đã chọn Influence làm bạn đồng hành phù hợp với bạn: Hướng ngoại, Nhiệt huyết, Truyền cảm hứng, Thích giao tiếp, kết nối.';
+  const companionDescription = t('chat.companionDescription');
 
   return (
     <div className="flex-1 min-h-0 overflow-hidden px-5 py-5 bg-gradient-to-b from-sky-50/40 via-white to-white">
@@ -1769,7 +1838,7 @@ function DemoCompanionSurvey({
               <div className="relative bg-gradient-to-br from-sky-50 via-white to-cyan-50 px-5 pt-5">
                 <div className="mx-auto flex h-9 w-fit items-center gap-2 rounded-full border border-sky-100 bg-white/90 px-3 text-xs font-semibold text-sky-700 shadow-sm">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Bạn đồng hành đã sẵn sàng
+                  {t('chat.companionReady')}
                 </div>
 
                 <motion.div
@@ -1815,7 +1884,7 @@ function DemoCompanionSurvey({
                   transition={{ delay: 0.32, duration: 0.24 }}
                   className="mt-2 text-base font-bold text-sky-700"
                 >
-                  {companionName} là bạn đồng hành của bạn!
+                  {t('chat.companionOf', { name: companionName })}
                 </motion.p>
                 <motion.p
                   initial={{ opacity: 0, y: 10 }}
@@ -1839,8 +1908,8 @@ function DemoCompanionSurvey({
           >
             <div className="mb-4">
               <div className="mb-3 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.12em] text-sky-600">
-                <span>Câu {currentQuestionIndex + 1}</span>
-                <span>{currentQuestionIndex + 1}/{DEMO_COMPANION_SURVEY_QUESTIONS.length}</span>
+                <span>{t('chat.questionNumber', { current: currentQuestionIndex + 1 })}</span>
+                <span>{currentQuestionIndex + 1}/{questions.length}</span>
               </div>
               <h3 className="text-base font-bold leading-6 text-slate-950">
                 {question.question}
@@ -1890,15 +1959,16 @@ function ConversationList({ conversations, loading, onOpen, onDelete, onNew }: {
   onDelete: (id: string) => void;
   onNew: () => void;
 }) {
+  const { t, i18n } = useTranslation();
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <div className="px-4 pt-3 pb-2 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold">Hội thoại</h3>
+          <h3 className="text-sm font-semibold">{t('chat.conversations')}</h3>
           <p className="text-[11px] text-muted-foreground">{conversations.length}/10</p>
         </div>
         <Button size="sm" variant="outline" onClick={onNew} disabled={conversations.length >= 10} className="h-7 gap-1 text-xs">
-          <Plus className="h-3 w-3" /> Mới
+          <Plus className="h-3 w-3" /> {t('chat.newConversation')}
         </Button>
       </div>
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-2">
@@ -1928,11 +1998,11 @@ function ConversationList({ conversations, loading, onOpen, onDelete, onNew }: {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium truncate">{conv.title}</p>
-                  <p className="text-[10px] text-muted-foreground truncate">{conv.last_message || 'Chưa có tin nhắn'}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{conv.last_message || t('chat.noMessages')}</p>
                   <div className="flex items-center gap-1 mt-0.5">
                     <Clock className="h-2.5 w-2.5 text-muted-foreground/50" />
                     <span className="text-[9px] text-muted-foreground/50">
-                      {new Date(conv.updated_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      {new Date(conv.updated_at).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                     </span>
                     {conv.persona_name && <Badge variant="outline" className="text-[8px] h-4 px-1 ml-1">{conv.persona_name}</Badge>}
                   </div>
@@ -1969,6 +2039,7 @@ function VoiceModeView({ active, phase, transcript, botText, botName, botAvatarS
   onStopBotSpeech: () => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   void botText;
 
@@ -1991,26 +2062,26 @@ function VoiceModeView({ active, phase, transcript, botText, botName, botAvatarS
   const waveActive = !muted && (userVoiceActive || botVoiceActive);
   const caption = (isBotTurn ? '' : transcript).trim();
   const title = muted && phase === 'idle'
-    ? 'Micro đang tắt'
+    ? t('chat.voice.muted')
     : phase === 'requesting'
-      ? 'Đang kết nối micro'
+      ? t('chat.voice.connecting')
       : phase === 'listening'
-        ? 'Đang nghe bạn nói'
+        ? t('chat.voice.listening')
         : phase === 'thinking'
-          ? 'Đang suy nghĩ'
+          ? t('chat.voice.thinking')
           : phase === 'preparing'
-            ? 'Đang chuẩn bị giọng'
+            ? t('chat.voice.preparing')
             : phase === 'speaking'
-              ? 'Bot đang nói'
+              ? t('chat.voice.botSpeaking')
               : phase === 'play_blocked'
-                ? 'Chạm để phát giọng'
-                : 'Đang trong cuộc gọi';
+                ? t('chat.voice.tapToPlay')
+                : t('chat.voice.inCall');
   const hint = muted && phase === 'idle'
-    ? 'Bật mic để tiếp tục cuộc gọi'
+    ? t('chat.voice.turnOnMicrophoneHint')
     : phase === 'idle'
-      ? 'Sẵn sàng nghe lượt tiếp theo'
+      ? t('chat.voice.readyForNextTurn')
       : phase === 'play_blocked'
-        ? 'Safari cần một lần chạm để phát audio'
+        ? t('chat.voice.safariTapToPlay')
         : caption || title;
   const statusDotClass = muted
     ? 'bg-amber-300'
@@ -2033,11 +2104,11 @@ function VoiceModeView({ active, phase, transcript, botText, botName, botAvatarS
       : onMic;
   const rightDisabled = muted || phase === 'requesting' || phase === 'thinking';
   const rightTitle = phase === 'play_blocked'
-    ? 'Phát giọng bot'
+    ? t('chat.voice.resumeBotSpeech')
     : phase === 'speaking' || phase === 'preparing'
-      ? 'Tắt giọng bot'
-      : 'Nói ngay';
-  const rightLabel = phase === 'play_blocked' ? 'Phát' : phase === 'speaking' || phase === 'preparing' ? 'Tắt bot' : 'Nói';
+      ? t('chat.voice.stopBotSpeech')
+      : t('chat.voice.speakNow');
+  const rightLabel = phase === 'play_blocked' ? t('chat.voice.play') : phase === 'speaking' || phase === 'preparing' ? t('chat.voice.stopBot') : t('chat.voice.speak');
   const bars = [12, 18, 14, 26, 20, 34, 24, 42, 28, 38, 22, 30, 18, 24, 14];
 
   return (
@@ -2091,7 +2162,7 @@ function VoiceModeView({ active, phase, transcript, botText, botName, botAvatarS
                 className={`relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border backdrop-blur-xl shadow-2xl disabled:cursor-default ${avatarTone}`}
                 animate={{ scale: waveActive ? [1, 1.035, 1] : 1 }}
                 transition={{ duration: 0.78, repeat: waveActive ? Infinity : 0, ease: 'easeInOut' }}
-                title={phase === 'speaking' ? 'Tắt giọng bot' : phase === 'play_blocked' ? 'Phát giọng bot' : botName}
+                title={phase === 'speaking' ? t('chat.voice.stopBotSpeech') : phase === 'play_blocked' ? t('chat.voice.resumeBotSpeech') : botName}
               >
                 {botAvatarSrc ? (
                   <img src={botAvatarSrc} alt="" className="h-full w-full object-cover" />
@@ -2132,7 +2203,7 @@ function VoiceModeView({ active, phase, transcript, botText, botName, botAvatarS
                   {caption}
                 </motion.p>
               ) : (
-                <p className="mt-3 text-xs text-muted-foreground dark:text-white/45">{isBotTurn ? 'Giữ cuộc gọi mở trong khi bot phản hồi' : 'Nói tự nhiên, mình sẽ tự gửi khi bạn dừng'}</p>
+                <p className="mt-3 text-xs text-muted-foreground dark:text-white/45">{isBotTurn ? t('chat.voice.keepCallOpen') : t('chat.voice.speakNaturally')}</p>
               )}
             </div>
           </div>
@@ -2140,16 +2211,16 @@ function VoiceModeView({ active, phase, transcript, botText, botName, botAvatarS
           <div className="relative z-10 px-5 pb-5">
             <div className="mx-auto grid max-w-xs grid-cols-3 items-end gap-4 rounded-lg border border-border/70 bg-card/85 px-4 py-4 shadow-2xl shadow-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-white/10 dark:shadow-black/25">
               <div className="flex flex-col items-center">
-                <Button type="button" variant="ghost" size="icon" className={`h-12 w-12 rounded-full border border-border bg-background/70 text-foreground hover:bg-muted dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/15 ${muted ? 'border-amber-500/40 text-amber-700 dark:border-amber-300/35 dark:text-amber-100' : ''}`} onClick={onToggleMute} title={muted ? 'Bật micro' : 'Tắt micro'}>
+                <Button type="button" variant="ghost" size="icon" className={`h-12 w-12 rounded-full border border-border bg-background/70 text-foreground hover:bg-muted dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/15 ${muted ? 'border-amber-500/40 text-amber-700 dark:border-amber-300/35 dark:text-amber-100' : ''}`} onClick={onToggleMute} title={muted ? t('chat.voice.turnOnMicrophoneTitle') : t('chat.voice.turnOffMicrophoneTitle')}>
                   {muted ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
                 </Button>
-                <span className="mt-2 text-[11px] font-medium text-muted-foreground dark:text-white/55">{muted ? 'Bật mic' : 'Tắt mic'}</span>
+                <span className="mt-2 text-[11px] font-medium text-muted-foreground dark:text-white/55">{muted ? t('chat.voice.turnOnMicrophone') : t('chat.voice.turnOffMicrophone')}</span>
               </div>
               <div className="flex flex-col items-center">
-                <Button type="button" size="icon" className="h-14 w-14 rounded-full bg-red-500 text-white shadow-lg shadow-red-950/35 hover:bg-red-600" onClick={onClose} title="Kết thúc cuộc gọi">
+                <Button type="button" size="icon" className="h-14 w-14 rounded-full bg-red-500 text-white shadow-lg shadow-red-950/35 hover:bg-red-600" onClick={onClose} title={t('chat.voice.endCall')}>
                   <PhoneOff className="h-6 w-6" />
                 </Button>
-                <span className="mt-2 text-[11px] font-medium text-muted-foreground dark:text-white/55">Kết thúc</span>
+                <span className="mt-2 text-[11px] font-medium text-muted-foreground dark:text-white/55">{t('chat.voice.end')}</span>
               </div>
               <div className="flex flex-col items-center">
                 <Button type="button" variant="ghost" size="icon" className="h-12 w-12 rounded-full border border-border bg-background/70 text-foreground hover:bg-muted disabled:opacity-35 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/15" onClick={rightAction} disabled={rightDisabled} title={rightTitle}>
@@ -2201,6 +2272,7 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
   inputReadOnly?: boolean;
 }) {
+  const { t } = useTranslation();
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -2240,12 +2312,12 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
               ? 'play_blocked'
               : 'idle';
   const voiceButtonTitle = isVoiceListening
-    ? 'Dừng nghe'
+    ? t('chat.voice.stopListening')
     : isVoiceRequesting
-      ? 'Đang xin quyền micro...'
+      ? t('chat.voice.requestingPermission')
       : isBotVoiceActive
-        ? 'Bot đang nói'
-        : 'Nói bằng micro';
+        ? t('chat.voice.botSpeaking')
+        : t('chat.voice.speakWithMicrophone');
   return (
     <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
       <VoiceModeView
@@ -2278,14 +2350,14 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
               <div className="flex justify-center py-1">
                 <Button variant="ghost" size="sm" onClick={onLoadMore} disabled={loadingMore} className="gap-1.5 text-xs h-7">
                   {loadingMore ? <Loader2 className="h-3 w-3 animate-spin" /> : <Clock className="h-3 w-3" />}
-                  {loadingMore ? 'Đang tải...' : 'Xem tin nhắn cũ hơn'}
+                  {loadingMore ? t('chat.loading') : t('chat.loadMore')}
                 </Button>
               </div>
             )}
             {messages.length === 0 && !streaming && (
               <div className="flex flex-col items-center justify-center h-full text-center gap-2">
                 <Sparkles className="h-8 w-8 text-primary/30" />
-                <p className="text-xs text-muted-foreground">Bắt đầu cuộc trò chuyện!</p>
+                <p className="text-xs text-muted-foreground">{t('chat.startConversation')}</p>
               </div>
             )}
             {messages.map((msg) => (
@@ -2323,7 +2395,7 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
               value={inputValue}
               onChange={e => onInputChange(e.target.value)}
               onKeyDown={inputReadOnly ? undefined : onKeyDown}
-              placeholder="Nhập tin nhắn..."
+              placeholder={t('chat.messagePlaceholder')}
               readOnly={inputReadOnly}
               disabled={streaming}
               rows={1}

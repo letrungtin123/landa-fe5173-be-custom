@@ -6,6 +6,7 @@ import { TIER_CONFIG, type BadgeDefinition } from "@/data/badgeConfig";
 import type { BadgeProgressInfo, EarnedBadge } from "@/types/badges";
 import { cn } from "@/lib/utils";
 import { BADGE_CARD_IMAGES, BADGE_MOBILE_CARD_IMAGES } from "@/data/badgeImages";
+import { useTranslation } from "react-i18next";
 
 interface BadgeCardProps {
   badge: BadgeDefinition;
@@ -32,6 +33,7 @@ export function BadgeCard({
   useMobileCardOnMobile = false,
   enableLockedFlip = false,
 }: BadgeCardProps) {
+  const { t } = useTranslation();
   const isEarned = !!earned;
   const tierStyle = TIER_CONFIG[badge.tier];
   const canFlipLocked = !isEarned && !compact && enableLockedFlip;
@@ -109,7 +111,7 @@ export function BadgeCard({
       tabIndex={isInteractive ? 0 : undefined}
       aria-label={
         canFlipLocked
-          ? `${isFlipped ? "Ẩn" : "Xem"} mô tả danh hiệu ${badge.name}`
+          ? isFlipped ? t("badge.hideDescription", { name: badge.name }) : t("badge.showDescription", { name: badge.name })
           : undefined
       }
       className={cn(
@@ -176,7 +178,7 @@ export function BadgeCard({
               <Lock className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="h-3 text-[10px] font-bold uppercase leading-3 tracking-[0.12em] text-muted-foreground/80 md:text-[11px]">
-              Chưa đạt
+              {t("filters.locked")}
             </p>
             <h3 className="mt-1 flex min-h-[34px] items-center justify-center line-clamp-2 text-sm font-extrabold leading-[17px] text-foreground md:min-h-[38px] md:text-base md:leading-[19px]">
               {badge.name}
@@ -192,7 +194,7 @@ export function BadgeCard({
             {progressInfo && (
               <div className="mt-2 w-full max-w-[176px] md:mt-1">
                 <div className="mb-1 flex items-center justify-between gap-2 whitespace-nowrap text-[9px] font-semibold leading-none text-muted-foreground/80 md:text-[10px]">
-                  <span className="truncate">{"Ti\u1ebfn \u0111\u1ed9"}</span>
+                  <span className="truncate">{t("badge.progress")}</span>
                   <span className="shrink-0">{progressInfo.label}</span>
                 </div>
                 <div className="h-[3px] w-full overflow-hidden rounded-full bg-background/80 md:h-1">
@@ -206,7 +208,7 @@ export function BadgeCard({
               </div>
             )}
             <span className="mt-2 text-[10px] font-semibold text-muted-foreground/60 md:mt-3">
-              Chạm để quay lại
+              {t("badge.tapToReturn")}
             </span>
           </div>
         )}

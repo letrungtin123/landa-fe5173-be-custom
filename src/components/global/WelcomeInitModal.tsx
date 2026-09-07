@@ -15,6 +15,7 @@ import planeImage from "@/assets/WelcomeInitModal/welcome_init_plane.png";
 import { useBranding } from "@/hooks/useBranding";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useTranslation } from "react-i18next";
 import {
   DEMO_IFRAME_DASHBOARD_CTA_EVENT,
   demoIframeDashboardCtaKey,
@@ -37,12 +38,13 @@ function storageSet(key: string): void {
   }
 }
 
-function getDisplayName(fullName?: string | null, username?: string | null): string {
+function getDisplayName(fullName: string | null | undefined, username: string | null | undefined, fallback: string): string {
   const normalized = fullName?.trim() || username?.trim();
-  return normalized || "bạn";
+  return normalized || fallback;
 }
 
 export function WelcomeInitModal() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { branding } = useBranding();
   const setBlockingModalActive = useAppStore((s) => s.setBlockingModalActive);
@@ -106,8 +108,8 @@ export function WelcomeInitModal() {
     setOpen(state.should_show && !blockedForSession && !locallyDismissed);
   }, [locallyDismissed, sessionDismissed, state]);
 
-  const tenantName = branding.tenantName || user?.tenantName || "cổng học tập";
-  const learnerName = getDisplayName(user?.fullName, user?.username);
+  const tenantName = branding.tenantName || user?.tenantName || t("welcome.portalFallback");
+  const learnerName = getDisplayName(user?.fullName, user?.username, t("welcome.fallbackName"));
 
   const handleContinue = () => {
     if (!state) {
@@ -150,10 +152,10 @@ export function WelcomeInitModal() {
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <DialogPrimitive.Title className="sr-only">
-            Chào mừng bạn đến với {tenantName}
+            {t("welcome.dialogTitle", { tenant: tenantName })}
           </DialogPrimitive.Title>
           <DialogPrimitive.Description className="sr-only">
-            Modal chào mừng xuất hiện trong lần đầu đăng nhập vào hệ thống học tập.
+            {t("welcome.dialogDescription")}
           </DialogPrimitive.Description>
 
           <div className="welcome-init-modal-shell overflow-hidden rounded-[16px] border-0 bg-white p-0 shadow-[0_18px_42px_rgba(37,99,235,0.24)] dark:bg-[#0f172a] dark:shadow-[0_18px_46px_rgba(2,6,23,0.66)] sm:rounded-[30px] sm:border-[10px] sm:border-white sm:shadow-[0_24px_70px_rgba(15,23,42,0.28)] sm:dark:border-[#111827]">
@@ -183,13 +185,13 @@ export function WelcomeInitModal() {
               </div>
 
               <div className="mt-7 max-w-[250px] truncate rounded-full bg-[#35f0c3] px-4 py-2 text-[11px] font-semibold uppercase leading-none tracking-[0.12em] text-[#071f28] shadow-[0_8px_18px_rgba(20,184,166,0.18)] sm:mt-5 sm:max-w-[320px] sm:px-[15px] sm:py-[7px] sm:text-[10px]">
-                Xin chào, {learnerName}
+                {t("welcome.hello", { name: learnerName })}
               </div>
 
               <h2 className="mt-8 max-w-none text-[29px] font-semibold leading-[1.18] tracking-normal text-[#213D6A] dark:text-slate-100 sm:mt-4 sm:max-w-[620px] sm:text-[43px] sm:leading-[1.22]">
-                <span className="block whitespace-nowrap">Chào mừng bạn đã đến</span>
+                <span className="block whitespace-nowrap">{t("welcome.titleFirstLine")}</span>
                 <span className="block whitespace-nowrap">
-                  với cổng học tập{" "}
+                  {t("welcome.titleSecondPrefix")}{" "}
                   <span className="inline-flex translate-y-[0.14em] items-center">
                     <img
                       src={folderImage}
@@ -203,30 +205,21 @@ export function WelcomeInitModal() {
 
               <p className="mt-4 max-w-[346px] text-center text-[15px] font-normal leading-[1.25] text-[#213D6A]/85 dark:text-slate-300 sm:mt-4 sm:max-w-[520px] sm:text-[14px] sm:leading-[1.18]">
                 <span className="block sm:hidden">
-                  Hãy dành một nhịp để sẵn sàng. Mọi thứ trong
-                </span>
-                <span className="block sm:hidden">
-                  cổng học tập của {tenantName} đã được chuẩn bị để
-                </span>
-                <span className="block sm:hidden">
-                  bạn bắt đầu thật mượt mà.
+                  {t("welcome.description", { tenant: tenantName })}
                 </span>
                 <span className="hidden sm:block">
-                  Hãy dành một nhịp để sẵn sàng. Mọi thứ trong cổng học tập
-                </span>
-                <span className="hidden sm:block">
-                  của {tenantName} đã được chuẩn bị để bạn bắt đầu thật mượt mà.
+                  {t("welcome.description", { tenant: tenantName })}
                 </span>
               </p>
 
               <div className="mt-2 grid justify-items-center gap-[5px] text-[13px] font-normal text-[#213D6A]/85 dark:text-slate-300 sm:mt-[10px] sm:gap-[5px] sm:text-[13px]">
                 <div className="inline-flex items-center justify-center gap-2">
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2563eb] dark:text-[#93c5fd] sm:h-4 sm:w-4" />
-                  <span>Không gian học tập đã sẵn sàng cho bạn</span>
+                  <span>{t("welcome.readySpace")}</span>
                 </div>
                 <div className="inline-flex items-center justify-center gap-2">
                   <Compass className="h-4 w-4 shrink-0 text-[#2563eb] dark:text-[#93c5fd] sm:h-4 sm:w-4" />
-                  <span>Hành trình hôm nay bắt đầu từ đây</span>
+                  <span>{t("welcome.startToday")}</span>
                 </div>
               </div>
 
@@ -236,7 +229,7 @@ export function WelcomeInitModal() {
                 disabled={isPending}
                 className="mt-2 inline-flex h-12 min-w-[230px] items-center justify-center gap-3 rounded-full bg-[#2563eb] px-7 text-[16px] font-semibold text-white shadow-[0_12px_26px_rgba(37,99,235,0.28)] outline-none transition hover:-translate-y-0.5 hover:bg-[#1d4ed8] focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-70 dark:bg-[#3b82f6] dark:shadow-[0_12px_28px_rgba(59,130,246,0.24)] dark:hover:bg-[#60a5fa] dark:focus-visible:ring-[#93c5fd] dark:focus-visible:ring-offset-[#0f172a] sm:mt-3 sm:h-10 sm:min-w-[192px] sm:gap-3 sm:px-6 sm:text-[15px]"
               >
-                {isPending ? "Đang bắt đầu..." : "Bắt đầu học ngay"}
+                {isPending ? t("welcome.starting") : t("enrollment.startLearning")}
                 <ArrowRight className="h-5 w-5 sm:h-5 sm:w-5" />
               </button>
             </div>

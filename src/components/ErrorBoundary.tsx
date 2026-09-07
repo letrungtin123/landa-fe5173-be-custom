@@ -4,6 +4,7 @@
 // ============================================================
 
 import React from "react";
+import i18n from "@/i18n";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -47,11 +48,10 @@ export class ErrorBoundary extends React.Component<
             </div>
 
             <h1 className="mb-2 text-xl font-bold text-foreground">
-              Đã xảy ra lỗi
+              {i18n.t("error.title")}
             </h1>
             <p className="mb-6 text-sm text-muted-foreground">
-              Ứng dụng gặp sự cố không mong muốn. Vui lòng thử lại hoặc quay
-              về trang chính.
+              {i18n.t("error.description")}
             </p>
 
             {/* Chi tiết lỗi (chỉ hiện trong development) */}
@@ -69,13 +69,13 @@ export class ErrorBoundary extends React.Component<
                 onClick={this.handleRetry}
                 className="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90 active:scale-[0.98]"
               >
-                Thử lại
+                {i18n.t("error.retry")}
               </button>
               <button
                 onClick={this.handleGoHome}
                 className="rounded-full border border-border px-6 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted active:scale-[0.98]"
               >
-                Về trang chính
+                {i18n.t("error.home")}
               </button>
             </div>
           </div>

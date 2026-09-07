@@ -28,6 +28,7 @@ import {
   type ProblemMedia,
 } from "@/lib/problemMedia";
 import type { DemoIframeLessonQuizGuidePhase } from "@/utils/demoIframeDashboardGuide";
+import { useTranslation } from "react-i18next";
 import {
   DEMO_IFRAME_GUIDE_SCROLL_SHORT_MS,
   scrollDemoIframeElementToCenter,
@@ -65,6 +66,7 @@ function CustomDropdown({
   onChange: (val: string) => void;
   disabled: boolean;
 }) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -100,7 +102,7 @@ function CustomDropdown({
           {selectedOption ? (
             <OptionLabel option={selectedOption} />
           ) : (
-            "-- Kết quả chọn --"
+            t("quiz.selectResult")
           )}
         </div>
         <ChevronDown
@@ -211,6 +213,7 @@ export function QuizContent({
   onDemoGuideAnswerSelected,
   onDemoGuideSubmitComplete,
 }: QuizContentProps) {
+  const { t } = useTranslation();
   const [parsedProblems, setParsedProblems] = useState<ParsedProblem[]>([]);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
 
@@ -355,10 +358,10 @@ export function QuizContent({
       // Nếu trả lời SAI → KHÔNG gọi API completion, KHÔNG invalidate queries → sidebar giữ nguyên
 
     } catch {
-      setResultMessage("Có lỗi xảy ra khi nộp bài. Vui lòng thử lại.");
+      setResultMessage(t("quiz.submitError"));
       setIsCorrect(false);
     }
-  }, [answers, problemUsageKey, submit, courseId, user?.username]);
+  }, [answers, problemUsageKey, submit, courseId, user?.username, t]);
 
   // Toggle hint visibility — dùng hints từ OLX parser (prob.hintHtml)
   const handleToggleHint = useCallback(() => {
@@ -433,10 +436,10 @@ export function QuizContent({
           <span className="text-2xl">📝</span>
         </div>
         <h2 className="mb-2 text-lg font-bold text-foreground">
-          Quiz chưa sẵn sàng
+          {t("quiz.unavailableTitle")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Bài kiểm tra này chưa có nội dung. Vui lòng quay lại sau.
+          {t("quiz.unavailableDescription")}
         </p>
       </div>
     );
@@ -462,10 +465,10 @@ export function QuizContent({
             <div className="mb-4 flex items-center gap-2 text-[14px] font-medium text-muted-foreground bg-muted/30 w-fit px-3 py-1.5 rounded-md border border-border/50">
               <Info className="h-4 w-4 text-muted-foreground" />
               <span>
-                {prob.type === "single-select" && "Chỉ chọn 1 đáp án."}
-                {prob.type === "multi-select" && "Được phép chọn nhiều đáp án."}
-                {prob.type === "dropdown" && "Chọn đáp án từ danh sách xổ xuống."}
-                {prob.type === "text-input" && "Nhập đáp án vào ô trống."}
+                {prob.type === "single-select" && t("quiz.selectOne")}
+                {prob.type === "multi-select" && t("quiz.selectMany")}
+                {prob.type === "dropdown" && t("quiz.selectDropdown")}
+                {prob.type === "text-input" && t("quiz.enterAnswer")}
               </span>
             </div>
 
@@ -590,7 +593,7 @@ export function QuizContent({
               {prob.type === "text-input" && (
                 <input
                   type="text"
-                  placeholder="Nhập câu trả lời..."
+                  placeholder={t("quiz.answerPlaceholder")}
                   value={(answers[prob.id] as string) || ""}
                   onChange={(e) => handleChange(prob.id, e.target.value, prob.type)}
                   disabled={resultMessage !== null}
@@ -605,14 +608,14 @@ export function QuizContent({
                 <div className="rounded-xl bg-success/10 border border-success/20 p-5">
                   <div className="flex items-center gap-2 mb-3 text-success">
                     <Info className="h-5 w-5" />
-                    <span className="font-bold text-sm tracking-wide uppercase">Đáp án & Giải thích</span>
+                    <span className="font-bold text-sm tracking-wide uppercase">{t("quiz.answerAndExplanation")}</span>
                   </div>
 
                   {/* Đáp án đúng */}
                   {(prob.correctAnswerHtml || answers[prob.id]) && (
                     <div className="mb-4 pb-4 border-b border-success/20">
                       <span className="text-[14px] font-semibold text-success/90 uppercase tracking-wider block mb-1">
-                        Đáp án đúng:
+                         {t("quiz.correctAnswer")}
                       </span>
                       <div
                         className="whitespace-pre-wrap break-words text-[15px] font-bold text-foreground [&_br]:block [&_p]:my-0"
@@ -638,7 +641,7 @@ export function QuizContent({
                 <div className="rounded-xl bg-warning/10 border border-warning/20 p-5">
                   <div className="flex items-center gap-2 mb-3 text-warning">
                     <Lightbulb className="h-5 w-5" />
-                    <span className="font-bold text-sm tracking-wide uppercase">Gợi ý</span>
+                    <span className="font-bold text-sm tracking-wide uppercase">{t("quiz.hint")}</span>
                   </div>
                   <div
                     className="prose prose-sm prose-warning dark:prose-invert max-w-none text-[14px] leading-relaxed text-foreground/90"
@@ -677,7 +680,7 @@ export function QuizContent({
                 )}
                 <Lightbulb className="relative z-10 h-4 w-4" />
                 <span className="relative z-10">
-                  {showHint ? "Ẩn gợi ý" : "Xem gợi ý"}
+                  {showHint ? t("quiz.hideHint") : t("quiz.showHint")}
                 </span>
               </button>
             )}
@@ -698,7 +701,7 @@ export function QuizContent({
                 {submit.isPending && (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 )}
-                Xác nhận
+                {t("quiz.confirm")}
               </button>
             ) : !isCorrect ? (
               <button
@@ -710,7 +713,7 @@ export function QuizContent({
                 }}
                 className="rounded-full bg-secondary text-secondary-foreground px-8 py-3 text-[14px] font-bold shadow-sm transition-all hover:bg-secondary/80 active:scale-[0.97] flex items-center gap-2"
               >
-                Thử lại
+                {t("quiz.retry")}
               </button>
             ) : null}
           </div>

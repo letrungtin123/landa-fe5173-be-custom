@@ -5,6 +5,7 @@ import { getSectionModalConfigs, getSectionModalShown, markSectionModalShown } f
 import type { Module } from "@/data/types";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useTranslation } from "react-i18next";
 import flyElementUrl from "@/assets/EncourageModal/Fly_element.png";
 import flyElementMobileUrl from "@/assets/EncourageModal/fly-element-mobile.png";
 import letterUrl from "@/assets/EncourageModal/letter.png";
@@ -12,10 +13,6 @@ import letterElementMobileUrl from "@/assets/EncourageModal/letter-element-mobil
 import lightEffectUrl from "@/assets/EncourageModal/light-effect.png";
 
 const CONFETTI_COLORS = ["#fbbf24", "#f59e0b", "#ef4444", "#ec4899", "#8b5cf6", "#3b82f6", "#10b981", "#f97316"];
-const ENCOURAGE_TITLE = "Xuất sắc quá! Bạn đã chinh phục thành công phần này!";
-const ENCOURAGE_DESCRIPTION =
-  "Mỗi bước đi nhỏ đều đang đưa bạn đến gần hơn với mục tiêu lớn. Bạn đã làm rất tốt, hãy giữ vững năng lượng tích cực này để tiếp tục tiến lên nhé!";
-
 const Confetti = () => {
   const particles = useMemo(() => {
     return Array.from({ length: 60 }, (_, i) => ({
@@ -68,6 +65,7 @@ interface SectionCompleteModalProps {
 }
 
 export function SectionCompleteModal({ courseId, modules }: SectionCompleteModalProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [currentConfig, setCurrentConfig] = useState<{ section_id: string; title: string; description: string } | null>(null);
   const [locallyDismissedSections, setLocallyDismissedSections] = useState<Set<string>>(() => new Set());
@@ -162,8 +160,8 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
 
   if (!currentConfig) return null;
 
-  const title = currentConfig.title || ENCOURAGE_TITLE;
-  const description = currentConfig.description || ENCOURAGE_DESCRIPTION;
+  const title = currentConfig.title || t("lesson.sectionCompleteTitle");
+  const description = currentConfig.description || t("lesson.sectionCompleteDescription");
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) handleDismiss(); }}>
@@ -359,7 +357,7 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
             className="section-complete-action absolute left-1/2 z-50 flex -translate-x-1/2 items-center justify-center rounded-full bg-[#0062DF] px-5 font-semibold leading-none tracking-normal text-white shadow-[0_10px_24px_rgba(0,52,195,0.28)] transition pointer-events-auto hover:bg-[#0054C8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-[#005FE8]"
             style={{ backgroundColor: "#0062DF", fontWeight: 600 }}
           >
-            Tiếp tục
+            {t("course.continue")}
           </button>
 
           <Confetti />

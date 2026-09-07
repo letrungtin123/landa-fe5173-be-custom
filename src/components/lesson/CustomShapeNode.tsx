@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import {
   Tooltip,
@@ -19,6 +20,7 @@ export type DiagramNodeData = {
 };
 
 export default function CustomShapeNode({ data, selected }: NodeProps) {
+  const { t } = useTranslation();
   const nodeData = data as unknown as DiagramNodeData;
   const { label, shape, bgColor, textColor, tooltip, target_diagram_id } = nodeData;
 
@@ -55,7 +57,7 @@ export default function CustomShapeNode({ data, selected }: NodeProps) {
       />
 
       <div className="text-sm font-semibold text-center whitespace-pre-wrap flex items-center gap-1 z-20 relative pointer-events-none">
-        {label || 'Trống'}
+        {label || t('lesson.diagramEmptyNode')}
         {target_diagram_id && <Link className="w-3 h-3 opacity-50" />}
       </div>
 

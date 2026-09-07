@@ -16,8 +16,10 @@ import { BadgeCard } from "./BadgeCard";
 import { BadgeIcon } from "./BadgeIcon";
 import { BADGE_CARD_IMAGES, BADGE_MOBILE_CARD_IMAGES } from "@/data/badgeImages";
 import type { EarnedBadge } from "@/types/badges";
+import { useTranslation } from "react-i18next";
 
 export function BadgeShowcase() {
+  const { t } = useTranslation();
   const { earnedBadges, totalBadges, earnedCount, isLoading, isEnabled, badgeImageMap, activeBadgeIds, badgeDefinitions } = useBadges();
   const [selectedBadge, setSelectedBadge] = useState<EarnedBadge | null>(null);
 
@@ -70,7 +72,7 @@ export function BadgeShowcase() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Trophy className="h-4 w-4 text-[#0062DF]" />
-              <h3 className="text-sm font-bold text-foreground">Danh hiệu</h3>
+              <h3 className="text-sm font-bold text-foreground">{t("badge.title")}</h3>
             </div>
             <span className="text-xs font-semibold text-accent">
               {earnedCount}/{totalBadges}
@@ -97,7 +99,7 @@ export function BadgeShowcase() {
                 type="button"
                 onClick={() => setSelectedBadge(eb)}
                 className="block w-full rounded-2xl text-left outline-none transition-transform focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                aria-label={`Xem danh hiệu ${eb.badge.name}`}
+                aria-label={t("badge.viewBadge", { name: eb.badge.name })}
               >
                 <BadgeCard
                   badge={eb.badge}
@@ -121,7 +123,7 @@ export function BadgeShowcase() {
                     iconImageUrl={badgeImageMap[nextBadge.id]?.iconUrl}
                   />
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Tiếp theo: <span className="font-medium text-foreground">{nextBadge.name}</span>
+                    {t("badge.next", { name: nextBadge.name })}
                   </p>
                   <p className="text-[10px] text-muted-foreground/70 mt-0.5">
                     {nextBadge.requirement}
@@ -137,7 +139,7 @@ export function BadgeShowcase() {
           to="/badges"
           className="flex items-center justify-center gap-1 border-t border-border/30 py-3 text-xs font-medium text-accent hover:bg-accent/5 transition-colors"
         >
-          Xem tất cả danh hiệu
+          {t("badge.viewAll")}
           <ChevronRight className="h-3 w-3" />
         </Link>
       </motion.div>
@@ -166,7 +168,7 @@ export function BadgeShowcase() {
                       type="button"
                       onClick={() => setSelectedBadge(null)}
                       className="absolute right-3 top-3 z-30 rounded-full p-2 bg-black/40 text-white/80 transition-colors hover:bg-black/60 hover:text-white backdrop-blur-sm"
-                      aria-label="Đóng"
+                      aria-label={t("badge.close")}
                     >
                       <X className="h-5 w-5" />
                     </button>

@@ -6,6 +6,9 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { cn } from "@/lib/utils";
 import { CalendarDays, Check, Filter, RotateCcw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
+import { toIntlLocale } from "@/i18n";
 import {
   AreaChart,
   Area,
@@ -98,32 +101,35 @@ const buildStudyTimeParams = (filter: MomentumFilterState): StudyTimeQueryParams
   return { from, to, granularity: pickGranularityForRange(from, to) };
 };
 
-const formatBucketLabel = (date: string, granularity: StudyTimeGranularity = "day") => {
-  const [year, month, day] = date.split("-");
-  if (granularity === "year") return year;
-  if (granularity === "month") return `${month}/${year}`;
-  return `${day}/${month}`;
+const formatBucketLabel = (date: string, locale: string, granularity: StudyTimeGranularity = "day") => {
+  const value = new Date(`${date}T00:00:00`);
+  if (granularity === "year") return String(value.getFullYear());
+  if (granularity === "month") return new Intl.DateTimeFormat(locale, { month: "2-digit", year: "numeric" }).format(value);
+  return new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit" }).format(value);
+};
+
+const formatStudyTime = (mins: number, t: TFunction) => {
+  if (mins < 60) return t("dashboard.minutes", { count: mins });
+  const hours = Math.floor(mins / 60);
+  const minutes = mins % 60;
+  return minutes > 0
+    ? t("dashboard.hoursAndMinutes", { hours, minutes })
+    : t("dashboard.hours", { count: hours });
 };
 
 const CustomTooltip = ({ active, payload }: any) => {
+  const { t } = useTranslation();
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     if (data.name === "(day)") return null;
 
     const mins = data.rawMinutes || 0;
 
-    let timeText = "";
-    if (mins < 60) {
-      timeText = `${mins} phút`;
-    } else {
-      const h = Math.floor(mins / 60);
-      const m = mins % 60;
-      timeText = m > 0 ? `${h} tiếng ${m} phút` : `${h} tiếng`;
-    }
+    const timeText = formatStudyTime(mins, t);
 
     return (
       <div className="relative bg-[#45FFCA] text-[#0a1628] px-3 py-2 rounded-[8px] shadow-lg text-center min-w-[110px] -mt-12 flex flex-col items-center justify-center">
-        <span className="text-[13px] font-normal leading-[18px]">Bạn đã học</span>
+        <span className="text-[13px] font-normal leading-[18px]">{t("dashboard.studied")}</span>
         <span className="text-[15px] font-bold leading-[20px]">{timeText}</span>
         {/* Arrow pointer down */}
         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#45FFCA] rotate-45 rounded-[1px]"></div>
@@ -138,8 +144,9 @@ interface WelcomeBannerProps {
 }
 
 export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
+  const { t, i18n } = useTranslation();
   const { colorStyle } = useThemeStore();
-  const userName = useAuthStore((s) => s.user?.fullName || s.user?.username || "Học viên");
+  const userName = useAuthStore((s) => s.user?.fullName || s.user?.username || t("dashboard.learner"));
   const { chartData, todayMinutes, weeklyAvgMinutes, comparisonPercent } = useStudyTimeTracker();
   const [filterOpen, setFilterOpen] = useState(false);
   const [momentumFilter, setMomentumFilter] = useState<MomentumFilterState>(() => createDefaultFilter());
@@ -159,7 +166,7 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
   const activeChartData = isDefaultWeekly
     ? chartData
     : (filteredStudyTime?.entries || []).map((entry) => ({
-      name: formatBucketLabel(entry.date, activeGranularity),
+      name: formatBucketLabel(entry.date, toIntlLocale(i18n.language), activeGranularity),
       hours: Number((entry.minutes / 60).toFixed(1)),
       rawMinutes: entry.minutes,
     }));
@@ -167,13 +174,7 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
     ? 0
     : (filteredStudyTime?.entries || []).reduce((sum, entry) => sum + entry.minutes, 0);
 
-  // Format minutes thành text dễ đọc
-  const formatTime = (mins: number) => {
-    if (mins < 60) return `${mins} phút`;
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return m > 0 ? `${h} tiếng ${m} phút` : `${h} tiếng`;
-  };
+  const formatTime = (mins: number) => formatStudyTime(mins, t);
 
   const resetMomentumFilter = () => {
     setMomentumFilter(createDefaultFilter());
@@ -186,13 +187,13 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
     const meta = filteredStudyTime?.meta;
     const from = meta?.from || queryParams?.from || momentumFilter.from;
     const to = meta?.to || queryParams?.to || momentumFilter.to;
-    const bucketText = activeGranularity === "day" ? "ngày" : activeGranularity === "month" ? "tháng" : "năm";
+    const bucketText = activeGranularity === "day" ? t("dashboard.day").toLowerCase() : activeGranularity === "month" ? t("dashboard.month").toLowerCase() : t("dashboard.year").toLowerCase();
 
     return (
       <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
-        Đang xem {from === to ? from : `${from} → ${to}`} theo {bucketText}.<br />
-        Tổng thời gian học: <span className="text-[#45FFCA] font-semibold">{formatTime(totalFilteredMinutes)}</span>
-        {meta?.reduced_granularity ? <span className="text-white/70"> - đã gộp bucket để biểu đồ nhẹ hơn.</span> : null}
+        {t("dashboard.viewingRange", { range: from === to ? from : `${from} → ${to}`, bucket: bucketText })}<br />
+        {t("dashboard.totalStudyTime", { time: formatTime(totalFilteredMinutes) })}
+        {meta?.reduced_granularity ? <span className="text-white/70"> {t("dashboard.reducedGranularity")}</span> : null}
       </p>
     );
   };
@@ -201,11 +202,11 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
     <div className="absolute left-4 right-4 top-[74px] z-30 rounded-xl border border-white/20 bg-[#071827]/95 p-3 shadow-2xl backdrop-blur md:left-auto md:right-6 md:w-[380px]">
       <div className="mb-3 grid grid-cols-2 gap-1 sm:grid-cols-5">
         {[
-          ["week", "7 ngày"],
-          ["day", "Ngày"],
-          ["month", "Tháng"],
-          ["year", "Năm"],
-          ["custom", "Từ - đến"],
+          ["week", t("dashboard.weekRange")],
+          ["day", t("dashboard.day")],
+          ["month", t("dashboard.month")],
+          ["year", t("dashboard.year")],
+          ["custom", t("dashboard.customRange")],
         ].map(([mode, label]) => (
           <button
             key={mode}
@@ -275,7 +276,7 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
           className="h-8 px-2 text-white hover:bg-white/10 hover:text-white"
         >
           <RotateCcw className="h-3.5 w-3.5" />
-          Reset
+          {t("dashboard.reset")}
         </Button>
         <Button
           type="button"
@@ -284,7 +285,7 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
           className="h-8 bg-[#45FFCA] px-3 text-[#071827] hover:bg-[#45FFCA]/90"
         >
           <Check className="h-3.5 w-3.5" />
-          Apply
+          {t("dashboard.apply")}
         </Button>
       </div>
     </div>
@@ -295,8 +296,8 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
     if (todayMinutes === 0) {
       return (
         <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
-          Hôm nay bạn chưa bắt đầu online.<br />
-          Hãy dành chút thời gian để duy trì nhịp độ tuần này nhé!
+          {t("dashboard.noActivityToday")}<br />
+          {t("dashboard.noActivityTodayHint")}
         </p>
       );
     }
@@ -304,8 +305,8 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
     if (weeklyAvgMinutes === 0) {
       return (
         <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
-          Bạn đã online <span className="text-[#45FFCA] font-semibold">{formatTime(todayMinutes)}</span> hôm nay.<br />
-          Khởi đầu tuần mới thật tuyệt vời!
+          {t("dashboard.onlineToday", { time: formatTime(todayMinutes) })}<br />
+          {t("dashboard.greatStart")}
         </p>
       );
     }
@@ -314,22 +315,20 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
       const overPercent = comparisonPercent - 100;
       return (
         <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
-          Hôm nay bạn đã online <span className="text-[#45FFCA] font-semibold">{formatTime(todayMinutes)}</span>,{' '}
-          {overPercent > 0 ? (
-            <>cao hơn <span className="text-[#45FFCA] font-semibold">{overPercent}%</span> so với</>
-          ) : (
-            <>bằng với</>
-          )}{' '}
-          trung bình tuần ({formatTime(weeklyAvgMinutes)}/ngày).<br />
-          Giữ vững nhịp độ này nhé!
+          {t("dashboard.onlineToday", { time: formatTime(todayMinutes) })}{' '}
+          {overPercent > 0
+            ? t("dashboard.aboveWeeklyAverage", { percent: overPercent, average: formatTime(weeklyAvgMinutes) })
+            : t("dashboard.sameAsWeeklyAverage", { average: formatTime(weeklyAvgMinutes) })}
+          <br />
+          {t("dashboard.keepGoing")}
         </p>
       );
     }
 
     return (
       <p className="text-[13px] font-normal leading-[18px] text-white/90 max-w-[90%]">
-        Hôm nay bạn đã online <span className="text-[#45FFCA] font-semibold">{formatTime(todayMinutes)}</span>.<br />
-        Trung bình tuần của bạn là {formatTime(weeklyAvgMinutes)}/ngày — cố thêm một chút nữa nhé!
+        {t("dashboard.onlineToday", { time: formatTime(todayMinutes) })}<br />
+        {t("dashboard.weeklyAverageHint", { average: formatTime(weeklyAvgMinutes) })}
       </p>
     );
   };
@@ -348,12 +347,12 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
             className="mb-3 inline-flex w-fit whitespace-nowrap items-center justify-center h-[23px] rounded-[41px] px-3 py-1 text-[10px] font-bold uppercase tracking-widest"
             style={{ backgroundColor: "#43FDD7", color: "#000" }}
           >
-            Welcome back, {userName}
+            {t("dashboard.welcomeBack", { name: userName })}
           </div>
 
           {/* Main Heading */}
           <h1 className="mb-6 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-            Hành trình học tập của tôi
+            {t("dashboard.learningJourney")}
           </h1>
         </div>
 
@@ -376,11 +375,11 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
         <div className="relative z-10 w-full px-8 md:px-10 mb-1">
           <div className="mb-0 flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <h3 className="text-[22px] font-bold leading-[26px] tracking-tight text-white">Weekly Momentum</h3>
+              <h3 className="text-[22px] font-bold leading-[26px] tracking-tight text-white">{t("dashboard.weeklyMomentum")}</h3>
               {!isDefaultWeekly && (
                 <div className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/80">
                   <CalendarDays className="h-3 w-3" />
-                  Filtered
+                  {t("dashboard.filtered")}
                 </div>
               )}
             </div>
@@ -392,7 +391,7 @@ export function WelcomeBanner({ actionRight }: WelcomeBannerProps) {
               className="h-8 shrink-0 rounded-full bg-white/10 px-3 text-xs font-semibold text-white hover:bg-white/15 hover:text-white"
             >
               <Filter className="h-3.5 w-3.5" />
-              Bộ lọc
+              {t("dashboard.filter")}
             </Button>
           </div>
           {renderRangeMessage()}

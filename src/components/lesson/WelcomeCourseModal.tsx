@@ -8,6 +8,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCourseModalState, updateCourseModalState } from "@/api/modalState";
+import { useTranslation } from "react-i18next";
 
 interface WelcomeCourseModalProps {
   courseId: string;
@@ -17,6 +18,7 @@ interface WelcomeCourseModalProps {
 }
 
 export function WelcomeCourseModal({ courseId, completionPercent, isLoading, config }: WelcomeCourseModalProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const setBlockingModalActive = useAppStore((s) => s.setBlockingModalActive);
   const sessionMode = useAuthStore((s) => s.sessionMode);
@@ -102,10 +104,10 @@ export function WelcomeCourseModal({ courseId, completionPercent, isLoading, con
           {/* Content */}
           <div className="px-10 pt-6 pb-10 flex flex-col items-center text-center w-full shrink-0">
             <h2 className="text-[22px] font-bold text-foreground mb-3 tracking-tight break-words line-clamp-3 max-w-full py-1 leading-snug">
-              {config?.welcome_title || 'Chào mừng bạn đến với khóa học!'}
+              {config?.welcome_title || t("lesson.welcomeCourseTitle")}
             </h2>
             <p className="text-muted-foreground text-[15px] leading-relaxed mb-8 max-w-[500px]">
-              {config?.welcome_description || 'Chúc bạn có những trải nghiệm học tập thật bổ ích và thú vị.'}
+              {config?.welcome_description || t("lesson.welcomeCourseDescription")}
             </p>
 
             {/* Button */}
@@ -113,7 +115,7 @@ export function WelcomeCourseModal({ courseId, completionPercent, isLoading, con
               onClick={handleContinue}
               className="rounded-full px-10 py-6 text-[16px] font-semibold gap-2 transition-all duration-300 w-auto min-w-[220px] bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 hover:shadow-blue-600/40"
             >
-              Tiếp tục học <ArrowRight className="w-5 h-5 ml-1" />
+              {t("course.continue")} <ArrowRight className="w-5 h-5 ml-1" />
             </Button>
           </div>
         </div>

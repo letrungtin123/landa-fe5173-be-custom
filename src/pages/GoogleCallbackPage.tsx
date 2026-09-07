@@ -5,10 +5,12 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 type CallbackState = "loading" | "error";
 
 export function GoogleCallbackPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [state, setState] = useState<CallbackState>("loading");
 
@@ -26,7 +28,7 @@ export function GoogleCallbackPage() {
           <>
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#4285F4]/30 border-t-[#4285F4]" />
             <p className="text-[15px] font-medium text-[#3c4043]">
-              Đang hoàn tất đăng nhập...
+              {t("googleCallback.completingSignIn")}
             </p>
           </>
         )}
@@ -38,9 +40,9 @@ export function GoogleCallbackPage() {
               </svg>
             </div>
             <p className="text-[15px] font-medium text-amber-700">
-              Tính năng đăng nhập Google chưa được hỗ trợ.
+              {t("googleCallback.unavailable")}
             </p>
-            <p className="text-[12px] text-[#999]">Đang chuyển về trang đăng nhập...</p>
+            <p className="text-[12px] text-[#999]">{t("googleCallback.redirecting")}</p>
           </>
         )}
       </div>

@@ -25,36 +25,39 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { downloadAssignmentFile, type AssignmentFileMeta, type LearnerAssignment } from "@/api/assignments";
 import { useAssignment, useSubmitAssignment } from "@/hooks/useAssignments";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
+import { toIntlLocale } from "@/i18n";
 
 const MAX_PENDING_FILES = 5;
 
-function statusLabel(status?: string) {
-  if (status === "feedback_given") return "Đã phản hồi";
-  if (status === "submitted") return "Đã nộp";
-  return "Chưa nộp";
+function statusLabel(status: string | undefined, t: TFunction) {
+  if (status === "feedback_given") return t("assignments.statusFeedbackGiven");
+  if (status === "submitted") return t("assignments.statusSubmitted");
+  return t("assignments.statusNotSubmitted");
 }
 
-function formatDate(value?: string | null) {
+function formatDate(value: string | null | undefined, locale: string) {
   if (!value) return "";
-  return new Intl.DateTimeFormat("vi-VN", {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "short",
     timeStyle: "short",
   }).format(new Date(value));
 }
 
-function assignmentDeadlineLabel(assignment?: LearnerAssignment | null) {
+function assignmentDeadlineLabel(assignment: LearnerAssignment | null | undefined, t: TFunction, locale: string) {
   if (!assignment || assignment.deadline_mode === "none") return "";
   const deadline = assignment.effective_deadline_at || assignment.deadline_at;
   if (!deadline) {
     if (assignment.deadline_mode === "relative_to_enrollment" && assignment.deadline_after_days) {
-      return `Hạn nộp sau ${assignment.deadline_after_days} ngày kể từ khi bạn ghi danh khóa học`;
+      return t("assignments.relativeDeadline", { days: assignment.deadline_after_days });
     }
     return "";
   }
   if (assignment.deadline_mode === "relative_to_enrollment" && assignment.deadline_after_days) {
-    return `Hạn nộp ${formatDate(deadline)}`;
+    return t("assignments.deadlineAt", { date: formatDate(deadline, locale) });
   }
-  return formatDate(deadline);
+  return t("assignments.deadlineAt", { date: formatDate(deadline, locale) });
 }
 
 function formatBytes(value?: number) {
@@ -120,25 +123,26 @@ function FileList({
 }
 
 function AssignmentTimeline({ status }: { status?: string }) {
+  const { t } = useTranslation();
   const step = status === "feedback_given" ? 2 : status === "submitted" ? 1 : 0;
   const items = [
     {
-      label: "Chưa nộp",
-      shortLabel: "Chưa nộp",
+      label: t("assignments.statusNotSubmitted"),
+      shortLabel: t("assignments.statusNotSubmitted"),
       dotClass: "border-destructive bg-destructive",
       textClass: "text-destructive",
       ringClass: "ring-destructive/15",
     },
     {
-      label: "Đã nộp",
-      shortLabel: "Đã nộp",
+      label: t("assignments.statusSubmitted"),
+      shortLabel: t("assignments.statusSubmitted"),
       dotClass: "border-amber-500 bg-amber-500",
       textClass: "text-amber-600 dark:text-amber-300",
       ringClass: "ring-amber-500/15",
     },
     {
-      label: "Phản hồi",
-      shortLabel: "Phản hồi",
+      label: t("assignments.feedback"),
+      shortLabel: t("assignments.feedback"),
       dotClass: "border-success bg-success",
       textClass: "text-success",
       ringClass: "ring-success/15",
@@ -198,6 +202,7 @@ function AssignmentTimeline({ status }: { status?: string }) {
 }
 
 export function AssignmentDetailPage() {
+  const { t, i18n } = useTranslation();
   const { courseId, assignmentId } = useParams();
   const { data: assignment, isLoading, isError } = useAssignment(assignmentId);
   const submitMut = useSubmitAssignment(courseId, assignmentId);
@@ -221,19 +226,19 @@ export function AssignmentDetailPage() {
   const canResubmit = Boolean(isSubmitted && assignment?.allow_resubmission && !isDeadlineExpired);
   const canSubmit = Boolean(assignment?.can_submit && !isFeedbackGiven && (!isSubmitted || canResubmit));
   const isLocked = Boolean(assignment && assignment.locked_reason === "content");
-  const deadlineLabel = assignmentDeadlineLabel(assignment);
+  const deadlineLabel = assignmentDeadlineLabel(assignment, t, toIntlLocale(i18n.language));
   const selectedFileSize = useMemo(() => files.reduce((sum, file) => sum + file.size, 0), [files]);
   const answerCount = answer.trim().length;
   const feedbackReviewer = submission?.feedback_by_name || submission?.feedback_by_username || submission?.feedback_by_email || "";
 
   const submitHint = useMemo(() => {
-    if (isDeadlineExpired && !isFeedbackGiven) return "Đã hết thời hạn nộp bài";
-    if (isLocked) return "Học xong nội dung khóa học để nộp bài";
-    if (isFeedbackGiven) return "Bài tập đã có phản hồi";
-    if (isSubmitted && !canResubmit) return "Bài đã nộp và đang chờ phản hồi";
-    if (canResubmit) return "Có thể nộp lại trước khi quản trị viên phản hồi";
-    return "Sẵn sàng nộp bài";
-  }, [canResubmit, isDeadlineExpired, isFeedbackGiven, isLocked, isSubmitted]);
+    if (isDeadlineExpired && !isFeedbackGiven) return t("assignments.expiredHint");
+    if (isLocked) return t("assignments.contentLockedHint");
+    if (isFeedbackGiven) return t("assignments.feedbackAvailableHint");
+    if (isSubmitted && !canResubmit) return t("assignments.submittedWaitingHint");
+    if (canResubmit) return t("assignments.resubmitHint");
+    return t("assignments.readyToSubmit");
+  }, [canResubmit, isDeadlineExpired, isFeedbackGiven, isLocked, isSubmitted, t]);
 
   function addPendingFiles(incoming: File[]) {
     if (!canSubmit || incoming.length === 0) return;
@@ -263,10 +268,10 @@ export function AssignmentDetailPage() {
       {
         onSuccess: () => {
           setFiles([]);
-          setMessage({ type: "success", text: canResubmit ? "Đã nộp lại bài tập" : "Đã nộp bài tập" });
+          setMessage({ type: "success", text: canResubmit ? t("assignments.resubmitted") : t("assignments.submittedSuccess") });
         },
         onError: (err: any) => {
-          setMessage({ type: "error", text: err?.response?.data?.message || "Nộp bài thất bại" });
+          setMessage({ type: "error", text: err?.response?.data?.message || t("assignments.submitFailed") });
         },
       },
     );
@@ -291,9 +296,9 @@ export function AssignmentDetailPage() {
         <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
           <ClipboardList className="h-7 w-7 text-muted-foreground" />
         </div>
-        <h1 className="text-[22px] font-bold text-foreground">Không tìm thấy bài tập</h1>
+        <h1 className="text-[22px] font-bold text-foreground">{t("assignments.notFoundTitle")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Bài tập này chưa sẵn sàng hoặc bạn không có quyền truy cập.
+          {t("assignments.notFoundDescription")}
         </p>
       </div>
     );
@@ -306,9 +311,9 @@ export function AssignmentDetailPage() {
           <div className="mb-4 flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
             <div className="min-w-0">
-              <div className="text-sm font-bold text-destructive">Đã hết thời hạn nộp bài</div>
+              <div className="text-sm font-bold text-destructive">{t("assignments.expiredTitle")}</div>
               <div className="mt-0.5 text-[13px] font-medium text-muted-foreground">
-                Bạn vẫn có thể xem yêu cầu và phản hồi, nhưng không thể nộp hoặc nộp lại bài tập này.
+                {t("assignments.expiredDescription")}
               </div>
             </div>
           </div>
@@ -320,7 +325,7 @@ export function AssignmentDetailPage() {
             <div className="mb-5 flex flex-wrap items-center gap-2">
               <span className="inline-flex h-8 items-center gap-2 rounded-full bg-primary/10 px-3 text-[11px] font-bold uppercase tracking-widest text-primary">
                 <ClipboardList className="h-3.5 w-3.5" />
-                Bài tập
+                {t("assignments.assignment")}
               </span>
               {deadlineLabel && (
                 <span
@@ -332,7 +337,7 @@ export function AssignmentDetailPage() {
                   )}
                 >
                   <CalendarClock className="h-3.5 w-3.5" />
-                  Hạn {deadlineLabel}
+                  {deadlineLabel}
                 </span>
               )}
             </div>
@@ -349,8 +354,8 @@ export function AssignmentDetailPage() {
           <aside className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Tiến trình</div>
-                <div className="mt-1 text-[18px] font-bold leading-6 text-foreground">{statusLabel(assignment.status)}</div>
+                <div className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{t("assignments.progress")}</div>
+                <div className="mt-1 text-[18px] font-bold leading-6 text-foreground">{statusLabel(assignment.status, t)}</div>
               </div>
               <span
                 className={cn(
@@ -373,9 +378,9 @@ export function AssignmentDetailPage() {
           <div className="mb-4 flex items-start gap-3 rounded-2xl border border-warning/30 bg-warning/10 px-4 py-3 text-warning dark:bg-warning/10">
             <Lock className="mt-0.5 h-5 w-5 shrink-0" />
             <div className="min-w-0">
-              <div className="text-sm font-bold text-foreground">Học xong nội dung khóa học để mở nộp bài</div>
+              <div className="text-sm font-bold text-foreground">{t("assignments.lockedTitle")}</div>
               <div className="mt-0.5 text-[13px] font-medium text-muted-foreground">
-                Bạn vẫn xem được yêu cầu bài tập, nhưng form nộp bài sẽ khóa đến khi hoàn thành toàn bộ nội dung bài học.
+                {t("assignments.lockedDescription")}
               </div>
             </div>
           </div>
@@ -404,8 +409,8 @@ export function AssignmentDetailPage() {
                   <Sparkles className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-[18px] font-bold leading-6 text-foreground">Câu hỏi</h2>
-                  <p className="text-[13px] font-medium text-muted-foreground">Yêu cầu bài tập của khóa học</p>
+                  <h2 className="text-[18px] font-bold leading-6 text-foreground">{t("assignments.question")}</h2>
+                  <p className="text-[13px] font-medium text-muted-foreground">{t("assignments.courseRequirement")}</p>
                 </div>
               </div>
               <div className="whitespace-pre-wrap rounded-xl border border-border bg-muted/25 px-4 py-4 text-[15px] leading-7 text-foreground">
@@ -415,7 +420,7 @@ export function AssignmentDetailPage() {
                 <div className="mt-5">
                   <div className="mb-2 flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-muted-foreground">
                     <Paperclip className="h-3.5 w-3.5" />
-                    Tệp đính kèm từ quản trị viên
+                    {t("assignments.attachmentFromAdmin")}
                   </div>
                   <FileList files={[assignment.attachment_file]} layout="single" />
                 </div>
@@ -425,16 +430,16 @@ export function AssignmentDetailPage() {
             <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <h2 className="text-[18px] font-bold leading-6 text-foreground">Bài làm</h2>
+                  <h2 className="text-[18px] font-bold leading-6 text-foreground">{t("assignments.submission")}</h2>
                   <p className="mt-1 text-[13px] font-medium text-muted-foreground">
                     {submission?.submitted_at
-                      ? `Lần nộp ${submission.submission_version} · ${formatDate(submission.submitted_at)}`
-                      : "Nội dung trả lời và tệp đính kèm"}
+                      ? t("assignments.submissionAt", { version: submission.submission_version, date: formatDate(submission.submitted_at, toIntlLocale(i18n.language)) })
+                      : t("assignments.answerContent")}
                   </p>
                 </div>
                 <Badge variant="outline" className="h-8 w-fit gap-1.5 border-border bg-muted/40 px-3 text-[12px] font-bold text-muted-foreground">
                   <MessageSquareText className="h-3.5 w-3.5" />
-                  {answerCount} ký tự
+                  {t("assignments.characters", { count: answerCount })}
                 </Badge>
               </div>
 
@@ -442,7 +447,7 @@ export function AssignmentDetailPage() {
                 value={answer}
                 onChange={(event) => setAnswer(event.target.value)}
                 disabled={!canSubmit}
-                placeholder="Nhập câu trả lời của bạn..."
+                placeholder={t("assignments.answerPlaceholder")}
                 className={cn(
                   "min-h-[220px] w-full resize-y rounded-xl border border-border bg-background px-4 py-4 text-[15px] leading-7 text-foreground shadow-inner outline-none transition placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10",
                   !canSubmit && "cursor-not-allowed bg-muted/30 text-muted-foreground shadow-none",
@@ -453,7 +458,7 @@ export function AssignmentDetailPage() {
                 <div className="mt-5">
                   <div className="mb-2 flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-muted-foreground">
                     <Paperclip className="h-3.5 w-3.5" />
-                    Tệp đã nộp
+                    {t("assignments.submittedFiles")}
                   </div>
                   <FileList files={submission.files} />
                 </div>
@@ -485,15 +490,15 @@ export function AssignmentDetailPage() {
                         <FileUp className="h-5 w-5" />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm font-bold text-foreground">Tệp đính kèm</div>
+                        <div className="text-sm font-bold text-foreground">{t("assignments.attachments")}</div>
                         <div className="text-[12px] font-medium text-muted-foreground">
-                          {files.length}/{MAX_PENDING_FILES} tệp · {formatBytes(selectedFileSize)}
+                          {t("assignments.attachmentCount", { count: files.length, max: MAX_PENDING_FILES, size: formatBytes(selectedFileSize) })}
                         </div>
                       </div>
                     </div>
                     <Button type="button" variant="outline" className="w-full gap-2 sm:w-auto" onClick={() => fileInputRef.current?.click()}>
                       <Paperclip className="h-4 w-4" />
-                      Chọn tệp
+                      {t("assignments.chooseFile")}
                     </Button>
                   </div>
 
@@ -510,7 +515,7 @@ export function AssignmentDetailPage() {
                           </div>
                           <button
                             type="button"
-                            title="Xóa tệp"
+                            title={t("assignments.deleteFile")}
                             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                             onClick={() => removePendingFile(file)}
                           >
@@ -537,7 +542,7 @@ export function AssignmentDetailPage() {
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
-                  {canResubmit ? "Nộp lại" : "Nộp bài"}
+                  {canResubmit ? t("assignments.resubmit") : t("assignments.submit")}
                 </Button>
               </div>
             </section>
@@ -551,12 +556,12 @@ export function AssignmentDetailPage() {
                     <MessageSquareText className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="text-[11px] font-bold uppercase tracking-widest text-success">Phản hồi</div>
+                    <div className="text-[11px] font-bold uppercase tracking-widest text-success">{t("assignments.feedback")}</div>
                     <div className="mt-0.5 text-[15px] font-bold text-foreground">
-                      {submission.feedback_at ? formatDate(submission.feedback_at) : "Đã phản hồi"}
+                      {submission.feedback_at ? formatDate(submission.feedback_at, toIntlLocale(i18n.language)) : t("assignments.statusFeedbackGiven")}
                     </div>
                     <div className="mt-1 text-[12px] font-semibold text-muted-foreground">
-                      Người chấm: <span className="text-success">{feedbackReviewer || "Quản trị viên"}</span>
+                      {t("assignments.reviewer")}: <span className="text-success">{feedbackReviewer || t("assignments.administrator")}</span>
                     </div>
                   </div>
                 </div>
@@ -565,15 +570,15 @@ export function AssignmentDetailPage() {
                     {assignment.grading_enabled && (
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-success/25 bg-success/10 px-2.5 py-1 text-[12px] font-bold text-success">
                         <Trophy className="h-3.5 w-3.5" />
-                        Điểm {typeof submission.score === "number" ? `${submission.score}/100` : "chưa có"}
+                        {t("assignments.score", { score: typeof submission.score === "number" ? `${submission.score}/100` : t("assignments.scorePending") })}
                       </span>
                     )}
                     <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                      Lời nhận xét
+                      {t("assignments.comments")}
                     </span>
                   </div>
                   <div className="whitespace-pre-wrap text-[14px] font-medium leading-6 text-foreground">
-                    {submission.feedback_text || "Quản trị viên đã phản hồi bài tập."}
+                    {submission.feedback_text || t("assignments.defaultFeedback")}
                   </div>
                 </div>
                 {submission.feedback_files.length > 0 && (

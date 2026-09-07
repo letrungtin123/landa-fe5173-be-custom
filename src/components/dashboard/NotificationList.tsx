@@ -8,6 +8,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { NotificationModal } from "./NotificationModal";
 import type { Notification } from "@/data/types";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 const ICON_MAP: Record<Notification["icon"], React.ElementType> = {
   badge: Shield,
@@ -18,16 +19,17 @@ const ICON_MAP: Record<Notification["icon"], React.ElementType> = {
 const MAX_PREVIEW = 2;
 
 export function NotificationList() {
+  const { t } = useTranslation();
   const { notifications, isLoading, unreadCount } = useNotifications();
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <div>
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-[17px] font-bold text-foreground">Thông báo</h2>
+        <h2 className="text-[17px] font-bold text-foreground">{t("notifications.title")}</h2>
         {unreadCount > 0 && (
           <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
-            {unreadCount} mới
+            {t("notifications.newCount", { count: unreadCount })}
           </span>
         )}
       </div>
@@ -59,7 +61,7 @@ export function NotificationList() {
             <Bell className="h-5 w-5 text-muted-foreground/50" />
           </div>
           <p className="text-[13px] text-muted-foreground">
-            Chưa có thông báo mới
+            {t("notifications.noNew")}
           </p>
         </motion.div>
       )}
@@ -121,7 +123,7 @@ export function NotificationList() {
             className="w-full text-xs h-9 gap-1.5 text-muted-foreground hover:text-primary"
             onClick={() => setModalOpen(true)}
           >
-            Xem tất cả thông báo
+            {t("notifications.viewAll")}
             {notifications.length > MAX_PREVIEW && (
               <span className="text-muted-foreground/60">({notifications.length})</span>
             )}

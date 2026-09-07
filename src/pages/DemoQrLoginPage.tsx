@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   AlertCircle,
   ArrowRight,
@@ -19,13 +21,14 @@ import { Button } from "@/components/ui/button";
 import { useBranding } from "@/hooks/useBranding";
 import { cn } from "@/lib/utils";
 import { storageUrl } from "@/utils/storageUrl";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
-function formatSeconds(totalSeconds: number): string {
+function formatSeconds(totalSeconds: number, t: TFunction): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  if (minutes <= 0) return `${seconds} giây`;
-  if (seconds === 0) return `${minutes} phút`;
-  return `${minutes} phút ${seconds.toString().padStart(2, "0")} giây`;
+  if (minutes <= 0) return t("demoLogin.seconds", { count: seconds });
+  if (seconds === 0) return t("demoLogin.minutes", { count: minutes });
+  return t("demoLogin.minutesSeconds", { minutes, seconds: seconds.toString().padStart(2, "0") });
 }
 
 function getInitials(label: string): string {
@@ -38,9 +41,9 @@ function getInitials(label: string): string {
     .toUpperCase();
 }
 
-function readErrorMessage(error: unknown): string {
+function readErrorMessage(error: unknown, t: TFunction): string {
   const maybeAxios = error as { response?: { data?: { message?: string } } };
-  return maybeAxios.response?.data?.message || "Không thể thực hiện lúc này. Vui lòng thử lại.";
+  return maybeAxios.response?.data?.message || t("demoLogin.actionFailed");
 }
 
 function accountAvatar(account: DemoQrAccount): string {
@@ -48,8 +51,12 @@ function accountAvatar(account: DemoQrAccount): string {
 }
 
 function DemoLoginNotFoundPage() {
+  const { t } = useTranslation();
   return (
     <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+        <LanguageSwitcher variant="public" />
+      </div>
       <div
         className="absolute inset-0 opacity-60"
         style={{
@@ -66,14 +73,14 @@ function DemoLoginNotFoundPage() {
         <div className="order-2 mx-auto w-full max-w-xl text-center lg:order-1 lg:mx-0 lg:text-left">
           <div className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-semibold text-muted-foreground shadow-sm">
             <AlertCircle className="h-4 w-4 text-primary" aria-hidden="true" />
-            Mã lỗi 404
+            {t("demoLogin.errorCode")}
           </div>
 
           <h1 className="mt-6 text-4xl font-black leading-tight tracking-normal text-foreground sm:text-5xl lg:text-6xl">
-            Không tìm thấy trang
+            {t("demoLogin.notFoundTitle")}
           </h1>
           <p className="mt-4 text-base leading-7 text-muted-foreground sm:text-lg">
-            Đường dẫn này không tồn tại hoặc chưa sẵn sàng để truy cập.
+            {t("demoLogin.notFoundDescription")}
           </p>
 
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
@@ -84,7 +91,7 @@ function DemoLoginNotFoundPage() {
               onClick={() => window.location.assign("/")}
             >
               <Home className="h-4 w-4" aria-hidden="true" />
-              Về trang chính
+              {t("demoLogin.home")}
             </Button>
             <Button
               type="button"
@@ -94,25 +101,25 @@ function DemoLoginNotFoundPage() {
               onClick={() => window.location.reload()}
             >
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
-              Tải lại
+              {t("demoLogin.refresh")}
             </Button>
           </div>
 
           <div className="mt-10 grid gap-3 sm:grid-cols-2">
             <div className="rounded-md border border-border bg-card p-4 text-left shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Trạng thái
+                {t("demoLogin.status")}
               </p>
               <p className="mt-2 text-sm font-semibold text-foreground">
-                Không khả dụng
+                {t("demoLogin.unavailable")}
               </p>
             </div>
             <div className="rounded-md border border-border bg-card p-4 text-left shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Gợi ý
+                {t("demoLogin.suggestion")}
               </p>
               <p className="mt-2 text-sm font-semibold text-foreground">
-                Kiểm tra lại đường dẫn
+                {t("demoLogin.checkPath")}
               </p>
             </div>
           </div>
@@ -147,6 +154,7 @@ function DemoLoginNotFoundPage() {
 }
 
 export function DemoQrLoginPage() {
+  const { t } = useTranslation();
   const { branding, isLoading: brandingLoading } = useBranding();
   const [demoInfo, setDemoInfo] = useState<DemoQrAccountsResponse | null>(null);
   const [accounts, setAccounts] = useState<DemoQrAccount[]>([]);
@@ -188,7 +196,7 @@ export function DemoQrLoginPage() {
         setError(null);
         return;
       }
-      setError(readErrorMessage(err));
+      setError(readErrorMessage(err, t));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -203,7 +211,7 @@ export function DemoQrLoginPage() {
       const result = await claimDemoQrAccountApi(accountId);
       window.location.assign(result.redirect_url);
     } catch (err) {
-      setError(readErrorMessage(err));
+      setError(readErrorMessage(err, t));
       await loadAccounts({ silent: true });
     } finally {
       setClaimingId(null);
@@ -222,7 +230,10 @@ export function DemoQrLoginPage() {
   if (notFound) return <DemoLoginNotFoundPage />;
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#f8fafc_0%,#eef7f1_50%,#fff7ed_100%)] text-slate-950">
+    <main className="relative min-h-screen bg-[linear-gradient(135deg,#f8fafc_0%,#eef7f1_50%,#fff7ed_100%)] text-slate-950">
+      <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+        <LanguageSwitcher variant="public" />
+      </div>
       <div className="mx-auto grid min-h-screen w-full max-w-6xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-8 lg:px-8 lg:py-8">
         <section className="overflow-hidden rounded-md border border-white/70 bg-slate-950 text-white shadow-2xl shadow-slate-900/20">
           <div className="flex min-h-[270px] flex-col justify-between bg-[linear-gradient(145deg,rgba(15,23,42,0.98),rgba(20,83,45,0.9)_56%,rgba(146,64,14,0.84))] p-5 sm:min-h-[360px] sm:p-8 lg:min-h-[560px]">
@@ -242,7 +253,7 @@ export function DemoQrLoginPage() {
                     <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100">
                       {tenantName}
                     </p>
-                    <p className="text-sm text-white/75">Truy cập demo học viên</p>
+                    <p className="text-sm text-white/75">{t("demoLogin.learnerDemoAccess")}</p>
                   </div>
                 </div>
                 <Button
@@ -252,7 +263,7 @@ export function DemoQrLoginPage() {
                   className="h-10 w-10 rounded-md text-white hover:bg-white/10 hover:text-white"
                   disabled={refreshing || claimingId !== null}
                   onClick={() => loadAccounts({ silent: true })}
-                  aria-label="Làm mới danh sách tài khoản"
+                  aria-label={t("demoLogin.refreshAccounts")}
                 >
                   <RefreshCw
                     className={cn("h-4 w-4", refreshing && "animate-spin")}
@@ -263,10 +274,10 @@ export function DemoQrLoginPage() {
 
               <div className="max-w-md space-y-3">
                 <h1 className="text-3xl font-bold leading-tight tracking-normal sm:text-4xl lg:text-5xl">
-                  Chọn tài khoản học viên
+                  {t("demoLogin.chooseAccount")}
                 </h1>
                 <p className="text-sm leading-6 text-white/80 sm:text-base">
-                  Mỗi tài khoản sau khi chọn sẽ được ẩn trong {formatSeconds(ttlSeconds)} rồi tự mở lại.
+                  {t("demoLogin.accountLockDescription", { duration: formatSeconds(ttlSeconds, t) })}
                 </p>
               </div>
             </div>
@@ -275,13 +286,13 @@ export function DemoQrLoginPage() {
               <div className="rounded-md border border-white/15 bg-white/10 p-4 backdrop-blur">
                 <p className="text-3xl font-bold">{accounts.length}</p>
                 <p className="mt-1 text-xs uppercase tracking-[0.14em] text-white/65">
-                  Còn trống
+                  {t("demoLogin.available")}
                 </p>
               </div>
               <div className="rounded-md border border-white/15 bg-white/10 p-4 backdrop-blur">
                 <p className="text-3xl font-bold">{lockedCount}</p>
                 <p className="mt-1 text-xs uppercase tracking-[0.14em] text-white/65">
-                  Đang giữ
+                  {t("demoLogin.reserved")}
                 </p>
               </div>
             </div>
@@ -292,15 +303,15 @@ export function DemoQrLoginPage() {
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">
-                Danh sách khả dụng
+                {t("demoLogin.availableAccounts")}
               </p>
               <h2 className="mt-1 text-2xl font-bold tracking-normal text-slate-950">
-                Vào lớp demo
+                {t("demoLogin.enterDemo")}
               </h2>
             </div>
             <div className="inline-flex w-fit items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800">
               <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-              Tự động đăng nhập
+              {t("demoLogin.autoSignIn")}
             </div>
           </div>
 
@@ -315,7 +326,7 @@ export function DemoQrLoginPage() {
             <div className="flex min-h-[280px] items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-600">
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="h-7 w-7 animate-spin text-emerald-700" aria-hidden="true" />
-                <span>Đang tải danh sách tài khoản...</span>
+                <span>{t("demoLogin.loadingAccounts")}</span>
               </div>
             </div>
           ) : accounts.length > 0 ? (
@@ -360,7 +371,7 @@ export function DemoQrLoginPage() {
                         </span>
                         <span className="mt-1 flex items-center gap-2 text-sm text-slate-500">
                           <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
-                          Sẵn sàng đăng nhập
+                          {t("demoLogin.readyToSignIn")}
                         </span>
                       </span>
                     </span>
@@ -382,11 +393,10 @@ export function DemoQrLoginPage() {
                 <TimerReset className="h-7 w-7" aria-hidden="true" />
               </div>
               <h2 className="mt-4 text-xl font-bold text-slate-950">
-                Tạm hết tài khoản demo
+                {t("demoLogin.accountsExhausted")}
               </h2>
               <p className="mt-2 max-w-sm text-sm leading-6 text-slate-600">
-                Tài khoản gần nhất sẽ mở lại sau{" "}
-                {nextResetSeconds ? formatSeconds(nextResetSeconds) : "vài giây"}.
+                {t("demoLogin.accountResetDescription", { duration: nextResetSeconds ? formatSeconds(nextResetSeconds, t) : t("demoLogin.aFewSeconds") })}
               </p>
               <Button
                 type="button"
@@ -399,17 +409,17 @@ export function DemoQrLoginPage() {
                   className={cn(refreshing && "animate-spin")}
                   aria-hidden="true"
                 />
-                Làm mới
+                {t("demoLogin.refresh")}
               </Button>
             </div>
           )}
 
           <div className="mt-5 flex flex-col gap-2 border-t border-slate-100 pt-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-            <span>Trang sẽ tự cập nhật mỗi 10 giây.</span>
+            <span>{t("demoLogin.autoRefresh")}</span>
             {nextResetSeconds > 0 ? (
-              <span>Mở lại gần nhất: {formatSeconds(nextResetSeconds)}</span>
+              <span>{t("demoLogin.nextReset", { duration: formatSeconds(nextResetSeconds, t) })}</span>
             ) : (
-              <span>Trạng thái đã sẵn sàng.</span>
+              <span>{t("demoLogin.readyStatus")}</span>
             )}
           </div>
         </section>

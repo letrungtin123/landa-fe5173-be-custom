@@ -4,8 +4,10 @@ import { User, Loader2, Eye, EyeOff, X, Lock, CheckCircle } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNavigate, Link } from "react-router-dom";
 import { changePassword } from "@/api/password";
+import { useTranslation } from "react-i18next";
 
 export function UserProfileCard() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
@@ -33,7 +35,7 @@ export function UserProfileCard() {
     };
   }, [showPwModal]);
 
-  const displayName = user?.fullName || user?.username || "Học viên";
+  const displayName = user?.fullName || user?.username || t("dashboard.learner");
 
   const handleLogout = () => {
     logout();
@@ -61,23 +63,23 @@ export function UserProfileCard() {
 
     // Validate client-side
     if (!currentPw.trim()) {
-      setPwMessage({ type: "error", text: "Vui lòng nhập mật khẩu hiện tại." });
+      setPwMessage({ type: "error", text: t("security.currentPasswordRequired") });
       return;
     }
     if (!newPw.trim()) {
-      setPwMessage({ type: "error", text: "Vui lòng nhập mật khẩu mới." });
+      setPwMessage({ type: "error", text: t("security.newPasswordRequired") });
       return;
     }
     if (newPw.length < 8) {
-      setPwMessage({ type: "error", text: "Mật khẩu mới phải có ít nhất 8 ký tự." });
+      setPwMessage({ type: "error", text: t("security.newPasswordMinLength") });
       return;
     }
     if (newPw !== confirmPw) {
-      setPwMessage({ type: "error", text: "Mật khẩu mới nhập lại không khớp." });
+      setPwMessage({ type: "error", text: t("security.passwordsDoNotMatch") });
       return;
     }
     if (currentPw === newPw) {
-      setPwMessage({ type: "error", text: "Mật khẩu mới phải khác mật khẩu hiện tại." });
+      setPwMessage({ type: "error", text: t("security.passwordMustChange") });
       return;
     }
 
@@ -92,7 +94,7 @@ export function UserProfileCard() {
         setPwMessage({ type: "error", text: result.message });
       }
     } catch {
-      setPwMessage({ type: "error", text: "Không thể kết nối máy chủ. Vui lòng thử lại." });
+      setPwMessage({ type: "error", text: t("security.serverUnavailable") });
     } finally {
       setPwLoading(false);
     }
@@ -124,19 +126,19 @@ export function UserProfileCard() {
               to="/profile"
               className="block w-full text-center text-[14px] leading-[18px] font-medium text-foreground transition-colors hover:text-primary"
             >
-              Hồ sơ cá nhân
+              {t("header.personalProfile")}
             </Link>
             <button
               onClick={openPwModal}
               className="block w-full text-center text-[14px] leading-[18px] font-medium text-foreground transition-colors hover:text-primary"
             >
-              Đổi mật khẩu
+              {t("security.changePassword")}
             </button>
             <button
               onClick={handleLogout}
               className="block w-full text-center text-[14px] leading-[18px] font-medium text-foreground transition-colors hover:text-primary"
             >
-              Đăng xuất
+              {t("header.signOut")}
             </button>
           </div>
         </div>
@@ -165,9 +167,9 @@ export function UserProfileCard() {
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                 <Lock className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-bold text-foreground">Đổi mật khẩu</h3>
+              <h3 className="text-lg font-bold text-foreground">{t("security.changePassword")}</h3>
               <p className="mt-1 text-[13px] text-muted-foreground">
-                Nhập mật khẩu hiện tại và mật khẩu mới
+                {t("security.subtitle")}
               </p>
               {/* <p className="mt-2 text-[12px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2 text-left leading-relaxed">
                 💡 Nếu bạn đăng nhập bằng Google, mật khẩu đã được gửi về email đăng ký của bạn.
@@ -179,12 +181,12 @@ export function UserProfileCard() {
               {/* Mật khẩu hiện tại */}
               <div>
                 <label className="mb-1.5 block text-[13px] font-semibold text-foreground">
-                  Mật khẩu hiện tại
+                  {t("security.currentPasswordLabel")}
                 </label>
                 <div className="relative">
                   <input
                     type={showCurrentPw ? "text" : "password"}
-                    placeholder="Nhập mật khẩu hiện tại"
+                    placeholder={t("security.currentPasswordPlaceholder")}
                     value={currentPw}
                     onChange={(e) => { setCurrentPw(e.target.value); setPwMessage(null); }}
                     className="w-full rounded-lg border border-border bg-background px-4 py-3 pr-10 text-[14px] outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -204,12 +206,12 @@ export function UserProfileCard() {
               {/* Mật khẩu mới */}
               <div>
                 <label className="mb-1.5 block text-[13px] font-semibold text-foreground">
-                  Mật khẩu mới
+                  {t("security.newPasswordLabel")}
                 </label>
                 <div className="relative">
                   <input
                     type={showNewPw ? "text" : "password"}
-                    placeholder="Tối thiểu 8 ký tự"
+                    placeholder={t("security.newPasswordPlaceholder")}
                     value={newPw}
                     onChange={(e) => { setNewPw(e.target.value); setPwMessage(null); }}
                     className="w-full rounded-lg border border-border bg-background px-4 py-3 pr-10 text-[14px] outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -228,12 +230,12 @@ export function UserProfileCard() {
               {/* Nhập lại mật khẩu mới */}
               <div>
                 <label className="mb-1.5 block text-[13px] font-semibold text-foreground">
-                  Nhập lại mật khẩu mới
+                  {t("security.confirmNewPasswordLabel")}
                 </label>
                 <div className="relative">
                   <input
                     type={showConfirmPw ? "text" : "password"}
-                    placeholder="Nhập lại mật khẩu mới"
+                    placeholder={t("security.confirmNewPasswordPlaceholder")}
                     value={confirmPw}
                     onChange={(e) => { setConfirmPw(e.target.value); setPwMessage(null); }}
                     className={`w-full rounded-lg border bg-background px-4 py-3 pr-10 text-[14px] outline-none transition-colors focus:ring-2 focus:ring-primary/20 ${confirmPw && confirmPw !== newPw
@@ -252,7 +254,7 @@ export function UserProfileCard() {
                 </div>
                 {/* Realtime mismatch hint */}
                 {confirmPw && confirmPw !== newPw && (
-                  <p className="mt-1 text-[11px] text-red-500">Mật khẩu nhập lại không khớp</p>
+                  <p className="mt-1 text-[11px] text-red-500">{t("security.passwordsDoNotMatch")}</p>
                 )}
               </div>
 
@@ -277,10 +279,10 @@ export function UserProfileCard() {
                   {pwLoading ? (
                     <span className="inline-flex items-center justify-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Đang xử lý…
+                      {t("security.processing")}
                     </span>
                   ) : (
-                    "Xác nhận đổi mật khẩu"
+                    t("security.confirmChange")
                   )}
                 </button>
                 <button
@@ -288,7 +290,7 @@ export function UserProfileCard() {
                   disabled={pwLoading}
                   className="rounded-lg border border-border px-5 py-3 text-[14px] font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-60"
                 >
-                  Hủy
+                  {t("security.cancel")}
                 </button>
               </div>
             </div>

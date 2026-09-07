@@ -4,6 +4,7 @@ import { getBlockDetail } from "@/api/blocks";
 import { ChevronDown, HelpCircle, Loader2, MessageCircleQuestion } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useTranslation } from "react-i18next";
 
 interface FaqItem {
   question: string;
@@ -20,6 +21,7 @@ interface FaqData {
  * Fetch data từ student_view_data API (qua getBlockDetail), render câu hỏi expand/collapse.
  */
 export function FaqContent({ usageKey }: { usageKey: string }) {
+  const { t } = useTranslation();
   const username = useAuthStore((s) => s.user?.username);
   const [openId, setOpenId] = useState<number | null>(null);
 
@@ -49,7 +51,7 @@ export function FaqContent({ usageKey }: { usageKey: string }) {
     return (
       <div className="rounded-3xl border-2 border-primary/10 bg-[#F4F9FF] dark:bg-slate-900/50 p-8 shadow-sm text-center">
         <MessageCircleQuestion className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-        <p className="text-muted-foreground font-medium">Chưa có câu hỏi thường gặp nào.</p>
+        <p className="text-muted-foreground font-medium">{t("lesson.noFaq")}</p>
       </div>
     );
   }
@@ -78,7 +80,7 @@ export function FaqContent({ usageKey }: { usageKey: string }) {
           {svd.display_name}
         </h2>
         <p className="mt-2 text-[14px] text-foreground/60 font-medium">
-          Nhấn vào câu hỏi bên dưới để xem câu trả lời chi tiết
+          {t("lesson.faqPrompt")}
         </p>
       </div>
 
@@ -167,7 +169,7 @@ export function FaqContent({ usageKey }: { usageKey: string }) {
       {/* Footer info */}
       <div className="mt-8 relative z-10 flex items-center justify-center gap-2 text-[12px] text-foreground/40 font-medium">
         <HelpCircle className="h-3.5 w-3.5" />
-        <span>{svd.items.length} câu hỏi thường gặp</span>
+        <span>{t("lesson.faqCount", { count: svd.items.length })}</span>
       </div>
     </div>
   );

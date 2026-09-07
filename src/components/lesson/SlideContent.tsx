@@ -4,6 +4,7 @@
 // ============================================================
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import DOMPurify from "dompurify";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,6 +18,7 @@ interface SlideContentProps {
 
 
 export function SlideContent({ lesson }: SlideContentProps) {
+  const { t } = useTranslation();
   const [htmlContent, setHtmlContent] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -86,7 +88,7 @@ export function SlideContent({ lesson }: SlideContentProps) {
               {lesson.title}
             </h3>
             <p className="text-sm text-muted-foreground max-w-md">
-              Nội dung chưa được cập nhật.
+              {t("lesson.contentNotUpdated")}
             </p>
           </div>
         ) : null}

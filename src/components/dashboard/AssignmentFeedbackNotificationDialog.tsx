@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { downloadAssignmentFile, getLearnerAssignment, type AssignmentFileMeta } from "@/api/assignments";
 import type { Notification } from "@/data/types";
+import { useTranslation } from "react-i18next";
+import { toIntlLocale } from "@/i18n";
 
 interface FeedbackMetadata {
   assignment_id?: string;
@@ -25,9 +27,9 @@ interface FeedbackMetadata {
   feedback_at?: string;
 }
 
-function formatDate(value?: string | null) {
+function formatDate(value: string | null | undefined, locale: string) {
   if (!value) return "";
-  return new Intl.DateTimeFormat("vi-VN", {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "short",
     timeStyle: "short",
   }).format(new Date(value));
@@ -40,6 +42,7 @@ function metadataOf(notification: Notification | null): FeedbackMetadata {
 }
 
 function FeedbackFiles({ files }: { files?: AssignmentFileMeta[] }) {
+  const { t } = useTranslation();
   if (!files?.length) return null;
   return (
     <div className="grid gap-2 sm:grid-cols-2">
@@ -55,7 +58,7 @@ function FeedbackFiles({ files }: { files?: AssignmentFileMeta[] }) {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[13px] font-semibold text-foreground">{file.original_name}</span>
-            <span className="block text-[11px] text-muted-foreground">{file.mime_type || "Tệp đính kèm"}</span>
+            <span className="block text-[11px] text-muted-foreground">{file.mime_type || t("assignments.attachment")}</span>
           </span>
           <Download className="h-4 w-4 shrink-0 text-muted-foreground transition group-hover:text-primary" />
         </button>
@@ -73,6 +76,7 @@ export function AssignmentFeedbackNotificationDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t, i18n } = useTranslation();
   const metadata = metadataOf(notification);
   const assignmentId = metadata.assignment_id;
   const currentAssignmentQuery = useQuery({
@@ -83,8 +87,8 @@ export function AssignmentFeedbackNotificationDialog({
   });
   const currentAssignment = currentAssignmentQuery.data;
   const currentSubmission = currentAssignment?.submission;
-  const courseName = metadata.course_name || "Khóa học";
-  const assignmentTitle = currentAssignment?.title || metadata.assignment_title || notification?.title || "Bài tập";
+  const courseName = metadata.course_name || t("assignments.course");
+  const assignmentTitle = currentAssignment?.title || metadata.assignment_title || notification?.title || t("assignments.assignment");
   const assignmentQuestion = currentAssignment?.question || metadata.assignment_question;
   const gradingEnabled = currentAssignment?.grading_enabled ?? metadata.grading_enabled;
   const score = currentSubmission ? currentSubmission.score : metadata.score;
@@ -101,7 +105,7 @@ export function AssignmentFeedbackNotificationDialog({
               <MessageSquareText className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <DialogTitle className="text-[18px] leading-6">Phản hồi bài tập</DialogTitle>
+              <DialogTitle className="text-[18px] leading-6">{t("assignments.feedbackTitle")}</DialogTitle>
               <DialogDescription className="mt-1 line-clamp-2">
                 {courseName}
               </DialogDescription>
@@ -124,17 +128,17 @@ export function AssignmentFeedbackNotificationDialog({
             {gradingEnabled && (
               <Badge variant="outline" className="gap-1.5 border-success/25 bg-success/10 px-3 py-1 text-success">
                 <Trophy className="h-3.5 w-3.5" />
-                Điểm {typeof score === "number" ? `${score}/100` : "chưa có"}
+                {t("assignments.score", { score: typeof score === "number" ? `${score}/100` : t("assignments.scorePending") })}
               </Badge>
             )}
           </div>
 
           <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-            <div className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Bài tập</div>
+            <div className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{t("assignments.assignment")}</div>
             <h3 className="text-[18px] font-bold leading-6 text-foreground">{assignmentTitle}</h3>
             {assignmentQuestion && (
               <div className="mt-4 rounded-xl border border-border bg-muted/25 px-4 py-3">
-                <div className="mb-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Câu hỏi</div>
+                <div className="mb-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{t("assignments.question")}</div>
                 <div className="whitespace-pre-wrap text-[14px] leading-6 text-foreground">
                   {assignmentQuestion}
                 </div>
@@ -144,11 +148,11 @@ export function AssignmentFeedbackNotificationDialog({
 
           <section className="mt-4 rounded-2xl border border-success/25 bg-success/10 p-4 shadow-sm">
             <div className="mb-2 flex items-center justify-between gap-3">
-              <div className="text-[11px] font-bold uppercase tracking-widest text-success">Phản hồi</div>
-              {feedbackAt && <div className="text-[11px] font-medium text-muted-foreground">{formatDate(feedbackAt)}</div>}
+              <div className="text-[11px] font-bold uppercase tracking-widest text-success">{t("assignments.feedback")}</div>
+              {feedbackAt && <div className="text-[11px] font-medium text-muted-foreground">{formatDate(feedbackAt, toIntlLocale(i18n.language))}</div>}
             </div>
             <div className="whitespace-pre-wrap rounded-xl border border-success/20 bg-background/80 px-4 py-3 text-[14px] leading-6 text-foreground">
-              {feedbackText || "Quản trị viên đã phản hồi bài tập."}
+              {feedbackText || t("assignments.defaultFeedback")}
             </div>
             <div className="mt-4">
               <FeedbackFiles files={feedbackFiles} />
@@ -156,7 +160,7 @@ export function AssignmentFeedbackNotificationDialog({
           </section>
 
           <div className="mt-5 flex justify-end">
-            <Button onClick={() => onOpenChange(false)}>Đã hiểu</Button>
+            <Button onClick={() => onOpenChange(false)}>{t("assignments.acknowledged")}</Button>
           </div>
         </div>
       </DialogContent>

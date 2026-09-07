@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import ConfirmPicture from "@/assets/CompleteCourseModal/ConfirmPicture.png";
@@ -18,6 +19,7 @@ interface CompleteCourseModalProps {
 }
 
 export function CompleteCourseModal({ courseId, completionPercent, isLoading, config }: CompleteCourseModalProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [checked, setChecked] = useState(false);
   const setBlockingModalActive = useAppStore((s) => s.setBlockingModalActive);
@@ -125,10 +127,10 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
             {/* Text Content */}
             <div className="pt-[70px] md:pt-0 md:w-[55%] md:pr-4 flex flex-col">
               <h2 className="text-[21px] md:text-[28px] font-medium text-primary mb-2 md:mb-3 text-left tracking-tight">
-                {config?.confirm_title || 'Hoàn thành khóa học!'}
+                {config?.confirm_title || t("courseModal.confirmationFallbackTitle")}
               </h2>
               <p className="text-[13px] md:text-[15px] text-muted-foreground leading-relaxed mb-5 md:mb-8 text-left">
-                {config?.confirm_description || 'Cảm ơn bạn đã nỗ lực hoàn thành chương trình đào tạo để cùng xây dựng những giá trị cốt lõi tại công ty.'}
+                {config?.confirm_description || t("courseModal.confirmationFallbackDescription")}
               </p>
             </div>
 
@@ -153,9 +155,9 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
                     </div>
                   </div>
                   <span className="text-[14px] md:text-[14.5px] font-medium text-foreground select-none leading-snug">
-                    <span className="md:hidden">Xác nhận</span>
+                    <span className="md:hidden">{t("courseModal.confirmationShort")}</span>
                     <span className="hidden md:inline">
-                      {config?.confirm_checkbox_text || 'Xác nhận tôi đã hoàn thành khóa học và nắm vững các nội dung đào tạo.'}
+                      {config?.confirm_checkbox_text || t("courseModal.confirmationFallbackCheckbox")}
                     </span>
                   </span>
                 </label>
@@ -165,7 +167,7 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
                   className="md:hidden text-[12.5px] text-muted-foreground italic leading-snug mt-1.5 pr-2 select-none cursor-pointer"
                   onClick={() => setChecked(!checked)}
                 >
-                  {config?.confirm_checkbox_text || 'Tôi đã hoàn thành khóa học và nắm vững các nội dung đào tạo.'}
+                  {config?.confirm_checkbox_text || t("courseModal.confirmationMobileFallbackCheckbox")}
                 </span>
               </div>
 
@@ -179,7 +181,7 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
                     : "bg-muted text-muted-foreground cursor-not-allowed"
                 )}
               >
-                Tiếp tục <ArrowRight className="hidden md:inline-block w-4 h-4 ml-1.5" />
+                {t("courseModal.continue")} <ArrowRight className="hidden md:inline-block w-4 h-4 ml-1.5" />
               </Button>
             </div>
           </div>

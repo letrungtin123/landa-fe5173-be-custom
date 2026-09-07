@@ -2,6 +2,8 @@ import React from "react";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { toIntlLocale } from "@/i18n";
 
 interface ProgressRingProps {
   progress?: number;
@@ -14,6 +16,7 @@ export function ProgressRing({
   courseTitle = "L&A Onboarding 2026",
   courseLink = "/courses",
 }: ProgressRingProps) {
+  const { t, i18n } = useTranslation();
   const circumference = 2 * Math.PI * 42; // radius = 42
   const offset = circumference - (progress / 100) * circumference;
 
@@ -56,12 +59,12 @@ export function ProgressRing({
             {/* Center text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-[24px] font-medium text-foreground">
-                {progress.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}%
+                {progress.toLocaleString(toIntlLocale(i18n.language), { maximumFractionDigits: 1 })}%
               </span>
             </div>
           </div>
 
-          <p className="text-[17px] font-bold text-foreground mb-1">Đã hoàn thành</p>
+          <p className="text-[17px] font-bold text-foreground mb-1">{t("dashboard.completedCourse")}</p>
           <p
             className="w-full text-center text-[14px] text-foreground italic mb-6 truncate"
             title={courseTitle}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { User, Mail, Phone, FileText, Shield, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Mentor } from "@/data/types";
@@ -8,19 +9,20 @@ interface MentorSidebarProps {
   companyLogo?: string | null;
 }
 
-const ROLE_LABEL: Record<string, string> = {
-  instructor: "Giảng viên",
-  staff: "Trợ giảng",
-};
-
 export function MentorSidebar({ mentors, companyLogo }: MentorSidebarProps) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<Mentor | null>(null);
+  const roleLabel = (role: string) => role === "instructor"
+    ? t("course.instructor")
+    : role === "staff"
+      ? t("course.teachingAssistant")
+      : role;
 
   if (mentors.length === 0) {
     return (
       <div className="px-8 pb-6">
         <p className="text-[14px] font-normal leading-[18px] text-muted-foreground italic">
-          Chưa có thông tin người hướng dẫn cho bài học này.
+          {t("course.mentorUnavailable")}
         </p>
       </div>
     );
@@ -66,7 +68,7 @@ export function MentorSidebar({ mentors, companyLogo }: MentorSidebarProps) {
                   {mentor.name || mentor.full_name}
                 </p>
                 <p className="text-[14px] font-normal leading-[18px] text-muted-foreground truncate mt-0.5">
-                  {ROLE_LABEL[mentor.role] || mentor.role}
+                  {roleLabel(mentor.role)}
                 </p>
               </div>
             </button>
@@ -123,7 +125,7 @@ export function MentorSidebar({ mentors, companyLogo }: MentorSidebarProps) {
                   </h3>
                   <div className="mt-1.5 flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-semibold leading-[14px] text-primary">
                     <Shield className="h-3 w-3" />
-                    {ROLE_LABEL[selected.role] || selected.role}
+                    {roleLabel(selected.role)}
                   </div>
                 </div>
 
@@ -133,13 +135,13 @@ export function MentorSidebar({ mentors, companyLogo }: MentorSidebarProps) {
                     <InfoRow icon={Mail} label="Email" value={selected.email} />
                   )}
                   {selected.phone_number && (
-                    <InfoRow icon={Phone} label="Điện thoại" value={selected.phone_number} />
+                    <InfoRow icon={Phone} label={t("course.phone")} value={selected.phone_number} />
                   )}
                   {selected.bio && (
                     <div className="rounded-2xl bg-muted/50 border border-border/50 p-4">
                       <div className="flex items-center gap-1.5 text-[14px] font-semibold leading-[18px] text-muted-foreground mb-2">
                         <FileText className="h-3.5 w-3.5" />
-                        Giới thiệu
+                        {t("course.introduction")}
                       </div>
                       <p className="text-[14px] font-normal leading-[18px] text-foreground whitespace-pre-line">
                         {selected.bio}

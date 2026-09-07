@@ -15,6 +15,8 @@ import { storageUrl } from "@/utils/storageUrl";
 import type { Mentor } from "@/data/types";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { MentorSidebar } from "@/components/lesson/MentorSidebar";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 function getDocIcon(ext: string) {
   if (ext === 'pdf') return FileText;
@@ -23,10 +25,10 @@ function getDocIcon(ext: string) {
   return File;
 }
 
-function getMentorRoleLabel(role?: string | null) {
-  if (role === 'instructor') return 'Giảng viên';
-  if (role === 'staff') return 'Trợ giảng';
-  return role || 'Trợ giảng';
+function getMentorRoleLabel(role: string | null | undefined, t: TFunction) {
+  if (role === 'instructor') return t("course.instructor");
+  if (role === 'staff') return t("course.teachingAssistant");
+  return role || t("course.teachingAssistant");
 }
 
 function SidebarTooltip({
@@ -119,6 +121,7 @@ function SidebarTooltip({
 
 
 export function CourseSidebar() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { courseId } = useParams();
@@ -145,7 +148,7 @@ export function CourseSidebar() {
         return {
           id: mentor.id,
           username: mentor.username,
-          name: mentor.name || mentor.full_name || mentor.email || "Mentor",
+          name: mentor.name || mentor.full_name || mentor.email || t("course.mentor"),
           full_name: mentor.full_name || undefined,
           role: mentor.role || "staff",
           company: mentor.company || "",
@@ -159,7 +162,7 @@ export function CourseSidebar() {
       });
     }
     return [];
-  }, [courseDetail?.mentors]);
+  }, [courseDetail?.mentors, t]);
 
   const mentorSectionDescription = courseDetail?.mentor_section?.description?.trim() || "";
   const mentorSectionLogo = useMemo(() => {
@@ -224,7 +227,7 @@ export function CourseSidebar() {
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
               <BookOpen className="h-6 w-6 text-muted-foreground/50" />
             </div>
-            <p className="text-sm text-muted-foreground">Không tìm thấy nội dung khóa học</p>
+            <p className="text-sm text-muted-foreground">{t("course.contentNotFound")}</p>
           </div>
         )}
 
@@ -244,7 +247,7 @@ export function CourseSidebar() {
                   {course.title || "L&A Onboarding 2026"}
                 </h2>
               <p className="text-[13px] font-bold text-primary">
-                Nội dung khoá học
+                {t("course.content")}
               </p>
               </div>
             </SidebarTooltip>
@@ -338,7 +341,7 @@ export function CourseSidebar() {
                 <div className="px-5 mb-2">
                   <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                     <ClipboardList className="h-3.5 w-3.5" />
-                    Bài tập
+                    {t("course.assignments")}
                   </div>
                 </div>
                 <div className="flex flex-col gap-0.5">
@@ -389,7 +392,7 @@ export function CourseSidebar() {
                             {assignment.title}
                           </span>
                           <span className="block truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
-                            {assignment.status === "feedback_given" ? "Đã phản hồi" : assignment.status === "submitted" ? "Đã nộp" : deadlineLocked ? "Hết hạn nộp" : locked ? "Học xong nội dung để nộp" : "Chưa nộp"}
+                            {assignment.status === "feedback_given" ? t("course.feedbackGiven") : assignment.status === "submitted" ? t("course.submitted") : deadlineLocked ? t("course.submissionClosed") : locked ? t("course.completeContentToSubmit") : t("course.notSubmitted")}
                           </span>
                         </span>
                         </button>
@@ -413,8 +416,8 @@ export function CourseSidebar() {
         {mentors.length > 0 ? (
           mentors.map((mentor) => {
             const avatarUrl = mentor.profile_image_url_full || mentor.profile_image_url || mentor.avatar;
-            const role = getMentorRoleLabel(mentor.role);
-            const intro = mentor.bio || mentorSectionDescription || "Chưa có thông tin chi tiết.";
+            const role = getMentorRoleLabel(mentor.role, t);
+            const intro = mentor.bio || mentorSectionDescription || t("course.noDetails");
             return (
               <div
                 key={mentor.id}
@@ -434,7 +437,7 @@ export function CourseSidebar() {
                   )}
                 </div>
                 <div className="bg-primary/10 text-primary text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-3">
-                  Mentor
+                  {t("course.mentor")}
                 </div>
                 <h3 className="text-[18px] font-bold text-foreground">{mentor.name}</h3>
                 <div className="mt-1.5 mb-4 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-semibold leading-[14px] text-primary">
@@ -456,12 +459,12 @@ export function CourseSidebar() {
                     <InfoRow icon={Mail} label="Email" value={mentor.email} />
                   )}
                   {mentor.phone_number && (
-                    <InfoRow icon={Phone} label="Điện thoại" value={mentor.phone_number} />
+                    <InfoRow icon={Phone} label={t("course.phone")} value={mentor.phone_number} />
                   )}
                   <div className="rounded-2xl bg-muted/50 border border-border/50 p-4">
                     <div className="flex items-center gap-1.5 text-[14px] font-semibold leading-[18px] text-muted-foreground mb-2">
                       <FileText className="h-3.5 w-3.5" />
-                      Giới thiệu
+                      {t("course.introduction")}
                     </div>
                     <p className="text-[14px] font-normal leading-[18px] text-foreground whitespace-pre-line">
                       {intro}
@@ -473,13 +476,13 @@ export function CourseSidebar() {
           })
         ) : (
           <div className="rounded-xl border border-border bg-card p-6 flex flex-col items-center text-center shadow-sm">
-            <p className="text-[13px] text-muted-foreground italic">Chưa có thông tin người hướng dẫn</p>
+            <p className="text-[13px] text-muted-foreground italic">{t("course.noMentor")}</p>
           </div>
         )}
 
         {/* Tài liệu tham khảo */}
         <div className="rounded-xl bg-[#0F62FE] p-6 flex flex-col items-center text-center text-white shadow-sm">
-          <h3 className="text-[18px] font-bold mb-2">Tài liệu tham khảo</h3>
+          <h3 className="text-[18px] font-bold mb-2">{t("course.referenceDocuments")}</h3>
           {refDocs.length > 0 ? (
             <div className="flex flex-col gap-2 w-full mt-2">
               {refDocs.slice(0, 8).map((doc: CourseFile) => {
@@ -501,7 +504,7 @@ export function CourseSidebar() {
               })}
             </div>
           ) : (
-            <p className="text-[13px] text-white/80">Chưa có tài liệu...</p>
+            <p className="text-[13px] text-white/80">{t("course.noDocuments")}</p>
           )}
         </div>
       </div>
@@ -539,13 +542,13 @@ export function CourseSidebar() {
                     onClick={() => setActiveTab('content')}
                     className={cn("text-[15px] transition-colors", activeTab === 'content' ? "font-bold text-foreground" : "text-muted-foreground")}
                   >
-                    Nội dung
+                    {t("course.mobileContent")}
                   </button>
                   <button 
                     onClick={() => setActiveTab('info')}
                     className={cn("text-[15px] transition-colors", activeTab === 'info' ? "font-bold text-foreground" : "text-muted-foreground")}
                   >
-                    Thông tin và tài liệu
+                    {t("course.mobileInfo")}
                   </button>
                 </div>
                 <Button

@@ -14,6 +14,7 @@ import {
   type ImageChoiceQuizChoice,
   type ImageChoiceQuizData,
 } from "@/lib/imageChoiceQuiz";
+import { useTranslation } from "react-i18next";
 
 interface ImageChoiceQuizContentProps {
   usageKey: string;
@@ -39,16 +40,17 @@ function ChoiceImage({
   choice: ImageChoiceQuizChoice;
   onPreview: (image: { src: string; alt: string }) => void;
 }) {
+  const { t } = useTranslation();
   if (!choice.image.storage_path) {
     return (
       <div className="flex h-full min-h-0 w-full items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 text-center text-sm font-semibold text-muted-foreground">
-        Ảnh đáp án chưa sẵn sàng
+        {t("quiz.imageUnavailable")}
       </div>
     );
   }
 
   const imageUrl = resolveImageChoiceQuizImageUrl(choice.image.storage_path);
-  const imageAlt = choice.image.alt || "Ảnh đáp án";
+  const imageAlt = choice.image.alt || t("quiz.answerImage");
   return (
     <button
       type="button"
@@ -57,7 +59,7 @@ function ChoiceImage({
         onPreview({ src: imageUrl, alt: imageAlt });
       }}
       className="flex h-full min-h-0 w-full cursor-zoom-in items-center justify-center rounded-xl border border-border bg-background p-2 text-left transition-colors hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
-      aria-label="Phóng to ảnh đáp án"
+      aria-label={t("quiz.zoomAnswerImage")}
     >
       <img
         src={imageUrl}
@@ -69,6 +71,7 @@ function ChoiceImage({
 }
 
 export function ImageChoiceQuizContent({ usageKey, imageChoiceQuizData }: ImageChoiceQuizContentProps) {
+  const { t } = useTranslation();
   const { courseId } = useParams();
   const qc = useQueryClient();
   const user = useAuthStore((s) => s.user);
@@ -133,8 +136,8 @@ export function ImageChoiceQuizContent({ usageKey, imageChoiceQuizData }: ImageC
       const nextBlockCompleted = correct && data.completed === true;
       const nextExplanationHtml = correct && typeof data.explanation_html === "string" ? data.explanation_html : "";
       const nextResultMessage = correct
-        ? "Chính xác! Bạn đã hoàn thành phần này."
-        : "Chưa đúng, hãy thử lại.";
+        ? t("quiz.correctComplete")
+        : t("quiz.incorrect");
 
       setResultMessage(nextResultMessage);
       setIsCorrect(correct);
@@ -161,7 +164,7 @@ export function ImageChoiceQuizContent({ usageKey, imageChoiceQuizData }: ImageC
       }
     },
     onError: () => {
-      const nextResultMessage = "Chưa thể gửi câu trả lời lúc này.";
+      const nextResultMessage = t("quiz.submitUnavailable");
       setResultMessage(nextResultMessage);
       setIsCorrect(false);
       setShowHint(false);
@@ -180,8 +183,8 @@ export function ImageChoiceQuizContent({ usageKey, imageChoiceQuizData }: ImageC
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
           <ImageIcon className="h-7 w-7 text-muted-foreground" />
         </div>
-        <h2 className="mb-2 text-lg font-bold text-foreground">Câu hỏi đáp án hình ảnh chưa sẵn sàng</h2>
-        <p className="text-sm text-muted-foreground">Component này chưa có đủ nội dung.</p>
+        <h2 className="mb-2 text-lg font-bold text-foreground">{t("quiz.imageQuizUnavailable")}</h2>
+        <p className="text-sm text-muted-foreground">{t("quiz.incompleteComponent")}</p>
       </div>
     );
   }
@@ -198,7 +201,7 @@ export function ImageChoiceQuizContent({ usageKey, imageChoiceQuizData }: ImageC
 
         <div className="mb-5 flex items-center gap-2 text-[14px] font-medium text-muted-foreground bg-muted/30 w-fit px-3 py-1.5 rounded-md border border-border/50">
           <Info className="h-4 w-4 text-muted-foreground" />
-          <span>Chọn một đáp án đúng.</span>
+          <span>{t("quiz.chooseCorrect")}</span>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -278,12 +281,12 @@ export function ImageChoiceQuizContent({ usageKey, imageChoiceQuizData }: ImageC
           <div className="mt-5 rounded-xl border border-warning/20 bg-warning/10 p-5">
             <div className="mb-3 flex items-center gap-2 text-warning">
               <Lightbulb className="h-5 w-5" />
-              <span className="text-sm font-bold uppercase tracking-wide">Gợi ý</span>
+              <span className="text-sm font-bold uppercase tracking-wide">{t("quiz.hint")}</span>
             </div>
             <div className="space-y-3">
               {hints.map((hint, index) => (
                 <div key={`image-choice-hint-${index}`} className="prose prose-sm prose-warning dark:prose-invert max-w-none text-[14px] leading-relaxed text-foreground/90">
-                  <div className="font-semibold">Gợi ý {index + 1}:</div>
+                  <div className="font-semibold">{t("quiz.hintNumber", { index: index + 1 })}</div>
                   <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(hint) }} />
                 </div>
               ))}
@@ -302,7 +305,7 @@ export function ImageChoiceQuizContent({ usageKey, imageChoiceQuizData }: ImageC
           <div className="mt-5 rounded-xl border border-success/20 bg-success/10 p-5">
             <div className="mb-3 flex items-center gap-2 text-success">
               <Info className="h-5 w-5" />
-              <span className="text-sm font-bold uppercase tracking-wide">Giải thích</span>
+              <span className="text-sm font-bold uppercase tracking-wide">{t("quiz.explanation")}</span>
             </div>
             <div
               className="prose prose-sm prose-success dark:prose-invert max-w-none text-[14px] leading-relaxed text-foreground/90"
@@ -320,7 +323,7 @@ export function ImageChoiceQuizContent({ usageKey, imageChoiceQuizData }: ImageC
                 className="inline-flex items-center gap-2 rounded-full bg-transparent px-0 py-3 text-[14px] font-bold text-warning transition-all hover:text-warning/80 active:scale-[0.97]"
               >
                 <Lightbulb className="h-4 w-4" />
-                {showHint ? "Ẩn gợi ý" : "Xem gợi ý"}
+                {showHint ? t("quiz.hideHint") : t("quiz.showHint")}
               </button>
             ) : null}
           </div>
@@ -337,7 +340,7 @@ export function ImageChoiceQuizContent({ usageKey, imageChoiceQuizData }: ImageC
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-8 py-3 text-[14px] font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                Xác nhận
+                {t("quiz.confirm")}
               </button>
             ) : isCorrect === false ? (
               <button
@@ -352,12 +355,12 @@ export function ImageChoiceQuizContent({ usageKey, imageChoiceQuizData }: ImageC
                 }}
                 className="inline-flex items-center justify-center rounded-full bg-secondary px-8 py-3 text-[14px] font-bold text-secondary-foreground shadow-sm transition-all hover:bg-secondary/80 active:scale-[0.97]"
               >
-                Thử lại
+                {t("quiz.retry")}
               </button>
             ) : (
               <div className="flex items-center justify-end gap-1.5 px-4 py-3 text-green-600 dark:text-green-400">
                 <Check className="h-5 w-5 shrink-0 stroke-[3]" />
-                <span className="text-[14px] font-bold whitespace-nowrap">Đã hoàn thành</span>
+                <span className="text-[14px] font-bold whitespace-nowrap">{t("quiz.completed")}</span>
               </div>
             )}
           </div>
@@ -369,7 +372,7 @@ export function ImageChoiceQuizContent({ usageKey, imageChoiceQuizData }: ImageC
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
-          aria-label="Xem ảnh đáp án"
+          aria-label={t("quiz.viewAnswerImage")}
           onClick={() => setPreviewImage(null)}
         >
           <div
@@ -380,7 +383,7 @@ export function ImageChoiceQuizContent({ usageKey, imageChoiceQuizData }: ImageC
               type="button"
               onClick={() => setPreviewImage(null)}
               className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-background/90 text-foreground shadow hover:bg-background"
-              aria-label="Đóng ảnh phóng to"
+              aria-label={t("quiz.closeImagePreview")}
             >
               <X className="h-5 w-5" />
             </button>

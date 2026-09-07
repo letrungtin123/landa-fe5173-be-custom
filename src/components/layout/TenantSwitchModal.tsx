@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Search, Building2, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 const PAGE_SIZE = 8;
 
@@ -12,6 +13,7 @@ interface TenantSwitchModalProps {
 }
 
 export function TenantSwitchModal({ open, onOpenChange }: TenantSwitchModalProps) {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const managedTenants = useAuthStore((s) => s.managedTenants);
   const switchTenant = useAuthStore((s) => s.switchTenant);
@@ -80,9 +82,9 @@ export function TenantSwitchModal({ open, onOpenChange }: TenantSwitchModalProps
                   <Building2 className="h-4.5 w-4.5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-[15px] font-semibold text-foreground">Chuyển tổ chức</h3>
+                  <h3 className="text-[15px] font-semibold text-foreground">{t("tenant.switchOrganization")}</h3>
                   <p className="text-[11px] text-muted-foreground">
-                    {filtered.length} tổ chức
+                    {t("tenant.count", { count: filtered.length })}
                   </p>
                 </div>
               </div>
@@ -100,7 +102,7 @@ export function TenantSwitchModal({ open, onOpenChange }: TenantSwitchModalProps
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Tìm tổ chức..."
+                  placeholder={t("tenant.search")}
                   value={search}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   className="w-full pl-9 pr-4 py-2 bg-muted/30 border border-border rounded-lg outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-sm transition-all placeholder:text-muted-foreground/60"
@@ -144,7 +146,7 @@ export function TenantSwitchModal({ open, onOpenChange }: TenantSwitchModalProps
                             {t.name}
                           </p>
                           {isActive && (
-                            <p className="text-[11px] text-primary/70 font-medium">Đang sử dụng</p>
+                            <p className="text-[11px] text-primary/70 font-medium">{t("tenant.active")}</p>
                           )}
                         </div>
                         {isActive && (
@@ -158,7 +160,7 @@ export function TenantSwitchModal({ open, onOpenChange }: TenantSwitchModalProps
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Building2 className="h-8 w-8 text-muted-foreground/30 mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    Không tìm thấy tổ chức "{search}"
+                    {t("tenant.noResults", { query: search })}
                   </p>
                 </div>
               )}
@@ -168,7 +170,7 @@ export function TenantSwitchModal({ open, onOpenChange }: TenantSwitchModalProps
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-muted/10">
                 <span className="text-[12px] text-muted-foreground">
-                  Trang {page}/{totalPages}
+                  {t("tenant.page", { page, total: totalPages })}
                 </span>
                 <div className="flex items-center gap-1.5">
                   <button

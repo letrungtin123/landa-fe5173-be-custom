@@ -7,6 +7,8 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useBranding } from "@/hooks/useBranding";
 import { exchangeSsoCode, fetchPublicSsoConfigByDomain, type PublicSsoProvider, type SsoProvider } from "@/api/sso";
 import { openSsoPopup } from "@/utils/ssoPopup";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 function getSafeNextPath(value: string | null): string {
   if (!value || !value.startsWith("/") || value.startsWith("//")) return "/dashboard";
@@ -22,6 +24,7 @@ function getSafeNextPath(value: string | null): string {
 }
 
 export function LoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
   const setSession = useAuthStore((s) => s.setSession);
@@ -111,7 +114,7 @@ export function LoginPage() {
     if (searchParams.get("error") === "account_disabled") {
       setErrors((prev) => ({
         ...prev,
-        email: "Tài khoản của bạn đã bị vô hiệu hóa bởi Admin.",
+        email: t("auth.accountDisabled"),
       }));
     }
   }, [searchParams]);
@@ -119,12 +122,12 @@ export function LoginPage() {
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};
     if (!email.trim()) {
-      newErrors.email = "Vui lòng nhập tên đăng nhập hoặc email";
+      newErrors.email = t("auth.usernameOrEmailRequired");
     }
     if (!password.trim()) {
-      newErrors.password = "Vui lòng nhập mật khẩu";
+      newErrors.password = t("auth.passwordRequired");
     } else if (password.length < 6) {
-      newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự";
+      newErrors.password = t("auth.passwordMinLength", { count: 6 });
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -156,12 +159,12 @@ export function LoginPage() {
         if (newFailed >= 3) {
           const cooldown = newFailed >= 5 ? 30 : newFailed >= 4 ? 15 : 5;
           startCooldown(cooldown);
-          setErrors({ email: `Quá nhiều lần thử sai. Vui lòng đợi ${cooldown} giây.` });
+          setErrors({ email: t("auth.tooManyAttempts", { seconds: cooldown }) });
         } else {
-          setErrors({ email: "Thông tin không hợp lệ!" });
+          setErrors({ email: t("auth.invalidCredentials") });
         }
       } else {
-        setErrors({ email: "Lỗi kết nối máy chủ. Vui lòng thử lại sau." });
+        setErrors({ email: t("auth.connectionError") });
       }
     } finally {
       setIsSubmitting(false);
@@ -185,7 +188,7 @@ export function LoginPage() {
       await setSession(session);
       navigate(nextPath, { replace: true });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Đăng nhập SSO thất bại.";
+      const msg = err instanceof Error ? err.message : t("auth.ssoSignInFailed");
       if (!msg.includes("huy")) {
         setErrors({ sso: msg });
       }
@@ -255,7 +258,10 @@ export function LoginPage() {
   */
 
   return (
-    <div className="min-h-screen w-full bg-white text-black flex items-center justify-center">
+    <div className="relative min-h-screen w-full bg-white text-black flex items-center justify-center">
+      <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+        <LanguageSwitcher variant="public" />
+      </div>
       <div className="flex h-screen w-full max-w-[1440px] overflow-hidden bg-white">
         {/* ─── Left Panel ─── */}
         <div className="hidden w-[48%] lg:flex p-8 pr-0 h-full">
@@ -336,17 +342,17 @@ export function LoginPage() {
                 <Info className="h-8 w-8 text-[#1d4ed8]" />
               </div>
               <h2 className="mb-3 text-[24px] font-bold tracking-tight text-[#1a1a1a]">
-                Quên mật khẩu?
+                {t("auth.forgotPasswordTitle")}
               </h2>
               <p className="mb-8 text-[14px] text-[#888] leading-relaxed max-w-[340px] mx-auto">
-                Vui lòng liên hệ quản trị viên để được hỗ trợ cấp lại mật khẩu cho tài khoản của bạn.
+                {t("auth.forgotPasswordDescription")}
               </p>
               <button
                 onClick={() => setShowForgotPassword(false)}
                 className="flex items-center justify-center gap-2 w-full rounded-[10px] bg-[#f3f4f6] py-3 text-[14px] font-semibold text-[#4b5563] transition-all hover:bg-[#e5e7eb] active:scale-[0.98]"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Quay lại đăng nhập
+                {t("auth.backToLogin")}
               </button>
             </div>
           ) : (
@@ -358,17 +364,17 @@ export function LoginPage() {
                   <div className="size-15 relative rounded-xl flex items-center justify-center mb-0">
                     <img
                       src={branding.squareIcon}
-                      alt="L&A E-learning"
+                      alt={t("common.logo")}
                       className={`w-12 h-12 object-contain transition-opacity duration-200 ${brandingLoading ? 'opacity-0' : 'opacity-100'}`}
                     />
                   </div>
 
                   <div className="flex flex-col items-center lg:items-start gap-[3px] text-center lg:text-left">
                     <h2 className="text-3xl font-semibold leading-9 text-black whitespace-nowrap">
-                      Đăng nhập vào E-learning
+                      {t("auth.loginTitle")}
                     </h2>
                     <p className="hidden lg:block text-[14px] font-normal leading-[20px] text-neutral-400">
-                      Vui lòng đăng nhập vào tài khoản đã được cung cấp để tiếp tục.
+                      {t("auth.loginSubtitle")}
                     </p>
                   </div>
                 </div>
@@ -381,12 +387,12 @@ export function LoginPage() {
                         htmlFor="login-email"
                         className="text-[14px] font-normal leading-[16px] text-black"
                       >
-                        Địa chỉ email<span className="text-red-600">*</span>
+                        {t("auth.emailAddress")}<span className="text-red-600">*</span>
                       </label>
                       <input
                         id="login-email"
                         type="text"
-                        placeholder="Email"
+                        placeholder={t("auth.email")}
                         value={email}
                         onChange={(e) => {
                           setEmail(e.target.value);
@@ -407,14 +413,14 @@ export function LoginPage() {
                           htmlFor="login-password"
                           className="text-[14px] font-normal leading-[16px] text-black"
                         >
-                          Mật khẩu<span className="text-red-600">*</span>
+                          {t("auth.password")}<span className="text-red-600">*</span>
                         </label>
                         <button
                           type="button"
                           onClick={() => setShowForgotPassword(true)}
                           className="text-[14px] font-normal leading-[16px] text-[#1d4ed8] hover:underline"
                         >
-                          Quên mật khẩu?
+                          {t("auth.forgotPassword")}
                         </button>
                       </div>
                       <div className="absolute w-full top-[22px]">
@@ -460,7 +466,7 @@ export function LoginPage() {
                       className="w-full h-9 rounded-[29px] bg-[#1d4ed8] text-[14px] font-normal leading-[16px] text-white transition-all hover:bg-[#1e40af] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                       {cooldownSeconds > 0 ? (
-                        `Đợi ${cooldownSeconds}s`
+                        t("auth.wait", { seconds: cooldownSeconds })
                       ) : isSubmitting ? (
                         <span className="flex items-center justify-center gap-2">
                           <svg
@@ -482,10 +488,10 @@ export function LoginPage() {
                               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                             />
                           </svg>
-                          Đang đăng nhập…
+                          {t("auth.signingIn")}
                         </span>
                       ) : (
-                        "Đăng nhập"
+                        t("auth.signIn")
                       )}
                     </button>
                   </div>
@@ -500,7 +506,7 @@ export function LoginPage() {
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="bg-white px-2 text-[14px] font-normal leading-[16px] text-neutral-400">
-                    hoặc
+                    {t("auth.or")}
                   </span>
                 </div>
               </div>
@@ -573,7 +579,7 @@ export function LoginPage() {
                     ) : (
                       getSsoIcon(provider.provider, "h-[18px] w-[18px] shrink-0")
                     )}
-                    <span>{loadingProvider === provider.provider ? "Đang kết nối..." : `Đăng nhập bằng ${provider.label}`}</span>
+                    <span>{loadingProvider === provider.provider ? t("auth.connecting") : t("auth.signInWith", { provider: provider.label })}</span>
                   </button>
                 ))}
                 {errors.sso && (
@@ -702,10 +708,10 @@ export function LoginPage() {
 
               <div className="w-full flex justify-center mt-[13px]">
                 <p className="max-w-[320px] text-center text-[12px] font-normal leading-[16px] text-neutral-400">
-                  Bằng việc đăng nhập, bạn đã xác nhận đồng ý với các{" "}
-                  <span className="underline hover:text-neutral-600 transition-colors">Điều khoản</span>
-                  {" "}và{" "}
-                  <span className="underline hover:text-neutral-600 transition-colors">Chính sách của công ty.</span>
+                  {t("auth.termsPrefix", { action: t("auth.signIn").toLocaleLowerCase() })}{" "}
+                  <span className="underline hover:text-neutral-600 transition-colors">{t("auth.terms")}</span>
+                  {" "}{t("auth.and")}{" "}
+                  <span className="underline hover:text-neutral-600 transition-colors">{t("auth.privacy")}</span>
                 </p>
               </div>
             </div>
@@ -714,9 +720,9 @@ export function LoginPage() {
           {/* Register link (bottom) */}
           <div className="mt-auto pt-6">
             <p className="text-center text-[12px] font-normal leading-[16px] text-neutral-400">
-              Bạn chưa có tài khoản?{" "}
+              {t("auth.noAccount")}{" "}
               <Link to="/register" className="text-blue-700 hover:underline font-normal">
-                Đăng ký ngay
+                {t("auth.registerNow")}
               </Link>
             </p>
           </div>

@@ -26,6 +26,7 @@ import { useMarkComplete } from "@/hooks/useProgress";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface VideoPlayerProps {
   lesson: LessonDetail;
@@ -55,6 +56,7 @@ export function VideoPlayer({
   demoGuideActive = false,
   onDemoGuidePlay,
 }: VideoPlayerProps) {
+  const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
@@ -214,7 +216,7 @@ export function VideoPlayer({
             <Play className="h-8 w-8 ml-1 text-white/60" />
           </div>
           <p className="text-sm text-white/50">{lesson.title}</p>
-          <p className="mt-1 text-xs text-white/30">Video chưa được tải lên</p>
+          <p className="mt-1 text-xs text-white/30">{t("lesson.videoNotUploaded")}</p>
         </div>
       </div>
     );

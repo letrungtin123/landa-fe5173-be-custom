@@ -46,6 +46,10 @@ import { TenantSwitchModal } from "@/components/layout/TenantSwitchModal";
 import { useMyEnrollments, useCourses } from "@/hooks/useCourses";
 import { useAverageCourseCompletion } from "@/hooks/useProgress";
 import { ChangePasswordModal } from "@/components/layout/ChangePasswordModal";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
+import { toIntlLocale } from "@/i18n";
+import { useLocaleStore } from "@/stores/useLocaleStore";
 
 const ICON_MAP: Record<Notification["icon"], React.ElementType> = {
   badge: Shield,
@@ -54,13 +58,15 @@ const ICON_MAP: Record<Notification["icon"], React.ElementType> = {
 };
 
 const NAV_ITEMS = [
-  { label: "Khám phá", path: "/dashboard" },
-  { label: "Chương trình học", path: "/explore" },
-  { label: "Thư viện", path: "/library" },
-  { label: "Danh hiệu", path: "/badges" },
+  { labelKey: "nav.dashboard", path: "/dashboard" },
+  { labelKey: "nav.learningPrograms", path: "/explore" },
+  { labelKey: "nav.library", path: "/library" },
+  { labelKey: "nav.badges", path: "/badges" },
 ];
 
 export function Header() {
+  const { t } = useTranslation();
+  const locale = useLocaleStore((state) => state.locale);
   const location = useLocation();
   const { colorMode, preset, toggleColorMode, setPreset } =
     useThemeStore();
@@ -143,10 +149,10 @@ export function Header() {
               autoFocus
               value={globalSearchTerm}
               onChange={(e) => setGlobalSearchTerm(e.target.value)}
-              placeholder="Tìm kiếm..."
+              placeholder={t("header.search")}
               className="flex-1 bg-transparent border-none outline-none text-[15px] text-foreground placeholder:text-muted-foreground"
             />
-            <Button variant="ghost" size="icon" onClick={() => setSearchOpen(false)} className="shrink-0 -mr-2">
+            <Button variant="ghost" size="icon" aria-label={t("header.closeSearch")} onClick={() => setSearchOpen(false)} className="shrink-0 -mr-2">
               <X className="h-5 w-5" />
             </Button>
           </div>
@@ -154,7 +160,7 @@ export function Header() {
       )}
 
       <header className={cn("fixed top-0 left-0 right-0 z-50 w-full border-b border-border bg-background !mr-0", isSearchOpen && isSearchableRoute ? "hidden lg:block" : "")}>
-      <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-4 px-4 md:px-6">
+      <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-2 px-4 sm:gap-4 md:px-6">
         {/* Mobile menu toggle - ONLY SHOW IN COURSE ROUTE */}
         {isCourseRoute && (
           <Button
@@ -162,17 +168,17 @@ export function Header() {
             size="icon"
             className="shrink-0 lg:hidden"
             onClick={toggleSidebar}
-            aria-label="Toggle sidebar"
+            aria-label={t("header.openSidebar")}
           >
             <Menu className="h-5 w-5" />
           </Button>
         )}
 
         {/* Logo */}
-        <Link to="/dashboard" className="flex h-10 w-[128px] shrink-0 items-center -translate-x-[2px] sm:w-[168px] lg:w-[184px]">
+        <Link to="/dashboard" className="flex h-10 w-[112px] shrink-0 items-center -translate-x-[2px] sm:w-[168px] lg:w-[184px]">
           <img
             src={currentHeaderLogo}
-            alt="Logo"
+            alt={t("common.logo")}
             className={`h-full w-full object-contain object-left transition-opacity duration-300 ${brandingLoading ? 'opacity-0' : 'opacity-100'}`}
           />
         </Link>
@@ -195,7 +201,7 @@ export function Header() {
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
-                {item.label}
+                {t(item.labelKey)}
                 {isActive && (
                   <span className="absolute inset-x-2 -bottom-[1.05rem] h-0.5 bg-accent" />
                 )}
@@ -219,18 +225,20 @@ export function Header() {
             </Button>
           )}
 
+          <LanguageSwitcher className="shrink-0" />
+
           <div className="hidden sm:flex items-center gap-1">
             {/* Theme Preset Picker */}
             {THEME_PRESET_SWITCHER_ENABLED && (
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Theme preset">
+                  <Button variant="ghost" size="icon" className="h-9 w-9" aria-label={t("header.themePreset")}>
                     <Palette className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
                   <DropdownMenuLabel className="text-xs text-muted-foreground">
-                    Bảng màu
+                    {t("header.themePreset")}
                   </DropdownMenuLabel>
                   {THEME_PRESETS.map((p) => (
                     <DropdownMenuItem
@@ -258,7 +266,7 @@ export function Header() {
               size="icon"
               className="h-9 w-9"
               onClick={toggleColorMode}
-              aria-label="Toggle dark mode"
+              aria-label={t("header.toggleDarkMode")}
             >
               {colorMode === "light" ? (
                 <Moon className="h-4 w-4" />
@@ -273,7 +281,7 @@ export function Header() {
           {/* Notifications Dropdown */}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative h-9 w-9" aria-label="Notifications">
+              <Button variant="ghost" size="icon" className="relative h-9 w-9" aria-label={t("header.notifications")}>
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
                   <span
@@ -285,9 +293,9 @@ export function Header() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 p-0 overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/20">
-                <h4 className="text-sm font-semibold">Thông báo</h4>
+                <h4 className="text-sm font-semibold">{t("header.notifications")}</h4>
                 {unreadCount > 0 && (
-                  <span className="text-[11px] text-primary font-medium">{unreadCount} mới</span>
+                  <span className="text-[11px] text-primary font-medium">{t("header.newNotifications", { count: unreadCount })}</span>
                 )}
               </div>
               
@@ -308,7 +316,7 @@ export function Header() {
                 ) : notifications.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <Bell className="h-8 w-8 text-muted-foreground/30 mb-2" />
-                    <p className="text-xs text-muted-foreground">Chưa có thông báo mới</p>
+                    <p className="text-xs text-muted-foreground">{t("header.noNewNotifications")}</p>
                   </div>
                 ) : (
                   <div className="flex flex-col">
@@ -342,7 +350,7 @@ export function Header() {
               
               <div className="p-2 border-t border-border bg-muted/10">
                 <Button variant="ghost" className="w-full text-xs h-8" onClick={() => setNotifModalOpen(true)}>
-                  Xem tất cả thông báo
+                  {t("header.viewAllNotifications")}
                 </Button>
               </div>
             </DropdownMenuContent>
@@ -366,11 +374,11 @@ export function Header() {
                   variant="ghost"
                   size="icon"
                   className="h-9 w-9 sm:ml-1 rounded-full"
-                  aria-label="User menu"
+                  aria-label={t("header.userMenu")}
                 >
                   <div className="h-7 w-7 rounded-full bg-primary/10 overflow-hidden flex items-center justify-center">
                     {user?.avatar ? (
-                      <img src={user.avatar} alt="Avatar" className="h-full w-full object-cover" />
+                      <img src={user.avatar} alt={t("common.account")} className="h-full w-full object-cover" />
                     ) : (
                       <User className="h-4 w-4 text-primary" />
                     )}
@@ -388,12 +396,12 @@ export function Header() {
                     {THEME_PRESET_SWITCHER_ENABLED && (
                       <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted" aria-label="Theme preset">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted" aria-label={t("header.themePreset")}>
                             <Palette className="h-3.5 w-3.5 text-foreground" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-44">
-                          <DropdownMenuLabel className="text-xs text-muted-foreground">Bảng màu</DropdownMenuLabel>
+                          <DropdownMenuLabel className="text-xs text-muted-foreground">{t("header.themePreset")}</DropdownMenuLabel>
                           {THEME_PRESETS.map((p) => (
                             <DropdownMenuItem
                               key={p.id}
@@ -416,7 +424,7 @@ export function Header() {
                   <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 p-1 bg-background rounded-full z-10">
                     <div className="h-16 w-16 rounded-full bg-primary text-primary-foreground overflow-hidden flex items-center justify-center border border-border/10 shadow-sm relative">
                       {user?.avatar ? (
-                        <img src={user.avatar} alt="Avatar" className="h-full w-full object-cover relative z-10" />
+                        <img src={user.avatar} alt={t("common.account")} className="h-full w-full object-cover relative z-10" />
                       ) : (
                         <span className="text-2xl font-bold relative z-10">{user?.fullName?.charAt(0) || user?.username?.charAt(0) || "U"}</span>
                       )}
@@ -427,7 +435,7 @@ export function Header() {
                 {/* User Info */}
                 <div className="text-center px-4">
                   <h4 className="text-[15px] font-bold text-foreground flex items-center justify-center gap-1">
-                    {user?.fullName || user?.username || "Tài khoản"}
+                    {user?.fullName || user?.username || t("common.account")}
                     <BadgeCheck className="h-3.5 w-3.5 text-blue-500 shrink-0" />
                   </h4>
                   <p className="text-[12px] text-muted-foreground mt-0.5">{user?.email || ""}</p>
@@ -435,7 +443,7 @@ export function Header() {
                   {/* Progress */}
                   <div className="mt-4 mb-4 text-left">
                     <p className="text-[11px] text-foreground mb-2 text-center whitespace-nowrap overflow-hidden text-ellipsis">
-                      Bạn đã hoàn thành <span className="text-primary font-medium">{averagePercent.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}%</span> tất cả khóa học
+                      {t("header.courseCompletion", { percent: averagePercent.toLocaleString(toIntlLocale(locale), { maximumFractionDigits: 1 }) })}
                     </p>
                     <div className="h-1 w-full bg-muted overflow-hidden rounded-full relative">
                       <div className="absolute top-0 left-0 h-full bg-primary rounded-r-full" style={{ width: `${averagePercent}%` }} />
@@ -449,12 +457,12 @@ export function Header() {
                 <div className="px-2 space-y-1">
                   <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer rounded-lg hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground py-1.5 transition-colors group">
                     <User className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary-foreground group-focus:text-primary-foreground" />
-                    <span className="font-medium text-[13px]">Hồ sơ cá nhân</span>
+                    <span className="font-medium text-[13px]">{t("header.personalProfile")}</span>
                   </DropdownMenuItem>
                   
                   <DropdownMenuItem onClick={() => setPwModalOpen(true)} className="cursor-pointer rounded-lg hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground py-1.5 transition-colors group">
                     <Lock className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary-foreground group-focus:text-primary-foreground" />
-                    <span className="font-medium text-[13px]">Đổi mật khẩu</span>
+                    <span className="font-medium text-[13px]">{t("header.changePassword")}</span>
                   </DropdownMenuItem>
 
                   {(user?.role === 'staff' || user?.role === 'superuser' || user?.role === 'superadmin' || user?.role === 'learner_plus') && (
@@ -479,7 +487,7 @@ export function Header() {
                       className="cursor-pointer rounded-lg hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground py-1.5 transition-colors group"
                     >
                       <Settings className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary-foreground group-focus:text-primary-foreground" />
-                      <span className="font-medium text-[13px]">Quản trị hệ thống</span>
+                      <span className="font-medium text-[13px]">{t("header.systemAdministration")}</span>
                     </DropdownMenuItem>
                   )}
                   
@@ -490,7 +498,7 @@ export function Header() {
                     >
                       <Building2 className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary-foreground group-focus:text-primary-foreground" />
                       <div className="flex-1 min-w-0">
-                        <span className="font-medium text-[13px]">Chuyển tổ chức</span>
+                        <span className="font-medium text-[13px]">{t("header.switchOrganization")}</span>
                         {currentTenantName && (
                           <p className="text-[11px] text-muted-foreground group-hover:text-primary-foreground/80 group-focus:text-primary-foreground/80 truncate">{currentTenantName}</p>
                         )}
@@ -500,7 +508,7 @@ export function Header() {
 
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer rounded-lg py-1.5 text-destructive focus:text-destructive focus:bg-destructive/10 transition-colors mt-1">
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span className="font-medium text-[13px]">Đăng xuất</span>
+                    <span className="font-medium text-[13px]">{t("header.signOut")}</span>
                   </DropdownMenuItem>
                 </div>
               </DropdownMenuContent>

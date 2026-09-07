@@ -23,6 +23,7 @@ import { BadgeShowcase } from "@/components/badges/BadgeShowcase";
 import { useBranding } from "@/hooks/useBranding";
 import { ConfirmEnrollModal } from "@/components/explore/ConfirmEnrollModal";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useTranslation } from "react-i18next";
 import {
   clearDemoIframeExploreCoursePending,
   DEMO_IFRAME_EXPLORE_COURSE_EVENT,
@@ -77,6 +78,7 @@ function getDemoCourseGuideRect(element: HTMLElement, padding = 0): DemoCourseGu
 }
 
 export function ExplorePage() {
+  const { t } = useTranslation();
   const { colorStyle } = useThemeStore();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -109,12 +111,18 @@ export function ExplorePage() {
   const { branding } = useBranding();
   const configuredExploreBadge = branding.dashboardContent?.explore_hero_badge?.trim();
   const exploreBadge = !configuredExploreBadge || configuredExploreBadge.toLowerCase() === 'course'
-    ? 'Khoá học'
+    ? t("explore.course")
     : configuredExploreBadge;
-  const exploreTitle = branding.dashboardContent?.explore_hero_title || 'Khám phá hành trình học tập của tôi';
+  const exploreTitle = branding.dashboardContent?.explore_hero_title || t("explore.learningJourney");
 
   // State cho bộ filter trạng thái học (hiển thị mặc định)
   const [detailFilter, setDetailFilter] = useState<DetailFilter>('all');
+  const detailFilterPills: { key: DetailFilter; label: string }[] = [
+    { key: 'all', label: t("filters.all") },
+    { key: 'in_progress', label: t("filters.inProgress") },
+    { key: 'completed', label: t("filters.completedLearning") },
+    { key: 'not_enrolled', label: t("explore.notEnrolled") },
+  ];
 
   // State cho category detail view
   const [selectedCategoryDetail, setSelectedCategoryDetail] = useState<{ id: string; name: string } | null>(null);
@@ -222,10 +230,10 @@ export function ExplorePage() {
       c => !c.categories || c.categories.length === 0
     );
     if (uncategorized.length > 0) {
-      map.set('__uncategorized__', { name: "Khóa học khác", courses: uncategorized });
+      map.set('__uncategorized__', { name: t("explore.otherCourses"), courses: uncategorized });
     }
     return map;
-  }, [categories, allCourses]);
+  }, [categories, allCourses, t]);
 
 
   // Helper: filter 1 mảng courses theo detailFilter
@@ -520,7 +528,7 @@ export function ExplorePage() {
                     {/* Illustration */}
                     <img
                       src={heroIllustration}
-                      alt="Khám phá hành trình học tập"
+                      alt={t("explore.learningJourney")}
                       className="hidden md:block absolute right-0 bottom-0 h-full w-auto max-w-[400px] object-contain select-none pr-3 mr-20"
                     />
                   </div>
@@ -549,7 +557,7 @@ export function ExplorePage() {
                           type="text"
                           value={searchTerm}
                           onChange={(e) => handleSearchChange(e.target.value)}
-                          placeholder="Tìm khoá học..."
+                          placeholder={t("explore.searchCourses")}
                           className="flex-1 bg-transparent text-[14px] font-normal leading-[18px] text-foreground placeholder-muted-foreground/60 outline-none"
                         />
                         <div className="w-4 h-4 flex items-center justify-center shrink-0">
@@ -569,7 +577,7 @@ export function ExplorePage() {
                           )}
                         >
                           <Filter className="w-4 h-4" />
-                          Bộ lọc
+                          {t("explore.filter")}
                           {(selectedCategoryIds.size > 0 || detailFilter !== 'all') && (
                             <span className="flex items-center justify-center h-[18px] min-w-[18px] rounded-full bg-primary text-white text-[11px] font-bold px-1 ml-0.5">
                               {(selectedCategoryIds.size > 0 ? 1 : 0) + (detailFilter !== 'all' ? 1 : 0)}
@@ -589,14 +597,9 @@ export function ExplorePage() {
                             >
                               {/* Trạng thái học */}
                               <div className="flex flex-col gap-2.5">
-                                <h4 className="text-[14px] font-bold text-foreground">Trạng thái học</h4>
+                                <h4 className="text-[14px] font-bold text-foreground">{t("explore.learningStatus")}</h4>
                                 <div className="flex flex-wrap gap-2">
-                                  {([
-                                    { key: 'all' as DetailFilter, label: 'Tất cả' },
-                                    { key: 'in_progress' as DetailFilter, label: 'Đang học' },
-                                    { key: 'completed' as DetailFilter, label: 'Đã học' },
-                                    { key: 'not_enrolled' as DetailFilter, label: 'Chưa học' },
-                                  ]).map(pill => (
+                                  {detailFilterPills.map(pill => (
                                     <button
                                       key={pill.key}
                                       onClick={() => setDetailFilter(pill.key)}
@@ -617,7 +620,7 @@ export function ExplorePage() {
 
                               {/* Danh mục */}
                               <div className="flex flex-col gap-2">
-                                <h4 className="text-[14px] font-bold text-foreground mb-1">Danh mục</h4>
+                                <h4 className="text-[14px] font-bold text-foreground mb-1">{t("explore.category")}</h4>
                                 <button
                                   onClick={() => handleCategoryClick('all')}
                                   className={cn(
@@ -635,7 +638,7 @@ export function ExplorePage() {
                                   )}>
                                     {selectedCategoryIds.size === 0 && <Check className="h-3 w-3 text-white stroke-[3]" />}
                                   </div>
-                                  Tất cả danh mục
+                                  {t("explore.allCategories")}
                                 </button>
                                 
                                 <div className="flex flex-col gap-0.5 mt-1">
@@ -718,12 +721,7 @@ export function ExplorePage() {
               <div className="relative z-10 hidden md:flex items-center justify-between gap-3 mb-6 flex-wrap">
                 {/* Left — Filter pills */}
                 <div className="flex flex-wrap gap-2">
-                  {([
-                    { key: 'all' as DetailFilter, label: 'Tất cả' },
-                    { key: 'in_progress' as DetailFilter, label: 'Đang học' },
-                    { key: 'completed' as DetailFilter, label: 'Đã học' },
-                    { key: 'not_enrolled' as DetailFilter, label: 'Chưa học' },
-                  ]).map(pill => (
+                  {detailFilterPills.map(pill => (
                     <button
                       key={pill.key}
                       onClick={() => setDetailFilter(pill.key)}
@@ -750,7 +748,7 @@ export function ExplorePage() {
                         : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
                     )}
                   >
-                    Danh mục
+                    {t("explore.category")}
                     {selectedCategoryIds.size > 0 && (
                       <span className="flex items-center justify-center h-[18px] min-w-[18px] rounded-full bg-primary text-white text-[11px] font-bold px-1">
                         {selectedCategoryIds.size}
@@ -787,7 +785,7 @@ export function ExplorePage() {
                           )}>
                             {selectedCategoryIds.size === 0 && <Check className="h-3 w-3 text-white stroke-[3]" />}
                           </div>
-                          Tất cả danh mục
+                          {t("explore.allCategories")}
                         </button>
 
                         <div className="h-px bg-border my-1" />
@@ -853,12 +851,12 @@ export function ExplorePage() {
                     <BookOpen className="h-10 w-10 text-primary/40" />
                   </div>
                   <h3 className="mb-2 text-[20px] font-bold leading-[24px] text-foreground">
-                    {debouncedSearch ? "Không tìm thấy khóa học" : "Chưa có khóa học nào"}
+                    {debouncedSearch ? t("explore.noCoursesFound") : t("explore.noCourses")}
                   </h3>
                   <p className="text-[14px] font-normal leading-[18px] text-muted-foreground max-w-md mx-auto">
                     {debouncedSearch
-                      ? `Không có khóa học nào phù hợp với "${debouncedSearch}". Hãy thử từ khóa khác.`
-                      : "Hệ thống chưa có khóa học nào. Vui lòng quay lại sau."}
+                      ? t("explore.noCoursesMatch", { query: debouncedSearch })
+                      : t("explore.noCoursesAvailable")}
                   </p>
                 </div>
               )}
@@ -895,7 +893,7 @@ export function ExplorePage() {
                         course={focusCourse}
                         isEnrolled={enrolledIds.has(focusCourse.id)}
                         colorStyle={colorStyle}
-                        categoryName={focusCourse.categories?.[0]?.name || "Khóa học"}
+                        categoryName={focusCourse.categories?.[0]?.name || t("explore.course")}
                         isHighlighted={highlightCourseId === focusCourse.id}
                         isDemoGuideActive={demoCourseGuideActive && focusCourse.id === DEMO_IFRAME_EXPLORE_COURSE_ID}
                         onRequireConfirm={openEnrollConfirm}
@@ -1127,13 +1125,13 @@ export function ExplorePage() {
                                           completionPercent === 100 ? (
                                             <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
                                               <Check className="h-3.5 w-3.5 stroke-[3]" />
-                                              <span className="text-[12px] font-bold">Đã hoàn thành</span>
+                                              <span className="text-[12px] font-bold">{t("explore.completed")}</span>
                                             </div>
                                           ) : (
-                                            <>Tiếp tục học <ArrowRight className="h-3 w-3" /></>
+                                            <>{t("explore.continueLearning")} <ArrowRight className="h-3 w-3" /></>
                                           )
                                         ) : (
-                                          <span className="inline-block rounded-full bg-primary px-4 py-1 text-[11px] font-bold text-white">Bắt đầu học</span>
+                                          <span className="inline-block rounded-full bg-primary px-4 py-1 text-[11px] font-bold text-white">{t("explore.startLearning")}</span>
                                         )}
                                       </div>
                                       {isEnrolled && completionPercent < 100 && (
@@ -1310,6 +1308,7 @@ function ExploreCourseCard({
   onRequireConfirm?: (course: any) => void;
   onCourseClick?: (course: any, isEnrolled: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const imageUrl = storageUrl((course as any).image_url) || null;
 
   // Chỉ gọi API check completion nếu user ĐÃ enroll khóa này
@@ -1400,18 +1399,18 @@ function ExploreCourseCard({
                   className="demo-iframe-hero-cta-guide-wave-only demo-iframe-hero-cta-guide-blue relative w-fit rounded-full bg-primary px-6 py-2 text-[14px] font-bold leading-[18px] text-white md:px-8 md:py-3 md:text-[15px]"
                 >
                   <span className="demo-iframe-hero-cta-echo" aria-hidden="true" />
-                  <span className="relative z-10">Bắt đầu học</span>
+                  <span className="relative z-10">{t("explore.startLearning")}</span>
                 </span>
               ) : isEnrolled ? (
                 <div className="flex min-w-0 items-center gap-1.5 text-[14px] md:text-[15px] font-bold leading-[20px] text-primary">
                   {completionPercent === 100 ? (
                     <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                       <Check className="h-4 w-4 md:h-5 md:w-5 stroke-[3]" />
-                      <span className="text-[14px] md:text-[16px] font-bold text-green-600 dark:text-green-400">Đã hoàn thành</span>
+                      <span className="text-[14px] md:text-[16px] font-bold text-green-600 dark:text-green-400">{t("explore.completed")}</span>
                     </div>
                   ) : (
                     <>
-                      Tiếp tục học
+                      {t("explore.continueLearning")}
                       <ArrowRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     </>
                   )}
@@ -1420,7 +1419,7 @@ function ExploreCourseCard({
                 <span
                   className="w-fit rounded-full bg-primary px-6 md:px-8 py-2 md:py-3 text-[14px] md:text-[15px] font-bold leading-[18px] text-white transition-colors hover:bg-primary/90"
                 >
-                  Bắt đầu học
+                  {t("explore.startLearning")}
                 </span>
               )}
               {!isDemoGuideActive && isEnrolled && typeof completionPercent === "number" && completionPercent < 100 && (

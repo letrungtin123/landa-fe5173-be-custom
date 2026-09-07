@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useTranslation } from "react-i18next";
 
 function getStreak(): number {
   try {
@@ -11,6 +12,7 @@ function getStreak(): number {
 }
 
 export function StreakCounter() {
+  const { t } = useTranslation();
   const sessionMode = useAuthStore((s) => s.sessionMode);
   const streak = sessionMode === "demo_iframe" ? 0 : getStreak();
 
@@ -22,10 +24,10 @@ export function StreakCounter() {
       className="mb-5"
     >
       <div className="rounded-[18px] bg-orange-500/10 border border-orange-500/20 p-3 px-5 text-right w-fit ml-auto">
-        <p className="text-xs font-semibold text-foreground/80 mb-1">Học liên tục</p>
+        <p className="text-xs font-semibold text-foreground/80 mb-1">{t("dashboard.streakTitle")}</p>
         <div className="flex items-center justify-end gap-2">
           <span className="text-[20px] font-bold text-orange-600 dark:text-orange-500 leading-none">
-            {streak} Ngày
+            {t("dashboard.days", { count: streak })}
           </span>
           <div className="relative flex items-center justify-center">
             <span className="text-[22px] leading-none">

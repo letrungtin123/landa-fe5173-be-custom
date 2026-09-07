@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getBlockDetail, submitCrosswordAnswer } from "@/api/blocks";
 import { Lightbulb, Loader2, Play, XCircle } from "lucide-react";
@@ -43,6 +44,7 @@ interface CrosswordContentProps {
 }
 
 export function CrosswordContent({ usageKey, problemMedia, onImageClick }: CrosswordContentProps) {
+  const { t } = useTranslation();
   const { courseId } = useParams();
   const qc = useQueryClient();
   const [started, setStarted] = useState(false);
@@ -132,11 +134,11 @@ export function CrosswordContent({ usageKey, problemMedia, onImageClick }: Cross
         refetchProgressWithRetry(qc, courseId);
       } else if (data.status === "already_completed") {
         setIsCorrect(true);
-        setResultMessage("🎉 Chính xác! Tuyệt vời!");
+        setResultMessage(t("crossword.completionSuccess"));
         // Lưu vào session store
         const fp2 = svd ? JSON.stringify(svd.words.map(w => w.clue + '|' + w.length)) : '';
         useBlockSubmitStore.getState().setResult(usageKey, {
-          resultMessage: "🎉 Chính xác! Tuyệt vời!",
+          resultMessage: t("crossword.completionSuccess"),
           isCorrect: true,
           answers: { ...answers },
           contentFingerprint: fp2,
@@ -148,7 +150,7 @@ export function CrosswordContent({ usageKey, problemMedia, onImageClick }: Cross
     },
     onError: () => {
       setIsCorrect(false);
-      setResultMessage("Không thể kết nối đến máy chủ.");
+      setResultMessage(t("crossword.connectionFailed"));
     },
   });
 
@@ -163,7 +165,7 @@ export function CrosswordContent({ usageKey, problemMedia, onImageClick }: Cross
   if (!svd) {
     return (
       <div className="text-center p-10 mt-6 rounded-2xl border border-muted bg-muted/20">
-        <p className="text-muted-foreground">Không tải được dữ liệu ô chữ.</p>
+        <p className="text-muted-foreground">{t("crossword.unavailable")}</p>
       </div>
     );
   }
@@ -231,7 +233,7 @@ export function CrosswordContent({ usageKey, problemMedia, onImageClick }: Cross
 
     if (!isComplete) {
       setIsCorrect(false);
-      setResultMessage("Bạn vui lòng lấp đầy tất cả các ô trống trước khi nộp bài nhé!");
+      setResultMessage(t("crossword.completeAllCells"));
       return;
     }
 
@@ -267,20 +269,20 @@ export function CrosswordContent({ usageKey, problemMedia, onImageClick }: Cross
           </span>
         </div>
         <h2 className="mb-8 text-[28px] 2xl:text-[34px] font-semibold leading-[36px] 2xl:leading-[42px] text-foreground">
-          {svd.display_name || "Đố vui ô chữ"}
+          {svd.display_name || t("crossword.fallbackTitle")}
         </h2>
 
         <div className="mb-8 pl-4 border-l-4 border-primary">
-          <h3 className="text-xl font-bold mb-4">Luật chơi cực đơn giản</h3>
+          <h3 className="text-xl font-bold mb-4">{t("crossword.rulesTitle")}</h3>
           <ul className="space-y-3 text-[14px]">
             <li>
-              <b>1. Giải đố:</b> Trả lời các câu hỏi hàng ngang để lấp đầy ô chữ.
+              {t("crossword.ruleOne")}
             </li>
             <li>
-              <b>2. Tìm từ khóa:</b> Từ khóa cuối cùng nằm ở hàng dọc (Cột màu xanh) và là một từ tiếng Việt / Tiếng Anh có ý nghĩa.
+              {t("crossword.ruleTwo")}
             </li>
             <li>
-              <b>3. Quy tắc nhập:</b> Viết chữ không dấu và không khoảng trắng (Ví dụ: "Học tập" {">"} HOCTAP).
+              {t("crossword.ruleThree")}
             </li>
           </ul>
         </div>
@@ -289,14 +291,14 @@ export function CrosswordContent({ usageKey, problemMedia, onImageClick }: Cross
           onClick={() => setStarted(true)}
           className="h-12 rounded-full px-8 font-bold text-[15px] shadow-lg transition-transform hover:scale-105"
         >
-          Bắt đầu <Play className="ml-2 h-4 w-4" />
+          {t("crossword.start")} <Play className="ml-2 h-4 w-4" />
         </Button>
       </div>
     );
   }
 
   // Khối kết nối logic UI (Remove ternaries)
-  let clueBoxTitle = "Nhấn vào ô chữ để xem câu hỏi...";
+  let clueBoxTitle = t("crossword.cluePlaceholder");
   if (currentClue) {
     clueBoxTitle = currentClue;
   }
@@ -314,7 +316,7 @@ export function CrosswordContent({ usageKey, problemMedia, onImageClick }: Cross
         className="h-12 w-full max-w-sm rounded-full font-bold text-[15px] shadow-lg"
       >
         {spinner}
-        Nộp bài chấm điểm
+        {t("crossword.submit")}
       </Button>
     );
   }
@@ -467,7 +469,7 @@ export function CrosswordContent({ usageKey, problemMedia, onImageClick }: Cross
 
       {/* Danh sách toàn bộ câu hỏi báo cáo trực quan */}
       <div className="w-full max-w-3xl mx-auto mb-8 bg-white/60 dark:bg-slate-900/60 p-6 md:p-8 rounded-2xl border border-primary/20 relative z-10 text-left shadow-sm">
-        <h3 className="font-extrabold text-foreground mb-4 text-lg border-b pb-3">Danh sách câu hỏi</h3>
+        <h3 className="font-extrabold text-foreground mb-4 text-lg border-b pb-3">{t("crossword.questionList")}</h3>
         <ul className="space-y-2">
           {words.map(w => (
               <li

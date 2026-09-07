@@ -13,6 +13,7 @@ import { useCourses, useMyEnrollments, useEnrollCourse } from "@/hooks/useCourse
 import { useMyCertificates } from "@/hooks/useCertificates";
 import { useBatchCourseProgress } from "@/hooks/useProgress";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useTranslation } from "react-i18next";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useBranding } from "@/hooks/useBranding";
 
@@ -23,6 +24,7 @@ import { CourseFilterBar, type CourseFilter } from "@/components/CourseFilterBar
 import type { CourseCategoryInfo } from "@/api/types";
 
 export function CoursesPage() {
+  const { t } = useTranslation();
   const { colorStyle } = useThemeStore();
   const role = useAuthStore((s) => s.user?.role);
   const isStaff = role === 'staff' || role === 'superuser' || role === 'superadmin' || role === 'learner_plus';
@@ -86,7 +88,7 @@ export function CoursesPage() {
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-8 md:px-6">
       <div className="flex items-center justify-between mb-2">
-        <h1 className="text-3xl font-bold text-foreground">Chương trình học</h1>
+        <h1 className="text-3xl font-bold text-foreground">{t("courses.title")}</h1>
         {/* Staff/Admin có link truy cập admin dashboard */}
         {isStaff && (
           <a
@@ -101,8 +103,8 @@ export function CoursesPage() {
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
         {isLoading && courses.length === 0 
-          ? "Đang tải dữ liệu khóa học..." 
-          : "Khám phá các khóa học và chương trình đào tạo tại L&A"}
+          ? t("courses.loading")
+          : t("courses.subtitle")}
       </p>
 
       {/* Filter Bar */}
@@ -155,7 +157,7 @@ export function CoursesPage() {
             <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
               <BookOpen className="h-10 w-10 text-primary/40" />
             </div>
-            <h3 className="mb-2 text-lg font-bold text-foreground">Chưa có khóa học nào</h3>
+            <h3 className="mb-2 text-lg font-bold text-foreground">{t("courses.noCourses")}</h3>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
               Hệ thống chưa có khóa học nào được tạo. Vui lòng liên hệ admin hoặc quay lại sau.
             </p>
@@ -232,7 +234,7 @@ export function CoursesPage() {
                                 : "border-primary/30 bg-primary/10 text-primary"
                             )}
                           >
-                            {isEnrolled ? "Đang học" : "Khóa học"}
+                            {isEnrolled ? t("courses.learning") : t("courses.course")}
                           </Badge>
                           {course.categories?.map(cat => (
                             <Badge

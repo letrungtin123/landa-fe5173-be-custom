@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { LocaleProvider } from "@/components/providers/LocaleProvider";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { CourseLayout } from "@/components/layout/CourseLayout";
 import { GlobalBadgeWatcher } from "@/components/badges/GlobalBadgeWatcher";
@@ -15,6 +16,7 @@ import { StudyTimeTracker } from "@/components/global/StudyTimeTracker";
 import { WelcomeInitModal } from "@/components/global/WelcomeInitModal";
 import { createLoginSessionId, useAuthStore } from "@/stores/useAuthStore";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useTranslation } from "react-i18next";
 
 import { config } from "@/config/env";
 import ChatWidget from "@/components/chat-widget/chat-widget";
@@ -135,11 +137,12 @@ const queryClient = new QueryClient({
 
 // ── Loading fallback cho lazy-load ──
 function PageLoader() {
+  const { t } = useTranslation();
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
-        <p className="text-sm text-muted-foreground">Đang tải...</p>
+        <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
       </div>
     </div>
   );
@@ -202,6 +205,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         {/* GoogleOAuthProvider removed — SSO tạm không dùng */}
+          <LocaleProvider>
           <ThemeProvider>
             <OttGate>
             <BrowserRouter>
@@ -255,6 +259,7 @@ function App() {
           </BrowserRouter>
             </OttGate>
         </ThemeProvider>
+          </LocaleProvider>
 
       </QueryClientProvider>
     </ErrorBoundary>
