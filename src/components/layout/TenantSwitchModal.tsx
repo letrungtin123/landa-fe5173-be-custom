@@ -115,12 +115,12 @@ export function TenantSwitchModal({ open, onOpenChange }: TenantSwitchModalProps
             <div className="max-h-[360px] overflow-y-auto">
               {paginated.length > 0 ? (
                 <div className="py-1">
-                  {paginated.map((t) => {
-                    const isActive = user?.tenantId === t.id;
+                  {paginated.map((tenant) => {
+                    const isActive = user?.tenantId === tenant.id;
                     return (
                       <button
-                        key={t.id}
-                        onClick={() => handleSwitch(t.id)}
+                        key={tenant.id}
+                        onClick={() => handleSwitch(tenant.id)}
                         className={cn(
                           "w-full flex items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-muted/50",
                           isActive && "bg-primary/5"
@@ -134,7 +134,7 @@ export function TenantSwitchModal({ open, onOpenChange }: TenantSwitchModalProps
                               : "bg-muted/50 text-muted-foreground border-border"
                           )}
                         >
-                          {t.name.charAt(0).toUpperCase()}
+                          {tenant.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p
@@ -143,7 +143,7 @@ export function TenantSwitchModal({ open, onOpenChange }: TenantSwitchModalProps
                               isActive ? "font-semibold text-primary" : "font-medium text-foreground"
                             )}
                           >
-                            {t.name}
+                            {tenant.name}
                           </p>
                           {isActive && (
                             <p className="text-[11px] text-primary/70 font-medium">{t("tenant.active")}</p>
