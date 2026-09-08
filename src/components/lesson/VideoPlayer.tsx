@@ -26,6 +26,7 @@ import { useMarkComplete } from "@/hooks/useProgress";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { getYoutubeEmbedUrl } from "@/lib/youtube";
 import { useTranslation } from "react-i18next";
 
 interface VideoPlayerProps {
@@ -234,7 +235,7 @@ export function VideoPlayer({
           <Skeleton className="absolute inset-0 z-10" />
         )}
         <iframe
-          src={`https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1&showinfo=0`}
+          src={getYoutubeEmbedUrl(youtubeId)}
           className={cn("h-full w-full", isLoading ? "invisible" : "")}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen

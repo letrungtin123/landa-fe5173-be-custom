@@ -27,6 +27,7 @@ import {
   resolveProblemMediaImageUrl,
   type ProblemMedia,
 } from "@/lib/problemMedia";
+import { getYoutubeEmbedUrl } from "@/lib/youtube";
 import type { DemoIframeLessonQuizGuidePhase } from "@/utils/demoIframeDashboardGuide";
 import { useTranslation } from "react-i18next";
 import {
@@ -172,7 +173,7 @@ function ProblemMediaBlock({
       {normalized.youtube_id && !normalized.video_storage_path && (
         <div className="relative overflow-hidden rounded-2xl bg-[#0d1117] aspect-video shadow-lg">
           <iframe
-            src={`https://www.youtube.com/embed/${normalized.youtube_id}?rel=0&modestbranding=1&showinfo=0`}
+            src={getYoutubeEmbedUrl(normalized.youtube_id)}
             className="h-full w-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
             allowFullScreen

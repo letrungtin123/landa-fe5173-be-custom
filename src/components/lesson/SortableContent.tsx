@@ -15,6 +15,7 @@ import {
   resolveProblemMediaImageUrl,
   type ProblemMedia,
 } from "@/lib/problemMedia";
+import { getYoutubeEmbedUrl } from "@/lib/youtube";
 import { LessonImageCarousel } from "./LessonImageCarousel";
 import { LessonUploadedVideo } from "./LessonUploadedVideo";
 
@@ -465,7 +466,7 @@ function SortableMediaBlock({ media, onImageClick }: { media?: ProblemMedia | nu
       {normalized.youtube_id && !normalized.video_storage_path && (
         <div className="relative overflow-hidden w-full aspect-video">
           <iframe
-            src={`https://www.youtube.com/embed/${normalized.youtube_id}?rel=0&modestbranding=1&showinfo=0`}
+            src={getYoutubeEmbedUrl(normalized.youtube_id)}
             className="h-full w-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
             allowFullScreen
