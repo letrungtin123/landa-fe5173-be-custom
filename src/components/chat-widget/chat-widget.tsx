@@ -4,7 +4,7 @@
 // Uses learner auth store + learner chat API (target = 'learner')
 // ═══════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -127,6 +127,121 @@ function formatCallDuration(totalSeconds: number): string {
   const minutes = Math.floor(safeSeconds / 60);
   const seconds = safeSeconds % 60;
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function renderInlineMarkdown(text: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  const pattern = /(\*\*([^*]+?)\*\*|__([^_]+?)__|`([^`]+?)`)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) nodes.push(text.slice(lastIndex, match.index));
+
+    const boldText = match[2] ?? match[3];
+    const codeText = match[4];
+    if (boldText !== undefined) {
+      nodes.push(<strong key={`bold-${match.index}`} className="font-semibold text-foreground">{boldText}</strong>);
+    } else if (codeText !== undefined) {
+      nodes.push(<code key={`code-${match.index}`} className="rounded bg-background/80 px-1 py-0.5 text-[0.92em]">{codeText}</code>);
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) nodes.push(text.slice(lastIndex));
+  return nodes;
+}
+
+function renderParagraphLines(lines: string[], keyPrefix: string): ReactNode[] {
+  return lines.flatMap((line, index) => {
+    const lineNodes: ReactNode[] = [
+      <span key={`${keyPrefix}-line-${index}`}>{renderInlineMarkdown(line)}</span>,
+    ];
+    if (index < lines.length - 1) {
+      lineNodes.push(<br key={`${keyPrefix}-break-${index}`} />);
+    }
+    return lineNodes;
+  });
+}
+
+function BotRichTextContent({ content }: { content: string }) {
+  const lines = content.replace(/\r\n/g, '\n').split('\n');
+  const blocks: ReactNode[] = [];
+  let paragraphLines: string[] = [];
+  let listType: 'ul' | 'ol' | null = null;
+  let listItems: string[] = [];
+
+  const flushParagraph = () => {
+    if (paragraphLines.length === 0) return;
+    const blockIndex = blocks.length;
+    blocks.push(
+      <p key={`p-${blockIndex}`} className="my-0 leading-relaxed">
+        {renderParagraphLines(paragraphLines, `p-${blockIndex}`)}
+      </p>,
+    );
+    paragraphLines = [];
+  };
+
+  const flushList = () => {
+    if (!listType || listItems.length === 0) return;
+    const blockIndex = blocks.length;
+    const Tag = listType;
+    blocks.push(
+      <Tag key={`list-${blockIndex}`} className={`my-1.5 space-y-1 pl-4 ${listType === 'ol' ? 'list-decimal' : 'list-disc'}`}>
+        {listItems.map((item, index) => (
+          <li key={`list-${blockIndex}-${index}`} className="pl-0.5 leading-relaxed">
+            {renderInlineMarkdown(item)}
+          </li>
+        ))}
+      </Tag>,
+    );
+    listType = null;
+    listItems = [];
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+    if (!line.trim()) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    const headingMatch = line.match(/^\s{0,3}#{1,4}\s+(.+)$/);
+    if (headingMatch) {
+      flushParagraph();
+      flushList();
+      const blockIndex = blocks.length;
+      blocks.push(
+        <p key={`heading-${blockIndex}`} className="my-0 font-semibold leading-relaxed text-foreground">
+          {renderInlineMarkdown(headingMatch[1])}
+        </p>,
+      );
+      continue;
+    }
+
+    const unorderedMatch = line.match(/^\s*[-*•]\s+(.+)$/);
+    const orderedMatch = line.match(/^\s*\d+[.)]\s+(.+)$/);
+    const nextListType = orderedMatch ? 'ol' : unorderedMatch ? 'ul' : null;
+    const listText = orderedMatch?.[1] ?? unorderedMatch?.[1];
+
+    if (nextListType && listText) {
+      flushParagraph();
+      if (listType !== nextListType) flushList();
+      listType = nextListType;
+      listItems.push(listText);
+      continue;
+    }
+
+    flushList();
+    paragraphLines.push(line);
+  }
+
+  flushParagraph();
+  flushList();
+
+  return <div className="space-y-2 leading-relaxed">{blocks}</div>;
 }
 
 
@@ -1114,7 +1229,7 @@ export default function ChatWidget() {
       try {
         const result = await fetchMessages(conversationId);
         if (currentConvIdRef.current === conversationId) {
-          const normalizedFallback = fallbackText.trim();
+          const normalizedFallback = fallbackText.trim() || toastMessage?.trim() || '';
           const hasFallbackInServer = normalizedFallback
             ? result.messages.some(message => message.role === 'assistant' && message.content.trim() === normalizedFallback)
             : true;
@@ -1137,8 +1252,9 @@ export default function ChatWidget() {
           scrollChatToBottom('smooth');
         }
       } catch {
-        if (fallbackText.trim() && currentConvIdRef.current === conversationId) {
-          const fallbackContent = fallbackText.trim();
+        const visibleFallback = fallbackText.trim() || toastMessage?.trim() || '';
+        if (visibleFallback && currentConvIdRef.current === conversationId) {
+          const fallbackContent = visibleFallback;
           setMessages(msgs => {
             const alreadyRendered = msgs.some(message => message.role === 'assistant' && message.content.trim() === fallbackContent);
             if (alreadyRendered) return msgs;
@@ -2365,8 +2481,8 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
             ))}
             {streaming && streamText && (
               <div className="flex justify-start">
-                <div className="max-w-[85%] px-3.5 py-2.5 rounded-2xl rounded-bl-md bg-muted/50 text-sm whitespace-pre-wrap break-words">
-                  {streamText}
+                <div className="max-w-[85%] px-3.5 py-2.5 rounded-2xl rounded-bl-md bg-muted/50 text-sm break-words">
+                  <BotRichTextContent content={streamText} />
                   <span className="inline-block w-1.5 h-4 bg-primary/60 ml-0.5 animate-pulse rounded-sm" />
                   {isBotVoiceActive && <Volume2 className="ml-1 inline-block h-3.5 w-3.5 animate-pulse text-primary" />}
                 </div>
@@ -2437,12 +2553,12 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
     >
       <div
-        className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm whitespace-pre-wrap break-words ${isUser
-            ? 'bg-primary text-primary-foreground rounded-br-md'
-            : 'bg-muted/50 rounded-bl-md'
-          }`}
+        className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm break-words ${isUser
+          ? 'bg-primary text-primary-foreground rounded-br-md whitespace-pre-wrap'
+          : 'bg-muted/50 rounded-bl-md'
+        }`}
       >
-        {message.content}
+        {isUser ? message.content : <BotRichTextContent content={message.content} />}
       </div>
     </motion.div>
   );

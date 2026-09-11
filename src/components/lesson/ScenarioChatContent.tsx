@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, CheckCircle2, Eye, Loader2, MessageSquareText, Play, RotateCcw } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -171,13 +171,51 @@ function TypingIndicator({ name }: { name: string }) {
   );
 }
 
+function renderScenarioInlineMarkdown(text: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  const pattern = /(\*\*([^*]+?)\*\*|__([^_]+?)__|`([^`]+?)`)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) nodes.push(text.slice(lastIndex, match.index));
+
+    const boldText = match[2] ?? match[3];
+    const codeText = match[4];
+    if (boldText !== undefined) {
+      nodes.push(<strong key={`bold-${match.index}`} className="font-semibold">{boldText}</strong>);
+    } else if (codeText !== undefined) {
+      nodes.push(<code key={`code-${match.index}`} className="rounded bg-background/80 px-1 py-0.5 text-[0.92em]">{codeText}</code>);
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) nodes.push(text.slice(lastIndex));
+  return nodes;
+}
+
+function ScenarioFormattedText({ text, className = "" }: { text: string; className?: string }) {
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  return (
+    <span className={className}>
+      {lines.map((line, index) => (
+        <span key={`${index}-${line.slice(0, 12)}`}>
+          {renderScenarioInlineMarkdown(line)}
+          {index < lines.length - 1 && <br />}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function ChatItemView({ item }: { item: ChatHistoryItem }) {
   const { t } = useTranslation();
   if (item.kind === "status") {
     return (
       <div className="flex justify-center px-2 py-1">
         <div className="inline-flex max-w-full rounded-2xl border border-amber-300 bg-amber-100 px-3 py-1.5 text-center text-xs font-semibold leading-relaxed text-amber-800 shadow-sm dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200">
-          <span className="whitespace-pre-wrap break-words">{item.text}</span>
+          <ScenarioFormattedText text={item.text} className="break-words" />
         </div>
       </div>
     );
@@ -195,7 +233,7 @@ function ChatItemView({ item }: { item: ChatHistoryItem }) {
           {item.status === "correct" ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <RotateCcw className="h-4 w-4 shrink-0" />}
           <span>{t("scenario.explanation")}</span>
         </div>
-        <div className="whitespace-pre-wrap break-words">{item.text}</div>
+        <div className="break-words"><ScenarioFormattedText text={item.text} /></div>
       </div>
     );
   }
@@ -205,12 +243,12 @@ function ChatItemView({ item }: { item: ChatHistoryItem }) {
     <div className={cn("flex", isRight ? "justify-end" : "justify-start")}>
       <div className={cn("max-w-[90%] sm:max-w-[72%]", isRight && "text-right")}>
         <div className={cn(
-          "inline-block max-w-full rounded-2xl px-3.5 py-2.5 text-left text-sm font-medium leading-relaxed shadow-sm whitespace-pre-wrap break-words",
+          "inline-block max-w-full rounded-2xl px-3.5 py-2.5 text-left text-sm font-medium leading-relaxed shadow-sm break-words",
           isRight
             ? "rounded-br-md bg-primary text-primary-foreground"
             : "rounded-bl-md bg-white text-foreground ring-1 ring-border dark:bg-slate-900"
         )}>
-          {item.text}
+          <ScenarioFormattedText text={item.text} />
         </div>
         <div className="mt-1 px-1 text-xs text-muted-foreground">
           {item.name}{item.description ? ` - ${item.description}` : ""}
