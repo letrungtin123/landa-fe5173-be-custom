@@ -2504,8 +2504,8 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
       </div>
 
       <div className="border-t px-3 py-2.5 bg-background/50">
-        <div className="flex items-center gap-2">
-          <div className="flex min-h-11 flex-1 items-center gap-1 rounded-xl border bg-muted/30 px-2.5 py-1.5 transition-[background-color,border-color,box-shadow,opacity] focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/20">
+        <div className="flex items-end gap-2">
+          <div className="flex min-h-11 min-w-0 flex-1 items-end gap-1 rounded-xl border bg-muted/30 px-2.5 py-1.5 transition-[background-color,border-color,box-shadow,opacity] focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/20">
             <textarea
               ref={inputRef}
               value={inputValue}
@@ -2515,14 +2515,14 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
               readOnly={inputReadOnly}
               disabled={streaming}
               rows={1}
-              className="min-h-8 flex-1 resize-none border-0 bg-transparent px-1 py-1 text-sm leading-5 placeholder:text-muted-foreground/50 focus:outline-none disabled:opacity-50"
-              style={{ minHeight: '32px', maxHeight: '128px', overflowY: 'hidden' }}
+              className="min-h-10 min-w-0 flex-1 basis-[120px] resize-none border-0 bg-transparent px-1 py-1 text-sm leading-6 placeholder:text-muted-foreground/50 focus:outline-none disabled:opacity-50 max-h-32"
+              style={{ minHeight: '40px', maxHeight: '128px', overflowY: 'hidden' }}
             />
             <Button
               type="button"
               variant={isVoiceListening ? 'default' : 'ghost'}
               size="icon"
-              className={`h-8 w-8 shrink-0 self-center rounded-lg ${isVoiceListening ? 'bg-red-500 text-white hover:bg-red-600' : isBotVoiceActive ? 'text-primary' : 'text-muted-foreground'}`}
+              className={`h-8 w-8 shrink-0 self-end rounded-lg ${isVoiceListening ? 'bg-red-500 text-white hover:bg-red-600' : isBotVoiceActive ? 'text-primary' : 'text-muted-foreground'}`}
               disabled={inputReadOnly || streaming || isVoiceRequesting}
               onClick={onVoiceToggle}
               title={voiceButtonTitle}
@@ -2532,7 +2532,7 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
           </div>
           <Button
             size="icon"
-            className="h-11 w-11 shrink-0 self-center rounded-xl"
+            className="h-11 w-11 shrink-0 self-end rounded-xl"
             disabled={!inputValue.trim() || streaming || inputReadOnly}
             onClick={onSend}
           >

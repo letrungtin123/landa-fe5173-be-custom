@@ -43,6 +43,19 @@ export function HtmlBlockContent({ htmlContent, uploadedImages = [], displayName
     try {
       const parser = new DOMParser();
       const doc = parser.parseFromString(cleanHtml, "text/html");
+
+      // Course HTML is sanitized above. Set link semantics on the parsed DOM
+      // instead of intercepting click events so keyboard and middle-click
+      // behavior remain native. Fragment links stay in the current lesson;
+      // mail/tel links remain handled by the browser or operating system.
+      doc.querySelectorAll<HTMLAnchorElement>("a[href]").forEach((anchor) => {
+        const href = anchor.getAttribute("href")?.trim() || "";
+        if (!href || href.startsWith("#") || /^(mailto:|tel:)/i.test(href)) return;
+
+        anchor.setAttribute("target", "_blank");
+        anchor.setAttribute("rel", "noopener noreferrer");
+      });
+
       const imgEls = Array.from(doc.querySelectorAll("img"));
       imgEls.forEach((img) => {
         const src = img.getAttribute("src") || "";
