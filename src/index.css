@@ -759,6 +759,31 @@
   height: auto;
 }
 
+/* Lesson HTML can contain inline colors from generated/source content. Keep
+   table headers readable in both themes without changing other HTML blocks. */
+.lesson-html-content :where(table) {
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+}
+
+.lesson-html-content :where(thead, thead tr) {
+  background-color: hsl(var(--muted)) !important;
+}
+
+.lesson-html-content :where(th, thead td) {
+  color: hsl(var(--foreground)) !important;
+  background-color: hsl(var(--muted)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.lesson-html-content :where(th, thead td) * {
+  color: hsl(var(--foreground)) !important;
+}
+
+.lesson-html-content :where(td) {
+  border-color: hsl(var(--border));
+}
+
 html[data-font-platform="windows-desktop"],
 html[data-font-platform="windows-desktop"] body,
 html[data-font-platform="windows-desktop"] body *,

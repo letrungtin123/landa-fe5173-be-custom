@@ -83,7 +83,10 @@ export function UnitNavButtons({
               )
             )}
 
-            {isCompleted && hasNextLesson && (
+            {/* Người học có thể chuyển sang subsection kế tiếp mà không cần
+                đánh dấu xong bài hiện tại. Tiến độ vẫn chỉ được cập nhật bởi
+                các completion mutations riêng của từng component. */}
+            {hasNextLesson && onNextLesson && (
               <button
                 onClick={onNextLesson}
                 className="inline-flex min-w-[112px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[11px] font-semibold leading-[18px] text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97] whitespace-nowrap sm:min-w-[132px] sm:gap-2 sm:px-6 sm:py-2.5 sm:text-[14px]"

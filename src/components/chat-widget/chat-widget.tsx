@@ -90,6 +90,7 @@ const DEMO_QUIZ_ASSIST_TYPE_PUNCTUATION_MS = 120;
 const DEMO_QUIZ_ASSIST_STREAM_CHUNK_MS = 44;
 const DEMO_QUIZ_ASSIST_STREAM_PUNCTUATION_MS = 150;
 const DEMO_QUIZ_ASSIST_THINKING_MS = 2000;
+const MIN_STREAMING_UI_MS = 1_500;
 const VOICE_MAX_LISTEN_MS = 15_000;
 const SILENT_AUDIO_DATA_URI = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQQAAAAAAA==';
 
@@ -358,6 +359,7 @@ export default function ChatWidget() {
   const botAudioGainRef = useRef<GainNode | null>(null);
   const botAudioSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const botSpeechRequestIdRef = useRef(0);
+  const minimumStreamDelayRef = useRef<{ timer: number; resolve: () => void } | null>(null);
   const demoCompanionTimerRef = useRef<number | null>(null);
   const demoCompanionCloseTimerRef = useRef<number | null>(null);
   const demoQuizAssistTimersRef = useRef<number[]>([]);
@@ -375,6 +377,26 @@ export default function ChatWidget() {
   const streamAccRef = useRef('');  // accumulate stream text without React state race
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const clearMinimumStreamDelay = useCallback(() => {
+    const pending = minimumStreamDelayRef.current;
+    if (!pending) return;
+    window.clearTimeout(pending.timer);
+    minimumStreamDelayRef.current = null;
+    pending.resolve();
+  }, []);
+
+  const waitForMinimumStreamDuration = useCallback((startedAt: number) => {
+    const remaining = Math.max(0, MIN_STREAMING_UI_MS - (performance.now() - startedAt));
+    if (remaining === 0) return Promise.resolve();
+    return new Promise<void>(resolve => {
+      const timer = window.setTimeout(() => {
+        minimumStreamDelayRef.current = null;
+        resolve();
+      }, remaining);
+      minimumStreamDelayRef.current = { timer, resolve };
+    });
+  }, []);
 
   const scrollChatToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     requestAnimationFrame(() => {
@@ -573,6 +595,7 @@ export default function ChatWidget() {
   }, [clearVoiceListenTimer]);
 
   useEffect(() => () => {
+    clearMinimumStreamDelay();
     clearVoiceAutoListenTimer();
     stopVoiceCapture(true);
     cancelBotSpeech();
@@ -584,10 +607,11 @@ export default function ChatWidget() {
     const context = botAudioContextRef.current;
     if (context && context.state !== 'closed') void context.close().catch(() => {});
     botAudioContextRef.current = null;
-  }, [cancelBotSpeech, clearVoiceAutoListenTimer, stopBotAudioSource, stopVoiceCapture]);
+  }, [cancelBotSpeech, clearMinimumStreamDelay, clearVoiceAutoListenTimer, stopBotAudioSource, stopVoiceCapture]);
 
   useEffect(() => {
     if (!open) {
+      clearMinimumStreamDelay();
       setFullscreen(false);
       clearVoiceAutoListenTimer();
       voiceCallActiveRef.current = false;
@@ -599,7 +623,7 @@ export default function ChatWidget() {
       stopVoiceCapture(true);
       cancelBotSpeech();
     }
-  }, [cancelBotSpeech, clearVoiceAutoListenTimer, open, stopVoiceCapture]);
+  }, [cancelBotSpeech, clearMinimumStreamDelay, clearVoiceAutoListenTimer, open, stopVoiceCapture]);
   // ── FAB drag ref ──
   const fabRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef({ sx: 0, sy: 0, sl: 0, st: 0, active: false, moved: false });
@@ -1187,6 +1211,7 @@ export default function ChatWidget() {
     if (!currentConv || !rawContent.trim() || streaming) return;
     const conversationId = currentConv.id;
     const content = rawContent.trim();
+    const streamStartedAt = performance.now();
     const isVoiceTurn = source === 'voice' || voiceModeActive;
     const inputMode = isVoiceTurn ? 'voice' : 'text';
     if (isVoiceTurn) {
@@ -1227,6 +1252,12 @@ export default function ChatWidget() {
 
     const finishStream = async (fallbackText: string, toastMessage?: string) => {
       try {
+        // Keep the busy state visible briefly when the backend returns an
+        // immediate done event. This prevents a one-frame loading flash.
+        if (!toastMessage) {
+          await waitForMinimumStreamDuration(streamStartedAt);
+          if (currentConvIdRef.current !== conversationId) return;
+        }
         const result = await fetchMessages(conversationId);
         if (currentConvIdRef.current === conversationId) {
           const normalizedFallback = fallbackText.trim() || toastMessage?.trim() || '';
@@ -1303,7 +1334,7 @@ export default function ChatWidget() {
         void finishStream(streamAccRef.current, message);
       },
     );
-  }, [cancelBotSpeech, courseId, currentConv, isDemoIframe, scrollChatToBottom, stopVoiceCapture, streaming, t, voiceModeActive]);
+  }, [cancelBotSpeech, courseId, currentConv, isDemoIframe, scrollChatToBottom, stopVoiceCapture, streaming, t, voiceModeActive, waitForMinimumStreamDuration]);
 
   const handleSend = () => {
     sendUserMessage(inputValue, 'text');
@@ -1495,6 +1526,7 @@ export default function ChatWidget() {
   };
 
   const handleBack = () => {
+    clearMinimumStreamDelay();
     stopVoiceCapture(true);
     cancelBotSpeech();
     if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
@@ -2490,13 +2522,30 @@ function ChatView({ messages, streamText, streaming, loading, hasMore, loadingMo
             )}
             {streaming && !streamText && (
               <div className="flex justify-start">
-                <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-muted/50">
-                  <div className="flex gap-1">
-                    <span className="h-2 w-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="h-2 w-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="h-2 w-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '300ms' }} />
+                <motion.div
+                  initial={{ opacity: 0, y: 4, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                  className="w-full max-w-[92%] min-w-0 rounded-xl border border-primary/20 bg-card/95 px-3.5 py-3 shadow-md shadow-primary/5"
+                  aria-live="polite"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
+                      <span className="absolute inset-1 rounded-md border border-primary/20 animate-pulse" />
+                      <Loader2 className="relative h-4 w-4 animate-spin" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-semibold text-foreground">{t('chat.streaming')}</p>
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                        <motion.div
+                          className="h-full w-2/5 rounded-full bg-primary/70"
+                          animate={{ x: ['-100%', '260%'] }}
+                          transition={{ duration: 1.25, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </motion.div>
               </div>
             )}
           </>
