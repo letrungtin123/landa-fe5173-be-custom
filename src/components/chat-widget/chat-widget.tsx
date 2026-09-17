@@ -91,8 +91,59 @@ const DEMO_QUIZ_ASSIST_STREAM_CHUNK_MS = 44;
 const DEMO_QUIZ_ASSIST_STREAM_PUNCTUATION_MS = 150;
 const DEMO_QUIZ_ASSIST_THINKING_MS = 2000;
 const MIN_STREAMING_UI_MS = 1_500;
+const CHAT_PENDING_TURN_STORAGE_PREFIX = 'chat-widget-pending-turn-v1:';
+const CHAT_PENDING_TURN_TTL_MS = 30 * 60 * 1000;
 const VOICE_MAX_LISTEN_MS = 15_000;
 const SILENT_AUDIO_DATA_URI = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQQAAAAAAA==';
+
+type StoredChatPendingTurn = {
+  startedAt: number;
+};
+
+function getChatPendingTurnStorageKey(conversationId: string): string {
+  return `${CHAT_PENDING_TURN_STORAGE_PREFIX}${conversationId}`;
+}
+
+function readStoredChatPendingTurn(conversationId: string): StoredChatPendingTurn | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(getChatPendingTurnStorageKey(conversationId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StoredChatPendingTurn>;
+    const startedAt = typeof parsed.startedAt === 'number' ? parsed.startedAt : Number.NaN;
+    if (
+      !Number.isFinite(startedAt)
+      || startedAt <= 0
+      || Date.now() - startedAt > CHAT_PENDING_TURN_TTL_MS
+    ) {
+      window.sessionStorage.removeItem(getChatPendingTurnStorageKey(conversationId));
+      return null;
+    }
+    return { startedAt };
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredChatPendingTurn(conversationId: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(getChatPendingTurnStorageKey(conversationId), JSON.stringify({
+      startedAt: Date.now(),
+    } satisfies StoredChatPendingTurn));
+  } catch {
+    // Session storage can be unavailable in privacy-restricted browser contexts.
+  }
+}
+
+function clearStoredChatPendingTurn(conversationId: string | null | undefined): void {
+  if (typeof window === 'undefined' || !conversationId) return;
+  try {
+    window.sessionStorage.removeItem(getChatPendingTurnStorageKey(conversationId));
+  } catch {
+    // Session storage can be unavailable in privacy-restricted browser contexts.
+  }
+}
 
 function getSpeechRecognitionCtor(): BrowserSpeechRecognitionConstructor | null {
   if (typeof window === 'undefined') return null;
@@ -366,6 +417,7 @@ export default function ChatWidget() {
   const demoQuizAssistCaretFrameRef = useRef<number | null>(null);
   const demoCompanionStartedRef = useRef(false);
   const currentConvIdRef = useRef<string | null>(null);
+  const messageLoadRequestRef = useRef(0);
 
   // Detect courseId from URL: /courses/:courseId/...
   const location = useLocation();
@@ -1105,7 +1157,12 @@ export default function ChatWidget() {
       const conv = await createConversation(personaId);
       setConversations(prev => [conv, ...prev]);
       setCurrentConv(conv);
+      currentConvIdRef.current = conv.id;
+      setStreaming(false);
+      setStreamText('');
+      streamAccRef.current = '';
       setMessages([]);
+      clearStoredChatPendingTurn(conv.id);
       setState('chat');
     } catch (err: any) {
       showToast(err?.response?.data?.message || err.message);
@@ -1115,17 +1172,38 @@ export default function ChatWidget() {
   // ── Open existing conversation ──
   const handleOpenConversation = async (conv: ChatConversation) => {
     if (isDemoIframe) return;
+    const requestId = ++messageLoadRequestRef.current;
+    const conversationId = conv.id;
+    const isCurrentRequest = () => (
+      requestId === messageLoadRequestRef.current
+      && currentConvIdRef.current === conversationId
+    );
     setCurrentConv(conv);
+    currentConvIdRef.current = conversationId;
+    setStreaming(false);
+    setStreamText('');
+    streamAccRef.current = '';
     setLoadingMessages(true);
     setState('chat');
     try {
-      const result = await fetchMessages(conv.id);
+      const result = await fetchMessages(conversationId);
+      if (!isCurrentRequest()) return;
       setMessages(result.messages);
+      const latestMessage = result.messages[result.messages.length - 1];
+      const canRestorePending = latestMessage?.role === 'user' && readStoredChatPendingTurn(conversationId) !== null;
+      setStreaming(canRestorePending);
+      setStreamText('');
+      if (!canRestorePending) clearStoredChatPendingTurn(conversationId);
       setHasMore(result.has_more);
       setNextCursor(result.next_cursor);
-    } catch { showToast(t('chat.messagesLoadFailed')); }
-    setLoadingMessages(false);
-    scrollChatToBottom('auto');
+    } catch {
+      if (isCurrentRequest()) showToast(t('chat.messagesLoadFailed'));
+    } finally {
+      if (isCurrentRequest()) {
+        setLoadingMessages(false);
+        scrollChatToBottom('auto');
+      }
+    }
   };
 
   // ── Load more messages ──
@@ -1172,6 +1250,7 @@ export default function ChatWidget() {
     setDeleting(true);
     try {
       await deleteConversation(confirmDeleteId);
+      clearStoredChatPendingTurn(confirmDeleteId);
       const nextConversations = conversations.filter(c => c.id !== confirmDeleteId);
       setConversations(nextConversations);
       if (currentConv?.id === confirmDeleteId) setCurrentConv(null);
@@ -1212,6 +1291,7 @@ export default function ChatWidget() {
     const conversationId = currentConv.id;
     const content = rawContent.trim();
     const streamStartedAt = performance.now();
+    const streamAccumulator = { value: '' };
     const isVoiceTurn = source === 'voice' || voiceModeActive;
     const inputMode = isVoiceTurn ? 'voice' : 'text';
     if (isVoiceTurn) {
@@ -1236,6 +1316,7 @@ export default function ChatWidget() {
       created_at: new Date().toISOString(),
     };
     setMessages(prev => [...prev, userMsg]);
+    writeStoredChatPendingTurn(conversationId);
     setStreaming(true);
     setStreamText('');
     streamAccRef.current = '';
@@ -1256,7 +1337,6 @@ export default function ChatWidget() {
         // immediate done event. This prevents a one-frame loading flash.
         if (!toastMessage) {
           await waitForMinimumStreamDuration(streamStartedAt);
-          if (currentConvIdRef.current !== conversationId) return;
         }
         const result = await fetchMessages(conversationId);
         if (currentConvIdRef.current === conversationId) {
@@ -1301,7 +1381,7 @@ export default function ChatWidget() {
               },
             ];
           });
-        } else if (!toastMessage) {
+        } else if (!toastMessage && currentConvIdRef.current === conversationId) {
           showToast(t('chat.latestMessagesSyncFailed'));
         }
       } finally {
@@ -1309,7 +1389,8 @@ export default function ChatWidget() {
           setStreamText('');
           setStreaming(false);
         }
-        streamAccRef.current = '';
+        clearStoredChatPendingTurn(conversationId);
+        if (currentConvIdRef.current === conversationId) streamAccRef.current = '';
         abortRef.current = null;
         if (toastMessage) showToast(toastMessage);
         await refreshConversations();
@@ -1322,16 +1403,22 @@ export default function ChatWidget() {
       courseId,
       inputMode,
       (text) => {
-        streamAccRef.current += text;
-        setStreamText(streamAccRef.current);
-        setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 10);
+        streamAccumulator.value += text;
+        if (currentConvIdRef.current !== conversationId) return;
+        streamAccRef.current = streamAccumulator.value;
+        setStreamText(streamAccumulator.value);
+        setTimeout(() => {
+          if (currentConvIdRef.current === conversationId) {
+            scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+          }
+        }, 10);
       },
       () => {
-        void finishStream(streamAccRef.current);
+        void finishStream(streamAccumulator.value);
       },
       (message) => {
         cancelBotSpeech();
-        void finishStream(streamAccRef.current, message);
+        void finishStream(streamAccumulator.value, message);
       },
     );
   }, [cancelBotSpeech, courseId, currentConv, isDemoIframe, scrollChatToBottom, stopVoiceCapture, streaming, t, voiceModeActive, waitForMinimumStreamDuration]);
@@ -1526,13 +1613,20 @@ export default function ChatWidget() {
   };
 
   const handleBack = () => {
-    clearMinimumStreamDelay();
+    if (isDemoIframe) {
+      clearMinimumStreamDelay();
+      if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
+    }
     stopVoiceCapture(true);
     cancelBotSpeech();
-    if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
+    // Leaving the conversation list is navigation, not cancellation. Keep
+    // the request alive so it can finish in the background and be restored
+    // when this conversation is opened again.
+    messageLoadRequestRef.current += 1;
     setStreaming(false);
     setStreamText('');
     setCurrentConv(null);
+    currentConvIdRef.current = null;
     setMessages([]);
     setHasMore(false);
     setNextCursor(null);

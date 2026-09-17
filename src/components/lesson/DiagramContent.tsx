@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReactFlow, Controls, Background, useNodesState, useEdgesState, ConnectionMode } from '@xyflow/react';
-import type { Node } from '@xyflow/react';
+import type { Edge, Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Maximize2, Minimize2 } from 'lucide-react';
@@ -10,6 +11,11 @@ import type { DiagramNodeData } from './CustomShapeNode';
 import JunctionNode from './JunctionNode';
 import OrthogonalEdge from './OrthogonalEdge';
 import { useThemeStore } from '@/stores/useThemeStore';
+import {
+  edgeAppearanceToMarkerEnd,
+  edgeAppearanceToStyle,
+  getEdgeAppearance,
+} from './edge-appearance';
 
 const nodeTypes = {
   customShape: CustomShapeNode,
@@ -20,11 +26,133 @@ const edgeTypes = {
   orthogonal: OrthogonalEdge,
 };
 
+type DiagramEdgeInput = {
+  id?: unknown;
+  source?: unknown;
+  target?: unknown;
+  sourceHandle?: unknown;
+  targetHandle?: unknown;
+  label?: unknown;
+  data?: unknown;
+  style?: CSSProperties;
+  markerEnd?: unknown;
+  markerStart?: unknown;
+  type?: string;
+  [key: string]: unknown;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function baseHandle(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const normalized = value.trim().toLowerCase().replace(/-(?:source|target)$/, '');
+  return ['top', 'left', 'bottom', 'right'].includes(normalized) ? normalized : undefined;
+}
+
+function fallbackHandles(source: Node, target: Node) {
+  const dx = Number(target.position.x ?? 0) - Number(source.position.x ?? 0);
+  const dy = Number(target.position.y ?? 0) - Number(source.position.y ?? 0);
+  const sourcePosition = Math.abs(dx) >= Math.abs(dy)
+    ? (dx >= 0 ? 'right' : 'left')
+    : (dy >= 0 ? 'bottom' : 'top');
+  const targetPosition = sourcePosition === 'right'
+    ? 'left'
+    : sourcePosition === 'left'
+      ? 'right'
+      : sourcePosition === 'bottom'
+        ? 'top'
+        : 'bottom';
+  const sourceBase = source.type === 'junction' && !['bottom', 'right'].includes(sourcePosition) ? 'right' : sourcePosition;
+  const targetBase = target.type === 'junction' && !['top', 'left'].includes(targetPosition) ? 'top' : targetPosition;
+  return {
+    sourceHandle: source.type === 'junction' ? `${sourceBase}-source` : sourceBase,
+    targetHandle: target.type === 'junction' ? `${targetBase}-target` : targetBase,
+  };
+}
+
+function edgeLabel(edge: { label?: unknown; data?: unknown }): string {
+  const data = isRecord(edge.data) ? edge.data : {};
+  const value = edge.label ?? data.label;
+  return typeof value === 'string' ? value.trim().toLocaleLowerCase() : '';
+}
+
+function isFeedbackEdge(edge: DiagramEdgeInput, source: Node, target: Node): boolean {
+  const data = isRecord(edge.data) ? edge.data : {};
+  const explicitRouting = edge.routing ?? data.routing;
+  if (explicitRouting === 'feedback') return true;
+  return Number(target.position.y ?? 0) < Number(source.position.y ?? 0) - 1;
+}
+
+function getFeedbackHandle(node: Node, role: 'source' | 'target'): string {
+  if (node.type === 'junction') return role === 'source' ? 'right-source' : 'left-target';
+  return 'right';
+}
+
+function normalizeLessonDiagramEdges(edges: readonly unknown[], nodes: Node[]): Edge[] {
+  const nodesById = new Map(nodes.map(node => [String(node.id), node]));
+  const acceptedByDirection = new Map<string, Edge>();
+  const result: Edge[] = [];
+
+  for (const rawEdge of Array.isArray(edges) ? edges : []) {
+    if (!isRecord(rawEdge)) continue;
+    const edge = rawEdge as DiagramEdgeInput;
+    const source = nodesById.get(String(edge?.source ?? ''));
+    const target = nodesById.get(String(edge?.target ?? ''));
+    if (!edge || !source || !target || source.id === target.id) continue;
+
+    const direction = `${source.id}->${target.id}`;
+    if (acceptedByDirection.has(direction)) continue;
+
+    const reverse = acceptedByDirection.get(`${target.id}->${source.id}`);
+    if (reverse) {
+      const currentLabel = edgeLabel(edge);
+      const reverseLabel = edgeLabel(reverse);
+      if (!currentLabel || !reverseLabel || currentLabel === reverseLabel) continue;
+    }
+
+    const feedback = isFeedbackEdge(edge, source, target);
+    const fallback = fallbackHandles(source, target);
+    const sourceHandle = baseHandle(edge.sourceHandle) ?? fallback.sourceHandle;
+    const targetHandle = baseHandle(edge.targetHandle) ?? fallback.targetHandle;
+    const routing = feedback ? 'feedback' : 'orthogonal';
+    const appearance = getEdgeAppearance(edge, routing);
+    const normalized = {
+      ...edge,
+      id: String(edge.id ?? `diagram-edge-${result.length + 1}`),
+      source: source.id,
+      target: target.id,
+      sourceHandle: feedback ? getFeedbackHandle(source, 'source') : (source.type === 'junction' ? `${baseHandle(sourceHandle) ?? 'right'}-source` : sourceHandle),
+      targetHandle: feedback ? getFeedbackHandle(target, 'target') : (target.type === 'junction' ? `${baseHandle(targetHandle) ?? 'top'}-target` : targetHandle),
+      type: 'orthogonal' as const,
+      animated: false,
+      data: {
+        ...(isRecord(edge.data) ? edge.data : {}),
+        appearance,
+        routing,
+        feedbackSide: 'right',
+      },
+      markerStart: undefined,
+      markerEnd: edgeAppearanceToMarkerEnd(appearance),
+      style: edgeAppearanceToStyle(appearance, {
+        ...(edge.style ?? {}),
+        strokeWidth: feedback ? 2 : 1.75,
+        opacity: 0.9,
+      }),
+    };
+    acceptedByDirection.set(direction, normalized as Edge);
+    result.push(normalized as Edge);
+  }
+
+  return result;
+}
+
 export interface Diagram {
   id: string;
   name: string;
   nodes: Node<DiagramNodeData>[];
-  edges: any[];
+  edges: unknown[];
 }
 
 interface DiagramContentProps {
@@ -53,7 +181,7 @@ export default function DiagramContent({ data, onComplete }: DiagramContentProps
   }, [onComplete]);
 
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
-    const targetId = (node.data as any)?.target_diagram_id;
+    const targetId = (node.data as { target_diagram_id?: unknown })?.target_diagram_id;
     if (targetId && diagrams.some((d) => d.id === targetId)) {
       setHistory((prev) => [...prev, targetId]);
     }
@@ -107,16 +235,28 @@ function DiagramRenderer({
   onGoBack: () => void;
 }) {
   const { t } = useTranslation();
-  const [nodes, setNodes, onNodesChange] = useNodesState(
-    activeDiagram.nodes.map((n) => ({ ...n, draggable: false, selectable: false, connectable: false, data: { ...n.data, hidePorts: true } }))
-  );
+  const initialNodes = activeDiagram.nodes.map((n) => ({
+    ...n,
+    draggable: false,
+    selectable: false,
+    connectable: false,
+    data: { ...n.data, hidePorts: true },
+  }));
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(
-    activeDiagram.edges.map((e) => ({ ...e, animated: false, type: 'orthogonal' as const }))
+    normalizeLessonDiagramEdges(activeDiagram.edges, initialNodes),
   );
 
   React.useEffect(() => {
-    setNodes(activeDiagram.nodes.map((n) => ({ ...n, draggable: false, selectable: false, connectable: false, data: { ...n.data, hidePorts: true } })));
-    setEdges(activeDiagram.edges.map((e) => ({ ...e, animated: false, type: 'orthogonal' as const })));
+    const nextNodes = activeDiagram.nodes.map((n) => ({
+      ...n,
+      draggable: false,
+      selectable: false,
+      connectable: false,
+      data: { ...n.data, hidePorts: true },
+    }));
+    setNodes(nextNodes);
+    setEdges(normalizeLessonDiagramEdges(activeDiagram.edges, nextNodes));
   }, [activeDiagram, setNodes, setEdges]);
 
   const containerRef = React.useRef<HTMLDivElement>(null);

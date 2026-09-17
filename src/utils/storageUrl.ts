@@ -26,6 +26,15 @@ export function extractStoragePathFromProxyUrl(src: string | null | undefined): 
 
   try {
     const url = new URL(value);
+
+    // Normalize legacy full Supabase public-object URLs before HTML and media
+    // renderers decide that they are generic external links. This keeps browser
+    // traffic on the backend Storage proxy instead of exposing server-local URLs.
+    const storageMarkerIndex = url.pathname.indexOf(SUPABASE_PUBLIC_MARKER);
+    if (storageMarkerIndex !== -1) {
+      return decodeURIComponent(url.pathname.slice(storageMarkerIndex + SUPABASE_PUBLIC_MARKER.length));
+    }
+
     const apiBaseUrl = config.apiBaseUrl;
     const sameApiHost = apiBaseUrl ? url.origin === new URL(apiBaseUrl).origin : false;
     const samePageHost = typeof window !== 'undefined' && url.origin === window.location.origin;
