@@ -35,6 +35,7 @@ if (existsSync(envFile)) {
 }
 
 const PORT = parseInt(process.env.VITE_PREVIEW_PORT || process.env.PORT || "5173", 10);
+const BIND_HOST = process.env.BIND_HOST || "0.0.0.0";
 
 // Custom Node.js Backend — đọc từ .env.production
 function normalizeBaseUrl(raw) {
@@ -257,8 +258,8 @@ const server = createServer((req, res) => {
   }
 });
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`[FE-5173] Server listening on http://0.0.0.0:${PORT}`);
+server.listen(PORT, BIND_HOST, () => {
+  console.log(`[FE-5173] Server listening on http://${BIND_HOST}:${PORT}`);
   console.log(`[FE-5173] API backend: ${API_BACKEND}`);
   console.log(`[FE-5173] Proxying: ${PROXY_PATHS.join(", ")}`);
 });
