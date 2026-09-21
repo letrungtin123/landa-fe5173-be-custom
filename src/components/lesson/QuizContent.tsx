@@ -30,6 +30,7 @@ import {
 import { getYoutubeEmbedUrl } from "@/lib/youtube";
 import type { DemoIframeLessonQuizGuidePhase } from "@/utils/demoIframeDashboardGuide";
 import { useTranslation } from "react-i18next";
+import { getLocalizedSubmitFeedback } from "@/lib/submitFeedback";
 import {
   DEMO_IFRAME_GUIDE_SCROLL_SHORT_MS,
   scrollDemoIframeElementToCenter,
@@ -253,7 +254,7 @@ export function QuizContent({
 
   // Parse quiz HTML khi data arrive
   useEffect(() => {
-    if (!quizHtml) return;
+    if (quizHtml === undefined) return;
 
     const problems = parseProblemHtml(quizHtml);
 
@@ -308,7 +309,12 @@ export function QuizContent({
     try {
       const response = await submit.mutateAsync(answers);
       const result = parseQuizResult(response);
-      setResultMessage(result.message);
+      const localizedMessage = getLocalizedSubmitFeedback(t, result, {
+        isCorrect: result.correct,
+        correctKey: "quiz.correctComplete",
+        incorrectKey: "quiz.incorrect",
+      });
+      setResultMessage(localizedMessage);
       setIsCorrect(result.correct);
 
 
@@ -337,7 +343,7 @@ export function QuizContent({
       // Lưu kết quả vào session store (kèm fingerprint để phát hiện content thay đổi)
       const fp = JSON.stringify(parsedProblems.map(p => p.type + '|' + (p.options?.map(o => `${o.text}|${o.html || ""}`).join(',') || '')));
       useBlockSubmitStore.getState().setResult(problemUsageKey, {
-        resultMessage: result.message,
+        resultMessage: localizedMessage,
         isCorrect: result.correct,
         answers: { ...answers },
         explanationHtml: explanationHtml || undefined,

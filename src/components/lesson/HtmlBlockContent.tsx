@@ -34,7 +34,19 @@ export function HtmlBlockContent({ htmlContent, uploadedImages = [], displayName
     const cleanHtml = DOMPurify.sanitize(htmlContent, {
       FORBID_TAGS: ["script", "style"],
       FORBID_ATTR: ["onerror", "onload", "onclick"],
-      ADD_ATTR: ["data-landa-image-mode"],
+      // These are emitted only by the authenticated course editor and are
+      // independently allow-listed by the API before reaching learners.
+      // DOMPurify remains the final browser-side boundary for legacy content.
+      ADD_TAGS: ["colgroup", "col"],
+      ADD_ATTR: [
+        "data-landa-image-mode",
+        "data-landa-cell-bg",
+        "data-landa-row-height",
+        "colwidth",
+        "colspan",
+        "rowspan",
+        "align",
+      ],
     });
 
     let imgs: { src: string; alt: string }[] = mediaImages;

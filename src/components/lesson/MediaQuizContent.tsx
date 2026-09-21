@@ -497,7 +497,7 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
                 }}
                 className="rounded-full bg-primary px-6 py-3 text-[14px] font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97]"
               >
-                Tiếp tục
+                {t("course.continue")}
               </button>
             )}
             {isFinalQuestionCompleted && (

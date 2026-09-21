@@ -22,6 +22,7 @@ export const en: TranslationSchema<typeof vi> = {
   },
   header: {
     openSidebar: "Open lesson navigation",
+    closeSidebar: "Hide lesson navigation",
     search: "Search...",
     closeSearch: "Close search",
     toggleDarkMode: "Toggle light and dark mode",
@@ -372,6 +373,11 @@ export const en: TranslationSchema<typeof vi> = {
     scrollToTop: "Back to top",
     close: "Close",
     pressPlayToStart: "Press play to start the lesson",
+  },
+  submitFeedback: {
+    partialAnswers: "You got {{correct}}/{{total}} answers correct. Please try again.",
+    partialWords: "You got {{correct}}/{{total}} words correct. Please try again.",
+    partialPositions: "You got {{correct}}/{{total}} positions correct. Please try again.",
   },
   crossword: {
     completionSuccess: "🎉 Correct! Excellent work!",

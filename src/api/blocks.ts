@@ -206,7 +206,7 @@ export async function getXBlockHtml(usageKey: string): Promise<string> {
     throw new Error('Block has no HTML content');
   } catch (error) {
     console.error("[getXBlockHtml] Failed:", error);
-    return '<p>Không thể tải nội dung</p>';
+    return '';
   }
 }
 
@@ -218,15 +218,11 @@ export async function submitProblemAnswer(
   usageKey: string,
   answers: Record<string, string | string[]>
 ): Promise<Record<string, unknown>> {
-  try {
-    const { data } = await apiClient.post(
-      `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
-      { answers }
-    );
-    return (data as any).data || data;
-  } catch {
-    return { success: false, message: 'Submit chưa được hỗ trợ' };
-  }
+  const { data } = await apiClient.post(
+    `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
+    { answers }
+  );
+  return (data as any).data || data;
 }
 
 /**
@@ -238,30 +234,22 @@ export async function submitMediaQuizAnswer(
   questionId: string,
   answer: string | string[]
 ): Promise<Record<string, unknown>> {
-  try {
-    const { data } = await apiClient.post(
-      `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
-      { question_id: questionId, answer }
-    );
-    return (data as any).data || data;
-  } catch {
-    return { status: 'error', message: 'Chưa thể gửi câu trả lời' };
-  }
+  const { data } = await apiClient.post(
+    `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
+    { question_id: questionId, answer }
+  );
+  return (data as any).data || data;
 }
 
 export async function submitImageChoiceQuizAnswer(
   usageKey: string,
   choiceId: string
 ): Promise<Record<string, unknown>> {
-  try {
-    const { data } = await apiClient.post(
-      `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
-      { choice_id: choiceId }
-    );
-    return (data as any).data || data;
-  } catch {
-    return { status: 'error', message: 'Chưa thể gửi câu trả lời' };
-  }
+  const { data } = await apiClient.post(
+    `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
+    { choice_id: choiceId }
+  );
+  return (data as any).data || data;
 }
 
 export async function submitScenarioChatAnswer(
@@ -269,30 +257,22 @@ export async function submitScenarioChatAnswer(
   roundId: string,
   choiceId: string
 ): Promise<Record<string, unknown>> {
-  try {
-    const { data } = await apiClient.post(
-      `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
-      { round_id: roundId, choice_id: choiceId }
-    );
-    return (data as any).data || data;
-  } catch {
-    return { status: 'error', message: 'Chưa thể gửi câu trả lời' };
-  }
+  const { data } = await apiClient.post(
+    `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
+    { round_id: roundId, choice_id: choiceId }
+  );
+  return (data as any).data || data;
 }
 
 export async function submitCrosswordAnswer(
   usageKey: string,
   answers: Record<string, string>
-): Promise<{ status: string; message: string; score?: number }> {
-  try {
-    const { data } = await apiClient.post(
-      `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
-      { answers }
-    );
-    return (data as any).data || data;
-  } catch {
-    return { status: 'error', message: 'Submit chưa được hỗ trợ' };
-  }
+): Promise<Record<string, unknown>> {
+  const { data } = await apiClient.post(
+    `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
+    { answers }
+  );
+  return (data as any).data || data;
 }
 
 /**
@@ -302,16 +282,12 @@ export async function submitCrosswordAnswer(
 export async function submitSortableAnswer(
   usageKey: string,
   answer: number[]
-): Promise<{ status: string; message: string; score?: number }> {
-  try {
-    const { data } = await apiClient.post(
-      `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
-      { answer }
-    );
-    return (data as any).data || data;
-  } catch {
-    return { status: 'error', message: 'Submit chưa được hỗ trợ' };
-  }
+): Promise<Record<string, unknown>> {
+  const { data } = await apiClient.post(
+    `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,
+    { answer }
+  );
+  return (data as any).data || data;
 }
 
 /**

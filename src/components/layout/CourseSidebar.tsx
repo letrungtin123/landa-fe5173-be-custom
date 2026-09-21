@@ -131,6 +131,7 @@ export function CourseSidebar() {
     setCurrentLesson,
     sidebarOpen,
     setSidebarOpen,
+    desktopCourseSidebarCollapsed,
   } = useAppStore();
 
   // Use real course structure from API
@@ -514,9 +515,18 @@ export function CourseSidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden w-[320px] min-w-[320px] max-w-[320px] shrink-0 overflow-hidden border-r border-border bg-sidebar lg:block">
-        {sidebarContent}
-      </aside>
+      <div
+        className={cn(
+          "hidden shrink-0 transition-[width] duration-200 ease-out lg:block",
+          desktopCourseSidebarCollapsed ? "w-0" : "w-[320px]"
+        )}
+      >
+        {!desktopCourseSidebarCollapsed && (
+          <aside className="h-full w-[320px] overflow-hidden border-r border-border bg-sidebar">
+            {sidebarContent}
+          </aside>
+        )}
+      </div>
 
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>

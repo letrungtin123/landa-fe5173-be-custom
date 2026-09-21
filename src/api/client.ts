@@ -8,6 +8,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { config } from "@/config/env";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useLocaleStore } from "@/stores/useLocaleStore";
 
 export const apiClient = axios.create({
   baseURL: config.apiBaseUrl,
@@ -76,6 +77,7 @@ apiClient.interceptors.response.use(
 apiClient.interceptors.request.use(
   (req) => {
     const { accessToken, tokenType, user } = useAuthStore.getState();
+    req.headers['X-UI-Locale'] = useLocaleStore.getState().locale;
 
     // Bearer JWT auth
     if (accessToken) {

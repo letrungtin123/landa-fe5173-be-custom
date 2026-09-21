@@ -70,7 +70,13 @@ export function Header() {
   const location = useLocation();
   const { colorMode, preset, toggleColorMode, setPreset } =
     useThemeStore();
-  const { toggleSidebar, sidebarOpen, setSidebarOpen } = useAppStore();
+  const {
+    toggleSidebar,
+    sidebarOpen,
+    setSidebarOpen,
+    desktopCourseSidebarCollapsed,
+    toggleDesktopCourseSidebar,
+  } = useAppStore();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
   const managedTenants = useAuthStore((s) => s.managedTenants);
@@ -161,21 +167,39 @@ export function Header() {
 
       <header className={cn("fixed top-0 left-0 right-0 z-50 w-full border-b border-border bg-background !mr-0", isSearchOpen && isSearchableRoute ? "hidden lg:block" : "")}>
       <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-2 px-4 sm:gap-4 md:px-6">
-        {/* Mobile menu toggle - ONLY SHOW IN COURSE ROUTE */}
+        {/* Course navigation toggles */}
         {isCourseRoute && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 lg:hidden"
-            onClick={toggleSidebar}
-            aria-label={t("header.openSidebar")}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 lg:hidden"
+              onClick={toggleSidebar}
+              aria-label={t("header.openSidebar")}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden shrink-0 lg:absolute lg:left-4 lg:top-1/2 lg:inline-flex lg:-translate-y-1/2"
+              onClick={toggleDesktopCourseSidebar}
+              aria-label={t(desktopCourseSidebarCollapsed ? "header.openSidebar" : "header.closeSidebar")}
+              title={t(desktopCourseSidebarCollapsed ? "header.openSidebar" : "header.closeSidebar")}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </>
         )}
 
         {/* Logo */}
-        <Link to="/dashboard" className="flex h-10 w-[112px] shrink-0 items-center -translate-x-[2px] sm:w-[168px] lg:w-[184px]">
+        <Link
+          to="/dashboard"
+          className={cn(
+            "flex h-10 w-[112px] shrink-0 items-center -translate-x-[2px] sm:w-[168px] lg:w-[184px]",
+            isCourseRoute && "lg:ml-12"
+          )}
+        >
           <img
             src={currentHeaderLogo}
             alt={t("common.logo")}

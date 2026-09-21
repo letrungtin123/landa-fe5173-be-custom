@@ -10,6 +10,7 @@ import { buildScenarioChatFingerprint, normalizeScenarioChatData, type ScenarioC
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
+import { getLocalizedSubmitFeedback } from "@/lib/submitFeedback";
 
 interface ScenarioChatContentProps {
   usageKey: string;
@@ -23,7 +24,7 @@ type ChatHistoryItem =
 
 type ScenarioChatSubmitResult = {
   status?: string;
-  message?: string;
+  feedback?: unknown;
   completed?: boolean;
   next_round_id?: string | null;
   response_message?: string;
@@ -474,7 +475,12 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
         side: "left",
         name: scenario.participant.name,
         description: data.response_description || scenario.participant.description,
-        text: data.response_message || data.message || (correct ? t("scenario.correct") : t("scenario.incorrect")),
+        text: data.response_message || getLocalizedSubmitFeedback(t, data, {
+          isCorrect: correct,
+          correctKey: "scenario.correct",
+          incorrectKey: "scenario.incorrect",
+          unavailableKey: "scenario.submitUnavailable",
+        }),
       });
 
       if (characterStatus) {

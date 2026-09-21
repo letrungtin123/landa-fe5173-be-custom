@@ -19,6 +19,7 @@ import {
 import { getYoutubeEmbedUrl } from "@/lib/youtube";
 import { LessonImageCarousel } from "./LessonImageCarousel";
 import { LessonUploadedVideo } from "./LessonUploadedVideo";
+import { getLocalizedSubmitFeedback } from "@/lib/submitFeedback";
 
 interface CrosswordWord {
   id: number;
@@ -113,7 +114,12 @@ export function CrosswordContent({ usageKey, problemMedia, onImageClick }: Cross
     mutationFn: (payload: Record<string, string>) =>
       submitCrosswordAnswer(usageKey, payload),
     onSuccess: (data) => {
-      let msg = data.message;
+      const msg = getLocalizedSubmitFeedback(t, data, {
+        isCorrect: data.status === "correct",
+        correctKey: "crossword.completionSuccess",
+        incorrectKey: "quiz.incorrect",
+        unavailableKey: "crossword.unavailable",
+      });
       if (data.status === "correct") {
         setIsCorrect(true);
         setResultMessage(msg);

@@ -18,6 +18,7 @@ import {
 import { getYoutubeEmbedUrl } from "@/lib/youtube";
 import { LessonImageCarousel } from "./LessonImageCarousel";
 import { LessonUploadedVideo } from "./LessonUploadedVideo";
+import { getLocalizedSubmitFeedback } from "@/lib/submitFeedback";
 
 import {
   DndContext,
@@ -220,7 +221,12 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
     onSuccess: (data) => {
       const correct = data.status === "correct" || data.status === "already_completed";
       if (correct) {
-        const successMessage = data.message || t("quiz.correctComplete");
+        const successMessage = getLocalizedSubmitFeedback(t, data, {
+          isCorrect: true,
+          correctKey: "quiz.correctComplete",
+          incorrectKey: "quiz.incorrect",
+          unavailableKey: "sortable.unavailable",
+        });
         setIsCorrect(true);
         setResultMessage(successMessage);
         // Lưu vào session store (kèm fingerprint)
@@ -239,7 +245,12 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
         // Refetch progress với retry để bắt kịp backend aggregation
         refetchProgressWithRetry(qc, courseId);
       } else {
-        const retryMessage = data.message || t("quiz.incorrect");
+        const retryMessage = getLocalizedSubmitFeedback(t, data, {
+          isCorrect: false,
+          correctKey: "quiz.correctComplete",
+          incorrectKey: "quiz.incorrect",
+          unavailableKey: "sortable.unavailable",
+        });
         setIsCorrect(false);
         setResultMessage(retryMessage);
       }

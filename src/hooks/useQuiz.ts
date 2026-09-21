@@ -9,7 +9,7 @@ interface QuizResult {
   success: boolean;
   correct: boolean;
   score: number;
-  message: string;
+  feedback?: unknown;
   contents?: string;
 }
 
@@ -40,9 +40,7 @@ export function parseQuizResult(
       success: true,
       correct,
       score: typeof response.score === 'number' ? response.score : (correct ? 100 : 0),
-      message: correct
-        ? `🎉 ${response.message || 'Chính xác! Tuyệt vời!'}`
-        : (response.message as string) || 'Chưa đúng. Hãy thử lại!',
+      feedback: response.feedback,
     };
   }
 
@@ -61,20 +59,15 @@ export function parseQuizResult(
     ? response.current_score
     : 0;
 
-  let message = "Đã nộp bài!";
-  if (correct) {
-    message = `🎉 Chính xác! Tuyệt vời!`;
-  } else if (isIncorrectStatus || success) {
-    message = "Chưa đúng. Hãy thử lại!";
-  } else {
-    message = "Có lỗi xảy ra khi nộp bài.";
-  }
-
   return { 
     success, 
     correct, 
     score, 
-    message,
+    feedback: correct
+      ? { code: "correct" }
+      : isIncorrectStatus || success
+        ? { code: "incorrect" }
+        : { code: "content_unavailable" },
     contents: response.contents ? String(response.contents) : undefined
   };
 }

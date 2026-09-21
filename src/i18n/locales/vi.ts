@@ -19,6 +19,7 @@ export const vi = {
   },
   header: {
     openSidebar: "Mở thanh điều hướng bài học",
+    closeSidebar: "Ẩn thanh điều hướng bài học",
     search: "Tìm kiếm...",
     closeSearch: "Đóng tìm kiếm",
     toggleDarkMode: "Chuyển chế độ sáng/tối",
@@ -369,6 +370,11 @@ export const vi = {
     scrollToTop: "Lên đầu trang",
     close: "Đóng",
     pressPlayToStart: "Nhấn play để bắt đầu bài học",
+  },
+  submitFeedback: {
+    partialAnswers: "Bạn đã trả lời đúng {{correct}}/{{total}} đáp án. Hãy thử lại.",
+    partialWords: "Bạn đã trả lời đúng {{correct}}/{{total}} từ. Hãy thử lại.",
+    partialPositions: "Bạn đã sắp xếp đúng {{correct}}/{{total}} vị trí. Hãy thử lại.",
   },
   crossword: {
     completionSuccess: "🎉 Chính xác! Tuyệt vời!",

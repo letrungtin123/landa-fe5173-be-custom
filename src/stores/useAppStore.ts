@@ -6,6 +6,7 @@ let modalReleaseTimer: ReturnType<typeof setTimeout> | null = null;
 
 interface AppState {
   sidebarOpen: boolean;
+  desktopCourseSidebarCollapsed: boolean;
   currentModuleId: string;
   currentLessonId: string;
   currentUnitIndex: number;
@@ -14,6 +15,7 @@ interface AppState {
   confirmJustClosed: boolean;
 
   toggleSidebar: () => void;
+  toggleDesktopCourseSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
   setCurrentLesson: (moduleId: string, lessonId: string) => void;
   setUnitIndex: (index: number) => void;
@@ -27,6 +29,7 @@ export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       sidebarOpen: false,
+      desktopCourseSidebarCollapsed: false,
       currentModuleId: "",
       currentLessonId: "",
       currentUnitIndex: 0,
@@ -35,6 +38,7 @@ export const useAppStore = create<AppState>()(
       confirmJustClosed: false,
 
       toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+      toggleDesktopCourseSidebar: () => set((s) => ({ desktopCourseSidebarCollapsed: !s.desktopCourseSidebarCollapsed })),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       setCurrentLesson: (moduleId, lessonId) =>
         set({ currentModuleId: moduleId, currentLessonId: lessonId, currentUnitIndex: 0 }),
