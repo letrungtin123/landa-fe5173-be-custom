@@ -72,27 +72,14 @@ function fallbackHandles(source: Node, target: Node) {
   };
 }
 
-function edgeLabel(edge: { label?: unknown; data?: unknown }): string {
-  const data = isRecord(edge.data) ? edge.data : {};
-  const value = edge.label ?? data.label;
-  return typeof value === 'string' ? value.trim().toLocaleLowerCase() : '';
-}
-
-function isFeedbackEdge(edge: DiagramEdgeInput, source: Node, target: Node): boolean {
+function isFeedbackEdge(edge: DiagramEdgeInput): boolean {
   const data = isRecord(edge.data) ? edge.data : {};
   const explicitRouting = edge.routing ?? data.routing;
-  if (explicitRouting === 'feedback') return true;
-  return Number(target.position.y ?? 0) < Number(source.position.y ?? 0) - 1;
-}
-
-function getFeedbackHandle(node: Node, role: 'source' | 'target'): string {
-  if (node.type === 'junction') return role === 'source' ? 'right-source' : 'left-target';
-  return 'right';
+  return explicitRouting === 'feedback';
 }
 
 function normalizeLessonDiagramEdges(edges: readonly unknown[], nodes: Node[]): Edge[] {
   const nodesById = new Map(nodes.map(node => [String(node.id), node]));
-  const acceptedByDirection = new Map<string, Edge>();
   const result: Edge[] = [];
 
   for (const rawEdge of Array.isArray(edges) ? edges : []) {
@@ -102,17 +89,7 @@ function normalizeLessonDiagramEdges(edges: readonly unknown[], nodes: Node[]): 
     const target = nodesById.get(String(edge?.target ?? ''));
     if (!edge || !source || !target || source.id === target.id) continue;
 
-    const direction = `${source.id}->${target.id}`;
-    if (acceptedByDirection.has(direction)) continue;
-
-    const reverse = acceptedByDirection.get(`${target.id}->${source.id}`);
-    if (reverse) {
-      const currentLabel = edgeLabel(edge);
-      const reverseLabel = edgeLabel(reverse);
-      if (!currentLabel || !reverseLabel || currentLabel === reverseLabel) continue;
-    }
-
-    const feedback = isFeedbackEdge(edge, source, target);
+    const feedback = isFeedbackEdge(edge);
     const fallback = fallbackHandles(source, target);
     const sourceHandle = baseHandle(edge.sourceHandle) ?? fallback.sourceHandle;
     const targetHandle = baseHandle(edge.targetHandle) ?? fallback.targetHandle;
@@ -123,8 +100,8 @@ function normalizeLessonDiagramEdges(edges: readonly unknown[], nodes: Node[]): 
       id: String(edge.id ?? `diagram-edge-${result.length + 1}`),
       source: source.id,
       target: target.id,
-      sourceHandle: feedback ? getFeedbackHandle(source, 'source') : (source.type === 'junction' ? `${baseHandle(sourceHandle) ?? 'right'}-source` : sourceHandle),
-      targetHandle: feedback ? getFeedbackHandle(target, 'target') : (target.type === 'junction' ? `${baseHandle(targetHandle) ?? 'top'}-target` : targetHandle),
+      sourceHandle: source.type === 'junction' ? `${baseHandle(sourceHandle) ?? 'right'}-source` : sourceHandle,
+      targetHandle: target.type === 'junction' ? `${baseHandle(targetHandle) ?? 'top'}-target` : targetHandle,
       type: 'orthogonal' as const,
       animated: false,
       data: {
@@ -141,7 +118,6 @@ function normalizeLessonDiagramEdges(edges: readonly unknown[], nodes: Node[]): 
         opacity: 0.9,
       }),
     };
-    acceptedByDirection.set(direction, normalized as Edge);
     result.push(normalized as Edge);
   }
 

@@ -40,6 +40,13 @@ export default function CustomShapeNode({ data, selected }: NodeProps) {
     >
       {/* Top Handle */}
       <Handle
+        type="target"
+        position={Position.Top}
+        id="top"
+        className="!w-2 !h-2 !opacity-100 !bg-transparent !border-none !rounded-none z-10"
+        style={{ top: 0, transform: 'translate(-50%, -50%)' }}
+      />
+      <Handle
         type="source"
         position={Position.Top}
         id="top"
@@ -48,6 +55,13 @@ export default function CustomShapeNode({ data, selected }: NodeProps) {
       />
 
       {/* Left Handle */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="left"
+        className="!w-2 !h-2 !opacity-100 !bg-transparent !border-none !rounded-none z-10"
+        style={{ left: 0, transform: 'translate(-50%, -50%)' }}
+      />
       <Handle
         type="source"
         position={Position.Left}
@@ -63,6 +77,13 @@ export default function CustomShapeNode({ data, selected }: NodeProps) {
 
       {/* Bottom Handle */}
       <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom"
+        className="!w-2 !h-2 !opacity-100 !bg-transparent !border-none !rounded-none z-10"
+        style={{ bottom: 0, transform: 'translate(-50%, 50%)' }}
+      />
+      <Handle
         type="source"
         position={Position.Bottom}
         id="bottom"
@@ -71,6 +92,13 @@ export default function CustomShapeNode({ data, selected }: NodeProps) {
       />
 
       {/* Right Handle */}
+      <Handle
+        type="target"
+        position={Position.Right}
+        id="right"
+        className="!w-2 !h-2 !opacity-100 !bg-transparent !border-none !rounded-none z-10"
+        style={{ right: 0, transform: 'translate(50%, -50%)' }}
+      />
       <Handle
         type="source"
         position={Position.Right}

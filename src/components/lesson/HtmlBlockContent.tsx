@@ -34,6 +34,7 @@ export function HtmlBlockContent({ htmlContent, uploadedImages = [], displayName
     const cleanHtml = DOMPurify.sanitize(htmlContent, {
       FORBID_TAGS: ["script", "style"],
       FORBID_ATTR: ["onerror", "onload", "onclick"],
+      ADD_ATTR: ["data-landa-image-mode"],
     });
 
     let imgs: { src: string; alt: string }[] = mediaImages;
@@ -68,7 +69,13 @@ export function HtmlBlockContent({ htmlContent, uploadedImages = [], displayName
 
       const validImgEls = Array.from(doc.querySelectorAll("img"));
       hasImg = hasImg || validImgEls.length > 0;
-      const uploadedImgEls = validImgEls.filter((img) => isUploadedStorageImageSrc(img.getAttribute("src")));
+      // Files pasted into the rich-text body deliberately stay at their
+      // authored location. Only legacy/unmarked uploaded images belong in the
+      // separate carousel.
+      const uploadedImgEls = validImgEls.filter((img) => (
+        isUploadedStorageImageSrc(img.getAttribute("src"))
+        && img.getAttribute("data-landa-image-mode") !== "inline"
+      ));
 
       if (uploadedImgEls.length >= 2) {
         imgs = [
