@@ -158,7 +158,7 @@ export default function DiagramContent({ data, onComplete }: DiagramContentProps
 
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
     const targetId = (node.data as { target_diagram_id?: unknown })?.target_diagram_id;
-    if (targetId && diagrams.some((d) => d.id === targetId)) {
+    if (typeof targetId === 'string' && diagrams.some((d) => d.id === targetId)) {
       setHistory((prev) => [...prev, targetId]);
     }
   };
@@ -237,7 +237,9 @@ function DiagramRenderer({
 
   const containerRef = React.useRef<HTMLDivElement>(null);
   const measureRef = React.useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isNativeFullscreen, setIsNativeFullscreen] = useState(false);
+  const [isFallbackFullscreen, setIsFallbackFullscreen] = useState(false);
+  const isFullscreen = isNativeFullscreen || isFallbackFullscreen;
 
   // Measure actual pixel width of the wrapper div using ResizeObserver
   // This gives ReactFlow an explicit pixel width instead of relying on CSS % 
@@ -266,28 +268,64 @@ function DiagramRenderer({
 
   React.useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      setIsNativeFullscreen(document.fullscreenElement === containerRef.current);
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  React.useEffect(() => {
+    if (!isFallbackFullscreen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsFallbackFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFallbackFullscreen]);
+
   const toggleFullscreen = React.useCallback(() => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`);
-      });
-    } else {
-      document.exitFullscreen();
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+      return;
     }
-  }, []);
+
+    if (isFallbackFullscreen) {
+      setIsFallbackFullscreen(false);
+      return;
+    }
+
+    const container = containerRef.current;
+    if (!container || typeof container.requestFullscreen !== 'function') {
+      setIsFallbackFullscreen(true);
+      return;
+    }
+
+    // Mobile browsers may expose requestFullscreen but reject it for a div.
+    void container.requestFullscreen().catch(() => {
+      setIsFallbackFullscreen(true);
+    });
+  }, [isFallbackFullscreen]);
 
   // Explicit pixel dimensions for ReactFlow — avoids CSS % inheritance issues
   const flowWidth = isFullscreen ? '100%' : (measuredWidth > 0 ? `${measuredWidth}px` : '100%');
-  const flowHeight = isFullscreen ? 'calc(100vh - 52px)' : '600px';
+  const flowHeight = isFullscreen ? 'calc(100dvh - 52px)' : '600px';
 
   return (
-    <div ref={containerRef} className="w-full min-h-[500px] flex flex-col border border-border rounded-xl overflow-hidden bg-background">
+    <div
+      ref={containerRef}
+      className={`w-full min-h-[500px] flex flex-col border border-border rounded-xl overflow-hidden bg-background${
+        isFallbackFullscreen ? ' fixed inset-0 z-[9999] h-[100dvh] min-h-0 rounded-none border-0' : ''
+      }`}
+    >
       <div className="flex items-center justify-between p-3 border-b border-border bg-muted/20">
         <div className="flex items-center gap-3">
           {history.length > 1 && (
@@ -307,7 +345,7 @@ function DiagramRenderer({
         </Button>
       </div>
       {/* Measure wrapper — always full width via CSS, provides pixel measurement */}
-      <div ref={measureRef} className="w-full flex-1 relative" style={{ minHeight: '600px' }}>
+      <div ref={measureRef} className="w-full flex-1 relative" style={{ minHeight: isFullscreen ? 0 : '600px' }}>
         {/* Only render ReactFlow when we have a valid measured width */}
         {measuredWidth > 0 && (
           <div style={{ width: flowWidth, height: flowHeight, position: 'absolute', top: 0, left: 0 }}>
@@ -323,7 +361,6 @@ function DiagramRenderer({
               edgeTypes={edgeTypes}
               connectionMode={ConnectionMode.Loose}
               onNodeClick={onNodeClick}
-              onPaneClick={toggleFullscreen}
               fitView
               fitViewOptions={{ padding: 0.15 }}
               nodesDraggable={false}

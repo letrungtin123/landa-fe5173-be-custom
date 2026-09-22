@@ -36,6 +36,10 @@ interface VideoPlayerProps {
   onDemoGuidePlay?: () => void;
 }
 
+type WebkitVideoElement = HTMLVideoElement & {
+  webkitEnterFullscreen?: () => void;
+};
+
 /**
  * Kiểm tra URL có phải YouTube không và trích xuất video ID.
  */
@@ -134,11 +138,32 @@ export function VideoPlayer({
 
   const toggleFullscreen = () => {
     const el = containerRef.current;
-    if (!el) return;
+    const video = videoRef.current as WebkitVideoElement | null;
+    if (!el || !video) return;
     if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      el.requestFullscreen();
+      void document.exitFullscreen();
+      return;
+    }
+
+    // iOS Safari only exposes fullscreen for the media element itself.
+    if (typeof video.webkitEnterFullscreen === "function") {
+      video.webkitEnterFullscreen();
+      return;
+    }
+
+    // Keep the custom controls on browsers that support fullscreen for a div.
+    if (typeof el.requestFullscreen === "function") {
+      void el.requestFullscreen().catch(() => {
+        // Some mobile browsers expose the API but reject it for a container.
+        if (typeof video.requestFullscreen === "function") {
+          void video.requestFullscreen().catch(() => undefined);
+        }
+      });
+      return;
+    }
+
+    if (typeof video.requestFullscreen === "function") {
+      void video.requestFullscreen().catch(() => undefined);
     }
   };
 
