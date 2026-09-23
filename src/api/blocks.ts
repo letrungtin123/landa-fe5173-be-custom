@@ -80,7 +80,11 @@ function buildBlockStudentViewData(
         score: 0,
         words: words.map((w: any) => ({
           ...w,
-          length: w.length || (w.answer ? w.answer.length : 0),
+          // `answer` is authoritative. Older dashboard data may retain a
+          // stale `length`, which would otherwise render too few input cells.
+          length: typeof w?.answer === 'string' && w.answer.length > 0
+            ? w.answer.length
+            : (Number.isInteger(w?.length) && w.length > 0 ? w.length : 0),
         })),
         keyword_coordinates: cd?.keyword_coordinates || meta?.keyword_coordinates || [],
         grid_size: cd?.grid_size || meta?.grid_size || 10,

@@ -74,7 +74,11 @@ function buildStudentViewData(cb: CourseBlock): Record<string, unknown> {
         score: 0,
         words: ((cd.words as any[]) || []).map((w: any) => ({
           ...w,
-          length: w.length || (w.answer ? w.answer.length : 0),
+          // The answer is the single source of truth for the number of cells.
+          // Some legacy payloads contain a stale or missing `length` value.
+          length: typeof w?.answer === 'string' && w.answer.length > 0
+            ? w.answer.length
+            : (Number.isInteger(w?.length) && w.length > 0 ? w.length : 0),
         })),
         keyword_coordinates: cd.keyword_coordinates || [],
         problem_media: normalizeProblemMedia(meta?.problem_media),
