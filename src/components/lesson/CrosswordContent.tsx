@@ -189,7 +189,9 @@ export function CrosswordContent({ usageKey, problemMedia, onImageClick }: Cross
 
   // Xử lý gom đáp án
   const handleCellChange = (wordId: number, charIndex: number, value: string) => {
-    const char = value.toUpperCase().replace(/[^A-ZĐ]/g, "");
+    // AI-authored answers use A-Z/0-9 (e.g. ERA50); retain legacy Đ too.
+    // Grading remains server-owned and exact; this only permits valid input.
+    const char = value.toUpperCase().replace(/[^A-Z0-9Đ]/g, "");
     setAnswers((prev) => {
       let len = 0;
       const foundWord = words.find(w => w.id === wordId);

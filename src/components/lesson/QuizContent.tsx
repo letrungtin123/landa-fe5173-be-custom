@@ -11,7 +11,7 @@ import DOMPurify from "dompurify";
 import { Loader2, CheckCircle2, XCircle, ChevronDown, Info, Lightbulb } from "lucide-react";
 import { getXBlockHtml, fetchExplanation } from "@/api/blocks";
 import { useSubmitQuiz, parseQuizResult } from "@/hooks/useQuiz";
-import { parseProblemHtml } from "@/transformers/problemParser";
+import { parseProblemHtml, problemContentFingerprint } from "@/transformers/problemParser";
 import type { ParsedProblem, ProblemOption } from "@/transformers/problemParser";
 import { useParams } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -259,13 +259,14 @@ export function QuizContent({
     const problems = parseProblemHtml(quizHtml);
 
     // Tạo fingerprint từ nội dung quiz hiện tại
-    const currentFingerprint = JSON.stringify(problems.map(p => p.type + '|' + (p.options?.map(o => `${o.text}|${o.html || ""}`).join(',') || '')));
+    const currentFingerprint = problemContentFingerprint(problems);
 
     // Kiểm tra cache với fingerprint
     const cached = useBlockSubmitStore.getState().getResult(problemUsageKey);
     if (cached && cached.parsedProblems && cached.parsedProblems.length > 0 && cached.contentFingerprint === currentFingerprint) {
       // Content không đổi → khôi phục từ cache
-      setParsedProblems(cached.parsedProblems as ParsedProblem[]);
+      // Published content is presentation authority, not the session copy.
+      setParsedProblems(problems);
       setResultMessage(cached.resultMessage);
       setIsCorrect(cached.isCorrect);
       if (cached.answers) setAnswers(cached.answers);
@@ -341,7 +342,7 @@ export function QuizContent({
       }
 
       // Lưu kết quả vào session store (kèm fingerprint để phát hiện content thay đổi)
-      const fp = JSON.stringify(parsedProblems.map(p => p.type + '|' + (p.options?.map(o => `${o.text}|${o.html || ""}`).join(',') || '')));
+      const fp = problemContentFingerprint(parsedProblems);
       useBlockSubmitStore.getState().setResult(problemUsageKey, {
         resultMessage: localizedMessage,
         isCorrect: result.correct,
@@ -368,7 +369,7 @@ export function QuizContent({
       setResultMessage(t("quiz.submitError"));
       setIsCorrect(false);
     }
-  }, [answers, problemUsageKey, submit, courseId, user?.username, t]);
+  }, [answers, problemUsageKey, submit, courseId, user?.username, t, parsedProblems, qc]);
 
   // Toggle hint visibility — dùng hints từ OLX parser (prob.hintHtml)
   const handleToggleHint = useCallback(() => {

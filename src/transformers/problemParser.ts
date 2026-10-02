@@ -26,6 +26,14 @@ export interface ParsedProblem {
   hasHints: boolean; // true nếu quiz có cấu hình demand hint trong Studio
 }
 
+/** Versioned presentation identity; never used as grading authority. */
+export function problemContentFingerprint(problems: readonly ParsedProblem[]): string {
+  return JSON.stringify({ version: 2, problems: problems.map(problem => ({
+    id: problem.id, type: problem.type, questionHtml: problem.questionHtml,
+    options: problem.options?.map(option => ({ id: option.id, text: option.text, html: option.html || "" })) || [],
+  })) });
+}
+
 const TEXT_BLOCK_BREAK_TAGS = new Set([
   "address",
   "blockquote",
@@ -500,19 +508,36 @@ function parseOlxProblem(xml: string): ParsedProblem[] {
   const responseEls = problemEl.querySelectorAll(responseSelectors.join(","));
   if (responseEls.length === 0) return [];
 
-  // Question text = all content before first response element
-  let questionHtml = "";
-  const allChildren = Array.from(problemEl.childNodes);
-  for (const child of allChildren) {
-    if (child.nodeType === Node.ELEMENT_NODE) {
-      const el = child as Element;
-      const tag = el.tagName.toLowerCase();
-      if (responseSelectors.includes(tag) || tag === "solution" || tag === "demandhint") break;
-      questionHtml += el.outerHTML;
-    } else if (child.nodeType === Node.TEXT_NODE && child.textContent?.trim()) {
-      questionHtml += child.textContent.trim();
+  // OLX stores a stem either immediately before its response or inside it
+  // (AI ID/editor defaults use <response><label>...</label><input.../>).
+  // Resolve per response; a shared first-question string loses later stems.
+  const inputSelectors = ["choicegroup", "checkboxgroup", "responseparam", "formulaequationinput",
+    "textline", "additional_answer", "optioninput", "solution", "demandhint"];
+  const boundarySelector = [...responseSelectors, ...inputSelectors].join(",");
+  const isBoundary = (node: Node) => node.nodeType === Node.ELEMENT_NODE
+    && ((node as Element).matches(boundarySelector) || !!(node as Element).querySelector(boundarySelector));
+  const questionForResponse = (response: Element): string => {
+    const nodes: Node[] = [];
+    let previous = response.previousSibling;
+    while (previous && !isBoundary(previous)) {
+      nodes.unshift(previous);
+      previous = previous.previousSibling;
     }
-  }
+    for (const child of Array.from(response.childNodes)) {
+      if (isBoundary(child)) break;
+      nodes.push(child);
+    }
+    // Serialize text nodes through the DOM too: decoded '<'/'&' in a stem
+    // must remain text, not become markup at the rendering boundary.
+    const container = doc.createElement("div");
+    for (const node of nodes) {
+      if (node.nodeType === Node.ELEMENT_NODE || node.nodeType === Node.TEXT_NODE) {
+        container.appendChild(node.cloneNode(true));
+      }
+    }
+    container.querySelectorAll("script, style").forEach(node => node.remove());
+    return container.innerHTML.trim();
+  };
 
   // Extract solution/explanation
   let explanationHtml = "";
@@ -551,7 +576,7 @@ function parseOlxProblem(xml: string): ParsedProblem[] {
     problems.push({
       id: `olx_mcq_${problemIndex++}`,
       type: "single-select",
-      questionHtml: questionHtml || "Chọn đáp án đúng:",
+      questionHtml: questionForResponse(resp) || "Chọn đáp án đúng:",
       options,
       explanationHtml: explanationHtml || undefined,
       hintHtml: hintHtml || undefined,
@@ -576,7 +601,7 @@ function parseOlxProblem(xml: string): ParsedProblem[] {
     problems.push({
       id: `olx_multi_${problemIndex++}`,
       type: "multi-select",
-      questionHtml: questionHtml || "Chọn tất cả đáp án đúng:",
+      questionHtml: questionForResponse(resp) || "Chọn tất cả đáp án đúng:",
       options,
       explanationHtml: explanationHtml || undefined,
       hintHtml: hintHtml || undefined,
@@ -615,7 +640,7 @@ function parseOlxProblem(xml: string): ParsedProblem[] {
       problems.push({
         id: `olx_dropdown_${problemIndex++}`,
         type: "dropdown",
-        questionHtml: questionHtml || "Chọn đáp án từ danh sách:",
+        questionHtml: questionForResponse(resp) || "Chọn đáp án từ danh sách:",
         options,
         explanationHtml: explanationHtml || undefined,
         hintHtml: hintHtml || undefined,
@@ -627,7 +652,7 @@ function parseOlxProblem(xml: string): ParsedProblem[] {
     problems.push({
       id: `olx_dropdown_${problemIndex++}`,
       type: "dropdown",
-      questionHtml: questionHtml || "Chọn đáp án từ danh sách:",
+      questionHtml: questionForResponse(resp) || "Chọn đáp án từ danh sách:",
       options,
       explanationHtml: explanationHtml || undefined,
       hintHtml: hintHtml || undefined,
@@ -642,7 +667,7 @@ function parseOlxProblem(xml: string): ParsedProblem[] {
     problems.push({
       id: `olx_text_${problemIndex++}`,
       type: "text-input",
-      questionHtml: questionHtml || "Nhập câu trả lời:",
+      questionHtml: questionForResponse(resp) || "Nhập câu trả lời:",
       explanationHtml: explanationHtml || undefined,
       hintHtml: hintHtml || undefined,
       correctAnswerHtml: correct || undefined,
@@ -656,7 +681,7 @@ function parseOlxProblem(xml: string): ParsedProblem[] {
     problems.push({
       id: `olx_num_${problemIndex++}`,
       type: "text-input",
-      questionHtml: questionHtml || "Nhập đáp án số:",
+      questionHtml: questionForResponse(resp) || "Nhập đáp án số:",
       explanationHtml: explanationHtml || undefined,
       hintHtml: hintHtml || undefined,
       correctAnswerHtml: correct || undefined,
