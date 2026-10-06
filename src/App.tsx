@@ -14,15 +14,12 @@ import { CourseLayout } from "@/components/layout/CourseLayout";
 import { GlobalBadgeWatcher } from "@/components/badges/GlobalBadgeWatcher";
 import { StudyTimeTracker } from "@/components/global/StudyTimeTracker";
 import { WelcomeInitModal } from "@/components/global/WelcomeInitModal";
-import { createLoginSessionId, useAuthStore } from "@/stores/useAuthStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useTranslation } from "react-i18next";
 
-import { config } from "@/config/env";
 import ChatWidget from "@/components/chat-widget/chat-widget";
 import { exchangeOttApi } from "@/api/auth";
-import { avatarUrl } from "@/utils/storageUrl";
-import { normalizeRoleLabels } from "@/utils/roleLabels";
 
 // ── OTT Handler: Check trước khi React mount ──
 // Nếu URL có ?ott= (từ Admin Dashboard → FE Learner SSO),
@@ -39,41 +36,7 @@ let pendingOttExchange: Promise<void> | null = null;
   window.history.replaceState(null, '', cleanUrl);
 
   pendingOttExchange = exchangeOttApi(ott)
-    .then((result) => {
-      let activeTenantId = result.user.tenant_id;
-      let activeTenantName = result.user.tenant_name;
-      if (!activeTenantId && result.managed_tenants?.length > 0) {
-        activeTenantId = result.managed_tenants[0].id;
-        activeTenantName = result.managed_tenants[0].name;
-      }
-
-      useAuthStore.setState({
-        isAuthenticated: true,
-        accessToken: result.access_token,
-        refreshToken: result.refresh_token,
-        tokenType: "Bearer",
-        tokenExpiresAt: Date.now() + result.expires_in * 1000,
-        loginSessionId: createLoginSessionId(),
-        sessionMode: result.session_mode || "normal",
-        user: {
-          id: result.user.id,
-          username: result.user.username,
-          email: result.user.email,
-          fullName: result.user.full_name,
-          phone: result.user.phone,
-          avatar: avatarUrl(result.user.avatar_url),
-          role: result.user.role,
-          tenantId: activeTenantId,
-          tenantName: activeTenantName,
-        },
-        permissions: result.permissions,
-        tenantModules: result.tenant_modules,
-        managedTenants: result.managed_tenants,
-        roleLabels: normalizeRoleLabels(result.role_labels),
-      });
-
-      useAuthStore.getState().scheduleTokenRefresh();
-    })
+    .then((result) => useAuthStore.getState().setSession(result))
     .catch(() => {
       // OTT invalid/expired → ignore, user sẽ thấy login page
     })
@@ -106,6 +69,9 @@ const AssignmentDetailPage = React.lazy(() =>
 );
 const BadgesPage = React.lazy(() =>
   import("@/pages/BadgesPage").then(m => ({ default: m.BadgesPage }))
+);
+const NewsPage = React.lazy(() =>
+  import("@/pages/NewsPage").then(m => ({ default: m.NewsPage }))
 );
 const ProfilePage = React.lazy(() =>
   import("@/pages/ProfilePage").then(m => ({ default: m.ProfilePage }))
@@ -177,9 +143,50 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 function BadgeRoute() {
   const enabled = useAuthStore((state) => state.tenantModules.includes("badge_management"));
+  const ready = useAuthStore((state) => state.tenantContextReady);
   const sessionMode = useAuthStore((state) => state.sessionMode);
+  if (!ready) return <PageLoader />;
   return enabled && sessionMode !== "demo_iframe"
     ? <BadgesPage />
+    : <Navigate to="/dashboard" replace />;
+}
+
+function NewsRouteSkeleton() {
+  return (
+    <main
+      aria-busy="true"
+      className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-primary/[0.045] via-background to-background"
+    >
+      <section className="border-b border-border/60">
+        <div className="mx-auto max-w-[1240px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+          <div className="h-10 w-48 animate-pulse rounded-xl bg-muted sm:w-56" />
+          <div className="mt-3 h-5 w-full max-w-2xl animate-pulse rounded-lg bg-muted" />
+          <div className="mt-7 h-12 w-full max-w-xl animate-pulse rounded-2xl bg-muted" />
+        </div>
+      </section>
+      <section className="mx-auto grid max-w-[1240px] gap-6 px-4 py-8 sm:px-6 sm:py-10 md:grid-cols-2 lg:px-8 xl:grid-cols-3">
+        {Array.from({ length: 6 }, (_, index) => (
+          <div key={index} className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm">
+            <div className="aspect-[16/8] animate-pulse bg-muted" />
+            <div className="space-y-3 p-5 sm:p-6">
+              <div className="h-4 w-28 animate-pulse rounded bg-muted" />
+              <div className="h-7 w-4/5 animate-pulse rounded bg-muted" />
+              <div className="h-4 w-full animate-pulse rounded bg-muted" />
+              <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+            </div>
+          </div>
+        ))}
+      </section>
+    </main>
+  );
+}
+
+function NewsRoute() {
+  const enabled = useAuthStore((state) => state.tenantModules.includes("news"));
+  const ready = useAuthStore((state) => state.tenantContextReady);
+  if (!ready) return <NewsRouteSkeleton />;
+  return enabled
+    ? <Suspense fallback={<NewsRouteSkeleton />}><NewsPage /></Suspense>
     : <Navigate to="/dashboard" replace />;
 }
 
@@ -233,6 +240,8 @@ function App() {
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/explore" element={<ExplorePage />} />
                   <Route path="/library" element={<LibraryPage />} />
+                  <Route path="/news" element={<NewsRoute />} />
+                  <Route path="/news/:postId" element={<NewsRoute />} />
                   <Route path="/badges" element={<BadgeRoute />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/courses" element={<CoursesPage />} />

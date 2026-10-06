@@ -155,6 +155,7 @@ interface AuthState {
   user: AuthUser | null;
   permissions: PermissionsMap;
   tenantModules: string[];
+  tenantContextReady: boolean;
   managedTenants: TenantBasic[];
   roleLabels: RoleLabelMap;
 
@@ -177,6 +178,8 @@ interface AuthState {
   updateUser: (updates: Partial<AuthUser>) => void;
   setRoleLabels: (labels: RoleLabelMap) => void;
   refreshRoleLabels: () => Promise<void>;
+  /** Đồng bộ permissions/modules/labels theo tenant context hiện tại. */
+  refreshTenantContext: () => Promise<void>;
 
   /** Chuyển tenant (superuser/superadmin). */
   switchTenant: (tenantId: string) => Promise<void>;
@@ -217,6 +220,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       permissions: {},
       tenantModules: [],
+      tenantContextReady: false,
       managedTenants: [],
       roleLabels: {},
 
@@ -253,10 +257,12 @@ export const useAuthStore = create<AuthState>()(
           },
           permissions: result.permissions,
           tenantModules: result.tenant_modules,
+          tenantContextReady: false,
           managedTenants: result.managed_tenants,
           roleLabels: normalizeRoleLabels(result.role_labels),
         });
 
+        await get().refreshTenantContext();
         // Lên lịch tự động refresh
         get().scheduleTokenRefresh();
       },
@@ -291,10 +297,12 @@ export const useAuthStore = create<AuthState>()(
           },
           permissions: result.permissions,
           tenantModules: result.tenant_modules,
+          tenantContextReady: false,
           managedTenants: result.managed_tenants,
           roleLabels: normalizeRoleLabels(result.role_labels),
         });
 
+        await get().refreshTenantContext();
         get().scheduleTokenRefresh();
       },
 
@@ -314,6 +322,7 @@ export const useAuthStore = create<AuthState>()(
           sessionMode: "normal",
           permissions: {},
           tenantModules: [],
+          tenantContextReady: false,
           managedTenants: [],
           roleLabels: {},
         });
@@ -394,6 +403,7 @@ export const useAuthStore = create<AuthState>()(
               },
               permissions: result.permissions,
               tenantModules: result.tenant_modules,
+              tenantContextReady: true,
               managedTenants: result.managed_tenants,
               roleLabels: normalizeRoleLabels(result.role_labels),
             });
@@ -453,6 +463,35 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
+      refreshTenantContext: async () => {
+        set({ tenantContextReady: false });
+        try {
+          const result = await getUserMe();
+          const currentUser = get().user;
+          if (!currentUser) {
+            set({ tenantContextReady: true });
+            return;
+          }
+          const selectedTenant = result.managed_tenants.find((tenant) => tenant.id === currentUser.tenantId);
+          set({
+            permissions: result.permissions,
+            tenantModules: result.tenant_modules,
+            tenantContextReady: true,
+            managedTenants: result.managed_tenants,
+            roleLabels: normalizeRoleLabels(result.role_labels),
+            sessionMode: result.session_mode || get().sessionMode,
+            user: {
+              ...currentUser,
+              tenantName: selectedTenant?.name || currentUser.tenantName,
+            },
+          });
+        } catch {
+          // Feature navigation is deny-by-default when tenant entitlements
+          // cannot be refreshed. Backend authorization remains authoritative.
+          set({ tenantModules: [], tenantContextReady: true });
+        }
+      },
+
       switchTenant: async (tenantId: string) => {
         const { user, managedTenants } = get();
         if (!user) return;
@@ -468,10 +507,13 @@ export const useAuthStore = create<AuthState>()(
             tenantId: tenant.id,
             tenantName: tenant.name,
           },
+          tenantModules: [],
+          tenantContextReady: false,
         });
 
-        // Invalidate tất cả queries để refetch data theo tenant mới
-        await get().refreshRoleLabels();
+        // Đồng bộ entitlement trước khi refetch data của tenant mới để Header,
+        // BottomNav và route guards không render module từ tenant trước đó.
+        await get().refreshTenantContext();
         try { queryClient.invalidateQueries(); } catch { /* ignore */ }
       },
     }),
@@ -500,6 +542,7 @@ export const useAuthStore = create<AuthState>()(
                 if (!success) state.logout();
               });
             } else {
+              void state.refreshTenantContext();
               state.scheduleTokenRefresh();
             }
           }

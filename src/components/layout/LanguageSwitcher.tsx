@@ -37,10 +37,10 @@ export function LanguageSwitcher({ className, variant = "header" }: LanguageSwit
           aria-label={t("language.change")}
           title={t("language.current", { language: t(`language.${locale === "vi" ? "vietnamese" : "english"}`) })}
           className={cn(
-            "h-9 gap-1.5 rounded-full border px-2.5 text-[11px] font-extrabold tracking-[0.08em] shadow-sm transition-all hover:-translate-y-px hover:shadow-md focus-visible:ring-2",
+            "h-9 gap-1.5 rounded-full border px-2.5 text-[11px] font-extrabold tracking-[0.08em] shadow-sm focus-visible:ring-2",
             isPublic
-              ? "border-slate-200 bg-white/90 text-slate-700 backdrop-blur hover:bg-white"
-              : "border-border/70 bg-background/80 text-foreground hover:bg-muted",
+              ? "border-slate-200 bg-white/90 text-slate-700 backdrop-blur transition-all hover:-translate-y-px hover:bg-white hover:shadow-md"
+              : "border-border/70 bg-background/80 text-foreground hover:bg-background/80 hover:text-foreground hover:shadow-sm",
             className,
           )}
         >

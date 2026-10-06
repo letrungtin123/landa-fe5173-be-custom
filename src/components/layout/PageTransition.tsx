@@ -1,4 +1,4 @@
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { useLocation } from "react-router-dom";
 
 const pageVariants: Variants = {
@@ -14,13 +14,6 @@ const pageVariants: Variants = {
       ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
     },
   },
-  exit: {
-    opacity: 0,
-    transition: {
-      duration: 0.1,
-      ease: "easeIn" as const,
-    },
-  },
 };
 
 export function PageTransition({ children, animationKey }: { children: React.ReactNode, animationKey?: string }) {
@@ -28,17 +21,14 @@ export function PageTransition({ children, animationKey }: { children: React.Rea
   const key = animationKey || location.pathname;
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={key}
-        variants={pageVariants}
-        initial="initial"
-        animate="animate"
-        exit="exit"
-        className="flex flex-col min-h-full w-full"
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <motion.div
+      key={key}
+      variants={pageVariants}
+      initial="initial"
+      animate="animate"
+      className="flex min-h-full w-full flex-col"
+    >
+      {children}
+    </motion.div>
   );
 }

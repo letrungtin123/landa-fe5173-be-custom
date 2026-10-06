@@ -15,7 +15,8 @@ export function MainLayout() {
   const isDemoIframe = sessionMode === "demo_iframe";
   const [demoFlowLockSources, setDemoFlowLockSources] = useState<Set<string>>(new Set());
   const isCourseRoute = location.pathname.startsWith("/courses");
-  const routeKey = isCourseRoute ? "courses" : location.pathname;
+  const isNewsRoute = location.pathname.startsWith("/news");
+  const routeKey = isCourseRoute ? "courses" : isNewsRoute ? "news" : location.pathname;
   const demoFlowLocked = isDemoIframe && demoFlowLockSources.size > 0;
 
   useEffect(() => {

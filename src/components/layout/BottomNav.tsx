@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useTranslation } from "react-i18next";
+import { Newspaper } from "lucide-react";
 
 import dashboardIcon from "@/assets/MobileRouteIcon/dashboard-icon.png";
 import exploreIcon from "@/assets/MobileRouteIcon/explore-icon.png";
@@ -12,6 +13,7 @@ const NAV_ITEMS = [
   { labelKey: "nav.dashboard", path: "/dashboard", iconSrc: dashboardIcon },
   { labelKey: "nav.courses", path: "/explore", iconSrc: exploreIcon },
   { labelKey: "nav.library", path: "/library", iconSrc: libraryIcon },
+  { labelKey: "nav.news", path: "/news", icon: Newspaper },
   { labelKey: "nav.badges", path: "/badges", iconSrc: badgeIcon },
 ];
 
@@ -19,9 +21,14 @@ export function BottomNav() {
   const { t } = useTranslation();
   const location = useLocation();
   const tenantModules = useAuthStore((state) => state.tenantModules);
+  const tenantContextReady = useAuthStore((state) => state.tenantContextReady);
   const sessionMode = useAuthStore((state) => state.sessionMode);
   const badgeManagementEnabled = tenantModules.includes("badge_management") && sessionMode !== "demo_iframe";
-  const visibleItems = NAV_ITEMS.filter((item) => item.path !== "/badges" || badgeManagementEnabled);
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if (item.path === "/badges") return badgeManagementEnabled;
+    if (item.path === "/news") return tenantContextReady && tenantModules.includes("news");
+    return true;
+  });
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 bg-background/95 backdrop-blur border-t border-border lg:hidden px-2 pb-safe">
@@ -39,14 +46,21 @@ export function BottomNav() {
             {isActive && (
               <span className="absolute inset-x-4 top-0 h-0.5 bg-accent" />
             )}
-            <img
-              src={item.iconSrc}
-              alt={t(item.labelKey)}
-              className={cn(
-                "h-5 w-5 object-contain transition-opacity",
-                isActive ? "opacity-100" : "opacity-50"
-              )}
-            />
+            {item.icon ? (
+              <item.icon
+                aria-hidden="true"
+                className={cn("h-5 w-5 transition-opacity", isActive ? "opacity-100" : "opacity-50")}
+              />
+            ) : (
+              <img
+                src={item.iconSrc}
+                alt={t(item.labelKey)}
+                className={cn(
+                  "h-5 w-5 object-contain transition-opacity",
+                  isActive ? "opacity-100" : "opacity-50"
+                )}
+              />
+            )}
             <span
               className={cn(
                 "text-[10px] font-medium transition-colors",

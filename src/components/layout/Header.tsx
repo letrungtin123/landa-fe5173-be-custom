@@ -61,6 +61,7 @@ const NAV_ITEMS = [
   { labelKey: "nav.dashboard", path: "/dashboard" },
   { labelKey: "nav.learningPrograms", path: "/explore" },
   { labelKey: "nav.library", path: "/library" },
+  { labelKey: "nav.news", path: "/news" },
   { labelKey: "nav.badges", path: "/badges" },
 ];
 
@@ -81,6 +82,7 @@ export function Header() {
   const user = useAuthStore((s) => s.user);
   const managedTenants = useAuthStore((s) => s.managedTenants);
   const tenantModules = useAuthStore((s) => s.tenantModules);
+  const tenantContextReady = useAuthStore((s) => s.tenantContextReady);
   const sessionMode = useAuthStore((s) => s.sessionMode);
   const navigate = useNavigate();
   const { count: unreadCount } = useUnreadNotificationCount();
@@ -115,9 +117,19 @@ export function Header() {
   const { globalSearchTerm, setGlobalSearchTerm, isSearchOpen, setSearchOpen } = useSearchStore();
   const badgeManagementEnabled = tenantModules.includes("badge_management") && sessionMode !== "demo_iframe";
   const visibleNavItems = useMemo(
-    () => NAV_ITEMS.filter((item) => item.path !== "/badges" || badgeManagementEnabled),
-    [badgeManagementEnabled],
+    () => NAV_ITEMS.filter((item) => {
+      if (item.path === "/badges") return badgeManagementEnabled;
+      if (item.path === "/news") return tenantContextReady && tenantModules.includes("news");
+      return true;
+    }),
+    [badgeManagementEnabled, tenantContextReady, tenantModules],
   );
+
+  useEffect(() => {
+    if (tenantContextReady && tenantModules.includes("news")) {
+      void import("@/pages/NewsPage");
+    }
+  }, [tenantContextReady, tenantModules]);
 
   // Reset search term on mobile when route changes
   useEffect(() => {
