@@ -193,7 +193,7 @@ User → LoginPage → POST /oauth2/access_token (via Vite proxy)
 |-------|-------|
 | App Name | `LA-Elearning-Frontend` |
 | Client ID | `la-elearning-fe` |
-| Client Secret | `la-elearning-secret-2026` |
+| Client Secret | _(không ghi ở đây — xem nơi lưu bí mật của dự án; giá trị cũ đã lộ và phải được đổi)_ |
 | Grant Type | `password` |
 | Redirect URI | `http://localhost:5173/auth/callback` |
 | Token Type | `Bearer` |
