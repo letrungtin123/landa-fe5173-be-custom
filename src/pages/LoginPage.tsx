@@ -6,6 +6,7 @@ import { Eye, EyeOff, ArrowLeft, Info, ShieldCheck } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBranding } from "@/hooks/useBranding";
 import { exchangeSsoCode, fetchPublicSsoConfigByDomain, type PublicSsoProvider, type SsoProvider } from "@/api/sso";
+import { readSsoRefusalMessage } from "@/api/authSession.logic";
 import { openSsoPopup } from "@/utils/ssoPopup";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
@@ -190,7 +191,8 @@ export function LoginPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : t("auth.ssoSignInFailed");
       if (!msg.includes("huy")) {
-        setErrors({ sso: msg });
+        // An account-policy refusal (e.g. not allowed to link) explains what to do next.
+        setErrors({ sso: readSsoRefusalMessage(err) ?? msg });
       }
     } finally {
       setLoadingProvider(null);

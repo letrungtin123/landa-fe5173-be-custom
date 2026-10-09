@@ -1,5 +1,6 @@
 import axios from "axios";
 import { config } from "@/config/env";
+import { useLocaleStore } from "@/stores/useLocaleStore";
 import type { ApiResponse, LoginResponse } from "@/api/types";
 
 export type SsoProvider = "google" | "keycloak" | "microsoft365";
@@ -36,7 +37,8 @@ export async function exchangeSsoCode(
   const { data } = await axios.post<ApiResponse<LoginResponse>>(
     `${baseURL}/api/sso/exchange/${provider}`,
     payload,
-    { headers: { "Content-Type": "application/json" }, timeout: 20_000 },
+    // X-UI-Locale: a refused sign-in answers in the user's language.
+    { headers: { "Content-Type": "application/json", "X-UI-Locale": useLocaleStore.getState().locale }, timeout: 20_000 },
   );
   return data.data;
 }
