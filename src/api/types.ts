@@ -196,52 +196,6 @@ export interface NotificationListResponse {
 }
 
 // ── Backward compat — giữ để không lỗi import chỗ cũ ──
-// Sẽ dọn dẹp sau
-
-/** @deprecated dùng LoginResponse */
-export interface OAuthTokenResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  expires_in: number;
-  scope: string;
-}
-
-/** @deprecated dùng AuthUserInfo */
-export interface UserMe {
-  username: string;
-  email: string;
-  is_staff: boolean;
-  is_superuser?: boolean;
-}
-
-/** @deprecated */
-export interface UserAccount {
-  username: string;
-  name: string;
-  is_active: boolean;
-  email: string;
-  date_joined: string;
-  bio: string | null;
-  country: string | null;
-  level_of_education: string | null;
-  language: string | null;
-  language_proficiencies: Array<{ code: string }>;
-  gender: string | null;
-  year_of_birth: number | null;
-  phone_number: string | null;
-  profile_image: {
-    image_url_full: string;
-    image_url_large: string;
-    image_url_medium: string;
-    image_url_small: string;
-    has_image: boolean;
-  };
-  extended_profile?: Array<{
-    field_name: string;
-    field_value: string;
-  }>;
-}
 
 /** @deprecated */
 export interface BlocksResponse {
@@ -271,53 +225,4 @@ export interface VideoBlockData {
     { url: string; file_size: number }
   >;
   only_on_web: boolean;
-}
-
-/** @deprecated */
-export interface CourseCompletionResponse {
-  completion: number;
-  course_key: string;
-}
-
-/** @deprecated */
-export interface CourseGradeResponse {
-  username: string;
-  email: string;
-  percent: number;
-  letter_grade: string | null;
-  passed: boolean;
-  section_breakdown: Array<{
-    category: string;
-    label: string;
-    percent: number;
-  }>;
-}
-
-/** @deprecated */
-export interface NotificationResponse {
-  count: number;
-  next: string | null;
-  results: OpenEdXNotification[];
-}
-
-/** @deprecated */
-export interface OpenEdXNotification {
-  id: number;
-  app_name: string;
-  notification_type: string;
-  content: string;
-  content_context?: {
-    course_name?: string;
-    [key: string]: any;
-  };
-  content_url: string | null;
-  created: string;
-  last_read: string | null;
-  last_seen: string | null;
-}
-
-/** @deprecated */
-export interface XBlockViewResponse {
-  content: string;
-  resources: unknown[];
 }

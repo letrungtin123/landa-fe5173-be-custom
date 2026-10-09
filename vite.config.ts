@@ -22,9 +22,6 @@ export default defineConfig(({ mode }) => {
   // Backend URL cho Vite proxy. PROXY_* chi dung server-side, khong bake vao browser bundle.
   const backendProxyTarget = env.PROXY_BACKEND_URL || env.VITE_PROXY_TARGET || env.VITE_API_BASE_URL || 'http://localhost:3001'
 
-  // Legacy edX LMS URL — chỉ cần cho asset/xblock proxy
-  const lmsUrl = env.VITE_LMS_BASE_URL || ''
-
   // Allowed hosts — đọc từ env, phân cách bằng dấu phẩy
   const allowedHosts = env.VITE_ALLOWED_HOSTS
     ? env.VITE_ALLOWED_HOSTS.split(',').map(h => h.trim()).filter(Boolean)
@@ -82,38 +79,6 @@ export default defineConfig(({ mode }) => {
       // it); the backend trusts only its configured proxy hops.
       xfwd: true,
     },
-    ...(lmsUrl ? {
-      '/asset-v1': {
-        target: lmsUrl,
-        changeOrigin: true,
-        secure: false,
-      },
-    } : {}),
-    '/media': {
-      target: lmsUrl || backendProxyTarget,
-      changeOrigin: true,
-      secure: false,
-      autoRewrite: true,
-    },
-    ...(lmsUrl ? {
-      '/xblock': {
-        target: lmsUrl,
-        changeOrigin: true,
-        secure: false,
-        cookieDomainRewrite: '',
-      },
-      '/courses': {
-        target: lmsUrl,
-        changeOrigin: true,
-        secure: false,
-        cookieDomainRewrite: '',
-        bypass: (req) => {
-          if (!req.url?.includes('/xblock/')) {
-            return req.url
-          }
-        },
-      },
-    } : {}),
   }
 
   return {

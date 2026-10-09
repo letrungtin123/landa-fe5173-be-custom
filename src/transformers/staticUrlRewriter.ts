@@ -1,27 +1,17 @@
 // ============================================================
-// Static URL Rewriter — Chuyển đổi URL ảnh từ course HTML blocks
+// Static URL Rewriter — URL ảnh/file trong HTML bài học
 //
-// Custom BE trả raw HTML, FE cần rewrite /static/xxx thành
-// URL asset đầy đủ.
+// Custom BE trả raw HTML: bỏ host API tuyệt đối và chuyển đường dẫn
+// Storage thô sang /api/storage/.
 // ============================================================
 
 import { config } from "@/config/env";
 
 
 /**
- * Trích xuất phần course key identifier từ courseId.
- * Ví dụ: "course-v1:LA+LMS101+2025" → "LA+LMS101+2025"
- */
-function extractCourseRun(courseId: string): string {
-  const match = courseId.match(/^course-v1:(.+)$/);
-  return match ? match[1] : courseId;
-}
-
-/**
  * Chuyển đổi các URL tuyệt đối (absolute URL) thành URL tương đối (relative path).
  * Dùng cho các URL đơn như videoUrl, studentViewUrl, avatar...
  * - Bỏ API base URL (nếu có)
- * - Bỏ cứng http://192.168.0.226.nip.io
  * - Giữ nguyên query string (nếu có)
  * - Không rewrite các loại url: data:, blob:, URL ngoài
  */
@@ -54,9 +44,6 @@ export function sanitizeUrlToRelative(url: string | null): string | null {
     }
   }
   
-  // Bỏ cứng domain IP (kể cả http hay https)
-  newUrl = newUrl.replace(/^https?:\/\/192\.168\.0\.226\.nip\.io/, "");
-  
   // Đề phòng trường hợp newUrl == rỗng
   if (newUrl === "") newUrl = "/";
   
@@ -64,21 +51,15 @@ export function sanitizeUrlToRelative(url: string | null): string | null {
 }
 
 /**
- * Rewrite tất cả URL /static/xxx trong HTML thành URL asset đầy đủ.
- *
- * Quy tắc chuyển đổi:
- *   /static/filename.ext
- *     → /asset-v1:{courseRun}+type@asset+block@filename.ext
+ * Chuẩn hóa URL trong HTML bài học: bỏ host API tuyệt đối và chuyển đường
+ * dẫn Storage thô thành /api/storage/... (the Open edX /static → /asset-v1
+ * rewrite was removed: no course content uses it).
  *
  * @param html - Raw HTML từ course block data
- * @param courseId - Course ID dạng "course-v1:Org+Course+Run"
  * @returns HTML đã rewrite URL
  */
-export function rewriteStaticUrls(html: string, courseId: string): string {
-  if (!html || !courseId) return html;
-
-  const courseRun = extractCourseRun(courseId);
-  const assetBase = `/asset-v1:${courseRun}+type@asset+block@`;
+export function rewriteStaticUrls(html: string): string {
+  if (!html) return html;
 
   let updatedHtml = html;
 
@@ -97,18 +78,7 @@ export function rewriteStaticUrls(html: string, courseId: string): string {
     }
   }
   
-  // Strip thêm hardcode IP
-  updatedHtml = updatedHtml.replace(/(['"(\s])https?:\/\/192\.168\.0\.226\.nip\.io/g, '$1');
-
-  // 2. Pattern: match /static/filename trong attribute values
-  updatedHtml = updatedHtml.replace(
-    /(['"(\s])\/static\/([^'")\s?#]+)/g,
-    (_, prefix: string, filename: string) => {
-      return `${prefix}${assetBase}${filename}`;
-    }
-  );
-
-  // 3. Pattern: match raw Supabase storage paths (VD: UUID/courses/...)
+  // 2. Pattern: match raw Supabase storage paths (VD: UUID/courses/...)
   // Chuyển thành URL đi qua Backend Proxy: {apiBaseUrl}/api/storage/{path}
   const storageRegex = /(['"(\s])([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/(courses|library|avatars|branding)\/[^'")\s]+)/gi;
   updatedHtml = updatedHtml.replace(storageRegex, (_, prefix, path) => {

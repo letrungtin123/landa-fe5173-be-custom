@@ -32,7 +32,7 @@ export function useLessonDetail(lessonId: string) {
 
     if (sequentialBlock) {
       // Lấy danh sách Units (Verticals) theo đúng thứ tự children
-      const units = buildUnits(sequentialBlock, blocks, courseId || "");
+      const units = buildUnits(sequentialBlock, blocks);
 
       // Backward-compat: flatten tất cả components để lấy legacy fields
       const allComponents = units.flatMap((u) => u.components);
@@ -91,7 +91,6 @@ export function useLessonDetail(lessonId: string) {
 function buildUnits(
   sequentialBlock: Block,
   blocks: Record<string, Block>,
-  courseId: string
 ): UnitDetail[] {
   const verticalIds = sequentialBlock.children || [];
 
@@ -103,7 +102,7 @@ function buildUnits(
       const components: UnitComponent[] = componentIds
         .map((cid) => blocks[cid])
         .filter(Boolean)
-        .map((block) => buildComponent(block, courseId));
+        .map((block) => buildComponent(block));
 
       return {
         id: vertical.id,
@@ -118,7 +117,6 @@ function buildUnits(
  */
 function buildComponent(
   block: Block,
-  courseId: string
 ): UnitComponent {
   const comp: UnitComponent = {
     id: block.id,
@@ -147,8 +145,8 @@ function buildComponent(
   if (block.type === "html") {
     const svd = block.student_view_data as Record<string, unknown> | undefined;
     const rawHtml = (svd?.data as string) || (svd?.html as string) || null;
-    // Rewrite /static/xxx URLs → LMS asset URLs (student_view_data trả raw HTML chưa rewrite)
-    comp.htmlContent = rawHtml ? rewriteStaticUrls(rawHtml, courseId) : null;
+    // Bỏ host API tuyệt đối, đường dẫn Storage thô → /api/storage/
+    comp.htmlContent = rawHtml ? rewriteStaticUrls(rawHtml) : null;
     const htmlMedia = svd?.html_media as { images?: unknown } | undefined;
     comp.htmlMediaImages = normalizeHtmlMediaImages(htmlMedia?.images);
   }

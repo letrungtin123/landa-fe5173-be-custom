@@ -81,8 +81,6 @@ export function VideoPlayer({
   const videoUrl = propVideoUrl || lesson._videoUrl;
   const youtubeId = videoUrl ? getYouTubeId(videoUrl) : null;
   const isYoutube = !!youtubeId;
-  // Nếu URL là xblock render URL từ LMS → dùng iframe embed
-  const isXblockEmbed = videoUrl ? videoUrl.includes("/xblock/") : false;
 
   const checkCompletion = useCallback(() => {
     if (
@@ -261,29 +259,6 @@ export function VideoPlayer({
         )}
         <iframe
           src={getYoutubeEmbedUrl(youtubeId)}
-          className={cn("h-full w-full", isLoading ? "invisible" : "")}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-          allowFullScreen
-          title={lesson.title}
-          onLoad={() => setIsLoading(false)}
-        />
-      </div>
-    );
-  }
-
-  // ── XBlock embed (LMS render fallback) — khi không có encoded_videos ──
-  if (isXblockEmbed && videoUrl) {
-    return (
-      <div
-        ref={containerRef}
-        onPointerDownCapture={demoGuideActive ? onDemoGuidePlay : undefined}
-        className="relative overflow-hidden rounded-2xl bg-[#0d1117] aspect-video shadow-lg"
-      >
-        {isLoading && (
-          <Skeleton className="absolute inset-0 z-10" />
-        )}
-        <iframe
-          src={videoUrl}
           className={cn("h-full w-full", isLoading ? "invisible" : "")}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
