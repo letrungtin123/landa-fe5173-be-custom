@@ -12,6 +12,7 @@ import { readFile } from "node:fs/promises";
 import { join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Readable } from "node:stream";
+import { appendForwardedFor } from "./server-security.mjs";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const DIST_DIR = join(__dirname, "dist");
@@ -149,6 +150,10 @@ async function proxyToBackend(req, res) {
   const headers = { ...req.headers };
   const backendHost = new URL(API_BACKEND).host;
   headers.host = backendHost;
+  // Append (never replace) the connecting address so the backend can tell a
+  // client-typed X-Forwarded-For from the hop this server saw.
+  const forwardedFor = appendForwardedFor(req.headers["x-forwarded-for"], req.socket.remoteAddress);
+  if (forwardedFor) headers["x-forwarded-for"] = forwardedFor;
   // Remove encoding to simplify response handling
   delete headers["accept-encoding"];
 

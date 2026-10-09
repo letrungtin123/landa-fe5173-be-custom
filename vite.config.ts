@@ -64,6 +64,9 @@ export default defineConfig(({ mode }) => {
       target: backendProxyTarget,
       changeOrigin: true,
       secure: false,
+      // Append the connecting client address to X-Forwarded-For (never replace
+      // it); the backend trusts only its configured proxy hops.
+      xfwd: true,
     },
     ...(lmsUrl ? {
       '/asset-v1': {
