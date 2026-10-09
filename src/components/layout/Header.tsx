@@ -505,6 +505,8 @@ export function Header() {
                     <DropdownMenuItem 
                       onClick={async () => {
                         const newWin = window.open('about:blank', '_blank');
+                        // The admin tab must not be able to reach back to this page.
+                        if (newWin) newWin.opener = null;
                         try {
                           const { apiClient } = await import("@/api/client");
                           const { data } = await apiClient.post("/api/auth/ott/generate");
