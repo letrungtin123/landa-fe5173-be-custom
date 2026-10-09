@@ -20,6 +20,12 @@ interface BlockSubmitResult {
   answers?: Record<string, string | string[]>;
   // Lưu explanation cho Quiz
   explanationHtml?: string;
+  // Đáp án đúng do máy chủ trả về sau khi trả lời đúng (Quiz)
+  correctAnswerHtml?: string;
+  // Thứ tự đã nộp đúng (Sắp xếp) — máy chủ gửi các mục theo thứ tự xáo trộn
+  orderedItemIds?: Array<string | number>;
+  // Giải thích theo từng câu đã trả lời đúng (Câu hỏi kèm media)
+  explanationsByQuestion?: Record<string, string>;
   // Lưu parsed problems cho Quiz (tránh re-fetch XBlock HTML bị thay đổi sau submit)
   parsedProblems?: unknown[];
   // Fingerprint nội dung — dùng để phát hiện admin đã update content

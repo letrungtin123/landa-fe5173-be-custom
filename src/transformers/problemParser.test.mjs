@@ -138,7 +138,7 @@ for (const cacheKind of ['old', 'same', 'changed-question']) {
       const state = { cleared: false };
       const bindings = { quizHtml: xml, problemUsageKey: 'fixture', parseProblemHtml, problemContentFingerprint,
         useBlockSubmitStore: { getState: () => ({ getResult: () => cached, setResult: () => { state.cleared = true; } }) } };
-      for (const key of ['ParsedProblems', 'ResultMessage', 'IsCorrect', 'Answers', 'FetchedExplanation', 'ShowHint', 'IsLoadingContent']) {
+      for (const key of ['ParsedProblems', 'ResultMessage', 'IsCorrect', 'Answers', 'FetchedExplanation', 'ServerCorrectAnswerHtml', 'ShowHint', 'IsLoadingContent']) {
         bindings[`set${key}`] = value => { state[key] = value; };
       }
       new Function(...Object.keys(bindings), `${code}; run();`)(...Object.values(bindings));
@@ -150,3 +150,22 @@ for (const cacheKind of ['old', 'same', 'changed-question']) {
     assert.equal(state.ResultMessage, cacheKind === 'same' ? 'Saved success' : null);
   });
 }
+
+// S2 T2: learner payloads carry no answer key; the parser still works and the
+// learner's own (correct) answer is what is shown as the correct answer.
+test('answer-key-free OLX still parses and shows the learner answer as the correct one', async () => {
+  const result = await page.evaluate(() => {
+    const { parseProblemHtml, answerDisplayHtml } = globalThis.lessonParser;
+    const [single] = parseProblemHtml('<problem><multiplechoiceresponse><label>2+2?</label><choicegroup><choice>4</choice><choice>5</choice></choicegroup></multiplechoiceresponse></problem>');
+    const [multi] = parseProblemHtml('<problem><choiceresponse><label>Even?</label><checkboxgroup><choice>2</choice><choice>3</choice><choice>4</choice></checkboxgroup></choiceresponse></problem>');
+    const [text] = parseProblemHtml('<problem><stringresponse type="ci"><label>Capital?</label><textline/></stringresponse></problem>');
+    return {
+      singleCorrect: single.correctAnswerHtml ?? null,
+      single: answerDisplayHtml(single, 'choice_0'),
+      multi: answerDisplayHtml(multi, ['choice_0', 'choice_2']),
+      text: answerDisplayHtml(text, '<b>Paris</b>'),
+      none: answerDisplayHtml(single, undefined),
+    };
+  });
+  assert.deepEqual(result, { singleCorrect: null, single: '4', multi: '2<br/>4', text: '&lt;b&gt;Paris&lt;/b&gt;', none: '' });
+});

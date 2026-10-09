@@ -26,6 +26,27 @@ export interface ParsedProblem {
   hasHints: boolean; // true nếu quiz có cấu hình demand hint trong Studio
 }
 
+function escapeAnswerText(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/**
+ * Display HTML of the learner's own answer. Learner payloads carry no answer
+ * key, so after a CORRECT submission the learner's answer is the correct one.
+ */
+export function answerDisplayHtml(problem: ParsedProblem, answer: string | string[] | undefined): string {
+  const values = (Array.isArray(answer) ? answer : [answer]).filter((value): value is string => typeof value === "string" && value.trim() !== "");
+  if (values.length === 0) return "";
+  if (problem.type === "single-select" || problem.type === "multi-select") {
+    return values
+      .map(value => problem.options?.find(option => option.id === value))
+      .filter((option): option is ProblemOption => !!option)
+      .map(option => option.html || escapeAnswerText(option.text))
+      .join("<br/>");
+  }
+  return values.map(escapeAnswerText).join("<br/>");
+}
+
 /** Versioned presentation identity; never used as grading authority. */
 export function problemContentFingerprint(problems: readonly ParsedProblem[]): string {
   return JSON.stringify({ version: 2, problems: problems.map(problem => ({

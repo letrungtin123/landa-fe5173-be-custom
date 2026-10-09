@@ -285,7 +285,7 @@ export async function submitCrosswordAnswer(
  */
 export async function submitSortableAnswer(
   usageKey: string,
-  answer: number[]
+  answer: Array<string | number>
 ): Promise<Record<string, unknown>> {
   const { data } = await apiClient.post(
     `/api/learner/blocks/${encodeURIComponent(usageKey)}/submit`,

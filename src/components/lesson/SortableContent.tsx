@@ -41,8 +41,17 @@ import { CSS } from "@dnd-kit/utilities";
 // ── Interfaces ──
 
 interface SortableItem {
-  id: number;
+  // Opaque id from the server (the stored order is the answer key, so the
+  // server sends items shuffled with ids that reveal nothing).
+  id: string | number;
   text: string;
+}
+
+/** Items in a previously submitted order; unknown ids keep their place at the end. */
+function orderItems(items: SortableItem[], orderedIds: Array<string | number> | undefined): SortableItem[] {
+  if (!orderedIds || orderedIds.length === 0) return items;
+  const position = new Map(orderedIds.map((id, index) => [String(id), index]));
+  return [...items].sort((a, b) => (position.get(String(a.id)) ?? orderedIds.length) - (position.get(String(b.id)) ?? orderedIds.length));
 }
 
 interface SortableData {
@@ -174,7 +183,7 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
         setResultMessage(cached.resultMessage);
         setIsCorrect(cached.isCorrect);
         setStarted(true);
-        setItems(svd.items); // Giữ nguyên thứ tự đã submit
+        setItems(orderItems(svd.items, cached.orderedItemIds)); // Giữ nguyên thứ tự đã submit
       } else {
         if (cached) {
           // Content đã thay đổi → xóa cache cũ
@@ -217,8 +226,8 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
 
   // Submit Mutation
   const submitMutation = useMutation({
-    mutationFn: (answer: number[]) => submitSortableAnswer(usageKey, answer),
-    onSuccess: (data) => {
+    mutationFn: (answer: Array<string | number>) => submitSortableAnswer(usageKey, answer),
+    onSuccess: (data, answer) => {
       const correct = data.status === "correct" || data.status === "already_completed";
       if (correct) {
         const successMessage = getLocalizedSubmitFeedback(t, data, {
@@ -235,6 +244,7 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
           resultMessage: successMessage,
           isCorrect: true,
           contentFingerprint: fp,
+          orderedItemIds: answer,
         });
         // Mark block complete (giống edX: chỉ khi đúng)
         if (data.status === "correct" && courseId) {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import DOMPurify from "dompurify";
 import { ArrowLeft, Check, CheckCircle2, Info, Lightbulb, Loader2, XCircle } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -97,6 +97,15 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
   const [blockCompleted, setBlockCompleted] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [explanationHtml, setExplanationHtml] = useState("");
+  // Explanations arrive with a correct answer (the learner payload has none).
+  const [explanationsByQuestion, setExplanationsByQuestion] = useState<Record<string, string>>({});
+  const explanationsRef = useRef<Record<string, string>>({});
+  const rememberExplanations = (next: Record<string, string>) => {
+    explanationsRef.current = next;
+    setExplanationsByQuestion(next);
+  };
+  const explanationFor = (question: MediaQuizQuestion | undefined) =>
+    (question ? explanationsByQuestion[question.id] || question.explanation_html || "" : "");
   const [submittedQuestionId, setSubmittedQuestionId] = useState<string | null>(null);
 
   const saveSubmitState = (state: {
@@ -107,12 +116,14 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
     completedQuestionIds: Set<string>;
     blockCompleted: boolean;
     explanationHtml?: string;
+    explanationsByQuestion?: Record<string, string>;
   }) => {
     useBlockSubmitStore.getState().setResult(usageKey, {
       resultMessage: state.resultMessage,
       isCorrect: state.isCorrect,
       answers: { ...state.answers },
       explanationHtml: state.explanationHtml || undefined,
+      explanationsByQuestion: { ...(state.explanationsByQuestion ?? explanationsRef.current) },
       contentFingerprint,
       activeIndex: state.activeIndex,
       completedQuestionIds: Array.from(state.completedQuestionIds),
@@ -131,6 +142,8 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
       setResultMessage(cached.resultMessage || null);
       setIsCorrect(cached.resultMessage && typeof cached.isCorrect === "boolean" ? cached.isCorrect : null);
       setExplanationHtml(cached.explanationHtml || "");
+      explanationsRef.current = cached.explanationsByQuestion || {};
+      setExplanationsByQuestion(explanationsRef.current);
       setSubmittedQuestionId(cached.resultMessage ? quiz.questions[safeActiveIndex]?.id || null : null);
     } else {
       if (cached) {
@@ -144,6 +157,8 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
       setBlockCompleted(false);
       setShowHint(false);
       setExplanationHtml("");
+      explanationsRef.current = {};
+      setExplanationsByQuestion({});
       setSubmittedQuestionId(null);
     }
   }, [usageKey, contentFingerprint, quiz.questions.length]);
@@ -152,7 +167,7 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
   const currentAnswer = currentQuestion ? answers[currentQuestion.id] : undefined;
   const currentHints = currentQuestion?.hints?.filter(hint => hint.trim().length > 0) ?? [];
   const currentExplanationHtml = submittedQuestionId === currentQuestion?.id
-    ? (explanationHtml || currentQuestion.explanation_html || "")
+    ? (explanationHtml || explanationFor(currentQuestion))
     : "";
 
   const submitMutation = useMutation({
@@ -168,7 +183,11 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
       if (correct) nextCompletedQuestionIds.add(variables.questionId);
       const nextBlockCompleted = correct && isLast;
       const responseExplanation = typeof data.explanation_html === "string" ? data.explanation_html : "";
-      const nextExplanationHtml = correct ? (responseExplanation || answeredQuestion?.explanation_html || "") : "";
+      const nextExplanationHtml = correct ? (responseExplanation || explanationFor(answeredQuestion)) : "";
+      const nextExplanations = correct && nextExplanationHtml
+        ? { ...explanationsRef.current, [variables.questionId]: nextExplanationHtml }
+        : explanationsRef.current;
+      rememberExplanations(nextExplanations);
       const nextResultMessage = correct
         ? (isLast ? t("quiz.correctComplete") : t("quiz.correctNext"))
         : t("quiz.incorrect");
@@ -294,7 +313,7 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
     setResultMessage(null);
     setIsCorrect(null);
     setShowHint(false);
-    setExplanationHtml(nextQuestionCompleted ? (nextQuestion.explanation_html || "") : "");
+    setExplanationHtml(nextQuestionCompleted ? explanationFor(nextQuestion) : "");
     setSubmittedQuestionId(nextQuestionCompleted ? nextQuestion.id : null);
     if (nextQuestionCompleted) {
       setResultMessage(nextResultMessage);
@@ -307,7 +326,7 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
       activeIndex: boundedIndex,
       completedQuestionIds,
       blockCompleted,
-      explanationHtml: nextQuestionCompleted ? (nextQuestion.explanation_html || "") : undefined,
+      explanationHtml: nextQuestionCompleted ? explanationFor(nextQuestion) : undefined,
     });
   };
 

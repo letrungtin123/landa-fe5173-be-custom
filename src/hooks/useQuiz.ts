@@ -11,6 +11,10 @@ interface QuizResult {
   score: number;
   feedback?: unknown;
   contents?: string;
+  /** Sent by the server only after a correct answer. */
+  correctAnswersHtml?: string;
+  /** Sent by the server only after a correct answer. */
+  explanationHtml?: string;
 }
 
 /**
@@ -36,11 +40,16 @@ export function parseQuizResult(
   // { status: 'correct'|'incorrect', message: '...', score: 100, correctness: {...} }
   if (response.status === 'correct' || response.status === 'incorrect') {
     const correct = response.status === 'correct';
+    const correctAnswers = Array.isArray(response.correct_answers)
+      ? response.correct_answers.filter((value): value is string => typeof value === 'string' && value.trim() !== '')
+      : [];
     return {
       success: true,
       correct,
       score: typeof response.score === 'number' ? response.score : (correct ? 100 : 0),
       feedback: response.feedback,
+      correctAnswersHtml: correct && correctAnswers.length > 0 ? correctAnswers.join('<br/>') : undefined,
+      explanationHtml: correct && typeof response.explanation_html === 'string' ? response.explanation_html : undefined,
     };
   }
 

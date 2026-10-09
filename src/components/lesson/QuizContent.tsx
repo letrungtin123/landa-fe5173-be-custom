@@ -9,9 +9,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import DOMPurify from "dompurify";
 import { Loader2, CheckCircle2, XCircle, ChevronDown, Info, Lightbulb } from "lucide-react";
-import { getXBlockHtml, fetchExplanation } from "@/api/blocks";
+import { getXBlockHtml } from "@/api/blocks";
 import { useSubmitQuiz, parseQuizResult } from "@/hooks/useQuiz";
-import { parseProblemHtml, problemContentFingerprint } from "@/transformers/problemParser";
+import { answerDisplayHtml, parseProblemHtml, problemContentFingerprint } from "@/transformers/problemParser";
 import type { ParsedProblem, ProblemOption } from "@/transformers/problemParser";
 import { useParams } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -234,8 +234,10 @@ export function QuizContent({
   // Hint state: dùng hints từ OLX parser, show on-demand khi click button
   const [showHint, setShowHint] = useState(false);
 
-  // Explanation state: lưu giải thích đáp án fetch từ problem_show API
+  // Answer + explanation: the server sends them only after a CORRECT answer
+  // (the learner payload carries no answer key).
   const [fetchedExplanation, setFetchedExplanation] = useState<string>("");
+  const [serverCorrectAnswerHtml, setServerCorrectAnswerHtml] = useState<string>("");
   const isDemoGuideHintActive = demoGuidePhase === "hint";
   const isDemoGuideAnswerActive = demoGuidePhase === "answer";
   const isDemoGuideSubmitActive = demoGuidePhase === "submit";
@@ -271,6 +273,7 @@ export function QuizContent({
       setIsCorrect(cached.isCorrect);
       if (cached.answers) setAnswers(cached.answers);
       if (cached.explanationHtml) setFetchedExplanation(cached.explanationHtml);
+      setServerCorrectAnswerHtml(cached.correctAnswerHtml || "");
     } else {
       // Content mới hoặc không có cache → hiển quiz mới
       if (cached) {
@@ -279,6 +282,7 @@ export function QuizContent({
       setParsedProblems(problems);
       setShowHint(false);
       setFetchedExplanation("");
+      setServerCorrectAnswerHtml("");
       setAnswers({});
       setResultMessage(null);
       setIsCorrect(null);
@@ -327,19 +331,11 @@ export function QuizContent({
         }
       }
 
-      // CHỈ fetch giải thích đáp án khi trả lời ĐÚNG
-      let explanationHtml = "";
-      if (result.correct) {
-        try {
-          const explanationResult = await fetchExplanation(problemUsageKey);
-          if (explanationResult.explanationHtml) {
-            explanationHtml = explanationResult.explanationHtml;
-            setFetchedExplanation(explanationHtml);
-          }
-        } catch (e) {
-          // Explanation không khả dụng (quiz setting)
-        }
-      }
+      // The server returns the answer and explanation only for a correct answer.
+      const explanationHtml = result.correct ? (result.explanationHtml || "") : "";
+      const correctAnswerHtml = result.correct ? (result.correctAnswersHtml || "") : "";
+      setFetchedExplanation(explanationHtml);
+      setServerCorrectAnswerHtml(correctAnswerHtml);
 
       // Lưu kết quả vào session store (kèm fingerprint để phát hiện content thay đổi)
       const fp = problemContentFingerprint(parsedProblems);
@@ -348,6 +344,7 @@ export function QuizContent({
         isCorrect: result.correct,
         answers: { ...answers },
         explanationHtml: explanationHtml || undefined,
+        correctAnswerHtml: correctAnswerHtml || undefined,
         parsedProblems: [...parsedProblems],
         contentFingerprint: fp,
       });
@@ -458,7 +455,13 @@ export function QuizContent({
     <div className="w-full">
       <div className="rounded-2xl border border-border bg-card p-6 md:p-8 shadow-sm">
         <ProblemMediaBlock media={problemMedia} onImageClick={onImageClick} />
-        {parsedProblems.map((prob) => (
+        {parsedProblems.map((prob, problemIndex) => {
+          // Old payloads may still carry the key; otherwise the server's answer
+          // (first problem) or the learner's own correct answer is shown.
+          const correctAnswerHtml = prob.correctAnswerHtml
+            || (problemIndex === 0 ? serverCorrectAnswerHtml : "")
+            || answerDisplayHtml(prob, answers[prob.id]);
+          return (
           <div key={prob.id} className="mb-10 last:mb-0">
 
             {/* Câu hỏi HTML */}
@@ -611,7 +614,7 @@ export function QuizContent({
             </div>
 
             {/* Giải thích đáp án — CHỈ hiện khi trả lời ĐÚNG */}
-            {isCorrect === true && resultMessage && ((fetchedExplanation || prob.explanationHtml) || prob.correctAnswerHtml || prob.type === 'text-input') && (
+            {isCorrect === true && resultMessage && ((fetchedExplanation || prob.explanationHtml) || correctAnswerHtml) && (
               <div className="mt-8">
                 <div className="rounded-xl bg-success/10 border border-success/20 p-5">
                   <div className="flex items-center gap-2 mb-3 text-success">
@@ -620,14 +623,14 @@ export function QuizContent({
                   </div>
 
                   {/* Đáp án đúng */}
-                  {(prob.correctAnswerHtml || answers[prob.id]) && (
+                  {correctAnswerHtml && (
                     <div className="mb-4 pb-4 border-b border-success/20">
                       <span className="text-[14px] font-semibold text-success/90 uppercase tracking-wider block mb-1">
                          {t("quiz.correctAnswer")}
                       </span>
                       <div
                         className="whitespace-pre-wrap break-words text-[15px] font-bold text-foreground [&_br]:block [&_p]:my-0"
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((prob.correctAnswerHtml || answers[prob.id]) as string) }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(correctAnswerHtml) }}
                       />
                     </div>
                   )}
@@ -659,7 +662,8 @@ export function QuizContent({
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
 
         {/* Kết quả sau khi nộp */}
         {resultMessage && isCorrect !== true && (
