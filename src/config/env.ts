@@ -3,10 +3,12 @@
 // ============================================================
 
 /**
- * Lấy giá trị biến môi trường — throw error nếu thiếu.
+ * Số dương từ biến môi trường. The value is passed in as a static
+ * `import.meta.env.VITE_X` read: a dynamic `import.meta.env[key]` makes Vite
+ * embed EVERY VITE_* key in the bundle, including server-only ones such as
+ * VITE_ALLOWED_HOSTS and VITE_PROXY_TARGET.
  */
-function requireEnvNumber(key: string, fallback?: number): number {
-  const raw = import.meta.env[key];
+function requireEnvNumber(key: string, raw: string | undefined, fallback?: number): number {
   if (!raw && fallback !== undefined) return fallback;
   const num = Number(raw);
   if (isNaN(num) || num <= 0) {
@@ -45,10 +47,10 @@ function getPublicApiBaseUrl(): string {
 
 export const config = {
   /** Timeout (ms) cho API calls */
-  apiTimeoutMs: requireEnvNumber("VITE_API_TIMEOUT_MS", 30_000),
+  apiTimeoutMs: requireEnvNumber("VITE_API_TIMEOUT_MS", import.meta.env.VITE_API_TIMEOUT_MS, 30_000),
 
   /** Thời gian (ms) refresh token trước khi hết hạn */
-  tokenRefreshBufferMs: requireEnvNumber("VITE_TOKEN_REFRESH_BUFFER_MS", 300_000),
+  tokenRefreshBufferMs: requireEnvNumber("VITE_TOKEN_REFRESH_BUFFER_MS", import.meta.env.VITE_TOKEN_REFRESH_BUFFER_MS, 300_000),
 
   /**
    * Base URL cho API calls.
@@ -62,14 +64,4 @@ export const config = {
   /** @deprecated SSO — hiện tại không dùng, giữ cho LoginPage guard */
   microsoftClientId: import.meta.env.VITE_MICROSOFT_CLIENT_ID || "",
   keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || "",
-
-  /** @deprecated Chỉ dùng cho staticUrlRewriter fallback */
-  get lmsBaseUrl(): string {
-    return (import.meta.env.VITE_LMS_BASE_URL || import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
-  },
-
-  /** @deprecated Studio không còn dùng */
-  get studioBaseUrl(): string {
-    return import.meta.env.VITE_STUDIO_BASE_URL || "";
-  },
 } as const;
