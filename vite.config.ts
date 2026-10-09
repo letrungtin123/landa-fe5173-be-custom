@@ -1,6 +1,20 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type Plugin, type PreviewServer, type ViteDevServer } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from "path"
+import { parseFrameablePaths, requestPathname, securityHeadersFor } from './server-security.mjs'
+
+/** nosniff, referrer policy and framing rules on every response (server-security.mjs). */
+function securityHeadersPlugin(frameablePaths: string[]): Plugin {
+  const install = (server: ViteDevServer | PreviewServer) => {
+    server.middlewares.use((req, res, next) => {
+      for (const [name, value] of Object.entries(securityHeadersFor(requestPathname(req.url), frameablePaths))) {
+        res.setHeader(name, value)
+      }
+      next()
+    })
+  }
+  return { name: 'landa-security-headers', configureServer: install, configurePreviewServer: install }
+}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -103,7 +117,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [react(), stripConsolePlugin].filter(Boolean),
+    plugins: [react(), stripConsolePlugin, securityHeadersPlugin(parseFrameablePaths(env.LEARNER_FRAMEABLE_PATHS))].filter(Boolean),
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),

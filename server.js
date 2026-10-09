@@ -3,7 +3,7 @@
  * - Serves static files from dist/ (async I/O, no event loop blocking)
  * - Proxies /api/* requests to Node.js custom backend
  * - Handles SPA routing (fallback to index.html)
- * - Security headers (CSP, X-Frame-Options, etc.)
+ * - Security headers (nosniff, referrer policy, framing rules — server-security.mjs)
  * - Pre-compressed file serving (.br, .gz)
  */
 import { createServer } from "node:http";
@@ -12,7 +12,7 @@ import { readFile } from "node:fs/promises";
 import { join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Readable } from "node:stream";
-import { appendForwardedFor } from "./server-security.mjs";
+import { appendForwardedFor, parseFrameablePaths, requestPathname, securityHeadersFor } from "./server-security.mjs";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const DIST_DIR = join(__dirname, "dist");
@@ -86,21 +86,11 @@ const MIME_TYPES = {
 };
 
 // ── Security headers ──
-const SECURITY_HEADERS = {
-  "X-Content-Type-Options": "nosniff",
-  "X-Frame-Options": "DENY",
-  "Referrer-Policy": "strict-origin-when-cross-origin",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
-  "Content-Security-Policy": [
-    "default-src 'self'",
-    "script-src 'self'",
-    "style-src 'self' 'unsafe-inline'",     // Tailwind cần inline styles
-    "img-src 'self' data: blob: https:",    // Ảnh từ CDN/storage
-    "connect-src 'self' https:",            // API calls
-    "font-src 'self'",
-    "frame-ancestors 'none'",
-  ].join("; "),
-};
+// Same rules as the vite preview server (vite.config.ts). The former full CSP
+// (script-src 'self', font-src 'self', microphone=()) blocked the inline
+// branding script, Google Fonts and voice input, so only frame-ancestors is
+// enforced; the demo pages stay frameable by any site as before.
+const FRAMEABLE_PATHS = parseFrameablePaths(process.env.LEARNER_FRAMEABLE_PATHS);
 
 // ── Cache index.html vào memory (nhỏ ~5KB, tránh đọc disk mỗi request) ──
 let indexHtmlCache = null;
@@ -128,12 +118,7 @@ function pipeProxyResponse(webBody, res) {
 }
 
 function frameAwareHeaders(pathname, headers) {
-  if (pathname !== "/demo-embed") return headers;
-  const next = { ...headers };
-  delete next["X-Frame-Options"];
-  next["Content-Security-Policy"] = String(next["Content-Security-Policy"] || "")
-    .replace("frame-ancestors 'none'", "frame-ancestors http: https:");
-  return next;
+  return { ...securityHeadersFor(pathname, FRAMEABLE_PATHS), ...headers };
 }
 
 async function proxyToBackend(req, res) {
@@ -166,7 +151,7 @@ async function proxyToBackend(req, res) {
     });
 
     // Forward status and headers
-    const resHeaders = { ...SECURITY_HEADERS };
+    const resHeaders = { ...securityHeadersFor(requestPathname(req.url), FRAMEABLE_PATHS) };
     proxyRes.headers.forEach((value, key) => {
       // Node will set transfer-encoding for streamed responses when needed
       if (key.toLowerCase() === "transfer-encoding") return;
@@ -221,7 +206,6 @@ async function serveStatic(req, res) {
 
     const stat = statSync(servePath);
     const headers = {
-      ...SECURITY_HEADERS,
       "Content-Type": mime,
       "Content-Length": stat.size,
       "Cache-Control": cacheControl,
@@ -241,7 +225,6 @@ async function serveStatic(req, res) {
   const indexContent = await getIndexHtml();
   if (indexContent) {
     res.writeHead(200, frameAwareHeaders(pathname, {
-      ...SECURITY_HEADERS,
       "Content-Type": "text/html; charset=utf-8",
       "Content-Length": indexContent.length,
       "Cache-Control": "no-cache",
