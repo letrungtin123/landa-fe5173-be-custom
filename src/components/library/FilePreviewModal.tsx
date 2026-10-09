@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Download, AlertCircle, FileText, Loader2 } from "lucide-react";
 import { renderAsync } from "docx-preview";
 import * as XLSX from "xlsx";
+import { neutralizeUnsafeLinks } from "@/utils/safeLinks";
 import type { LibraryDocument } from "@/api/library";
 import { downloadLibraryFileBlob, handleSecureDownload } from "@/api/library";
 import { useTranslation } from "react-i18next";
@@ -85,6 +86,8 @@ export function FilePreviewModal({ document, onClose }: FilePreviewModalProps) {
               breakPages: true,
               useBase64URL: true,
             });
+            // The document is untrusted: no javascript:/data: links or inline handlers.
+            neutralizeUnsafeLinks(containerRef.current, window.location.href);
           }
         } else if (ext === "xlsx" || ext === "xls" || ext === "csv") {
           const arrayBuffer = await blob.arrayBuffer();
@@ -98,6 +101,8 @@ export function FilePreviewModal({ document, onClose }: FilePreviewModalProps) {
                 ${htmlStr}
               </div>
             </div>`;
+
+            neutralizeUnsafeLinks(containerRef.current, window.location.href);
 
             // Tinh chỉnh CSS cho bảng HTML từ Excel
             const table = containerRef.current.querySelector("table");
