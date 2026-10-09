@@ -4,6 +4,8 @@
 // ============================================================
 
 import { apiClient } from "@/api/client";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { readFreshSessionTokens } from "./authSession.logic";
 import type { ApiResponse } from "./types";
 
 /**
@@ -14,10 +16,13 @@ export async function changePassword(
   newPassword: string
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const { data } = await apiClient.post<ApiResponse<null>>(
+    const { data } = await apiClient.post<ApiResponse<unknown>>(
       "/api/auth/change-password",
       { current_password: currentPassword, new_password: newPassword }
     );
+    // The server ended every other session and sent a fresh one for this device.
+    const fresh = readFreshSessionTokens(data.data);
+    if (fresh) useAuthStore.getState().adoptSessionTokens(fresh);
     return { success: true, message: data.message || "Đổi mật khẩu thành công." };
   } catch (err: any) {
     const msg = err.response?.data?.message;

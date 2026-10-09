@@ -7,6 +7,8 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { loginApi, refreshTokenApi, logoutApi, getUserMe, getRoleLabelsApi } from "@/api/auth";
+import { LOGOUT_SESSION_STORAGE_PREFIXES, removeStorageKeysWithPrefixes, type FreshSessionTokens } from "@/api/authSession.logic";
+import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
 import { queryClient } from "@/App";
 import { useStudyTimeStore } from "@/stores/useStudyTimeStore";
 import { avatarUrl } from "@/utils/storageUrl";
@@ -168,6 +170,9 @@ interface AuthState {
   /** Đăng xuất — revoke token + xóa state. */
   logout: () => Promise<void>;
 
+  /** Dùng phiên mới do server cấp sau khi đổi mật khẩu (các phiên khác đã bị kết thúc). */
+  adoptSessionTokens: (session: FreshSessionTokens) => void;
+
   /** Thực hiện refresh token — trả về true nếu thành công. */
   performTokenRefresh: () => Promise<boolean>;
 
@@ -309,9 +314,16 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         clearRefreshTimer();
 
-        const currentRefreshToken = get().refreshToken;
+        const { refreshToken: currentRefreshToken, accessToken: currentAccessToken, tokenType: currentTokenType } = get();
 
-        // 1. Xóa state local TRƯỚC
+        // 1. Revoke phía server TRƯỚC: request mang refresh token đi trước khi
+        //    state local bị xóa (lỗi được bỏ qua). Không chờ ở đây để state vẫn
+        //    được xóa ngay cả khi trang chuyển hướng liền sau logout().
+        const serverLogout = currentRefreshToken
+          ? logoutApi(currentRefreshToken, currentAccessToken ? `${currentTokenType} ${currentAccessToken}` : null)
+          : Promise.resolve();
+
+        // 2. Xóa state local
         set({
           user: null,
           isAuthenticated: false,
@@ -348,13 +360,26 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem("la_study_time_weekly");
         localStorage.removeItem("la_study_time_last_sync");
 
-        // 4. Reset study time store
+        // 4. Reset study time store; xóa câu trả lời bài tập và tin nhắn chat chưa gửi
         useStudyTimeStore.getState().reset();
+        useBlockSubmitStore.getState().clearAll();
+        try {
+          removeStorageKeysWithPrefixes(sessionStorage, LOGOUT_SESSION_STORAGE_PREFIXES);
+        } catch { /* storage unavailable */ }
 
-        // 5. Revoke refresh token phía server
-        if (currentRefreshToken) {
-          await logoutApi(currentRefreshToken);
-        }
+        // 5. Chờ lệnh thu hồi phía server (đã gửi ở bước 1) kết thúc
+        await serverLogout;
+      },
+
+      adoptSessionTokens: (session: FreshSessionTokens) => {
+        set({
+          accessToken: session.access_token,
+          refreshToken: session.refresh_token,
+          tokenType: "Bearer",
+          tokenExpiresAt: Date.now() + session.expires_in * 1000,
+        });
+        lastRefreshSuccessAt = Date.now();
+        get().scheduleTokenRefresh();
       },
 
       performTokenRefresh: async (): Promise<boolean> => {

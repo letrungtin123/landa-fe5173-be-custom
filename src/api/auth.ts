@@ -101,9 +101,15 @@ export async function getRoleLabelsApi(): Promise<RoleLabelMap> {
 /**
  * Đăng xuất — revoke refresh token phía server.
  */
-export async function logoutApi(refreshToken: string): Promise<void> {
+export async function logoutApi(refreshToken: string, authorization?: string | null): Promise<void> {
   try {
-    await apiClient.post("/api/auth/logout", { refresh_token: refreshToken });
+    // The refresh token in the body is what the server revokes; the bearer
+    // (captured before local state is cleared) only feeds the audit log.
+    await apiClient.post(
+      "/api/auth/logout",
+      { refresh_token: refreshToken },
+      authorization ? { headers: { Authorization: authorization } } : undefined,
+    );
   } catch {
     // Best-effort — server có thể không phản hồi
   }
