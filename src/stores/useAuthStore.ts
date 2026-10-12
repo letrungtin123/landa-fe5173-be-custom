@@ -14,7 +14,16 @@ import { useStudyTimeStore } from "@/stores/useStudyTimeStore";
 import { avatarUrl } from "@/utils/storageUrl";
 import type { TenantBasic, PermissionsMap, LoginResponse, RoleLabelMap, SessionMode } from "@/api/types";
 import { normalizeRoleLabels } from "@/utils/roleLabels";
-import { classifyStorageChange, decideRefresh, readStoredSession, withCrossTabLock } from "@/api/crossTabSession.logic";
+import {
+  classifyStorageChange,
+  decideRefresh,
+  isTransientRefreshError,
+  readStoredSession,
+  replacedByAnotherTab,
+  TRANSIENT_REFRESH_RECHECK_MS,
+  TRANSIENT_REFRESH_RETRY_DELAYS_MS,
+  withCrossTabLock,
+} from "@/api/crossTabSession.logic";
 import { TAB_TENANT_STORAGE_KEY, keepsTabTenant, readTabTenantSelection, serializeTabTenantSelection, tabTenantFor } from "@/api/tabTenant.logic";
 
 // ── Mã hóa/giải mã đơn giản cho token trong storage ──
@@ -270,6 +279,35 @@ let refreshMutex: Promise<boolean> | null = null;
 let lastRefreshSuccessAt = 0;
 const REFRESH_COOLDOWN_MS = 5_000; // 5 giây
 
+// ── Server out of reach — keep the session ──
+// A refresh that got no answer (Wi-Fi drop, laptop waking up, timeout, 5xx,
+// 429) does not sign out: the session is kept and the refresh tried again
+// every TRANSIENT_REFRESH_RECHECK_MS. Only a refusal (400/401/403) signs out.
+let refreshFailedTransiently = false;
+let transientRecheckTimer: ReturnType<typeof setTimeout> | null = null;
+function clearTransientRecheck(): void {
+  if (transientRecheckTimer !== null) { clearTimeout(transientRecheckTimer); transientRecheckTimer = null; }
+}
+
+/** True when the last failed refresh only failed to reach the server. */
+export function lastRefreshFailedTransiently(): boolean {
+  return refreshFailedTransiently;
+}
+
+/** After a failed refresh: sign out, unless the server could not be reached (then try again later). */
+export function afterFailedRefresh(): void {
+  if (!refreshFailedTransiently) { void useAuthStore.getState().logout(); return; }
+  if (transientRecheckTimer !== null) return;
+  transientRecheckTimer = setTimeout(() => {
+    transientRecheckTimer = null;
+    const state = useAuthStore.getState();
+    if (!state.isAuthenticated) return;
+    void state.performTokenRefresh().then((success) => { if (!success) afterFailedRefresh(); });
+  }, TRANSIENT_REFRESH_RECHECK_MS);
+}
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -371,6 +409,8 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         clearRefreshTimer();
+        clearTransientRecheck();
+        refreshFailedTransiently = false;
 
         const { refreshToken: currentRefreshToken, accessToken: currentAccessToken, tokenType: currentTokenType } = get();
 
@@ -455,54 +495,73 @@ export const useAuthStore = create<AuthState>()(
         // One tab refreshes at a time; inside the lock the stored session is
         // re-read so a token another tab already rotated is never replayed.
         refreshMutex = runRefreshExclusive(async () => {
-          const decision = decideRefresh(get().refreshToken, readStoredSession(rawEncryptedStorage.getItem(STORAGE_KEY)), Date.now());
-          if (decision.action === "adopt") {
-            adoptStoredSession();
-            return true;
-          }
-          if (decision.action === "none") return false;
-          try {
-            const result = await refreshTokenApi(decision.refreshToken, get().user?.tenantId);
-
-            // Giữ tenant đang chọn (nếu superadmin/superuser đã switchTenant)
-            const currentUser = get().user;
-            let activeTenantId = result.user.tenant_id || currentUser?.tenantId || null;
-            let activeTenantName = result.user.tenant_name || currentUser?.tenantName || null;
-            if (!activeTenantId && result.managed_tenants?.length > 0) {
-              activeTenantId = result.managed_tenants[0].id;
-              activeTenantName = result.managed_tenants[0].name;
+          for (let attempt = 0; ; attempt += 1) {
+            const decision = decideRefresh(get().refreshToken, readStoredSession(rawEncryptedStorage.getItem(STORAGE_KEY)), Date.now());
+            if (decision.action === "adopt") {
+              refreshFailedTransiently = false;
+              adoptStoredSession();
+              return true;
             }
+            if (decision.action === "none") {
+              refreshFailedTransiently = false;
+              return false;
+            }
+            try {
+              const result = await refreshTokenApi(decision.refreshToken, get().user?.tenantId);
 
-            const expiresAt = Date.now() + result.expires_in * 1000;
-            set({
-              accessToken: result.access_token,
-              refreshToken: result.refresh_token,
-              tokenType: "Bearer",
-              tokenExpiresAt: expiresAt,
-              sessionMode: result.session_mode || "normal",
-              user: {
-                id: result.user.id,
-                username: result.user.username,
-                email: result.user.email,
-                fullName: result.user.full_name,
-                phone: result.user.phone,
-                avatar: avatarUrl(result.user.avatar_url),
-                role: result.user.role,
-                tenantId: activeTenantId,
-                tenantName: activeTenantName,
-              },
-              permissions: result.permissions,
-              tenantModules: result.tenant_modules,
-              tenantContextReady: true,
-              managedTenants: result.managed_tenants,
-              roleLabels: normalizeRoleLabels(result.role_labels),
-            });
+              // Giữ tenant đang chọn (nếu superadmin/superuser đã switchTenant)
+              const currentUser = get().user;
+              let activeTenantId = result.user.tenant_id || currentUser?.tenantId || null;
+              let activeTenantName = result.user.tenant_name || currentUser?.tenantName || null;
+              if (!activeTenantId && result.managed_tenants?.length > 0) {
+                activeTenantId = result.managed_tenants[0].id;
+                activeTenantName = result.managed_tenants[0].name;
+              }
 
-            lastRefreshSuccessAt = Date.now();
-            get().scheduleTokenRefresh();
-            return true;
-          } catch {
-            return false;
+              const expiresAt = Date.now() + result.expires_in * 1000;
+              set({
+                accessToken: result.access_token,
+                refreshToken: result.refresh_token,
+                tokenType: "Bearer",
+                tokenExpiresAt: expiresAt,
+                sessionMode: result.session_mode || "normal",
+                user: {
+                  id: result.user.id,
+                  username: result.user.username,
+                  email: result.user.email,
+                  fullName: result.user.full_name,
+                  phone: result.user.phone,
+                  avatar: avatarUrl(result.user.avatar_url),
+                  role: result.user.role,
+                  tenantId: activeTenantId,
+                  tenantName: activeTenantName,
+                },
+                permissions: result.permissions,
+                tenantModules: result.tenant_modules,
+                tenantContextReady: true,
+                managedTenants: result.managed_tenants,
+                roleLabels: normalizeRoleLabels(result.role_labels),
+              });
+
+              lastRefreshSuccessAt = Date.now();
+              refreshFailedTransiently = false;
+              clearTransientRecheck();
+              get().scheduleTokenRefresh();
+              return true;
+            } catch (error) {
+              const transient = isTransientRefreshError(error);
+              // Refused because another tab rotated the token a moment ago: take its session.
+              if (!transient && replacedByAnotherTab(decision.refreshToken, readStoredSession(rawEncryptedStorage.getItem(STORAGE_KEY)), Date.now())) {
+                refreshFailedTransiently = false;
+                adoptStoredSession();
+                return true;
+              }
+              if (!transient || attempt >= TRANSIENT_REFRESH_RETRY_DELAYS_MS.length) {
+                refreshFailedTransiently = transient;
+                return false;
+              }
+              await sleep(TRANSIENT_REFRESH_RETRY_DELAYS_MS[attempt]);
+            }
           }
         }).finally(() => { refreshMutex = null; });
 
@@ -521,14 +580,14 @@ export const useAuthStore = create<AuthState>()(
 
         if (delay <= 0) {
           get().performTokenRefresh().then((success) => {
-            if (!success) get().logout();
+            if (!success) afterFailedRefresh();
           });
           return;
         }
 
         refreshTimerId = setTimeout(() => {
           get().performTokenRefresh().then((success) => {
-            if (!success) get().logout();
+            if (!success) afterFailedRefresh();
           });
         }, delay);
       },
@@ -633,7 +692,7 @@ export const useAuthStore = create<AuthState>()(
           if (state?.isAuthenticated && state?.tokenExpiresAt) {
             if (Date.now() >= state.tokenExpiresAt) {
               state.performTokenRefresh().then((success) => {
-                if (!success) { state.logout(); return; }
+                if (!success) { afterFailedRefresh(); return; }
                 // Taking over a session another tab already refreshed does not
                 // load this tab's tenant context (modules, labels): load it.
                 if (!useAuthStore.getState().tenantContextReady) void state.refreshTenantContext();
@@ -733,7 +792,7 @@ function handleWakeUp() {
     if (now >= state.tokenExpiresAt - buffer) {
       state.performTokenRefresh()
         .then((success) => {
-          if (!success) state.logout();
+          if (!success) afterFailedRefresh();
         });
     } else {
       // Token còn hạn → re-schedule timer (timer cũ có thể đã bị kill)

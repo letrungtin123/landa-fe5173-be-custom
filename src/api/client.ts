@@ -7,7 +7,7 @@
 
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { config } from "@/config/env";
-import { useAuthStore } from "@/stores/useAuthStore";
+import { useAuthStore, afterFailedRefresh, lastRefreshFailedTransiently } from "@/stores/useAuthStore";
 import { useLocaleStore } from "@/stores/useLocaleStore";
 
 export const apiClient = axios.create({
@@ -155,6 +155,12 @@ apiClient.interceptors.response.use(
       const { accessToken, tokenType } = useAuthStore.getState();
       originalRequest.headers.Authorization = `${tokenType} ${accessToken}`;
       return apiClient(originalRequest);
+    }
+
+    // Server out of reach (network, timeout, 5xx, 429): keep the session, fail this request only.
+    if (lastRefreshFailedTransiently()) {
+      afterFailedRefresh();
+      return Promise.reject(error);
     }
 
     // Refresh thất bại → logout
