@@ -146,8 +146,11 @@ function BadgeRoute() {
   const ready = useAuthStore((state) => state.tenantContextReady);
   const sessionMode = useAuthStore((state) => state.sessionMode);
   if (!ready) return <PageLoader />;
+  // The page loads after the layout is already shown (after a reload, once the
+  // tenant context is ready). Its own Suspense keeps the layout mounted; the
+  // app-level one would hide it and the page transition would stay invisible.
   return enabled && sessionMode !== "demo_iframe"
-    ? <BadgesPage />
+    ? <Suspense fallback={<PageLoader />}><BadgesPage /></Suspense>
     : <Navigate to="/dashboard" replace />;
 }
 
