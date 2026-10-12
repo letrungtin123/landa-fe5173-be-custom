@@ -15,6 +15,7 @@ import { avatarUrl } from "@/utils/storageUrl";
 import type { TenantBasic, PermissionsMap, LoginResponse, RoleLabelMap, SessionMode } from "@/api/types";
 import { normalizeRoleLabels } from "@/utils/roleLabels";
 import { classifyStorageChange, decideRefresh, readStoredSession, withCrossTabLock } from "@/api/crossTabSession.logic";
+import { TAB_TENANT_STORAGE_KEY, keepsTabTenant, readTabTenantSelection, serializeTabTenantSelection, tabTenantFor } from "@/api/tabTenant.logic";
 
 // ── Mã hóa/giải mã đơn giản cho token trong storage ──
 const STORAGE_KEY = "la-auth-v2";
@@ -155,6 +156,39 @@ function readPersistedAuthState(): Partial<AuthState> | null {
   } catch {
     return null;
   }
+}
+
+// ── Tenant per tab (api/tabTenant.logic.ts) ──
+// The stored session carries the tenant of the tab that wrote it last. A
+// superadmin's tenant is kept per tab in sessionStorage, so a reload or a
+// sign-in in another tab does not move this tab to another tenant.
+function readTabTenant() {
+  try {
+    return readTabTenantSelection(sessionStorage.getItem(TAB_TENANT_STORAGE_KEY));
+  } catch {
+    return null; // storage unavailable: the stored session's tenant is used
+  }
+}
+
+function rememberTabTenant(user: AuthUser | null): void {
+  try {
+    const value = serializeTabTenantSelection(user);
+    if (value) sessionStorage.setItem(TAB_TENANT_STORAGE_KEY, value);
+    else sessionStorage.removeItem(TAB_TENANT_STORAGE_KEY);
+  } catch { /* storage unavailable */ }
+}
+
+/** Puts this tab back on its own tenant after a reload; modules load again for it. */
+function withTabTenant(state: AuthState): AuthState {
+  const tenant = tabTenantFor(state.user, state.managedTenants, readTabTenant());
+  if (!state.user || !tenant || tenant.tenantId === state.user.tenantId) return state;
+  return {
+    ...state,
+    user: { ...state.user, tenantId: tenant.tenantId, tenantName: tenant.tenantName },
+    // The stored modules belong to the other tab's tenant (deny by default
+    // until refreshTenantContext / performTokenRefresh load this tenant's).
+    tenantModules: [],
+  };
 }
 
 // ── Kiểu dữ liệu ──
@@ -590,12 +624,19 @@ export const useAuthStore = create<AuthState>()(
         managedTenants: state.managedTenants,
         roleLabels: state.roleLabels,
       }),
+      // After a reload the tab goes back to its own tenant, not the tenant of
+      // whichever tab stored the session last.
+      merge: (persistedState, currentState) =>
+        withTabTenant({ ...currentState, ...(persistedState as Partial<AuthState>) }),
       onRehydrateStorage: () => {
         return (state) => {
           if (state?.isAuthenticated && state?.tokenExpiresAt) {
             if (Date.now() >= state.tokenExpiresAt) {
               state.performTokenRefresh().then((success) => {
-                if (!success) state.logout();
+                if (!success) { state.logout(); return; }
+                // Taking over a session another tab already refreshed does not
+                // load this tab's tenant context (modules, labels): load it.
+                if (!useAuthStore.getState().tenantContextReady) void state.refreshTenantContext();
               });
             } else {
               void state.refreshTenantContext();
@@ -608,10 +649,28 @@ export const useAuthStore = create<AuthState>()(
   )
 );
 
-/** Takes over the session another tab stored (after its refresh or login). */
+/**
+ * Takes over the session another tab stored (after its refresh or login).
+ * The same user keeps this tab's tenant (and its modules, permissions and
+ * labels); only the tokens and profile come from the other tab.
+ */
 function adoptStoredSession(): void {
   const stored = readPersistedAuthState();
   if (!stored?.isAuthenticated || !stored.refreshToken) return;
+  const tab = useAuthStore.getState();
+  const tenantContext = tab.user && stored.user && keepsTabTenant(tab.user, stored.user, stored.managedTenants)
+    ? {
+        user: { ...stored.user, tenantId: tab.user.tenantId, tenantName: tab.user.tenantName },
+        permissions: tab.permissions,
+        tenantModules: tab.tenantModules,
+        roleLabels: tab.roleLabels,
+      }
+    : {
+        user: stored.user ?? null,
+        permissions: stored.permissions ?? {},
+        tenantModules: stored.tenantModules ?? [],
+        roleLabels: stored.roleLabels ?? {},
+      };
   useAuthStore.setState({
     isAuthenticated: true,
     accessToken: stored.accessToken ?? null,
@@ -620,11 +679,8 @@ function adoptStoredSession(): void {
     tokenExpiresAt: stored.tokenExpiresAt ?? null,
     loginSessionId: stored.loginSessionId ?? null,
     sessionMode: stored.sessionMode || "normal",
-    user: stored.user ?? null,
-    permissions: stored.permissions ?? {},
-    tenantModules: stored.tenantModules ?? [],
+    ...tenantContext,
     managedTenants: stored.managedTenants ?? [],
-    roleLabels: stored.roleLabels ?? {},
   });
   lastRefreshSuccessAt = Date.now();
   useAuthStore.getState().scheduleTokenRefresh();
@@ -641,6 +697,16 @@ if (typeof window !== "undefined") {
     const change = classifyStorageChange(state.refreshToken, readStoredSession(rawEncryptedStorage.getItem(STORAGE_KEY)));
     if (change === "adopt") adoptStoredSession();
     else if (change === "signed_out") void state.logout();
+  });
+}
+
+// Remember this tab's tenant (sign-in, tenant switch, reload); forget it on sign-out.
+if (typeof window !== "undefined") {
+  rememberTabTenant(useAuthStore.getState().user);
+  useAuthStore.subscribe((state, previous) => {
+    if (state.user?.id !== previous.user?.id || state.user?.tenantId !== previous.user?.tenantId) {
+      rememberTabTenant(state.user);
+    }
   });
 }
 
