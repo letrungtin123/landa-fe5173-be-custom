@@ -31,6 +31,8 @@ export interface UseBadgesResult {
   refetch: () => Promise<unknown>;
 }
 
+const BADGE_OVERVIEW_STALE_MS = 15_000;
+
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
@@ -60,12 +62,15 @@ export function useBadges(): UseBadgesResult {
   const tenantModules = useAuthStore((state) => state.tenantModules);
   const isEnabled = tenantModules.includes("badge_management") && sessionMode !== "demo_iframe";
 
+  // One evaluation per page mount at most: pages opened within
+  // BADGE_OVERVIEW_STALE_MS reuse it. A completed course, a profile save and a
+  // dismissed popup ask for it again explicitly (invalidation).
   const overviewQuery = useQuery({
     queryKey: ["badge-overview", username, tenantId, sessionMode],
     queryFn: evaluateUserBadges,
     enabled: isAuthenticated && Boolean(username) && Boolean(tenantId) && isEnabled,
-    staleTime: 30_000,
-    refetchOnMount: "always",
+    staleTime: BADGE_OVERVIEW_STALE_MS,
+    refetchOnMount: true,
   });
 
   const overview = overviewQuery.data;
