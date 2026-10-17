@@ -2,9 +2,11 @@
 // useNotifications Hook — Fetches notifications from Custom Backend
 // ============================================================
 
+import { useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getNotifications,
+  getUnreadCount,
   markNotificationRead,
   markAllNotificationsRead,
 } from "@/api/notifications";
@@ -49,19 +51,29 @@ function formatRelativeTime(isoDate: string): string {
   }
 }
 
+/** How often the header asks for the unread count while the tab is visible. */
+const UNREAD_COUNT_POLL_MS = 60 * 1000;
+const NOTIFICATIONS_STALE_MS = 30 * 1000;
+
+const notificationKeys = {
+  all: ["notifications"] as const,
+  list: () => ["notifications", "list"] as const,
+  unreadCount: () => ["notifications", "unread-count"] as const,
+};
+
 /**
  * Hook to get notifications, transformed to the FE Notification type.
- * Polls every 60 seconds for new notifications.
+ * Not polled: fetched on mount and again when the polled unread count
+ * changes (see useUnreadNotificationCount) or after marking as read.
  */
 export function useNotifications() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const query = useQuery({
-    queryKey: ["notifications"],
+    queryKey: notificationKeys.list(),
     queryFn: () => getNotifications({ page_size: 20 }),
     enabled: isAuthenticated,
-    staleTime: 30 * 1000,
-    refetchInterval: 60 * 1000,
+    staleTime: NOTIFICATIONS_STALE_MS,
     select: (data) => {
       const notifications = (data.data || []).map(transformNotification);
       return {
@@ -82,11 +94,36 @@ export function useNotifications() {
 }
 
 /**
- * Hook to get the count of unread notifications.
+ * Hook to get the count of unread notifications. Polls the small count
+ * endpoint every minute while the tab is visible (paused while hidden, asked
+ * once when the tab comes back if the count is older than 30 s). When the
+ * count changes, the notification list is fetched again.
  */
 export function useUnreadNotificationCount() {
-  const { unreadCount } = useNotifications();
-  return { count: unreadCount };
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const qc = useQueryClient();
+
+  const query = useQuery({
+    queryKey: notificationKeys.unreadCount(),
+    queryFn: async () => (await getUnreadCount()).count,
+    enabled: isAuthenticated,
+    staleTime: NOTIFICATIONS_STALE_MS,
+    refetchInterval: UNREAD_COUNT_POLL_MS,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+  });
+
+  const count = query.data;
+  const previousCount = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (count === undefined) return;
+    if (previousCount.current !== undefined && previousCount.current !== count) {
+      void qc.invalidateQueries({ queryKey: notificationKeys.list() });
+    }
+    previousCount.current = count;
+  }, [count, qc]);
+
+  return { count: count ?? 0 };
 }
 
 /**
@@ -97,7 +134,7 @@ export function useMarkNotificationRead() {
   return useMutation({
     mutationFn: (id: string) => markNotificationRead(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["notifications"] });
+      qc.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });
 }
@@ -110,7 +147,7 @@ export function useMarkAllRead() {
   return useMutation({
     mutationFn: markAllNotificationsRead,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["notifications"] });
+      qc.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });
 }
