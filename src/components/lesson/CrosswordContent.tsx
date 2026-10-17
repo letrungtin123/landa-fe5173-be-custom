@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
-import { markBlockComplete } from "@/api/progress";
-import { refetchProgressWithRetry } from "@/lib/progressRefetch";
+import { completeBlocksAndSync } from "@/lib/progressRefetch";
 import { useParams } from "react-router-dom";
 import {
   hasProblemMedia,
@@ -131,14 +130,12 @@ export function CrosswordContent({ usageKey, problemMedia, onImageClick }: Cross
           answers: { ...answers },
           contentFingerprint: fp,
         });
-        // Mark block complete (giống edX: chỉ khi đúng)
+        // Mark block complete (giống edX: chỉ khi đúng); tree and progress follow the answer.
         if (courseId) {
-          markBlockComplete(courseId, usageKey)
+          completeBlocksAndSync(qc, courseId, [usageKey])
             .catch((e) => console.error('Failed to mark crossword complete:', e));
         }
-        // Invalidate block detail and course completion
         qc.invalidateQueries({ queryKey: ["block-detail", usageKey] });
-        refetchProgressWithRetry(qc, courseId);
       } else if (data.status === "already_completed") {
         setIsCorrect(true);
         setResultMessage(t("crossword.completionSuccess"));

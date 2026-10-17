@@ -4,8 +4,7 @@ import { ArrowLeft, Check, CheckCircle2, Info, Lightbulb, Loader2, XCircle } fro
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { submitMediaQuizAnswer } from "@/api/blocks";
-import { markBlockComplete } from "@/api/progress";
-import { refetchProgressWithRetry } from "@/lib/progressRefetch";
+import { completeBlocksAndSync } from "@/lib/progressRefetch";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
 import {
@@ -216,8 +215,7 @@ export function MediaQuizContent({ usageKey, mediaQuizData, onImageClick }: Medi
       if (isLast) {
         if (courseId && user?.username) {
           try {
-            await markBlockComplete(courseId, usageKey);
-            refetchProgressWithRetry(qc, courseId);
+            await completeBlocksAndSync(qc, courseId, [usageKey]);
           } catch (error) {
             console.error("Failed to mark media quiz complete:", error);
           }

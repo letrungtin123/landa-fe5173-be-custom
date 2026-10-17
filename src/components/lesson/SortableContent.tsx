@@ -6,8 +6,7 @@ import { CheckCircle2, GripVertical, Loader2, XCircle, Play } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
-import { refetchProgressWithRetry } from "@/lib/progressRefetch";
-import { markBlockComplete } from "@/api/progress";
+import { completeBlocksAndSync } from "@/lib/progressRefetch";
 import { useParams } from "react-router-dom";
 import {
   hasProblemMedia,
@@ -246,14 +245,12 @@ export function SortableContent({ usageKey, problemMedia, onImageClick }: Sortab
           contentFingerprint: fp,
           orderedItemIds: answer,
         });
-        // Mark block complete (giống edX: chỉ khi đúng)
+        // Mark block complete (giống edX: chỉ khi đúng); tree and progress follow the answer.
         if (data.status === "correct" && courseId) {
-          markBlockComplete(courseId, usageKey)
+          completeBlocksAndSync(qc, courseId, [usageKey])
             .catch((e) => console.error('Failed to mark sortable complete:', e));
         }
         qc.invalidateQueries({ queryKey: ["block-detail", usageKey] });
-        // Refetch progress với retry để bắt kịp backend aggregation
-        refetchProgressWithRetry(qc, courseId);
       } else {
         const retryMessage = getLocalizedSubmitFeedback(t, data, {
           isCorrect: false,

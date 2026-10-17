@@ -15,8 +15,7 @@ import { answerDisplayHtml, parseProblemHtml, problemContentFingerprint } from "
 import type { ParsedProblem, ProblemOption } from "@/transformers/problemParser";
 import { useParams } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { markBlockComplete } from "@/api/progress";
-import { refetchProgressWithRetry } from "@/lib/progressRefetch";
+import { completeBlocksAndSync } from "@/lib/progressRefetch";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
 import { LessonImageCarousel } from "./LessonImageCarousel";
@@ -351,14 +350,12 @@ export function QuizContent({
 
       // CHỈ khi trả lời ĐÚNG mới gọi markBlockComplete và cập nhật tiến độ sidebar
       if (result.correct && courseId && user?.username) {
+        // The course tree and progress are updated from the server's answer.
         try {
-          await markBlockComplete(courseId, problemUsageKey);
+          await completeBlocksAndSync(qc, courseId, [problemUsageKey]);
         } catch (e) {
           console.error("Failed to mark block complete:", e);
         }
-
-        // Refetch progress với retry để bắt kịp backend aggregation
-        refetchProgressWithRetry(qc, courseId);
       }
       // Nếu trả lời SAI → KHÔNG gọi API completion, KHÔNG invalidate queries → sidebar giữ nguyên
 

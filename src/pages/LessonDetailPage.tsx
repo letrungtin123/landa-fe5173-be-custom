@@ -27,8 +27,7 @@ import { sanitizeUrlToRelative } from "@/transformers/staticUrlRewriter";
 import { storageUrl } from "@/utils/storageUrl";
 import type { Mentor, UnitDetail } from "@/data/types";
 
-import { markBlocksComplete } from "@/api/progress";
-import { refetchProgressWithRetry } from "@/lib/progressRefetch";
+import { completeBlocksAndSync } from "@/lib/progressRefetch";
 import { CrosswordContent } from "@/components/lesson/CrosswordContent";
 import { SortableContent } from "@/components/lesson/SortableContent";
 import { FaqContent } from "@/components/lesson/FaqContent";
@@ -250,11 +249,9 @@ export function LessonDetailPage() {
   }, [lesson]);
 
   const completeMutation = useMutation({
-    mutationFn: () =>
-      markBlocksComplete(courseId || "", leafBlockIds),
-    onSuccess: () => {
-      refetchProgressWithRetry(qc, courseId);
-    },
+    // Updates the course tree and progress from the answer; blocks already
+    // completed are not sent again.
+    mutationFn: () => completeBlocksAndSync(qc, courseId || "", leafBlockIds),
   });
 
 
@@ -505,10 +502,8 @@ export function LessonDetailPage() {
 
     if (passiveIds.length === 0) return;
 
-    markBlocksComplete(courseId, passiveIds)
-      .then(() => {
-        refetchProgressWithRetry(qc, courseId);
-      })
+    // Revisiting a unit whose blocks are already completed sends nothing.
+    completeBlocksAndSync(qc, courseId, passiveIds)
       .catch((e) => console.error("Failed to auto-mark passive blocks:", e));
   }, [currentUnit?.id, user?.username, courseId, showManualComplete]);
 

@@ -4,8 +4,7 @@ import { Check, CheckCircle2, Eye, Loader2, MessageSquareText, Play, RotateCcw }
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { submitScenarioChatAnswer } from "@/api/blocks";
-import { markBlockComplete } from "@/api/progress";
-import { refetchProgressWithRetry } from "@/lib/progressRefetch";
+import { completeBlocksAndSync } from "@/lib/progressRefetch";
 import { buildScenarioChatFingerprint, normalizeScenarioChatData, type ScenarioChatData, type ScenarioChatRound } from "@/lib/scenarioChat";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -522,8 +521,7 @@ export function ScenarioChatContent({ usageKey, scenarioChatData }: ScenarioChat
         setBlockCompleted(true);
         if (courseId && user?.username) {
           try {
-            await markBlockComplete(courseId, usageKey);
-            refetchProgressWithRetry(qc, courseId);
+            await completeBlocksAndSync(qc, courseId, [usageKey]);
           } catch (error) {
             console.error("Failed to mark scenario chat complete:", error);
           }

@@ -4,8 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { submitImageChoiceQuizAnswer } from "@/api/blocks";
-import { markBlockComplete } from "@/api/progress";
-import { refetchProgressWithRetry } from "@/lib/progressRefetch";
+import { completeBlocksAndSync } from "@/lib/progressRefetch";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
 import {
@@ -156,8 +155,7 @@ export function ImageChoiceQuizContent({ usageKey, imageChoiceQuizData }: ImageC
 
       if (courseId && user?.username) {
         try {
-          await markBlockComplete(courseId, usageKey);
-          refetchProgressWithRetry(qc, courseId);
+          await completeBlocksAndSync(qc, courseId, [usageKey]);
         } catch (error) {
           console.error("Failed to mark image choice quiz complete:", error);
         }

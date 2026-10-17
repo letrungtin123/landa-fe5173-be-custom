@@ -4,8 +4,8 @@
 // ============================================================
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { markBlockComplete, markBlocksComplete, getMyCourseProgress, getBatchCourseProgress } from "@/api/progress";
-import { refetchProgressWithRetry } from "@/lib/progressRefetch";
+import { getMyCourseProgress, getBatchCourseProgress } from "@/api/progress";
+import { completeBlocksAndSync } from "@/lib/progressRefetch";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 /**
@@ -55,11 +55,9 @@ export function useMarkComplete() {
   const qc = useQueryClient();
 
   return useMutation({
+    // Skips a block already completed; updates tree and progress from the answer.
     mutationFn: ({ courseId, usageKey }: { courseId: string; usageKey: string }) =>
-      markBlockComplete(courseId, usageKey),
-    onSuccess: (_data, variables) => {
-      refetchProgressWithRetry(qc, variables.courseId);
-    },
+      completeBlocksAndSync(qc, courseId, [usageKey]),
   });
 }
 
@@ -71,10 +69,7 @@ export function useMarkBlocksComplete() {
 
   return useMutation({
     mutationFn: ({ courseId, blockIds }: { courseId: string; blockIds: string[] }) =>
-      markBlocksComplete(courseId, blockIds),
-    onSuccess: (_data, variables) => {
-      refetchProgressWithRetry(qc, variables.courseId);
-    },
+      completeBlocksAndSync(qc, courseId, blockIds),
   });
 }
 

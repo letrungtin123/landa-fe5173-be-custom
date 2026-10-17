@@ -14,6 +14,7 @@ import {
   markDemoIframeBlocksComplete,
 } from "@/stores/demoIframeLearningStore";
 import type { ApiResponse, CourseProgress } from "./types";
+import type { CompleteBlocksResult } from "@/lib/completionSync.logic";
 
 function isDemoIframeSession(): boolean {
   return useAuthStore.getState().sessionMode === "demo_iframe";
@@ -28,14 +29,14 @@ function isDemoIframeSession(): boolean {
 export async function markBlocksComplete(
   courseId: string,
   blockIds: string[]
-): Promise<unknown> {
+): Promise<CompleteBlocksResult | null> {
   if (blockIds.length === 0) return null;
   if (isDemoIframeSession()) {
     return markDemoIframeBlocksComplete(courseId, blockIds);
   }
 
   try {
-    const { data } = await apiClient.post<ApiResponse<{ marked: number }>>(
+    const { data } = await apiClient.post<ApiResponse<CompleteBlocksResult>>(
       "/api/learner/complete-blocks",
       { course_id: courseId, block_ids: blockIds }
     );
@@ -46,7 +47,7 @@ export async function markBlocksComplete(
       try {
         await enrollCourse(courseId);
       } catch { /* ignore */ }
-      const { data } = await apiClient.post<ApiResponse<{ marked: number }>>(
+      const { data } = await apiClient.post<ApiResponse<CompleteBlocksResult>>(
         "/api/learner/complete-blocks",
         { course_id: courseId, block_ids: blockIds }
       );
