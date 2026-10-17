@@ -13,6 +13,7 @@ import linePlaneMobileImage from "@/assets/WelcomeInitModal/welcome_init_line_pl
 import linePlanePcImage from "@/assets/WelcomeInitModal/welcome_init_line_plan_pc.png";
 import planeImage from "@/assets/WelcomeInitModal/welcome_init_plane.png";
 import { useBranding } from "@/hooks/useBranding";
+import { retryQueryAtMost } from "@/api/retryPolicy.logic";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useTranslation } from "react-i18next";
@@ -78,7 +79,7 @@ export function WelcomeInitModal() {
     enabled: isAuthenticated && !!user?.id,
     staleTime: 60_000,
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: retryQueryAtMost(1),
   });
 
   const { mutate: markSeen, isPending } = useMutation({

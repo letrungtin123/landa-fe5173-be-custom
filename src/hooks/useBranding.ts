@@ -14,6 +14,7 @@ import fallbackRegisterBg from '@/assets/LoginPage/Register.png';
 import fallbackWhiteLogo from '@/assets/LoginPage/WhiteLogoLeftPanel.png';
 import fallbackSquareIcon from '@/assets/LoginPage/SquareIcon.png';
 import fallbackHeaderLogo from '@/assets/leandassociate.webp';
+import { retryQueryAtMost } from '@/api/retryPolicy.logic';
 
 export interface DashboardContentTip {
   title: string;
@@ -188,7 +189,7 @@ export function useBranding() {
     queryFn: () => fetchBrandingByDomain(domain),
     staleTime: 5 * 60 * 1000, // 5 phút
     gcTime: 10 * 60 * 1000,
-    retry: 1,
+    retry: retryQueryAtMost(1),
     refetchOnWindowFocus: false,
   });
 

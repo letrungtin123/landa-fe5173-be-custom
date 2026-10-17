@@ -20,6 +20,7 @@ import { useTranslation } from "react-i18next";
 
 import ChatWidget from "@/components/chat-widget/chat-widget";
 import { exchangeOttApi } from "@/api/auth";
+import { queryRetryDelayMs, shouldRetryQuery } from "@/api/retryPolicy.logic";
 
 // ── OTT Handler: Check trước khi React mount ──
 // Nếu URL có ?ott= (từ Admin Dashboard → FE Learner SSO),
@@ -92,7 +93,10 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000, // 5 phút
       gcTime: 10 * 60 * 1000, // Dọn cache sau 10 phút không sử dụng
-      retry: 1,
+      // At most 2 retries, only after no answer, 408 or 5xx, with jitter;
+      // a 429 is retried by the API client only (api/retryPolicy.logic.ts).
+      retry: shouldRetryQuery,
+      retryDelay: queryRetryDelayMs,
       refetchOnWindowFocus: false, // Tránh refetch liên tục khi đổi tab
     },
     mutations: {

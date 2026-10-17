@@ -10,6 +10,7 @@ import { readSsoRefusalMessage } from "@/api/authSession.logic";
 import { openSsoPopup } from "@/utils/ssoPopup";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
+import { retryQueryAtMost } from "@/api/retryPolicy.logic";
 
 function getSafeNextPath(value: string | null): string {
   if (!value || !value.startsWith("/") || value.startsWith("//")) return "/dashboard";
@@ -75,7 +76,7 @@ export function LoginPage() {
     queryKey: ["public-sso", currentDomain],
     queryFn: () => fetchPublicSsoConfigByDomain(currentDomain),
     staleTime: 60_000,
-    retry: 1,
+    retry: retryQueryAtMost(1),
   });
   const ssoProviders = ssoConfig?.providers ?? [];
 

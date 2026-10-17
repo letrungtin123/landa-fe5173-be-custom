@@ -9,6 +9,7 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { config } from "@/config/env";
 import { useAuthStore, afterFailedRefresh, lastRefreshFailedTransiently } from "@/stores/useAuthStore";
 import { useLocaleStore } from "@/stores/useLocaleStore";
+import { rateLimitRetryDelayMs } from "./retryPolicy.logic";
 
 export const apiClient = axios.create({
   baseURL: config.apiBaseUrl,
@@ -58,16 +59,27 @@ apiClient.interceptors.response.use(
   }
 );
 
-// ── 429 Retry — exponential backoff khi bị rate limit ──
+// ── 429 Retry — the only layer that retries a rate-limited request ──
+// Honors Retry-After (seconds or HTTP date), else full-jitter backoff; at most
+// 3 attempts and 10 s per wait (see retryPolicy.logic.ts). React Query does
+// not retry a 429 again.
+function retryAfterHeader(error: AxiosError): unknown {
+  const headers = error.response?.headers as Record<string, unknown> | undefined;
+  return headers?.["retry-after"] ?? headers?.["Retry-After"];
+}
+
 apiClient.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
     const req = error.config as InternalAxiosRequestConfig & { _retryCount429?: number };
-    if (error.response?.status === 429 && req && (req._retryCount429 ?? 0) < 3) {
-      req._retryCount429 = (req._retryCount429 ?? 0) + 1;
-      const delay = req._retryCount429 * 2000; // 2s, 4s, 6s — aggressive backoff
-      await new Promise((r) => setTimeout(r, delay));
-      return apiClient(req);
+    if (error.response?.status === 429 && req) {
+      const retriesSoFar = req._retryCount429 ?? 0;
+      const delay = rateLimitRetryDelayMs(retriesSoFar, retryAfterHeader(error));
+      if (delay !== null) {
+        req._retryCount429 = retriesSoFar + 1;
+        await new Promise((r) => setTimeout(r, delay));
+        return apiClient(req);
+      }
     }
     return Promise.reject(error);
   }
@@ -158,8 +170,10 @@ apiClient.interceptors.response.use(
     }
 
     // Server out of reach (network, timeout, 5xx, 429): keep the session, fail this request only.
+    // Marked so React Query may try the query again (retryPolicy.logic.ts).
     if (lastRefreshFailedTransiently()) {
       afterFailedRefresh();
+      (error as AxiosError & { transientAuthFailure?: boolean }).transientAuthFailure = true;
       return Promise.reject(error);
     }
 
