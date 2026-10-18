@@ -18,7 +18,6 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useTranslation } from "react-i18next";
 
-import ChatWidget from "@/components/chat-widget/chat-widget";
 import { exchangeOttApi } from "@/api/auth";
 import { queryRetryDelayMs, shouldRetryQuery } from "@/api/retryPolicy.logic";
 
@@ -86,6 +85,9 @@ const DemoQrLoginPage = React.lazy(() =>
 const DemoIframeEmbedPage = React.lazy(() =>
   import("@/pages/DemoIframeEmbedPage").then(m => ({ default: m.DemoIframeEmbedPage }))
 );
+// AI chat (FAB + panel): its own chunk, never on the sign-in page. Rendered
+// inside its own Suspense: suspending to the app-level one would hide the page.
+const ChatWidget = React.lazy(() => import("@/components/chat-widget/chat-widget"));
 
 // ── React Query config ──
 const queryClient = new QueryClient({
@@ -140,7 +142,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       {/* Global study time tracker — đếm giờ học ngay khi login, mọi route */}
       {sessionMode !== "demo_iframe" ? <StudyTimeTracker /> : null}
       {/* AI Chat Widget — hiện FAB chat trên mọi trang */}
-      <ChatWidget />
+      <Suspense fallback={null}><ChatWidget /></Suspense>
       {children}
     </>
   );

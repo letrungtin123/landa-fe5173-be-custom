@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import i18n from "@/i18n";
+import { changeAppLocale } from "@/i18n";
 import { useLocaleStore } from "@/stores/useLocaleStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import {
@@ -16,7 +16,8 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     document.documentElement.lang = locale;
-    void i18n.changeLanguage(locale);
+    // English strings download on first use (i18n/index.ts).
+    void changeAppLocale(locale);
   }, [locale]);
 
   useEffect(() => {

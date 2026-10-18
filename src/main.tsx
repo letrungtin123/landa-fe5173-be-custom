@@ -2,7 +2,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App";
-import "./i18n";
+import { changeAppLocale } from "./i18n";
+import { useLocaleStore } from "./stores/useLocaleStore";
 
 function syncFontPlatformToDOM() {
   const nav = window.navigator as Navigator & {
@@ -27,8 +28,13 @@ syncFontPlatformToDOM();
 window.matchMedia("(min-width: 768px)").addEventListener("change", syncFontPlatformToDOM);
 window.matchMedia("(hover: hover) and (pointer: fine)").addEventListener("change", syncFontPlatformToDOM);
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+// A learner who chose English sees English from the first frame: the English
+// strings (a small separate chunk) are ready before the first render.
+// Vietnamese is already in the main script, so nothing waits for it.
+void changeAppLocale(useLocaleStore.getState().locale).finally(() => {
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  );
+});

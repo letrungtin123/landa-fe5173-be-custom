@@ -18,7 +18,7 @@ import { MentorSidebar } from "@/components/lesson/MentorSidebar";
 import { LessonImageCarousel } from "@/components/lesson/LessonImageCarousel";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useMemo, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DOMPurify from "dompurify";
@@ -32,7 +32,6 @@ import { CrosswordContent } from "@/components/lesson/CrosswordContent";
 import { SortableContent } from "@/components/lesson/SortableContent";
 import { FaqContent } from "@/components/lesson/FaqContent";
 import { PdfContent } from "@/components/lesson/PdfContent";
-import DiagramContent from "@/components/lesson/DiagramContent";
 import { HtmlBlockContent } from "@/components/lesson/HtmlBlockContent";
 import { WelcomeCourseModal } from "@/components/lesson/WelcomeCourseModal";
 import { SectionCompleteModal } from "@/components/lesson/SectionCompleteModal";
@@ -57,6 +56,9 @@ import {
   DEMO_IFRAME_GUIDE_SCROLL_SHORT_MS,
   scrollDemoIframeElementToCenter,
 } from "@/utils/demoIframeSmoothScroll";
+
+// React Flow + d3 download only when a lesson shows a diagram (own Suspense below).
+const DiagramContent = lazy(() => import("@/components/lesson/DiagramContent"));
 
 // ── Badge component (declared outside render to satisfy React Compiler) ──
 const BadgeCyan = ({ children }: { children: React.ReactNode }) => (
@@ -989,7 +991,9 @@ export function LessonDetailPage() {
                   if (comp.type === "la_diagram" && comp.diagramData) {
                     return (
                       <div key={comp.id} className="rounded-3xl border border-border p-4 shadow-sm bg-card">
-                        <DiagramContent data={comp.diagramData} />
+                        <Suspense fallback={<div className="w-full min-h-[500px] rounded-xl border border-border bg-background animate-pulse" aria-busy="true" />}>
+                          <DiagramContent data={comp.diagramData} />
+                        </Suspense>
                       </div>
                     );
                   }

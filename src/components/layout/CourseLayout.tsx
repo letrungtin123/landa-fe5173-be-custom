@@ -1,12 +1,17 @@
-import { useEffect, useRef } from "react";
+import { Suspense, lazy, useEffect, useRef } from "react";
 import { Outlet, useLocation, useParams } from "react-router-dom";
 import { CourseSidebar } from "./CourseSidebar";
 import { PageTransition } from "./PageTransition";
 import { useBlockSubmitStore } from "@/stores/useBlockSubmitStore";
-import { CompleteCourseModal } from "@/components/lesson/CompleteCourseModal";
-import { Course100PercentModal } from "@/components/lesson/Course100PercentModal";
 import { useCourseCompletion } from "@/hooks/useProgress";
 import { useCourseModalConfig } from "@/hooks/useModalConfig";
+
+// The end-of-course dialogs (and their artwork) load only on course pages,
+// inside their own Suspense so the lesson never waits for them.
+const CompleteCourseModal = lazy(() => import("@/components/lesson/CompleteCourseModal")
+  .then((module) => ({ default: module.CompleteCourseModal })));
+const Course100PercentModal = lazy(() => import("@/components/lesson/Course100PercentModal")
+  .then((module) => ({ default: module.Course100PercentModal })));
 
 const RELOAD_FLAG = "la-page-reloading";
 
@@ -62,7 +67,7 @@ export function CourseLayout() {
       </div>
 
       {courseId && (
-        <>
+        <Suspense fallback={null}>
           <CompleteCourseModal
             courseId={courseId}
             completionPercent={completionPercent}
@@ -75,7 +80,7 @@ export function CourseLayout() {
             isLoading={isProgressLoading}
             config={modalConfig}
           />
-        </>
+        </Suspense>
       )}
     </div>
   );

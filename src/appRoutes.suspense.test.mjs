@@ -55,3 +55,30 @@ test('a route that waits for the tenant context renders its lazy page inside its
     assert.deepEqual(lazyElementsOutsideSuspense(fn), [], `${fn.name.text} renders a lazy page outside its own Suspense`);
   }
 });
+
+test('the lazy chat widget renders inside its own Suspense, never the app-level one', () => {
+  assert.ok(lazyComponents.has('ChatWidget'), 'ChatWidget is a lazy chunk');
+  let protectedRoute = null;
+  ts.forEachChild(sourceFile, function visit(node) {
+    if (ts.isFunctionDeclaration(node) && node.name?.text === 'ProtectedRoute') protectedRoute = node;
+    ts.forEachChild(node, visit);
+  });
+  assert.ok(protectedRoute, 'ProtectedRoute found');
+  assert.deepEqual(lazyElementsOutsideSuspense(protectedRoute), []);
+  assert.doesNotMatch(readFileSync(file, 'utf8'), /import ChatWidget from/);
+});
+
+test('lesson diagrams, end-of-course dialogs and the English strings load on demand, each with its own boundary', () => {
+  const read = (relative) => readFileSync(new URL(relative, import.meta.url), 'utf8');
+  const lesson = read('./pages/LessonDetailPage.tsx');
+  assert.match(lesson, /const DiagramContent = lazy\(\(\) => import\("@\/components\/lesson\/DiagramContent"\)\)/);
+  assert.match(lesson, /<Suspense fallback=\{[^}]*min-h-\[500px\][^}]*\}>\s*<DiagramContent data=\{comp\.diagramData\} \/>\s*<\/Suspense>/);
+  const courseLayout = read('./components/layout/CourseLayout.tsx');
+  assert.doesNotMatch(courseLayout, /import \{ (CompleteCourseModal|Course100PercentModal) \}/);
+  assert.match(courseLayout, /<Suspense fallback=\{null\}>\s*<CompleteCourseModal/);
+  const i18n = read('./i18n/index.ts');
+  assert.doesNotMatch(i18n, /import \{ en \}/);
+  assert.match(i18n, /import\("\.\/locales\/en"\)/);
+  assert.match(read('./main.tsx'), /changeAppLocale\(useLocaleStore\.getState\(\)\.locale\)\.finally\(/);
+  assert.match(read('./components/providers/LocaleProvider.tsx'), /void changeAppLocale\(locale\)/);
+});
