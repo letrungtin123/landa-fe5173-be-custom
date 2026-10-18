@@ -195,7 +195,7 @@ export function CoursesPage() {
                         )}
                       >
                         {imageUrl && (
-                          <img
+                          <img loading="lazy" decoding="async"
                             src={imageUrl}
                             alt={course.display_name}
                             className="absolute inset-0 z-10 h-full w-full object-cover rounded-[18px] md:rounded-[20px]"

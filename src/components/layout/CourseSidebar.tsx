@@ -426,7 +426,7 @@ export function CourseSidebar() {
               >
                 <div className="relative mb-3">
                   {avatarUrl ? (
-                    <img 
+                    <img loading="lazy" decoding="async" 
                       src={avatarUrl} 
                       alt={mentor.name} 
                       className="h-[76px] w-[76px] rounded-full bg-background p-0.5 border border-border shadow-sm object-cover"

@@ -77,6 +77,9 @@ export function HtmlBlockContent({ htmlContent, uploadedImages = [], displayName
           return;
         }
         img.setAttribute("src", htmlImageDisplaySrc(src));
+        // Images further down the lesson load when the learner scrolls to them.
+        if (!img.hasAttribute("loading")) img.setAttribute("loading", "lazy");
+        img.setAttribute("decoding", "async");
       });
 
       const validImgEls = Array.from(doc.querySelectorAll("img"));

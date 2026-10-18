@@ -526,7 +526,7 @@ export function ExplorePage() {
                   {/* Background container that clips */}
                   <div className="absolute inset-0 rounded-[20px] md:rounded-[32px] overflow-hidden z-0 pointer-events-none" style={{ border: '1.5px solid hsl(var(--primary))', backgroundColor: 'hsl(var(--primary) / 0.04)' }}>
                     {/* Illustration */}
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={heroIllustration}
                       alt={t("explore.learningJourney")}
                       className="hidden md:block absolute right-0 bottom-0 h-full w-auto max-w-[400px] object-contain select-none pr-3 mr-20"
@@ -1084,7 +1084,7 @@ export function ExplorePage() {
                                 <div className="w-[38%] h-full shrink-0 relative flex items-center justify-center overflow-hidden p-1.5">
                                   {imageUrl ? (
                                     <>
-                                      <img
+                                      <img loading="lazy" decoding="async"
                                         src={imageUrl}
                                         alt={course.display_name}
                                         className="z-10 h-full w-full object-cover rounded-[14px]"
@@ -1344,7 +1344,7 @@ function ExploreCourseCard({
           )}
         >
           {imageUrl && (
-            <img
+            <img loading="lazy" decoding="async"
               src={imageUrl}
               alt={course.display_name}
               className="absolute inset-0 z-0 h-full w-full object-cover rounded-[18px] md:rounded-[20px]"

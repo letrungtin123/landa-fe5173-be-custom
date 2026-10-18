@@ -420,7 +420,7 @@ export function LibraryPage() {
                       <Card key={doc.id} className="rounded-2xl border-border bg-card hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col h-[200px] p-5 shadow-sm group">
                         <div className="flex justify-between items-start mb-4">
                           <div className="h-12 w-12 shrink-0 rounded-xl bg-background border flex items-center justify-center shadow-xs overflow-hidden p-2">
-                            <img src={iconSrc} alt={doc.extension} className={`h-full w-full object-contain transition-transform ${doc.extension?.toLowerCase() === 'pdf' ? 'scale-[1.3]' : ''}`} />
+                            <img loading="lazy" decoding="async" src={iconSrc} alt={doc.extension} className={`h-full w-full object-contain transition-transform ${doc.extension?.toLowerCase() === 'pdf' ? 'scale-[1.3]' : ''}`} />
                           </div>
                           <button
                             onClick={(e) => {
@@ -483,7 +483,7 @@ export function LibraryPage() {
             </div>
 
             <div className="hidden w-full h-[160px] sm:h-[240px] md:block md:h-[320px] rounded-2xl overflow-hidden relative border border-border shadow-sm">
-              <img
+              <img loading="lazy" decoding="async"
                 src="/images/library_banner.png"
                 alt="Library Banner"
                 className="w-full h-full object-cover object-center"
@@ -716,7 +716,7 @@ export function LibraryPage() {
                             <td className="px-4 xl:px-6 py-4">
                               <div className="flex items-center gap-3 xl:gap-4 min-w-0">
                                 <div className="h-10 w-10 shrink-0 rounded-lg bg-background shadow-xs flex items-center justify-center border border-border/50 group-hover:shadow-sm transition-shadow overflow-hidden p-1.5">
-                                  <img src={iconSrc} alt={doc.extension} className={`h-full w-full object-contain transition-transform ${doc.extension?.toLowerCase() === 'pdf' ? 'scale-[1.3]' : ''}`} />
+                                  <img loading="lazy" decoding="async" src={iconSrc} alt={doc.extension} className={`h-full w-full object-contain transition-transform ${doc.extension?.toLowerCase() === 'pdf' ? 'scale-[1.3]' : ''}`} />
                                 </div>
                                 <span className="font-semibold text-[14px] leading-[18px] text-foreground group-hover:text-primary transition-colors line-clamp-2 break-words flex-1 min-w-0">
                                   {doc.title}
@@ -815,7 +815,7 @@ export function LibraryPage() {
                           <div
                             className="h-10 w-10 shrink-0 rounded-lg bg-background shadow-xs flex items-center justify-center border border-border/50 overflow-hidden p-1.5"
                           >
-                            <img src={iconSrc} alt={doc.extension} className={`h-full w-full object-contain transition-transform ${doc.extension?.toLowerCase() === 'pdf' ? 'scale-[1.3]' : ''}`} />
+                            <img loading="lazy" decoding="async" src={iconSrc} alt={doc.extension} className={`h-full w-full object-contain transition-transform ${doc.extension?.toLowerCase() === 'pdf' ? 'scale-[1.3]' : ''}`} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-[14px] leading-[18px] text-foreground line-clamp-2 mb-1.5 break-words">

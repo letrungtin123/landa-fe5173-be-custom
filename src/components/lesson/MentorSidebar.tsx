@@ -44,7 +44,7 @@ export function MentorSidebar({ mentors, companyLogo }: MentorSidebarProps) {
               {/* Avatar */}
               <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-full border border-border/80 p-1 transition-all group-hover:border-primary/40 bg-card shadow-sm">
                 {getAvatar(mentor) ? (
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={getAvatar(mentor)!}
                     alt={mentor.name}
                     className="h-full w-full rounded-full object-cover bg-primary/5"
@@ -109,7 +109,7 @@ export function MentorSidebar({ mentors, companyLogo }: MentorSidebarProps) {
                 <div className="flex flex-col items-center -mt-12 mb-4">
                   <div className="h-24 w-24 rounded-full border-4 border-card bg-muted shadow-xl overflow-hidden mb-3">
                     {getAvatarFull(selected) ? (
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={getAvatarFull(selected)!}
                         alt={selected.name}
                         className="h-full w-full object-cover"

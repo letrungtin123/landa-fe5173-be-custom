@@ -184,8 +184,11 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
       >
         {/* Background Image (object-fill to cover screen without bars) */}
         <div className="absolute inset-0 w-full h-full -z-20 bg-[#7cb0f7] overflow-hidden">
-          <img src={CompleteBGModalPC} className="hidden md:block absolute inset-0 w-full h-full object-fill" alt="bg-pc" />
-          <img src={CompleteBGModalMobile} className="block md:hidden absolute inset-0 w-full h-full object-fill" alt="bg-mobile" />
+          {/* One file per screen size: a phone downloads only the mobile image (2.5 MB), not also the PC one (4.4 MB). */}
+          <picture>
+            <source media="(min-width: 768px)" srcSet={CompleteBGModalPC} />
+            <img src={CompleteBGModalMobile} className="absolute inset-0 w-full h-full object-fill" alt="" aria-hidden="true" decoding="async" />
+          </picture>
         </div>
 
         {/* Confetti Effect */}
@@ -208,17 +211,17 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
               transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
             >
               <img 
-                src={CompleteModalTrophy} 
+                src={CompleteModalTrophy} decoding="async" 
                 alt="Trophy PC" 
                 className="absolute w-[360px] max-w-none ml-[-40px] mt-[-100px] drop-shadow-2xl z-20"
               />
               <img 
-                src={CompleteModalHat} 
+                src={CompleteModalHat} decoding="async" 
                 alt="Hat PC" 
                 className="absolute w-[290px] max-w-none ml-[-320px] mt-[-320px] drop-shadow-xl z-10"
               />
               <img 
-                src={CompleteModalPencil} 
+                src={CompleteModalPencil} decoding="async" 
                 alt="Pencil PC" 
                 className="absolute w-[150px] max-w-none ml-[-320px] mt-[65px] drop-shadow-xl z-30"
               />
@@ -274,17 +277,17 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
           transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
         >
           <img 
-            src={CompleteModalTrophy} 
+            src={CompleteModalTrophy} decoding="async" 
             alt="Trophy" 
             className="absolute w-[220px] max-w-none ml-[-60px] mt-[-60px] drop-shadow-2xl z-20"
           />
           <img 
-            src={CompleteModalHat} 
+            src={CompleteModalHat} decoding="async" 
             alt="Hat" 
             className="absolute w-[180px] max-w-none ml-[-180px] mt-[-240px] drop-shadow-xl z-10"
           />
           <img 
-            src={CompleteModalPencil} 
+            src={CompleteModalPencil} decoding="async" 
             alt="Pencil" 
             className="absolute w-[90px] max-w-none ml-[-160px] mt-[80px] drop-shadow-xl z-30"
           />

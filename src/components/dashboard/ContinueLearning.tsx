@@ -42,7 +42,7 @@ function CourseCard({ course, completionPercent }: { course: ContinueCourse; com
           <div className="w-full md:w-[40%] h-40 md:h-full shrink-0 relative flex items-center justify-center overflow-hidden md:p-1.5 rounded-[18px] md:rounded-none">
             {course.thumbnail ? (
               <>
-                <img
+                <img loading="lazy" decoding="async"
                   src={course.thumbnail}
                   alt={course.title}
                   className="z-10 h-full w-full object-cover rounded-[18px]"

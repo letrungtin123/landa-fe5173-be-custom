@@ -182,19 +182,11 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
               width: 474px;
             }
 
-            .section-complete-letter-mobile {
-              display: none;
-            }
-
             .section-complete-fly-element {
               inset: 66px;
               width: calc(100% - 132px);
               height: calc(100% - 132px);
               object-fit: cover;
-            }
-
-            .section-complete-fly-element-mobile {
-              display: none;
             }
 
             .section-complete-copy {
@@ -233,20 +225,11 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
               }
 
               .section-complete-letter {
-                display: none;
-              }
-
-              .section-complete-letter-mobile {
-                display: block;
                 width: 306px;
               }
 
               .section-complete-fly-element {
-                display: none;
-              }
-
-              .section-complete-fly-element-mobile {
-                display: block;
+                inset: auto;
                 left: 50%;
                 top: 50%;
                 width: 394.5px;
@@ -296,6 +279,7 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
             src={lightEffectUrl}
             alt=""
             aria-hidden="true"
+            decoding="async"
             className="absolute left-1/2 top-1/2 z-[1] h-[125%] w-[125%] -translate-x-1/2 -translate-y-1/2 object-cover opacity-35 mix-blend-screen [filter:hue-rotate(155deg)_saturate(170%)_brightness(0.8)] md:h-[118%] md:w-[118%]"
           />
           <div
@@ -306,38 +290,32 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
             }}
           />
 
-          <img
-            src={letterUrl}
-            alt=""
-            aria-hidden="true"
-            className="section-complete-letter pointer-events-none absolute bottom-0 left-1/2 z-20 -translate-x-1/2 select-none"
-            loading="eager"
-            draggable={false}
-          />
-          <img
-            src={letterElementMobileUrl}
-            alt=""
-            aria-hidden="true"
-            className="section-complete-letter-mobile pointer-events-none absolute bottom-0 left-1/2 z-20 -translate-x-1/2 select-none"
-            loading="eager"
-            draggable={false}
-          />
-          <img
-            src={flyElementUrl}
-            alt=""
-            aria-hidden="true"
-            className="section-complete-fly-element pointer-events-none absolute z-30 select-none object-cover"
-            loading="eager"
-            draggable={false}
-          />
-          <img
-            src={flyElementMobileUrl}
-            alt=""
-            aria-hidden="true"
-            className="section-complete-fly-element-mobile pointer-events-none absolute z-30 select-none"
-            loading="eager"
-            draggable={false}
-          />
+          {/* One file per screen size (same 768px breakpoint as the style block):
+              a phone downloads only the mobile letter and plane, not both pairs. */}
+          <picture>
+            <source media="(min-width: 768px)" srcSet={letterUrl} />
+            <img
+              src={letterElementMobileUrl}
+              alt=""
+              aria-hidden="true"
+              className="section-complete-letter pointer-events-none absolute bottom-0 left-1/2 z-20 -translate-x-1/2 select-none"
+              loading="eager"
+              decoding="async"
+              draggable={false}
+            />
+          </picture>
+          <picture>
+            <source media="(min-width: 768px)" srcSet={flyElementUrl} />
+            <img
+              src={flyElementMobileUrl}
+              alt=""
+              aria-hidden="true"
+              className="section-complete-fly-element pointer-events-none absolute z-30 select-none"
+              loading="eager"
+              decoding="async"
+              draggable={false}
+            />
+          </picture>
 
           <div className="section-complete-copy absolute left-1/2 z-40 -translate-x-1/2 text-center">
             <h1 className="section-complete-title tracking-normal text-[#0062DF]" style={{ color: "#0062DF" }}>
