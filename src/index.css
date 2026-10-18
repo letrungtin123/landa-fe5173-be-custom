@@ -11,7 +11,7 @@
   /* SF Pro Display: only the faces the app asks for. Headings, .heading and
      font-display use 400-900 upright; no UI text asks for 100-300 or italic
      (lesson <em>/<i> may use the synthesized slant, see .lesson-html-content).
-     Bold and Semibold are preloaded in index.html on phones and tablets. */
+     Semibold is preloaded in index.html on phones and tablets. */
   @font-face {
     font-family: 'SF Pro Display';
     src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-Regular.woff') format('woff');

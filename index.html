@@ -10,11 +10,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet" />
-  <!-- Heading font (SF Pro Display Bold + Semibold, the most used faces) starts
-       downloading with the page on phones and tablets, which use it (Windows
-       desktop uses Inter; see main.tsx). Same URLs as the @font-face rules. -->
-  <link rel="preload" href="/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-Bold.woff" as="font" type="font/woff"
-    crossorigin media="(max-width: 767px), (hover: none), (pointer: coarse)" />
+  <!-- Heading font: SF Pro Display Semibold (the default h1-h3 weight, the
+       only face the sign-in page uses on a phone) starts downloading with the
+       page on phones and tablets (Windows desktop uses Inter; see main.tsx).
+       Bold is not preloaded: the phone sign-in page does not use it, so it
+       would add 1.5 MB there. Same URL as the @font-face rule. -->
   <link rel="preload" href="/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-Semibold.woff" as="font" type="font/woff"
     crossorigin media="(max-width: 767px), (hover: none), (pointer: coarse)" />
   <title></title>

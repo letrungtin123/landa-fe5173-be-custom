@@ -27,7 +27,8 @@ test('the preloaded font files are the ones @font-face uses, only where SF Pro i
   const html = read('../index.html');
   const css = read('./index.css');
   const preloads = [...html.matchAll(/<link rel="preload" href="([^"]+)" as="font" type="font\/woff"\s+crossorigin media="([^"]+)"/g)];
-  assert.equal(preloads.length, 2);
+  // Semibold only: the phone sign-in page uses no other face, a Bold preload added 1.5 MB there.
+  assert.deepEqual(preloads.map(([, href]) => href), ['/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-Semibold.woff']);
   for (const [, href, media] of preloads) {
     assert.ok(css.includes(`url('${href}')`), href);
     assert.equal(media, '(max-width: 767px), (hover: none), (pointer: coarse)');
