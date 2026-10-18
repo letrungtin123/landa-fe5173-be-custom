@@ -15,20 +15,30 @@ test('SF Pro Display: only the upright 400-900 faces are declared, shipped and s
   for (const face of faces) {
     assert.match(face, /font-style:\s*normal/);
     assert.match(face, /font-display:\s*swap/);
-    const file = /url\('\/fonts\/SF%20Pro%20Display_WOFF\/([^']+)'\)/.exec(face)[1];
-    assert.ok(existsSync(new URL(file, fontDir)), file);
+    // WOFF2 first, the WOFF of the same face as fallback.
+    const sources = [...face.matchAll(/url\('\/fonts\/SF%20Pro%20Display_WOFF\/([^']+)'\) format\('([^']+)'\)/g)].map((m) => [m[1], m[2]]);
+    assert.equal(sources.length, 2, face);
+    assert.equal(sources[0][1], 'woff2');
+    assert.equal(sources[1][1], 'woff');
+    assert.equal(sources[0][0].replace(/\.woff2$/, ''), sources[1][0].replace(/\.woff$/, ''));
+    for (const [file] of sources) assert.ok(existsSync(new URL(file, fontDir)), file);
   }
   const shipped = readdirSync(fontDir).sort();
-  assert.equal(shipped.length, 6, shipped.join(', '));
+  assert.equal(shipped.length, 12, shipped.join(', '));
   assert.ok(shipped.every((name) => !/Italic|Light|Thin|Ultralight/.test(name)));
+  for (const woff2 of shipped.filter((name) => name.endsWith('.woff2'))) {
+    const woff = woff2.replace(/\.woff2$/, '.woff');
+    assert.ok(statSync(new URL(woff2, fontDir)).size < statSync(new URL(woff, fontDir)).size * 0.8, woff2);
+    assert.equal(readFileSync(new URL(woff2, fontDir)).subarray(0, 4).toString('latin1'), 'wOF2', woff2);
+  }
 });
 
 test('the preloaded font files are the ones @font-face uses, only where SF Pro is used', () => {
   const html = read('../index.html');
   const css = read('./index.css');
-  const preloads = [...html.matchAll(/<link rel="preload" href="([^"]+)" as="font" type="font\/woff"\s+crossorigin media="([^"]+)"/g)];
+  const preloads = [...html.matchAll(/<link rel="preload" href="([^"]+)" as="font" type="font\/woff2"\s+crossorigin media="([^"]+)"/g)];
   // Semibold only: the phone sign-in page uses no other face, a Bold preload added 1.5 MB there.
-  assert.deepEqual(preloads.map(([, href]) => href), ['/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-Semibold.woff']);
+  assert.deepEqual(preloads.map(([, href]) => href), ['/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-Semibold.woff2']);
   for (const [, href, media] of preloads) {
     assert.ok(css.includes(`url('${href}')`), href);
     assert.equal(media, '(max-width: 767px), (hover: none), (pointer: coarse)');
