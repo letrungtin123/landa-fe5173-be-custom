@@ -11,6 +11,12 @@ import flyElementMobileUrl from "@/assets/EncourageModal/fly-element-mobile.png"
 import letterUrl from "@/assets/EncourageModal/letter.png";
 import letterElementMobileUrl from "@/assets/EncourageModal/letter-element-mobile.png";
 import lightEffectUrl from "@/assets/EncourageModal/light-effect.png";
+import flyElementWebpUrl from "@/assets/EncourageModal/Fly_element.webp";
+import flyElementMobileWebpUrl from "@/assets/EncourageModal/fly-element-mobile.webp";
+import letterWebpUrl from "@/assets/EncourageModal/letter.webp";
+import letterElementMobileWebpUrl from "@/assets/EncourageModal/letter-element-mobile.webp";
+import lightEffectWebpUrl from "@/assets/EncourageModal/light-effect.webp";
+import { WebpImage } from "@/components/lesson/WebpImage";
 
 const CONFETTI_COLORS = ["#fbbf24", "#f59e0b", "#ef4444", "#ec4899", "#8b5cf6", "#3b82f6", "#10b981", "#f97316"];
 const Confetti = () => {
@@ -275,7 +281,8 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
           }}
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_39%,#0A74FF_0%,#005FE8_50%,#0034C3_100%)]" />
-          <img
+          <WebpImage
+            webp={lightEffectWebpUrl}
             src={lightEffectUrl}
             alt=""
             aria-hidden="true"
@@ -290,10 +297,12 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
             }}
           />
 
-          {/* One file per screen size (same 768px breakpoint as the style block):
-              a phone downloads only the mobile letter and plane, not both pairs. */}
+          {/* One file per screen size (same 768px breakpoint as the style block), WebP
+              first with the PNG as fallback: a phone downloads only the mobile letter and plane. */}
           <picture>
+            <source media="(min-width: 768px)" type="image/webp" srcSet={letterWebpUrl} />
             <source media="(min-width: 768px)" srcSet={letterUrl} />
+            <source type="image/webp" srcSet={letterElementMobileWebpUrl} />
             <img
               src={letterElementMobileUrl}
               alt=""
@@ -305,7 +314,9 @@ export function SectionCompleteModal({ courseId, modules }: SectionCompleteModal
             />
           </picture>
           <picture>
+            <source media="(min-width: 768px)" type="image/webp" srcSet={flyElementWebpUrl} />
             <source media="(min-width: 768px)" srcSet={flyElementUrl} />
+            <source type="image/webp" srcSet={flyElementMobileWebpUrl} />
             <img
               src={flyElementMobileUrl}
               alt=""

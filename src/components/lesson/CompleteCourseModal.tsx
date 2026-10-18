@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import ConfirmPicture from "@/assets/CompleteCourseModal/ConfirmPicture.png";
+import ConfirmPictureWebp from "@/assets/CompleteCourseModal/ConfirmPicture.webp";
+import { WebpImage } from "@/components/lesson/WebpImage";
 import { ArrowRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CourseModalConfigData } from "@/api/modalConfig";
@@ -115,9 +117,11 @@ export function CompleteCourseModal({ courseId, completionPercent, isLoading, co
 
           {/* Image Overlay */}
           <div className="absolute top-0 md:-top-3 left-0 right-0 md:left-auto w-full md:w-auto h-[210px] md:h-[340px] z-20 flex justify-center md:justify-end pointer-events-none md:right-3">
-            <img
+            <WebpImage
+              webp={ConfirmPictureWebp}
               src={ConfirmPicture}
               alt="Confirm"
+              decoding="async"
               className="h-full w-auto object-contain object-bottom md:object-right-bottom"
             />
           </div>

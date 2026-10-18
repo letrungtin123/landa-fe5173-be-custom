@@ -9,6 +9,12 @@ import CompleteBGModalPC from "@/assets/CompleteCourseModal/CompleteBGModalPC.pn
 import CompleteModalHat from "@/assets/CompleteCourseModal/CompleteModalHat.png";
 import CompleteModalPencil from "@/assets/CompleteCourseModal/CompleteModalPencil.png";
 import CompleteModalTrophy from "@/assets/CompleteCourseModal/CompleteModalTrophy.png";
+import CompleteBGModalMobileWebp from "@/assets/CompleteCourseModal/CompleteBGModalMobile.webp";
+import CompleteBGModalPCWebp from "@/assets/CompleteCourseModal/CompleteBGModalPC.webp";
+import CompleteModalHatWebp from "@/assets/CompleteCourseModal/CompleteModalHat.webp";
+import CompleteModalPencilWebp from "@/assets/CompleteCourseModal/CompleteModalPencil.webp";
+import CompleteModalTrophyWebp from "@/assets/CompleteCourseModal/CompleteModalTrophy.webp";
+import { WebpImage } from "@/components/lesson/WebpImage";
 import FacebookIcon from "@/assets/SocialIcon/facebook.png";
 import ZaloIcon from "@/assets/SocialIcon/zalo.png";
 import InstagramIcon from "@/assets/SocialIcon/instagram.png";
@@ -184,9 +190,12 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
       >
         {/* Background Image (object-fill to cover screen without bars) */}
         <div className="absolute inset-0 w-full h-full -z-20 bg-[#7cb0f7] overflow-hidden">
-          {/* One file per screen size: a phone downloads only the mobile image (2.5 MB), not also the PC one (4.4 MB). */}
+          {/* One file per screen size, WebP first (mobile 75 KB, PC 163 KB; PNG fallback 2.5 / 4.4 MB):
+              a phone downloads only the mobile image. */}
           <picture>
+            <source media="(min-width: 768px)" type="image/webp" srcSet={CompleteBGModalPCWebp} />
             <source media="(min-width: 768px)" srcSet={CompleteBGModalPC} />
+            <source type="image/webp" srcSet={CompleteBGModalMobileWebp} />
             <img src={CompleteBGModalMobile} className="absolute inset-0 w-full h-full object-fill" alt="" aria-hidden="true" decoding="async" />
           </picture>
         </div>
@@ -210,18 +219,18 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
               animate={{ y: [0, -12, 0] }}
               transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
             >
-              <img 
-                src={CompleteModalTrophy} decoding="async" 
+              <WebpImage
+                webp={CompleteModalTrophyWebp} src={CompleteModalTrophy} decoding="async" 
                 alt="Trophy PC" 
                 className="absolute w-[360px] max-w-none ml-[-40px] mt-[-100px] drop-shadow-2xl z-20"
               />
-              <img 
-                src={CompleteModalHat} decoding="async" 
+              <WebpImage
+                webp={CompleteModalHatWebp} src={CompleteModalHat} decoding="async" 
                 alt="Hat PC" 
                 className="absolute w-[290px] max-w-none ml-[-320px] mt-[-320px] drop-shadow-xl z-10"
               />
-              <img 
-                src={CompleteModalPencil} decoding="async" 
+              <WebpImage
+                webp={CompleteModalPencilWebp} src={CompleteModalPencil} decoding="async" 
                 alt="Pencil PC" 
                 className="absolute w-[150px] max-w-none ml-[-320px] mt-[65px] drop-shadow-xl z-30"
               />
@@ -276,18 +285,18 @@ export function Course100PercentModal({ courseId, completionPercent, isLoading, 
           animate={{ y: [0, -10, 0] }}
           transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
         >
-          <img 
-            src={CompleteModalTrophy} decoding="async" 
+          <WebpImage
+            webp={CompleteModalTrophyWebp} src={CompleteModalTrophy} decoding="async" 
             alt="Trophy" 
             className="absolute w-[220px] max-w-none ml-[-60px] mt-[-60px] drop-shadow-2xl z-20"
           />
-          <img 
-            src={CompleteModalHat} decoding="async" 
+          <WebpImage
+            webp={CompleteModalHatWebp} src={CompleteModalHat} decoding="async" 
             alt="Hat" 
             className="absolute w-[180px] max-w-none ml-[-180px] mt-[-240px] drop-shadow-xl z-10"
           />
-          <img 
-            src={CompleteModalPencil} decoding="async" 
+          <WebpImage
+            webp={CompleteModalPencilWebp} src={CompleteModalPencil} decoding="async" 
             alt="Pencil" 
             className="absolute w-[90px] max-w-none ml-[-160px] mt-[80px] drop-shadow-xl z-30"
           />

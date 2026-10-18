@@ -1,7 +1,7 @@
 /* global URL */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 
 const read = (relative) => readFileSync(new URL(relative, import.meta.url), 'utf8');
 const fontDir = new URL('../public/fonts/SF%20Pro%20Display_WOFF/', import.meta.url);
@@ -38,13 +38,33 @@ test('the preloaded font files are the ones @font-face uses, only where SF Pro i
 test('celebration dialogs download one image per screen size', () => {
   const course = read('./components/lesson/Course100PercentModal.tsx');
   assert.doesNotMatch(course, /hidden md:block absolute inset-0/);
-  assert.match(course, /<picture>\s*<source media="\(min-width: 768px\)" srcSet=\{CompleteBGModalPC\} \/>\s*<img src=\{CompleteBGModalMobile\}/);
+  // WebP first for each size, the PNG as fallback, the mobile PNG as <img>.
+  assert.match(course, /<picture>\s*<source media="\(min-width: 768px\)" type="image\/webp" srcSet=\{CompleteBGModalPCWebp\} \/>\s*<source media="\(min-width: 768px\)" srcSet=\{CompleteBGModalPC\} \/>\s*<source type="image\/webp" srcSet=\{CompleteBGModalMobileWebp\} \/>\s*<img src=\{CompleteBGModalMobile\}/);
+  for (const icon of ['Trophy', 'Hat', 'Pencil']) {
+    assert.equal(course.match(new RegExp(`webp=\\{CompleteModal${icon}Webp\\} src=\\{CompleteModal${icon}\\}`, 'g'))?.length, 2, icon);
+  }
   const section = read('./components/lesson/SectionCompleteModal.tsx');
-  assert.match(section, /<source media="\(min-width: 768px\)" srcSet=\{letterUrl\} \/>/);
-  assert.match(section, /<source media="\(min-width: 768px\)" srcSet=\{flyElementUrl\} \/>/);
+  for (const [webp, png, mobileWebp] of [['letterWebpUrl', 'letterUrl', 'letterElementMobileWebpUrl'], ['flyElementWebpUrl', 'flyElementUrl', 'flyElementMobileWebpUrl']]) {
+    assert.match(section, new RegExp(`<source media="\\(min-width: 768px\\)" type="image/webp" srcSet=\\{${webp}\\} />\\s*<source media="\\(min-width: 768px\\)" srcSet=\\{${png}\\} />\\s*<source type="image/webp" srcSet=\\{${mobileWebp}\\} />`));
+  }
+  assert.match(section, /webp=\{lightEffectWebpUrl\}/);
+  assert.match(read('./components/lesson/CompleteCourseModal.tsx'), /webp=\{ConfirmPictureWebp\}/);
   assert.doesNotMatch(section, /section-complete-(letter|fly-element)-mobile/);
   // The style block switches at the same width as the <picture> sources.
   assert.match(section, /@media \(max-width: 767px\)/);
+  // The wrapper takes no layout box, so the <img> classes behave as before.
+  assert.match(read('./components/lesson/WebpImage.tsx'), /<picture className="contents">/);
+});
+
+test('every celebration WebP sits next to its PNG and is much smaller', () => {
+  const assets = new URL('./assets/', import.meta.url);
+  for (const name of ['CompleteCourseModal/CompleteBGModalPC', 'CompleteCourseModal/CompleteBGModalMobile', 'CompleteCourseModal/CompleteModalHat',
+    'CompleteCourseModal/CompleteModalPencil', 'CompleteCourseModal/CompleteModalTrophy', 'CompleteCourseModal/ConfirmPicture',
+    'EncourageModal/Fly_element', 'EncourageModal/fly-element-mobile', 'EncourageModal/letter', 'EncourageModal/letter-element-mobile', 'EncourageModal/light-effect']) {
+    const png = statSync(new URL(`${name}.png`, assets)).size;
+    const webp = statSync(new URL(`${name}.webp`, assets)).size;
+    assert.ok(webp < png / 2, `${name}: ${webp} vs ${png}`);
+  }
 });
 
 test('lesson HTML images and list thumbnails load lazily', () => {
