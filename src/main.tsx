@@ -4,6 +4,11 @@ import "./index.css";
 import App from "./App";
 import { changeAppLocale } from "./i18n";
 import { useLocaleStore } from "./stores/useLocaleStore";
+import { installChunkReloadGuard } from "./lib/chunkReload.logic";
+
+// Pages, the chat and the English strings are separate chunks: after a
+// release, reload once instead of showing the error screen.
+installChunkReloadGuard(window);
 
 function syncFontPlatformToDOM() {
   const nav = window.navigator as Navigator & {
