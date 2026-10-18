@@ -8,60 +8,15 @@
    ============================================================ */
 
 @layer base {
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-Ultralight.woff') format('woff');
-    font-weight: 100;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-UltralightItalic.woff') format('woff');
-    font-weight: 100;
-    font-style: italic;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-Thin.woff') format('woff');
-    font-weight: 200;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-ThinItalic.woff') format('woff');
-    font-weight: 200;
-    font-style: italic;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-Light.woff') format('woff');
-    font-weight: 300;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-LightItalic.woff') format('woff');
-    font-weight: 300;
-    font-style: italic;
-    font-display: swap;
-  }
+  /* SF Pro Display: only the faces the app asks for. Headings, .heading and
+     font-display use 400-900 upright; no UI text asks for 100-300 or italic
+     (lesson <em>/<i> may use the synthesized slant, see .lesson-html-content).
+     Bold and Semibold are preloaded in index.html on phones and tablets. */
   @font-face {
     font-family: 'SF Pro Display';
     src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-Regular.woff') format('woff');
     font-weight: 400;
     font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-RegularItalic.woff') format('woff');
-    font-weight: 400;
-    font-style: italic;
     font-display: swap;
   }
   @font-face {
@@ -73,23 +28,9 @@
   }
   @font-face {
     font-family: 'SF Pro Display';
-    src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-MediumItalic.woff') format('woff');
-    font-weight: 500;
-    font-style: italic;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
     src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-Semibold.woff') format('woff');
     font-weight: 600;
     font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-SemiboldItalic.woff') format('woff');
-    font-weight: 600;
-    font-style: italic;
     font-display: swap;
   }
   @font-face {
@@ -101,23 +42,9 @@
   }
   @font-face {
     font-family: 'SF Pro Display';
-    src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-BoldItalic.woff') format('woff');
-    font-weight: 700;
-    font-style: italic;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
     src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-Heavy.woff') format('woff');
     font-weight: 800;
     font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-HeavyItalic.woff') format('woff');
-    font-weight: 800;
-    font-style: italic;
     font-display: swap;
   }
   @font-face {
@@ -127,12 +54,11 @@
     font-style: normal;
     font-display: swap;
   }
-  @font-face {
-    font-family: 'SF Pro Display';
-    src: url('/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-BlackItalic.woff') format('woff');
-    font-weight: 900;
-    font-style: italic;
-    font-display: swap;
+  /* Authored italics inside a heading (news, lesson HTML) keep their slant
+     now that the SF Pro Display italic files are gone (Windows uses Inter
+     and is unchanged). */
+  html:not([data-font-platform="windows-desktop"]) :where(h1, h2, h3, .heading, .font-display) :where(em, i) {
+    font-synthesis: style;
   }
 
   /* ============================

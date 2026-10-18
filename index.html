@@ -10,6 +10,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet" />
+  <!-- Heading font (SF Pro Display Bold + Semibold, the most used faces) starts
+       downloading with the page on phones and tablets, which use it (Windows
+       desktop uses Inter; see main.tsx). Same URLs as the @font-face rules. -->
+  <link rel="preload" href="/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-Bold.woff" as="font" type="font/woff"
+    crossorigin media="(max-width: 767px), (hover: none), (pointer: coarse)" />
+  <link rel="preload" href="/fonts/SF%20Pro%20Display_WOFF/SF-Pro-Display-Semibold.woff" as="font" type="font/woff"
+    crossorigin media="(max-width: 767px), (hover: none), (pointer: coarse)" />
   <title></title>
   <script>
     // Restore cached branding trước khi React mount — tránh flash default
