@@ -1,14 +1,31 @@
 // Offline contract regression: execute production functions with isolated state.
 // No server requests, credentials, provider calls or learner-progress writes.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
 
 const frontend = readFileSync(new URL('./CrosswordContent.tsx', import.meta.url), 'utf8');
-const backendRoot = new URL('../../../../../landa-backend/src/modules/', import.meta.url);
-const authoring = readFileSync(new URL('ai-chatbot/chat.service.ts', backendRoot), 'utf8');
-const learner = readFileSync(new URL('learner/learner.service.ts', backendRoot), 'utf8');
+// The backend checkout next to this one (LANDA_BACKEND_DIR overrides it, e.g. from a worktree).
+const backendRoot = process.env.LANDA_BACKEND_DIR
+  ? pathToFileURL(`${process.env.LANDA_BACKEND_DIR.replace(/[\\/]+$/, '')}/src/modules/`)
+  : new URL('../../../../../landa-backend/src/modules/', import.meta.url);
+// The backend refactor (2026-10) moved both functions; older checkouts keep them in the first file listed.
+function backendSourceWith(name, candidates) {
+  for (const relative of candidates) {
+    const url = new URL(relative, backendRoot);
+    if (!existsSync(url)) continue;
+    const source = readFileSync(url, 'utf8');
+    if (new RegExp(`(function|const)\\s+${name}\\b`).test(source)) return source;
+  }
+  throw new Error(`Backend function ${name} not found in ${candidates.join(', ')}`);
+}
+const authoring = backendSourceWith('normalizeCrosswordAnswer', [
+  'ai-chatbot/ai-id/legacy/component-blocks.logic.ts',
+  'ai-chatbot/chat.service.ts',
+]);
+const learner = backendSourceWith('gradeCrossword', ['learner/learner-grading.logic.ts', 'learner/learner.service.ts']);
 
 function productionFunction(source, name, bindings = {}) {
   const ast = ts.createSourceFile('fixture.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
