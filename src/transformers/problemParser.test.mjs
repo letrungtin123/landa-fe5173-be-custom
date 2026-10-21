@@ -85,7 +85,11 @@ test('escaped text stays text; solution/hints/input configuration stay outside t
 test('script/style are not included and learner still sanitizes displayed rich HTML', async () => {
   const [problem] = await parse(`<problem><script>PRIVATE_SCRIPT</script><style>PRIVATE_STYLE</style>${mcq('Question?')}</problem>`);
   assert.equal(problem.questionHtml, '<label>Question?</label>');
-  assert.match(quizSource, /DOMPurify\.sanitize\(prob\.questionHtml\)/);
+  // The stem is shown by QuizText (QC 21/10, B1): plain text as React text, rich HTML only after DOMPurify.
+  const quizTextSource = readFileSync(new URL('../components/lesson/QuizText.tsx', import.meta.url), 'utf8');
+  assert.match(quizSource, /<QuizQuestion html=\{prob\.questionHtml\} \/>/);
+  assert.match(quizTextSource, /const richHtml = \(html: string\) => htmlWithTextLineBreaks\(DOMPurify\.sanitize\(html\)\);/);
+  assert.equal((quizTextSource.match(/dangerouslySetInnerHTML=\{\{ __html: rich \}\}/g) ?? []).length, 2);
 });
 
 test('legacy rendered edX HTML branch retains input names and stem', async () => {

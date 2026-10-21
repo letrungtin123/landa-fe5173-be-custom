@@ -13,6 +13,8 @@ import { getXBlockHtml } from "@/api/blocks";
 import { useSubmitQuiz, parseQuizResult } from "@/hooks/useQuiz";
 import { answerDisplayHtml, parseProblemHtml, problemContentFingerprint } from "@/transformers/problemParser";
 import type { ParsedProblem, ProblemOption } from "@/transformers/problemParser";
+import { chosenOptionLetters } from "@/transformers/quizText";
+import { QuizExplanation, QuizQuestion } from "./QuizText";
 import { useParams } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { completeBlocksAndSync } from "@/lib/progressRefetch";
@@ -461,13 +463,8 @@ export function QuizContent({
           return (
           <div key={prob.id} className="mb-10 last:mb-0">
 
-            {/* Câu hỏi HTML */}
-            <div
-              className="mb-8 whitespace-pre-wrap break-words text-[20px] md:text-[24px] font-bold leading-snug text-foreground [&_br]:block [&_p]:my-0"
-              dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(prob.questionHtml),
-              }}
-            />
+            {/* Câu hỏi: giữ xuống dòng và gạch đầu dòng, chỉ câu hỏi in đậm */}
+            <QuizQuestion html={prob.questionHtml} />
 
             {/* Giải thích loại đáp án cần chọn */}
             <div className="mb-4 flex items-center gap-2 text-[14px] font-medium text-muted-foreground bg-muted/30 w-fit px-3 py-1.5 rounded-md border border-border/50">
@@ -634,10 +631,8 @@ export function QuizContent({
 
                   {/* Giải thích chi tiết */}
                   {(fetchedExplanation || prob.explanationHtml) && (
-                    <div
-                      className="prose prose-sm prose-success dark:prose-invert max-w-none text-[14px] leading-relaxed text-foreground/90"
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(fetchedExplanation || prob.explanationHtml || "") }}
-                    />
+                    <QuizExplanation html={fetchedExplanation || prob.explanationHtml || ""}
+                      correctLetters={chosenOptionLetters(prob, answers[prob.id])} correctLabel={t("quiz.correctOption")} />
                   )}
                 </div>
               </div>

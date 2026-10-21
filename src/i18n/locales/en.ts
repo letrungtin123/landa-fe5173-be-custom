@@ -474,6 +474,7 @@ export const en: TranslationSchema<typeof vi> = {
     answerPlaceholder: "Enter your answer...",
     answerAndExplanation: "Answer & explanation",
     correctAnswer: "Correct answer:",
+    correctOption: "Correct answer",
     hint: "Hint",
     showHint: "Show hint",
     hideHint: "Hide hint",

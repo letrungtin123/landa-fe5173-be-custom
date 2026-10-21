@@ -471,6 +471,7 @@ export const vi = {
     answerPlaceholder: "Nhập câu trả lời...",
     answerAndExplanation: "Đáp án & Giải thích",
     correctAnswer: "Đáp án đúng:",
+    correctOption: "Đáp án đúng",
     hint: "Gợi ý",
     showHint: "Xem gợi ý",
     hideHint: "Ẩn gợi ý",
