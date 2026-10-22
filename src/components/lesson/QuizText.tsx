@@ -4,24 +4,18 @@
 // Plain AI ID text keeps its lines: context in normal weight, "- " lines as
 // a list, only the question line in bold, at a moderate size; the
 // explanation shows one line per option with the correct one highlighted.
-// React text only. Rich text from the course editor stays sanitized HTML.
+// React text only. Rich HTML from the course editor is rendered as before:
+// DOMPurify last, nothing re-serialised after it, no line feed rewriting.
 // ============================================================
 
 import { useMemo } from "react";
 import DOMPurify from "dompurify";
 import { CheckCircle2 } from "lucide-react";
-import {
-  htmlWithTextLineBreaks,
-  plainQuizText,
-  quizExplanationLines,
-  quizQuestionBlocks,
-} from "@/transformers/quizText";
-
-const richHtml = (html: string) => htmlWithTextLineBreaks(DOMPurify.sanitize(html));
+import { plainQuizText, quizExplanationLines, quizQuestionBlocks } from "@/transformers/quizText";
 
 export function QuizQuestion({ html }: { html: string }) {
   const plain = useMemo(() => plainQuizText(html), [html]);
-  const rich = useMemo(() => (plain?.trim() ? "" : richHtml(html)), [html, plain]);
+  const rich = useMemo(() => (plain?.trim() ? "" : DOMPurify.sanitize(html)), [html, plain]);
   if (plain?.trim()) {
     return (
       <div data-quiz-question="" className="mb-8 space-y-3 break-words text-[16px] leading-7 text-foreground md:text-[18px] md:leading-8">
@@ -35,9 +29,10 @@ export function QuizQuestion({ html }: { html: string }) {
       </div>
     );
   }
+  // As before this change, only at the moderate size of B1.
   return (
     <div
-      className="mb-8 break-words text-[17px] font-semibold leading-relaxed text-foreground md:text-[19px] [&_br]:block [&_p]:my-0"
+      className="mb-8 whitespace-pre-wrap break-words text-[17px] md:text-[19px] font-bold leading-relaxed text-foreground [&_br]:block [&_p]:my-0"
       dangerouslySetInnerHTML={{ __html: rich }}
     />
   );
@@ -49,7 +44,7 @@ export function QuizExplanation({ html, correctLetters, correctLabel }: {
   correctLabel: string;
 }) {
   const plain = useMemo(() => plainQuizText(html), [html]);
-  const rich = useMemo(() => (plain?.trim() ? "" : richHtml(html)), [html, plain]);
+  const rich = useMemo(() => (plain?.trim() ? "" : DOMPurify.sanitize(html)), [html, plain]);
   if (plain?.trim()) {
     return (
       <div data-quiz-explanation="" className="space-y-1.5 break-words text-[14px] leading-relaxed text-foreground/90">
@@ -76,6 +71,7 @@ export function QuizExplanation({ html, correctLetters, correctLabel }: {
       </div>
     );
   }
+  // Exactly as before this change.
   return (
     <div
       className="prose prose-sm prose-success dark:prose-invert max-w-none text-[14px] leading-relaxed text-foreground/90"

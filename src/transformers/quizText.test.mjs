@@ -1,8 +1,7 @@
 // Quiz stem and explanation layout (QC 21/10, B1/B2). Pure rules and the
-// plain-text components run in Node; the DOM parts (line breaks inside rich
-// HTML, the OLX parser end to end) run in an offline browser when Playwright
-// is available (TEST_PLAYWRIGHT_MODULE / TEST_BROWSER_CHANNEL, as in
-// problemParser.test.mjs), and are skipped otherwise.
+// plain-text components run in Node; the OLX parser end to end runs in an
+// offline browser when Playwright is available (TEST_PLAYWRIGHT_MODULE /
+// TEST_BROWSER_CHANNEL, as in problemParser.test.mjs), skipped otherwise.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -50,6 +49,13 @@ test('stem: context lines, one list item per "- " line, the last line is the que
   assert.deepEqual(quiz.quizQuestionBlocks('Câu hỏi cũ?'), [{ kind: 'line', text: 'Câu hỏi cũ?', question: true }]);
   assert.deepEqual(quiz.quizQuestionBlocks('A\r\n\r\n - x \r-5 độ?'), [{ kind: 'line', text: 'A', question: false },
     { kind: 'list', items: ['x'] }, { kind: 'line', text: '-5 độ?', question: true }]);
+  // "\n \n" (a line of spaces) is never an empty line.
+  assert.deepEqual(quiz.quizQuestionBlocks('Bối cảnh\n \n\t\n  \nHỏi?'), [{ kind: 'line', text: 'Bối cảnh', question: false },
+    { kind: 'line', text: 'Hỏi?', question: true }]);
+  assert.equal(quiz.quizExplanationLines('Nguyên tắc\n \n\nA - Đúng vì x.\n \n').length, 2);
+  const html = renderToStaticMarkup(h(QuizQuestion, { html: '<label>Bối cảnh\n \nHỏi?</label>' }));
+  assert.equal((html.match(/<p[ >]/g) ?? []).length, 2);
+  assert.doesNotMatch(html, /<p[^>]*><\/p>|<br/);
 });
 
 test('explanation: one line per option, the correct ones marked; an old one-line explanation stays as it was', () => {
@@ -116,12 +122,14 @@ inBrowser('OLX end to end: the AI ID stem keeps its line feeds; template whitesp
   assert.equal(result.plain, stem);
 });
 
-inBrowser('rich HTML: a line feed inside text becomes a line break, whitespace-only text between tags stays whitespace', async () => {
-  const run = html => page.evaluate(value => globalThis.quizText.htmlWithTextLineBreaks(value), html);
-  assert.equal(await run('<p>Một</p>\n  <p>Hai</p>'), '<p>Một</p>\n  <p>Hai</p>', 'template indentation is untouched');
-  assert.equal(await run('<p>Dòng 1\nDòng 2\n\n<strong>đậm</strong></p>'), '<p>Dòng 1<br>Dòng 2<br><strong>đậm</strong></p>');
-  assert.equal(await run('<p>\nĐầu dòng\n</p>'), '<p> Đầu dòng </p>', 'edge line feeds never add an empty line');
-  assert.equal(await run('<p>a &lt;b&gt;\nc</p>'), '<p>a &lt;b&gt;<br>c</p>', 'text stays text');
-  assert.equal(await run('<pre>x\ny</pre>'), '<pre>x\ny</pre>');
-  assert.equal(await run('<p>không xuống dòng</p>'), '<p>không xuống dòng</p>');
+test('rich HTML is shown as before: DOMPurify last, no line feed rewriting, nothing re-serialised after sanitizing', () => {
+  const component = readFileSync(path.join(src, 'components/lesson/QuizText.tsx'), 'utf8');
+  assert.equal((component.match(/plain\?\.trim\(\) \? "" : DOMPurify\.sanitize\(html\)/g) ?? []).length, 2, 'stem and explanation');
+  assert.equal((component.match(/dangerouslySetInnerHTML=\{\{ __html: rich \}\}/g) ?? []).length, 2);
+  assert.doesNotMatch(component, /LineBreaks|innerHTML|DOMParser|replace\(/, 'the sanitized string is used as it is');
+  assert.equal(quiz.htmlWithTextLineBreaks, undefined);
+  assert.match(component, /className="prose prose-sm prose-success dark:prose-invert max-w-none text-\[14px\] leading-relaxed text-foreground\/90"/,
+    'a rich explanation keeps its old look');
+  assert.match(component, /className="mb-8 whitespace-pre-wrap break-words text-\[17px\] md:text-\[19px\] font-bold leading-relaxed text-foreground \[&_br\]:block \[&_p\]:my-0"/,
+    'a rich stem keeps its old whitespace handling, at the moderate size');
 });

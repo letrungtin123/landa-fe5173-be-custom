@@ -88,7 +88,7 @@ test('script/style are not included and learner still sanitizes displayed rich H
   // The stem is shown by QuizText (QC 21/10, B1): plain text as React text, rich HTML only after DOMPurify.
   const quizTextSource = readFileSync(new URL('../components/lesson/QuizText.tsx', import.meta.url), 'utf8');
   assert.match(quizSource, /<QuizQuestion html=\{prob\.questionHtml\} \/>/);
-  assert.match(quizTextSource, /const richHtml = \(html: string\) => htmlWithTextLineBreaks\(DOMPurify\.sanitize\(html\)\);/);
+  assert.match(quizTextSource, /DOMPurify\.sanitize\(html\)\), \[html, plain\]\);/, 'rich HTML is sanitized, last');
   assert.equal((quizTextSource.match(/dangerouslySetInnerHTML=\{\{ __html: rich \}\}/g) ?? []).length, 2);
 });
 

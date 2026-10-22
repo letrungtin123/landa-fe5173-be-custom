@@ -6,7 +6,8 @@
 // feed is a line break, a line starting with "- " is a list item, and the
 // explanation is the principle, then one line per option ("A - …").
 // Layout only: text is never turned into markup. Old one-line quizzes give
-// one bold question line or one explanation line.
+// one bold question line or one explanation line. Rich HTML (written in the
+// course editor) is not laid out here: it is shown as it always was.
 // ============================================================
 
 import type { ParsedProblem } from "./problemParser";
@@ -81,37 +82,4 @@ export function chosenOptionLetters(problem: Pick<ParsedProblem, "type" | "optio
   const values = Array.isArray(answer) ? answer : answer ? [answer] : [];
   return (problem.options ?? []).flatMap((option, index) =>
     values.includes(option.id) && index < 26 ? [String.fromCharCode(65 + index)] : []);
-}
-
-const BLOCK_OR_BREAK = /^(ADDRESS|ARTICLE|ASIDE|BLOCKQUOTE|BR|DIV|DL|FIGURE|FOOTER|H[1-6]|HEADER|HR|LI|OL|P|PRE|SECTION|TABLE|UL)$/;
-/** A line feed at the edge of a text node breaks the line only when inline content continues on that side. */
-const continuesInline = (node: Node | null) => !!node && !(node.nodeType === Node.ELEMENT_NODE && BLOCK_OR_BREAK.test((node as Element).tagName));
-
-/**
- * Rich stems and explanations: a line feed inside real text becomes a line
- * break; whitespace-only text between tags (template indentation) is left as
- * whitespace, so it never becomes a blank line. Text stays text nodes.
- */
-export function htmlWithTextLineBreaks(html: string): string {
-  if (!html.includes("\n") || typeof DOMParser === "undefined") return html;
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
-  const texts: Text[] = [];
-  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    const text = node as Text;
-    if (text.data.includes("\n") && text.data.trim() && !text.parentElement?.closest("pre, textarea, code, script, style")) texts.push(text);
-  }
-  for (const text of texts) {
-    let data = text.data.replace(/\r\n?/g, "\n");
-    if (!continuesInline(text.previousSibling)) data = data.replace(/^\s*\n\s*/, " ");
-    if (!continuesInline(text.nextSibling)) data = data.replace(/\s*\n\s*$/, " ");
-    const lines = data.split(/[ \t]*\n+[ \t]*/);
-    const fragment = doc.createDocumentFragment();
-    lines.forEach((line, index) => {
-      if (index > 0) fragment.appendChild(doc.createElement("br"));
-      fragment.appendChild(doc.createTextNode(line));
-    });
-    text.replaceWith(fragment);
-  }
-  return doc.body.innerHTML;
 }
